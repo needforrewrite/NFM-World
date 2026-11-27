@@ -386,6 +386,8 @@ public partial class StageEditorPhase : BasePhase
     private List<RemoteAsset> _onlinePartResults = [];
     private readonly Dictionary<string, string> _onlinePartNames = new(StringComparer.Ordinal);
     private readonly HashSet<string> _onlinePartDownloads = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _onlinePartPlacementRequests = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _onlinePartSlowDownloads = new(StringComparer.Ordinal);
     private string _onlinePartStatus = "";
     private bool _onlinePartSearching;
     private int _onlinePartSearchGeneration;

@@ -1748,11 +1748,11 @@ public partial class StageEditorPhase
             children:
             [
                 EditorShow(
-                    when: () => _onlinePartStatus.Length > 0,
+                    when: () => CurrentOnlinePartStatus().Length > 0,
                     then: () => EditorText(
                         style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(185, 211, 255, 180)),
                         layout: () => Sx.Styles(flexShrink: 0),
-                        text: () => _onlinePartStatus
+                        text: () => CurrentOnlinePartStatus()
                     )
                 ),
                 Sx.View(
@@ -1796,7 +1796,7 @@ public partial class StageEditorPhase
         );
     }
 
-    /// <summary>A search result that is not downloaded yet; pressing it fetches the part.</summary>
+    /// <summary>Starts preparation when the scrolled grid actually paints this tile.</summary>
     private Node RemotePartTile(RemoteAsset asset, string reference)
     {
         var downloading = () =>
@@ -1804,8 +1804,10 @@ public partial class StageEditorPhase
             _ = _uiRevision.Value;
             return _onlinePartDownloads.Contains(reference);
         };
-        return Sx.View(
-            style: () => Sx.Styles(
+        var tile = new VisibleOnlinePartTileView(() => DownloadOnlinePart(asset, placeWhenReady: false))
+        {
+            Name = $"Online stage part {reference}",
+            Styles = Sx.Styles(
                 width: PartTileSize,
                 height: PartTileSize,
                 flexShrink: 0,
@@ -1815,37 +1817,49 @@ public partial class StageEditorPhase
                 paddingTop: 4,
                 paddingBottom: 4,
                 borderRadius: 4,
-                backgroundColor: downloading() ? new Color(55, 90, 150, 220) : new Color(22, 42, 80, 120)
+                backgroundColor: new Color(22, 42, 80, 120)
             ),
-            onmousedown: _ =>
-            {
-                if (!downloading())
-                    DownloadOnlinePart(asset);
-            },
-            children:
-            [
-                Sx.View(
-                    style: () => Sx.Styles(
-                        width: PartPreviewWidth,
-                        height: PartPreviewHeight,
-                        flexShrink: 0,
-                        borderRadius: 3,
-                        backgroundColor: new Color(30, 60, 105, 220)
-                    ),
-                    children: Sx.Text(
-                        style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(150, 190, 255)),
-                        text: () => downloading() ? "..." : "WEB"
-                    )
+            MousePressed = _ => DownloadOnlinePart(asset)
+        };
+        tile.Children.Add(
+            Sx.View(
+                style: () => Sx.Styles(
+                    width: PartPreviewWidth,
+                    height: PartPreviewHeight,
+                    flexShrink: 0,
+                    borderRadius: 3,
+                    backgroundColor: new Color(30, 60, 105, 220)
                 ),
-                EditorText(
-                    style: () => Sx.TextStyles(
-                        fontSize: 9,
-                        foregroundColor: downloading() ? new Color(128, 170, 255) : new Color(185, 211, 255)
-                    ),
-                    text: () => Clip(asset.Name, 16)
+                children: Sx.Text(
+                    style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(150, 190, 255)),
+                    text: () => downloading() ? "..." : "WEB"
                 )
-            ]
+            )
         );
+        tile.Children.Add(
+            EditorText(
+                style: () => Sx.TextStyles(
+                    fontSize: 9,
+                    foregroundColor: downloading() ? new Color(128, 170, 255) : new Color(185, 211, 255)
+                ),
+                text: () => Clip(asset.Name, 16)
+            )
+        );
+        return tile;
+    }
+
+    private sealed class VisibleOnlinePartTileView(Action onVisible) : View
+    {
+        private bool _requested;
+
+        protected override void RenderContent(System.Numerics.Vector2 position, System.Numerics.Vector2 size)
+        {
+            if (_requested)
+                return;
+
+            _requested = true;
+            onVisible();
+        }
     }
 
     private static string Clip(string text, int length)

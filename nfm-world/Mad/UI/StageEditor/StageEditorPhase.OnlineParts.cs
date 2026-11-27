@@ -19,7 +19,7 @@ public partial class StageEditorPhase
         var search = _onlinePartSearch = new CancellationTokenSource();
         var generation = ++_onlinePartSearchGeneration;
         _onlinePartSearching = true;
-        _onlinePartStatus = "Searching the archive...";
+        _onlinePartStatus = "";
         Touch();
         _ = SearchOnlinePartsAsync(query, generation, search.Token);
     }
@@ -49,11 +49,8 @@ public partial class StageEditorPhase
             _onlinePartResults = page.Items.Where(item => item.Eligible).ToList();
             foreach (var item in _onlinePartResults)
                 _onlinePartNames[OnlinePartReference(item)] = item.Name;
-
-            _onlinePartStatus = _onlinePartResults.Count == 0
-                ? "No public stage parts matched."
-                : $"{_onlinePartResults.Count} public stage part(s). Click one to download and place it.";
         }
+
         catch (OperationCanceledException)
         {
             return;
@@ -81,28 +78,52 @@ public partial class StageEditorPhase
         }
     }
 
-    private void DownloadOnlinePart(RemoteAsset asset)
+    private void DownloadOnlinePart(RemoteAsset asset, bool placeWhenReady = true)
     {
         var reference = OnlinePartReference(asset);
-        if (_availableParts.Contains(reference) || !_onlinePartDownloads.Add(reference))
+        if (_availableParts.GetValueOrDefault(reference) is { } available)
+        {
+            if (placeWhenReady)
+                BeginPlacement(available);
+            return;
+        }
+
+        if (placeWhenReady)
+            _onlinePartPlacementRequests.Add(reference);
+        if (!_onlinePartDownloads.Add(reference))
             return;
 
-        _onlinePartStatus = $"Downloading \"{asset.Name}\"...";
+        _onlinePartStatus = "";
         Touch();
         _ = DownloadOnlinePartAsync(asset, reference);
     }
 
     private async Task DownloadOnlinePartAsync(RemoteAsset asset, string reference)
     {
+        LoadingWork.Operation? loading = null;
         try
         {
-            using var loading = LoadingWork.Begin($"Downloading {asset.Name}...");
-            var result = await ContentCache.PrepareAsync(
+            using var statusDelayCancellation = CancellationTokenSource.CreateLinkedTokenSource(_editorLoading.Token);
+            var prepare = ContentCache.PrepareAsync(
                 GarageController.ContentClient,
                 reference,
                 AssetKind.StagePiece,
                 _editorLoading.Token
             );
+            var statusDelay = Task.Delay(250, statusDelayCancellation.Token);
+            if (await Task.WhenAny(prepare, statusDelay) == statusDelay && !prepare.IsCompleted)
+            {
+                await LoadingWork.NextFrame;
+                if (!_editorDisposed && !prepare.IsCompleted && _onlinePartDownloads.Contains(reference))
+                {
+                    loading = LoadingWork.Begin($"Downloading {asset.Name}...");
+                    _onlinePartSlowDownloads[reference] = asset.Name;
+                    Touch();
+                }
+            }
+
+            statusDelayCancellation.Cancel();
+            var result = await prepare;
             await LoadingWork.NextFrame;
             if (_editorDisposed)
                 return;
@@ -122,8 +143,9 @@ public partial class StageEditorPhase
             part.FileName = reference;
             _availableParts.TryAdd(part);
             _onlinePartNames[reference] = asset.Name;
-            BeginPlacement(part);
-            _onlinePartStatus = $"\"{asset.Name}\" is ready. Click the viewport to place it.";
+            var placeWhenReady = _onlinePartPlacementRequests.Remove(reference);
+            if (placeWhenReady)
+                BeginPlacement(part);
         }
         catch (OperationCanceledException)
         {
@@ -137,8 +159,22 @@ public partial class StageEditorPhase
         finally
         {
             _onlinePartDownloads.Remove(reference);
+            _onlinePartPlacementRequests.Remove(reference);
+            _onlinePartSlowDownloads.Remove(reference);
+            loading?.Dispose();
             if (!_editorDisposed)
                 Touch();
         }
+    }
+
+    private string CurrentOnlinePartStatus()
+    {
+        if (_onlinePartSlowDownloads.Count > 1)
+            return $"Downloading {_onlinePartSlowDownloads.Count} stage parts...";
+
+        foreach (var name in _onlinePartSlowDownloads.Values)
+            return $"Downloading \"{name}\"...";
+
+        return _onlinePartStatus;
     }
 }
