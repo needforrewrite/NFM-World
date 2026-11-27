@@ -19,6 +19,8 @@
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer"/>
         <ProjectReference Include="..\NFMWorld.UI\NFMWorld.UI.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj"/>
         <!-- Session lifecycle (load timeout, bot fill) is server-side behaviour worth testing. -->
         <ProjectReference Include="..\NFMWorld.Server.Lobby\NFMWorld.Server.Lobby.csproj"/>
     </ItemGroup>
@@ -47,6 +49,15 @@
         <Compile Include="..\nfm-world\Mad\UI\MessageWindow.cs" Link="MessageWindow.cs"/>
         <Compile Include="..\nfm-world\UI\Theme.cs" Link="Theme.cs"/>
         <Compile Include="..\nfm-world\Util\PngCodec.cs" Link="PngCodec.cs"/>
+        <Compile Include="..\nfm-world\Mad\Renderer\RenderQueue.cs" Link="Rendering\RenderQueue.cs"/>
+        <Compile Include="..\nfm-world\Mad\Renderer\InstanceData.cs" Link="Rendering\InstanceData.cs"/>
+        <Compile Include="..\nfm-world\Mad\Renderer\SortKey.cs" Link="Rendering\SortKey.cs"/>
+        <Compile Include="..\nfm-world\Mad\Renderer\Camera\Camera.cs" Link="Rendering\Camera.cs"/>
+        <Compile Include="..\nfm-world\Mad\Renderer\Renderable\Mesh\RenderElements\IInstancedRenderElement.cs" Link="Rendering\IInstancedRenderElement.cs"/>
+        <Compile Include="..\nfm-world\Mad\Renderer\Renderable\Mesh\RenderElements\IImmediateRenderElement.cs" Link="Rendering\IImmediateRenderElement.cs"/>
+        <Using Include="System.Numerics.Matrix4x4" Alias="Matrix"/>
+        <Using Include="System.Numerics.Vector3" Alias="Vector3"/>
+        <Using Include="System.Numerics.Vector4" Alias="Vector4"/>
     </ItemGroup>
 
     <!-- So the gamemode plugin loader tests exercise the real built plugins, and so a

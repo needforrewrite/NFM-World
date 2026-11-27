@@ -1,5 +1,6 @@
 ﻿# Memory index
 
+- [HUD uploads, audio fades and D3D11 submission](../AGENTS.md#graphics--audio) — live atlas uploads borrow spans; filled ovals use analytic ellipses; fades share one timer; constant buffers are cached by size; instance-cache retention ages by frame, not shadow pass.
 - [The browser build is GitHub Pages at play.nfmw.net](github-pages-hosting-for-the-browser-build.md) — Pages on the custom domain; wasm is gzipped but zips are not, and "Site not found" is transient (DNS, missing cert, or a cached 404).
 - [Ask user to verify visuals, don't inject input](ask-user-to-verify-visuals-dont-inject-input.md) — visual checks in NFM-World are the user's job; never drive the game's UI with simulated WinAPI/SendKeys input.
 - [Don't forward the user's email](dont-forward-user-email.md) — the user's address identifies them to me only; never put it in a header, URL, or payload unless asked.

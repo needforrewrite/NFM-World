@@ -26,10 +26,16 @@ public sealed class FaudioEngine : IDisposable
 
     private IntPtr _audio;
     private IntPtr _masteringVoice;
-    private bool _disposed;
+    private volatile bool _disposed;
     private byte[]? _spatialHandle;
     private float[] _spatialMatrix = [];
     private bool _spatialUnavailable;
+    private readonly Lock _fadeGate = new();
+    private readonly List<PendingFade> _pendingFades = [];
+    private Timer? _fadeTimer;
+    private bool _updatingFades;
+
+    private readonly record struct PendingFade(IntPtr Voice, float Volume, long SubmittedAt, Action? AfterDestroy);
 
     /// <summary>
     /// The process-wide engine, created on first use. Returns null if FAudio is unavailable
@@ -252,9 +258,10 @@ public sealed class FaudioEngine : IDisposable
     /// fires once the voice is gone, and that is where the caller releases the PCM it had pinned.
     /// </summary>
     /// <remarks>
-    /// The fade has to span several of FAudio's ~20 ms mix quanta, so it cannot run inline in a
-    /// frame - and a real sleep is no use for a ramp at all (it costs ~15 ms here), hence the spin.
+    /// Updates are requested every 10 ms; the envelope uses monotonic elapsed time rather than
+    /// timer ticks, so coarse timers and thread-pool delays do not restart or stretch the fade.
     /// </remarks>
+    /// <exception cref="ObjectDisposedException">The engine has begun shutting down.</exception>
     public void FadeOutAndDestroy(IntPtr voice, Action? afterDestroy = null)
     {
         if (voice == IntPtr.Zero)
@@ -263,28 +270,78 @@ public sealed class FaudioEngine : IDisposable
             return;
         }
 
-        FAudio.FAudioVoice_GetVolume(voice, out var volume);
-        if (volume <= 0f)
+        var submittedAt = Stopwatch.GetTimestamp();
+        lock (_fadeGate)
         {
-            DestroyVoice(voice);
-            afterDestroy?.Invoke();
-            return;
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            FAudio.FAudioVoice_GetVolume(voice, out var volume);
+            _pendingFades.Add(new PendingFade(voice, volume, submittedAt, afterDestroy));
+            _fadeTimer ??= new Timer(
+                static state => ((FaudioEngine)state!).UpdateFades(),
+                this,
+                Timeout.Infinite,
+                Timeout.Infinite
+            );
+            if (_pendingFades.Count == 1 && !_updatingFades)
+                _fadeTimer.Change(FadeUpdateMilliseconds, Timeout.Infinite);
         }
+    }
 
-        Task.Run(() =>
+    private const int FadeUpdateMilliseconds = 10;
+
+    private void UpdateFades()
+    {
+        lock (_fadeGate)
+        {
+            if (_disposed)
+                return;
+
+            _updatingFades = true;
+            try
             {
-                var clock = Stopwatch.StartNew();
-                double remaining;
-                while ((remaining = 1.0 - clock.Elapsed.TotalMilliseconds / FadeMilliseconds) > 0.0)
+                for (var i = _pendingFades.Count - 1; i >= 0; i--)
                 {
-                    FAudio.FAudioVoice_SetVolume(voice, volume * (float)remaining, 0);
-                    Thread.Yield();
+                    var fade = _pendingFades[i];
+                    var remaining = 1.0 - Stopwatch.GetElapsedTime(fade.SubmittedAt).TotalMilliseconds / FadeMilliseconds;
+                    if (fade.Volume <= 0f || remaining <= 0.0)
+                    {
+                        CompleteFade(i);
+                        if (_disposed)
+                            return;
+                    }
+                    else
+                    {
+                        FAudio.FAudioVoice_SetVolume(fade.Voice, fade.Volume * (float)remaining, 0);
+                    }
                 }
-
-                DestroyVoice(voice);
-                afterDestroy?.Invoke();
             }
-        );
+            finally
+            {
+                _updatingFades = false;
+                if (_disposed)
+                    ReleaseEngine();
+                else if (_pendingFades.Count > 0)
+                    _fadeTimer!.Change(FadeUpdateMilliseconds, Timeout.Infinite);
+            }
+        }
+    }
+
+    private void CompleteFade(int index)
+    {
+        var fade = _pendingFades[index];
+        var last = _pendingFades.Count - 1;
+        if (index != last)
+            _pendingFades[index] = _pendingFades[last];
+        _pendingFades.RemoveAt(last);
+        FAudio.FAudioVoice_DestroyVoice(fade.Voice);
+        try
+        {
+            fade.AfterDestroy?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            Logging.Error($"An FAudio voice cleanup callback failed: {ex}");
+        }
     }
 
     /// <summary>
@@ -296,11 +353,25 @@ public sealed class FaudioEngine : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
-            return;
+        lock (_fadeGate)
+        {
+            if (_disposed)
+                return;
 
-        _disposed = true;
+            _disposed = true;
+            _fadeTimer?.Dispose();
+            _fadeTimer = null;
+            while (_pendingFades.Count > 0)
+                CompleteFade(_pendingFades.Count - 1);
 
+            // A cleanup callback can dispose the engine; its timer pass releases it on return.
+            if (!_updatingFades)
+                ReleaseEngine();
+        }
+    }
+
+    private void ReleaseEngine()
+    {
         if (_masteringVoice != IntPtr.Zero)
         {
             FAudio.FAudioVoice_DestroyVoice(_masteringVoice);

@@ -639,6 +639,15 @@ from `PhysicsController.GameTick`. Two ship:
   shape shader's pixel stage is most of it) and the boot message covers it; a warm one is ~0.1 s. Reads check the
   install directory and then `<LocalApplicationData>/NFMWorld/cache/shadercache`, and writes go to whichever can be
   written, because an install under Program Files would otherwise recompile every launch.
+- **D3D11 submission** — constant buffers and their CPU blocks are retained by aligned block size;
+  reflection computes that size once per pipeline. Same-pointer texture/sampler binds retain their
+  existing COM references, but draws still bind resources to recover from render-target hazards.
+  `dotnet run --project NFMWorld.Graphics.D3D11.Smoke -c Release -- --benchmark` compares mapped writes with `UpdateSubresource`;
+  mapping showed no consistent win, so production keeps `UpdateSubresource`.
+- **Instance-buffer retention** — `RenderQueue.Clear()` starts a frame; `Clear(beginFrame: false)`
+  clears another pass without aging the cache. `Scene` marks the frame once before shadow/main
+  passes. Buffers grow geometrically, draw/upload only the active count, and expire after two
+  complete unused frames. Temporary queues must be disposed after flushing.
 - **GL compiles the shape shader on every cold cache, and that is the whole cost of a first launch.**
   `GlProgramCache` (`NFMWorld.Graphics.OpenGL`) writes linked programs through `OES_get_program_binary` and reloads
   them in ~1 ms; the apos-shapes boot variant is 3.3 s cold and a dash variant 64–127 s. Desktop needs the cache
@@ -732,8 +741,15 @@ from `PhysicsController.GameTick`. Two ship:
   (the wasm publish died on exactly that). Builds only the tool, so the bake hooks `BeforeTargets="CoreCompile"` -
   the references exist after `ResolveReferences`. Any other nested build must keep its projects disjoint from the
   outer graph, or strip the leaking properties.
+- **HUD upload paths** — radar terrain uses `RadarPolygons`' triangle batch, and `AposGraphics.FillOval`
+  uses analytic ellipses rather than transient baked paths. Glyph-atlas uploads borrow the arena span
+  during a live frame; only deferred uploads own a copy. `NFMWorld/UiHarness/race-hud-radar.json` sets
+  `preview: false` to exercise the actual radar overlay rather than the preview-only HUD.
 - **Audio** — FAudio (`NFMWorld.Audio.FAudio`) plus NAudio/LibOpenMPT for tracker formats, behind
   `NFMWorld.DriverInterface`. There is no BASS path.
+  Source-voice fades share an engine-owned timer with a monotonic 100 ms envelope; never spin or
+  create one task per fade. Engine disposal drains pending voice destruction and PCM-release callbacks
+  before releasing the native device; callbacks may reenter disposal.
 
 ## Shader Pipeline (HLSL → SPIR-V → C#)
 

@@ -1,0 +1,12 @@
+{
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures/radar",
+  "view": "race-hud",
+  "skin": "classic",
+  "preview": false,
+  "steps": [
+    { "action": "capture", "capture": "radar" }
+  ]
+}

@@ -1871,7 +1871,7 @@ public partial class WorldGame
         race.Skin.Value = HudSkinId.Normalize(skin);
         HudSkinRegistry.Refresh();
 
-        race.IsPreview = true;
+        race.IsPreview = !config.TryGetProperty("preview", out var preview) || preview.GetBoolean();
         race.TimeTrial = config.TryGetProperty("timeTrial", out var tt) && tt.GetBoolean();
         race.Speed.Value = 3401f;
         race.Power.Value = 0.78f * 0.98f;

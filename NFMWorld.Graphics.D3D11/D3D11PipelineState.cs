@@ -71,6 +71,16 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
 
         VertexShader = vertex;
         PixelShader = pixel;
+
+        var end = 0;
+        var uniforms = Reflection.Uniforms;
+        for (var index = 0; index < uniforms.Count; index++)
+        {
+            var uniform = uniforms[index];
+            end = Math.Max(end, uniform.Offset + uniform.SizeInBytes);
+        }
+
+        UniformBlockSize = (end + 15) & ~15;
     }
 
     internal D3D11ShaderModule VertexShader { get; }
@@ -83,6 +93,8 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
     /// not express anyway.
     /// </summary>
     public ShaderReflection Reflection => VertexShader.Reflection;
+
+    internal int UniformBlockSize { get; }
 
     /// <summary>
     /// Binds everything this pipeline owns. Four calls.

@@ -126,8 +126,7 @@ internal sealed unsafe class D3D11Buffer : IBuffer
     /// <c>Map(WRITE_DISCARD)</c> rather than a mapped write in place, and the difference is not about
     /// speed: discard tells the driver the previous contents are dead, so it can hand back fresh
     /// storage instead of stalling until the GPU has finished reading the old. It is also the only one
-    /// of the two D3D11 accepts on a <c>DYNAMIC</c> buffer - <c>UpdateSubresource</c> is rejected there
-    /// outright, which is why <c>UploadUniforms</c> uses the other one on its <c>DEFAULT</c> buffer.
+    /// of the two D3D11 accepts on a <c>DYNAMIC</c> buffer; <c>UpdateSubresource</c> requires DEFAULT usage.
     ///
     /// Copying into the mirror first is what makes a sub-range write non-destructive: the bytes
     /// outside the range stay in the mirror, so re-sending all of it is equivalent to patching the

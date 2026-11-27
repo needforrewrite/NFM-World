@@ -39,6 +39,7 @@ public class Scene : IDisposable
     /// </summary>
     public void Render(ICommandBuffer cb, float alpha, bool useShadowMapping, bool clearRenderBuffer = true)
     {
+        _renderQueue.Clear();
         _camera.OnBeforeRender(alpha);
         foreach (var lightCamera in _lightCameras)
         {
@@ -97,7 +98,7 @@ public class Scene : IDisposable
     {
         var lighting = new Lighting(_lightCameras, GameSparker.ShadowRenderTargets, pass);
 
-        _renderQueue.Clear();
+        _renderQueue.Clear(beginFrame: false);
 
         _renderQueue.Begin(_camera, lighting);
         foreach (var obj in Objects)

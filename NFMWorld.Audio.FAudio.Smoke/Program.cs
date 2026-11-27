@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NFMWorld.Audio.FAudioBindings;
 
@@ -62,6 +63,8 @@ if (engine is null)
     Console.WriteLine("FAILED - no audio device available, nothing further to test.");
     return 1;
 }
+
+using var engineLifetime = engine;
 
 // A short sine rather than a real asset: this test is about the audio path, not the decoders.
 const int sampleRate = 44100;
@@ -157,6 +160,8 @@ try
     }
     finally
     {
+        engine.DestroyVoice(voice);
+        voice = IntPtr.Zero;
         pin.Free();
     }
 }
@@ -164,6 +169,144 @@ finally
 {
     engine.DestroyVoice(voice);
 }
+
+bool QueueFadingTone(float initialVolume, Action<long> afterDestroy)
+{
+    var fadingVoice = engine.CreateSourceVoice(sampleRate, channels);
+    if (fadingVoice == IntPtr.Zero)
+        return false;
+
+    var fadingPin = GCHandle.Alloc(pcm, GCHandleType.Pinned);
+    try
+    {
+        var buffer = new FAudio.FAudioBuffer
+        {
+            AudioBytes = (uint)pcm.Length,
+            pAudioData = fadingPin.AddrOfPinnedObject(),
+            LoopCount = FAudio.FAUDIO_LOOP_INFINITE,
+        };
+        if (FAudio.FAudioSourceVoice_SubmitSourceBuffer(fadingVoice, ref buffer, IntPtr.Zero) != 0
+            || FAudio.FAudioVoice_SetVolume(fadingVoice, initialVolume, 0) != 0
+            || FAudio.FAudioSourceVoice_Start(fadingVoice, 0, 0) != 0)
+            return false;
+
+        var submittedAt = Stopwatch.GetTimestamp();
+        engine.FadeOutAndDestroy(fadingVoice, () =>
+            {
+                fadingPin.Free();
+                afterDestroy(submittedAt);
+            }
+        );
+        fadingVoice = IntPtr.Zero;
+        return true;
+    }
+    finally
+    {
+        if (fadingVoice != IntPtr.Zero)
+        {
+            engine.DestroyVoice(fadingVoice);
+            fadingPin.Free();
+        }
+    }
+}
+
+var submissionThread = Environment.CurrentManagedThreadId;
+var fadeCallbacks = 0;
+var fadeThread = submissionThread;
+var fadeElapsed = TimeSpan.Zero;
+using var fadeCompleted = new ManualResetEventSlim();
+var fadeQueued = QueueFadingTone(0.5f, submittedAt =>
+    {
+        fadeElapsed = Stopwatch.GetElapsedTime(submittedAt);
+        fadeThread = Environment.CurrentManagedThreadId;
+        Interlocked.Increment(ref fadeCallbacks);
+        fadeCompleted.Set();
+    }
+);
+Check("queue a playing voice for a fade", fadeQueued);
+var fadeFinished = fadeQueued && fadeCompleted.Wait(TimeSpan.FromSeconds(5));
+Check("fade callback completes within a generous timeout", fadeFinished);
+if (fadeFinished)
+{
+    Check("fade callback fires once", Volatile.Read(ref fadeCallbacks) == 1);
+    Check(
+        "positive-volume fade spans at least 100 ms from submission",
+        fadeElapsed.TotalMilliseconds >= FaudioEngine.FadeMilliseconds,
+        $"{fadeElapsed.TotalMilliseconds:F1} ms"
+    );
+    Check("native fade destruction runs off the submitting thread", fadeThread != submissionThread);
+}
+
+var mutedCallbacks = 0;
+var mutedThread = submissionThread;
+using var mutedCompleted = new ManualResetEventSlim();
+var mutedQueued = QueueFadingTone(0f, _ =>
+    {
+        mutedThread = Environment.CurrentManagedThreadId;
+        Interlocked.Increment(ref mutedCallbacks);
+        mutedCompleted.Set();
+    }
+);
+Check("queue an already-muted voice", mutedQueued);
+var mutedFinished = mutedQueued && mutedCompleted.Wait(TimeSpan.FromSeconds(5));
+Check("muted voice cleanup completes asynchronously", mutedFinished && mutedThread != submissionThread);
+
+var emptyCallbacks = 0;
+engine.FadeOutAndDestroy(IntPtr.Zero, () => emptyCallbacks++);
+Check("an empty voice completes once without native work", emptyCallbacks == 1);
+
+var pendingCallbacks = new int[4];
+var allPendingAtShutdown = false;
+var drainedBeforeDisposeReturned = false;
+var shutdownQueuedAll = false;
+Exception? shutdownFailure = null;
+using var shutdownCompleted = new ManualResetEventSlim();
+var shutdownQueued = QueueFadingTone(0.25f, shutdownSubmittedAt =>
+    {
+        try
+        {
+            shutdownQueuedAll = true;
+            for (var i = 0; i < pendingCallbacks.Length; i++)
+            {
+                var index = i;
+                shutdownQueuedAll &= QueueFadingTone(i % 2 == 0 ? 0.25f : 0f, _ =>
+                Interlocked.Increment(ref pendingCallbacks[index]));
+            }
+
+            // Enqueuing from this callback keeps every child pending until the reentrant dispose.
+            allPendingAtShutdown = pendingCallbacks.All(count => count == 0);
+            engine.Dispose();
+            drainedBeforeDisposeReturned = pendingCallbacks.All(count => count == 1);
+            engine.Dispose();
+        }
+        catch (Exception ex)
+        {
+            shutdownFailure = ex;
+        }
+        finally
+        {
+            shutdownCompleted.Set();
+        }
+    }
+);
+Check("queue callback-driven engine shutdown", shutdownQueued);
+var shutdownFinished = shutdownQueued && shutdownCompleted.Wait(TimeSpan.FromSeconds(5));
+Check(
+    "callback-driven shutdown completes without deadlock",
+    shutdownFinished && shutdownFailure is null,
+    shutdownFailure?.ToString() ?? ""
+);
+engine.Dispose();
+Check("shutdown queued all native voices", shutdownQueuedAll);
+Check("shutdown starts with pending fades", allPendingAtShutdown);
+Check("shutdown drains pending pins and callbacks before returning", drainedBeforeDisposeReturned);
+Check("repeated disposal does not repeat callbacks", pendingCallbacks.All(count => count == 1));
+Check(
+    "completed fade callbacks are not repeated at shutdown",
+    (!fadeQueued || Volatile.Read(ref fadeCallbacks) == 1)
+    && (!mutedQueued || Volatile.Read(ref mutedCallbacks) == 1)
+);
+Check("the disposed engine is no longer available", FaudioEngine.Instance is null);
 
 Console.WriteLine();
 if (failures.Count == 0)

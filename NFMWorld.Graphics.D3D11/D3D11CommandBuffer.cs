@@ -47,13 +47,18 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
 
     private D3D11PipelineState? _pipeline;
 
-    /// <summary>
-    /// The merged uniform block's bytes, sized to the pipeline's reflection, plus the GPU buffer they
-    /// are uploaded through. Both are reallocated when a pipeline with a different block size binds.
-    /// </summary>
+    // CPU blocks and native buffers are retained by size across pipeline switches.
     private byte[] _uniforms = [];
+    private readonly Dictionary<int, UniformBlock> _uniformBlocks = [];
+    private UniformBlock? _uniformBlock;
 
-    private ID3D11Buffer* _uniformBuffer;
+    internal int UniformBufferCreationCount { get; private set; }
+
+    private sealed class UniformBlock(int size)
+    {
+        internal readonly byte[] Bytes = new byte[size];
+        internal ID3D11Buffer* Buffer;
+    }
 
     /// <summary>
     /// The render target bound by the caller, or null for the swapchain's back buffer.
@@ -156,14 +161,24 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     {
         var d3dPipeline = (D3D11PipelineState)pipeline;
 
-        // Resized on every call rather than only on a pipeline change: a caller may write a uniform
-        // after re-binding the same pipeline, and that write has to land in the size this pipeline's
-        // block actually is. The comparison is a length check, so the steady-state cost is that.
-        var size = ComputeBlockSize(d3dPipeline);
-        if (_uniforms.Length != size)
+        if (!ReferenceEquals(_pipeline, d3dPipeline))
         {
-            _uniforms = new byte[size];
-            D3D11Interop.Release(ref _uniformBuffer);
+            var size = d3dPipeline.UniformBlockSize;
+            if (_uniforms.Length != size)
+            {
+                if (!_uniformBlocks.TryGetValue(size, out var block))
+                {
+                    block = new UniformBlock(size);
+                    _uniformBlocks.Add(size, block);
+                }
+                else
+                {
+                    Array.Clear(block.Bytes);
+                }
+
+                _uniformBlock = block;
+                _uniforms = block.Bytes;
+            }
         }
 
         if (ReferenceEquals(_pipeline, d3dPipeline) && !_pipelineStateLostToClear)
@@ -172,23 +187,6 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         _pipeline = d3dPipeline;
         _pipelineStateLostToClear = false;
         d3dPipeline.Apply(_device);
-    }
-
-    /// <summary>
-    /// The uniform block's size: the highest offset+size any reflected uniform reaches, rounded up
-    /// to 16 bytes.
-    ///
-    /// The rounding is not cosmetic. D3D11 requires a constant buffer to be a multiple of 16 bytes,
-    /// and the packoffset numbering the reflection was generated from is in 16-byte registers - so a
-    /// block sized to the last member alone would be rejected at creation for every shader whose last
-    /// member does not end on a register boundary.
-    /// </summary>
-    private static int ComputeBlockSize(D3D11PipelineState pipeline)
-    {
-        var end = 0;
-        foreach (var uniform in pipeline.Reflection.Uniforms)
-            end = Math.Max(end, uniform.Offset + uniform.SizeInBytes);
-        return (end + 15) & ~15;
     }
 
     /// <summary>
@@ -244,8 +242,10 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// </summary>
     private static bool IsMatrix4x4At(D3D11PipelineState pipeline, int offset)
     {
-        foreach (var uniform in pipeline.Reflection.Uniforms)
+        var uniforms = pipeline.Reflection.Uniforms;
+        for (var index = 0; index < uniforms.Count; index++)
         {
+            var uniform = uniforms[index];
             if (uniform.Offset == offset)
                 return uniform.Type == Shaders.UniformType.Matrix4x4;
         }
@@ -313,22 +313,23 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
             );
         }
 
-        var d3dTexture = (D3D11Texture)texture;
-
-        D3D11Interop.Release(ref _resources[slot]);
-        if (d3dTexture.View is not null)
+        var view = ((D3D11Texture)texture).View;
+        if (_resources[slot] != view)
         {
-            // A multisampled texture has no shader resource view - D3D11 cannot sample one - so this
-            // is a real case rather than a guard: the swapchain's multisampled surface reaches here
-            // if a caller binds a render target's texture while it is still multisampled.
-            d3dTexture.View->AddRef();
-            _resources[slot] = d3dTexture.View;
+            if (view is not null)
+                view->AddRef();
+            D3D11Interop.Release(ref _resources[slot]);
+            _resources[slot] = view;
         }
 
-        var d3dSampler = (D3D11Sampler)sampler;
-        D3D11Interop.Release(ref _samplers[slot]);
-        d3dSampler.Handle->AddRef();
-        _samplers[slot] = d3dSampler.Handle;
+        var samplerHandle = ((D3D11Sampler)sampler).Handle;
+        if (_samplers[slot] != samplerHandle)
+        {
+            if (samplerHandle is not null)
+                samplerHandle->AddRef();
+            D3D11Interop.Release(ref _samplers[slot]);
+            _samplers[slot] = samplerHandle;
+        }
     }
 
     /// <summary>
@@ -704,41 +705,38 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// members and packoffsets in the vertex and pixel HLSL of every bundle in this tree - checked by
     /// diffing the two member lists - so one buffer serves both, and a uniform only the pixel stage
     /// reads would be stale if only the vertex slot were bound.
-    ///
-    /// <c>UpdateSubresource</c> rather than a mapped write: the buffer is DEFAULT-usage, and a
-    /// discard-map would only pay off for a buffer large enough that the driver's copy path shows up,
-    /// which this one - under a kilobyte in every bundle here - is not.
+    /// The cached DEFAULT buffer uses UpdateSubresource; the smoke benchmark compares mapped writes.
     /// </summary>
     private void UploadUniforms()
     {
         if (_uniforms.Length == 0)
             return;
 
-        if (_uniformBuffer is null)
+        var block = _uniformBlock!;
+        ref var buffer = ref block.Buffer;
+        if (buffer is null)
         {
             var desc = new D3D11_BUFFER_DESC
             {
                 ByteWidth = (uint)_uniforms.Length,
                 Usage = D3D11_USAGE.D3D11_USAGE_DEFAULT,
                 BindFlags = D3D11Flags.BindConstantBuffer,
-                CPUAccessFlags = 0,
-                MiscFlags = 0,
-                StructureByteStride = 0,
             };
 
-            ID3D11Buffer* buffer = null;
+            ID3D11Buffer* created = null;
             D3D11Interop.Check(
-                _device.Device->CreateBuffer(&desc, null, &buffer),
-                $"CreateBuffer (constant, {_uniforms.Length} byte(s))"
+                _device.Device->CreateBuffer(&desc, null, &created),
+                "CreateBuffer (constant)"
             );
-            _uniformBuffer = buffer;
+            buffer = created;
+            UniformBufferCreationCount++;
         }
 
         fixed (byte* data = _uniforms)
-            _device.Context->UpdateSubresource((ID3D11Resource*)_uniformBuffer, 0, null, data, 0, 0);
+            _device.Context->UpdateSubresource((ID3D11Resource*)buffer, 0, null, data, 0, 0);
 
         var buffers = stackalloc ID3D11Buffer*[1];
-        buffers[0] = _uniformBuffer;
+        buffers[0] = buffer;
         _device.Context->VSSetConstantBuffers(0, 1, buffers);
         _device.Context->PSSetConstantBuffers(0, 1, buffers);
     }
@@ -804,10 +802,8 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     /// <summary>
     /// Drops the per-frame state. Called by the device when the command buffer is submitted.
     ///
-    /// The uniform bytes are zeroed rather than kept: the next frame's first pipeline may be a
-    /// different shader entirely, and a uniform it never writes must not inherit a value from an
-    /// unrelated one. The GPU buffer itself is kept, so a frame that binds the same pipeline as the
-    /// last one allocates nothing.
+    /// Uniform storage is retained. A change in block size starts with zero bytes, as it does on the
+    /// first bind, while re-binding a block of the current size preserves its unwritten members.
     /// </summary>
     internal void Reset()
     {
@@ -841,6 +837,13 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     {
         Reset();
         D3D11Interop.Release(ref _depthClearState);
-        D3D11Interop.Release(ref _uniformBuffer);
+        foreach (var block in _uniformBlocks.Values)
+        {
+            D3D11Interop.Release(ref block.Buffer);
+        }
+
+        _uniformBlocks.Clear();
+        _uniformBlock = null;
+        _uniforms = [];
     }
 }

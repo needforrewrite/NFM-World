@@ -823,6 +823,18 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             );
         }
 
+        public void FillOval(int x, int y, int width, int height)
+        {
+            if (width == 0 || height == 0) return;
+            _sb.FillEllipse(
+                new Vector2(x + width / 2f, y + height / 2f),
+                MathF.Abs(width / 2f),
+                MathF.Abs(height / 2f),
+                _color,
+                aaSize: _aaSize
+            );
+        }
+
         public void FillTriangles(ReadOnlySpan<Vector2> positions, ReadOnlySpan<Color> colors)
         {
             _sb.FillTriangles(positions, colors, _alpha.A / 255f);

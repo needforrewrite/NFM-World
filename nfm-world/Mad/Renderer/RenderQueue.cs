@@ -21,6 +21,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
         public readonly List<InstanceData> Instances = instances;
         public IBuffer? VertexBuffer;
         public int HashCode;
+        public long LastUsedFrame;
     }
 
     private class DrawCallList
@@ -33,6 +34,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
     private List<SortKey> _sortKeys = [];
 
     private readonly List<IInstancedRenderElement> _elementsToPrune = [];
+    private long _frame;
 
     private Camera? _camera;
     private Lighting? _lighting;
@@ -40,11 +42,14 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
     // ── Public API ──
 
     /// <summary>
-    /// Reset per-frame state. Prunes instanced entries not seen for two consecutive frames.
-    /// Must be called at the start of each render pass.
+    /// Clears queued draws, starting a new frame unless this is another pass of the current frame.
+    /// Cached instance buffers are pruned after two complete unused frames.
     /// </summary>
-    public void Clear()
+    public void Clear(bool beginFrame = true)
     {
+        if (beginFrame)
+            _frame++;
+
         foreach (var (_, drawCall) in _draws)
         {
             if (drawCall.InstancedDraws is { } instancedDraws)
@@ -52,14 +57,12 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
                 _elementsToPrune.Clear();
                 foreach (var (element, group) in instancedDraws)
                 {
-                    if (group.Instances.Count == 0)
+                    if (beginFrame && _frame - group.LastUsedFrame > 2)
                     {
                         _elementsToPrune.Add(element);
                     }
-                    else
-                    {
-                        CollectionsMarshal.SetCount(group.Instances, 0);
-                    }
+
+                    CollectionsMarshal.SetCount(group.Instances, 0);
                 }
 
                 foreach (var element in _elementsToPrune)
@@ -113,6 +116,8 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
         {
             entry!.Instances.Add(data);
         }
+
+        entry!.LastUsedFrame = _frame;
     }
 
     /// <summary>
@@ -173,20 +178,29 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
                     // when the data next changes; the full equality scan that ruled it out
                     // was run on every list every frame, which is the more expensive bug.
                     var currentHashCode = GetInstanceDataHashCode(CollectionsMarshal.AsSpan(instances));
+                    var requiredBytes = checked(instances.Count * InstanceStrideBytes);
 
-                    if (cachedGroup.VertexBuffer == null || currentHashCode != cachedGroup.HashCode)
+                    if (cachedGroup.VertexBuffer == null || currentHashCode != cachedGroup.HashCode
+                        || cachedGroup.VertexBuffer.SizeInBytes < requiredBytes)
                     {
                         var instanceSpan = CollectionsMarshal.AsSpan(instances);
                         var instanceBytes = MemoryMarshal.AsBytes(instanceSpan);
 
                         if (cachedGroup.VertexBuffer == null
-                            || cachedGroup.VertexBuffer.SizeInBytes < instances.Count * InstanceStrideBytes)
+                            || cachedGroup.VertexBuffer.SizeInBytes < requiredBytes)
                         {
-                            cachedGroup.VertexBuffer?.Dispose();
-                            cachedGroup.VertexBuffer = graphicsDevice.CreateBuffer(
-                                new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, instances.Count * InstanceStrideBytes),
+                            var oldCapacity = (cachedGroup.VertexBuffer?.SizeInBytes ?? 0) / InstanceStrideBytes;
+                            var maxCapacity = int.MaxValue / InstanceStrideBytes;
+                            var capacity = Math.Max(
+                                instances.Count,
+                                Math.Max(4, oldCapacity <= maxCapacity / 2 ? oldCapacity * 2 : maxCapacity)
+                            );
+                            var buffer = graphicsDevice.CreateBuffer(
+                                new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, checked(capacity * InstanceStrideBytes)),
                                 instanceBytes
                             );
+                            cachedGroup.VertexBuffer?.Dispose();
+                            cachedGroup.VertexBuffer = buffer;
                         }
                         else
                         {

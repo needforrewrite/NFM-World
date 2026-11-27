@@ -23,6 +23,7 @@
 // that interrupts them. Nothing about the code below depends on the window being visible - flip-model
 // presents work into an unshown window, they just have nowhere to be seen.
 
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using NFMWorld.Shaders;
@@ -40,7 +41,7 @@ internal static unsafe class Program
 
     private static int _failures;
 
-    private static int Main()
+    private static int Main(string[] args)
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -63,6 +64,12 @@ internal static unsafe class Program
             )
         );
 
+        if (args.Contains("--benchmark"))
+        {
+            BenchmarkUniformUploads(device);
+            return _failures == 0 ? 0 : 1;
+        }
+
         ReportInterface(device);
         CheckTextureRoundTrip(device);
         CheckSubRectRefusal(device);
@@ -75,6 +82,7 @@ internal static unsafe class Program
         CheckDepthClearUnderWriteDisabledPipeline(device);
         CheckPresent(device);
         CheckMsdfText(device);
+        CheckSubmissionCaching(device);
 
         Console.WriteLine();
         Console.WriteLine(_failures == 0 ? "SMOKE: pass" : $"SMOKE: FAILED ({_failures} failure(s))");
@@ -843,6 +851,385 @@ internal static unsafe class Program
             "Present succeeds again after a resize (the back buffer view was rebuilt)",
             presentedAgain
         );
+    }
+
+    private sealed class SubmissionFixture : IDisposable
+    {
+        private readonly D3D11ShaderModule[] _modules;
+        internal readonly D3D11PipelineState[] Pipelines;
+        internal readonly IBuffer Vertices;
+        internal readonly ITexture TextureA;
+        internal readonly ITexture TextureB;
+        internal readonly ISampler Wrap;
+        internal readonly ISampler Clamp;
+
+        internal SubmissionFixture(D3D11GraphicsDevice device)
+        {
+            _modules = new D3D11ShaderModule[2];
+            Pipelines = new D3D11PipelineState[2];
+            for (var index = 0; index < 2; index++)
+            {
+                var block = "cbuffer Globals : register(b0) { float4 Tint : packoffset(c0); float4 Geometry : packoffset(c1);"
+                            + (index == 0 ? " };" : " float4 Tail : packoffset(c4); };");
+                var vertex = block + """
+                                     struct Input { float2 Position : POSITION0; float2 UV : TEXCOORD0; };
+                                     struct Output { float4 Position : SV_Position; float2 UV : TEXCOORD0; };
+                                     Output main(Input input) {
+                                         Output output;
+                                         output.Position = float4(input.Position * Geometry.zw + Geometry.xy, 0, 1);
+                                         output.UV = input.UV;
+                                         return output;
+                                     }
+                                     """;
+                var pixel = block + """
+                                    Texture2D Image : register(t0);
+                                    SamplerState ImageSampler : register(s0);
+                                    float4 main(float4 position : SV_Position, float2 uv : TEXCOORD0) : SV_Target {
+                                        return Image.Sample(ImageSampler, uv) * Tint
+                                    """ + (index == 0 ? "; }" : " + Tail; }");
+                var uniforms = new List<UniformParam>
+                {
+                    new("Tint", 0, 16, UniformType.Vector4),
+                    new("Geometry", 16, 16, UniformType.Vector4),
+                };
+                if (index != 0)
+                    uniforms.Add(new UniformParam("Tail", 64, 16, UniformType.Vector4));
+                var reflection = new ShaderReflection
+                {
+                    Uniforms = uniforms,
+                    Textures = [new ResourceBinding("Image", 0)],
+                    Samplers = [new ResourceBinding("ImageSampler", 0)],
+                };
+                _modules[index] = (D3D11ShaderModule)D3D11GraphicsDevice.LoadShaderModule(
+                    device,
+                    new ShaderStageSources(default, vertex, "", "", "", ""),
+                    new ShaderStageSources(default, pixel, "", "", "", ""),
+                    reflection
+                );
+                Pipelines[index] = (D3D11PipelineState)device.CreatePipeline(new PipelineDesc(
+                    _modules[index],
+                    _modules[index],
+                    [new VertexLayoutDesc([
+                        new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float2),
+                        new VertexAttributeDesc("TEXCOORD", 0, 8, VertexAttributeFormat.Float2),
+                    ], 16)],
+                    BlendStateDesc.Opaque,
+                    DepthStencilStateDesc.None,
+                    new RasterizerStateDesc(CullMode.None),
+                    PrimitiveTopology.TriangleList
+                )
+                );
+            }
+
+            Vector4[] vertices =
+            [
+                new(-1, -1, 1.25f, 0.5f), new(1, -1, 1.25f, 0.5f), new(1, 1, 1.25f, 0.5f),
+                new(-1, -1, 1.25f, 0.5f), new(1, 1, 1.25f, 0.5f), new(-1, 1, 1.25f, 0.5f),
+            ];
+            Vertices = device.CreateBuffer(
+                new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, 6 * 16),
+                MemoryMarshal.AsBytes(vertices.AsSpan())
+            );
+            TextureA = device.CreateTexture(
+                new TextureDesc(2, 1, TextureFormat.Rgba8),
+                [255, 0, 0, 255, 0, 255, 0, 255]
+            );
+            TextureB = device.CreateTexture(
+                new TextureDesc(2, 1, TextureFormat.Rgba8),
+                [0, 0, 255, 255, 255, 255, 0, 255]
+            );
+            Wrap = device.CreateSampler(new SamplerDesc(TextureFilter.Point, TextureAddressMode.Wrap, TextureAddressMode.Wrap));
+            Clamp = device.CreateSampler(new SamplerDesc(TextureFilter.Point, TextureAddressMode.Clamp, TextureAddressMode
+                .Clamp
+            )
+            );
+        }
+
+        internal static void SetVector(ICommandBuffer cb, int offset, Vector4 value) =>
+            cb.SetUniform(offset, MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in value, 1)));
+
+        internal void Bind(ICommandBuffer cb, int pipeline, ITexture? texture = null, ISampler? sampler = null)
+        {
+            cb.SetPipeline(Pipelines[pipeline]);
+            cb.SetVertexBuffer(0, Vertices, 16);
+            cb.SetShaderResource(0, texture ?? TextureA, sampler ?? Wrap);
+            SetVector(cb, 0, Vector4.One);
+            SetVector(cb, 16, new Vector4(0, 0, 1, 1));
+        }
+
+        public void Dispose()
+        {
+            foreach (var pipeline in Pipelines) pipeline.Dispose();
+            foreach (var module in _modules) module.Dispose();
+            Vertices.Dispose();
+            TextureA.Dispose();
+            TextureB.Dispose();
+            Wrap.Dispose();
+            Clamp.Dispose();
+        }
+    }
+
+    private static void CheckSubmissionCaching(D3D11GraphicsDevice device)
+    {
+        using var fixture = new SubmissionFixture(device);
+        using var target = device.CreateRenderTarget(new RenderTargetDesc(128, 16, TextureFormat.Rgba8));
+        var cb = (D3D11CommandBuffer)device.AcquireCommandBuffer();
+        var before = cb.UniformBufferCreationCount;
+        for (var frame = 0; frame < 2; frame++)
+        {
+            cb.SetRenderTarget(target);
+            cb.SetViewport(new Viewport(0, 0, 128, 16));
+            cb.Clear(ClearOptions.Color, new ColorRgba(0, 0, 0, 0));
+            for (var draw = 0; draw < 8; draw++)
+            {
+                cb.SetViewport(new Viewport(draw * 16, 0, 16, 16));
+                var pipeline = draw is 1 or 3 or 4 or 6 ? 1 : 0;
+                fixture.Bind(
+                    cb,
+                    pipeline,
+                    draw is 3 or 4 or 5 ? fixture.TextureB : fixture.TextureA,
+                    draw is 2 or 3 or 4 ? fixture.Clamp : fixture.Wrap
+                );
+                if (draw is 1 or 4)
+                    SubmissionFixture.SetVector(cb, 0, new Vector4(0.5f));
+                if (draw == 3)
+                {
+                    SubmissionFixture.SetVector(cb, 0, new Vector4(0.25f));
+                    SubmissionFixture.SetVector(cb, 64, new Vector4(0, 0, 0.125f, 0));
+                }
+
+                if (draw == 5)
+                    SubmissionFixture.SetVector(cb, 16, new Vector4(-0.5f, 0, 0.5f, 1));
+                // Repeat native pointers, including after pipeline and block-size switches.
+                cb.SetShaderResource(
+                    0,
+                    draw is 3 or 4 or 5 ? fixture.TextureB : fixture.TextureA,
+                    draw is 2 or 3 or 4 ? fixture.Clamp : fixture.Wrap
+                );
+                cb.Draw(0, 2);
+            }
+
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+
+            byte[] pixels = new byte[128 * 16 * 4];
+            device.ReadTexture(target.ColorTexture, 0, 0, 128, 16, pixels);
+            (int R, int G, int B)[] expected =
+                [(255, 0, 0), (128, 0, 0), (0, 255, 0), (64, 64, 32),
+                 (128, 128, 32), (0, 0, 255), (255, 0, 0), (255, 0, 0)];
+            for (var draw = 0; draw < expected.Length; draw++)
+            {
+                var at = (8 * 128 + draw * 16 + 4) * 4;
+                var color = expected[draw];
+                Report(
+                    "REBIND",
+                    $"frame {frame}, draw {draw}: pipeline/block/texture/sampler/uniform changes preserve pixels",
+                    Math.Abs(pixels[at] - color.R) <= 1 && Math.Abs(pixels[at + 1] - color.G) <= 1
+                    && Math.Abs(pixels[at + 2] - color.B) <= 1
+                );
+            }
+
+            Report(
+                "REBIND",
+                "vertex-stage geometry uniform changes coverage independently of pixel-stage tint",
+                pixels[(8 * 128 + 5 * 16 + 12) * 4 + 2] == 0
+            );
+            if (frame == 0)
+            {
+                Report(
+                    "REBIND",
+                    "warm-up creates at most one constant buffer per block size",
+                    cb.UniformBufferCreationCount - before <= 2
+                );
+                before = cb.UniformBufferCreationCount;
+                cb = (D3D11CommandBuffer)device.AcquireCommandBuffer();
+            }
+        }
+
+        Report(
+            "REBIND",
+            "alternating warmed block sizes create no further constant buffers",
+            cb.UniformBufferCreationCount == before
+        );
+
+        using var source = device.CreateRenderTarget(new RenderTargetDesc(16, 16, TextureFormat.Rgba8));
+        cb = (D3D11CommandBuffer)device.AcquireCommandBuffer();
+        cb.SetViewport(new Viewport(0, 0, 16, 16));
+        cb.SetRenderTarget(source);
+        cb.Clear(ClearOptions.Color, new ColorRgba(1, 0, 0, 1));
+        cb.SetRenderTarget(target);
+        fixture.Bind(cb, 0, source.ColorTexture);
+        cb.Draw(0, 2);
+        cb.SetRenderTarget(source);
+        cb.Clear(ClearOptions.Color, new ColorRgba(0, 1, 0, 1));
+        cb.SetRenderTarget(target);
+        cb.SetShaderResource(0, source.ColorTexture, fixture.Wrap);
+        cb.Draw(0, 2);
+        cb.SetRenderTarget(null);
+        device.Submit(cb);
+        byte[] pixel = new byte[4];
+        device.ReadTexture(target.ColorTexture, 8, 8, 1, 1, pixel);
+        Report(
+            "REBIND",
+            "same-pointer binding restores SRVs invalidated by a render-target hazard",
+            pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0
+        );
+
+        cb = (D3D11CommandBuffer)device.AcquireCommandBuffer();
+        cb.SetRenderTarget(target);
+        var temporaryTexture = device.CreateTexture(new TextureDesc(1, 1, TextureFormat.Rgba8), [0, 0, 255, 255]);
+        var temporarySampler = device.CreateSampler(new SamplerDesc(TextureFilter.Point));
+        fixture.Bind(cb, 0, temporaryTexture, temporarySampler);
+        cb.SetShaderResource(0, temporaryTexture, temporarySampler);
+        temporaryTexture.Dispose();
+        temporarySampler.Dispose();
+        cb.Draw(0, 2);
+        cb.SetViewport(new Viewport(16, 0, 16, 16));
+        cb.SetShaderResource(0, temporaryTexture, temporarySampler);
+        cb.Draw(0, 2);
+        cb.SetRenderTarget(null);
+        device.Submit(cb);
+        device.ReadTexture(target.ColorTexture, 8, 8, 1, 1, pixel);
+        Report(
+            "REBIND",
+            "slot references keep disposed caller textures and samplers alive through the draw",
+            pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255
+        );
+        device.ReadTexture(target.ColorTexture, 24, 8, 1, 1, pixel);
+        Report(
+            "REBIND",
+            "rebinding disposed wrappers clears old native slot pointers rather than sampling stale resources",
+            pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 0
+        );
+    }
+
+    private static void BenchmarkUniformUploads(D3D11GraphicsDevice device)
+    {
+        const int draws = 20_000;
+        using var fixture = new SubmissionFixture(device);
+        using var target = device.CreateRenderTarget(new RenderTargetDesc(1, 1, TextureFormat.Rgba8));
+        var cb = (D3D11CommandBuffer)device.AcquireCommandBuffer();
+        cb.SetRenderTarget(target);
+        cb.SetViewport(new Viewport(0, 0, 1, 1));
+        for (var pipeline = 0; pipeline < 2; pipeline++)
+        {
+            fixture.Bind(cb, pipeline);
+            cb.Draw(0, 2);
+        }
+
+        // Both reference implementations live only here; native buffers are created before timing.
+        var buffers = new ID3D11Buffer*[4];
+        byte[][] payloads = [new byte[32], new byte[80]];
+        for (var i = 0; i < 2; i++)
+        {
+            var geometry = new Vector4(0, 0, 1, 1);
+            MemoryMarshal.Write(payloads[i].AsSpan(16), in geometry);
+        }
+
+        byte[] pixel = new byte[4];
+        try
+        {
+            for (var i = 0; i < buffers.Length; i++)
+            {
+                var mapped = i < 2;
+                var desc = new D3D11_BUFFER_DESC
+                {
+                    ByteWidth = (uint)payloads[i & 1].Length,
+                    Usage = mapped ? D3D11_USAGE.D3D11_USAGE_DYNAMIC : D3D11_USAGE.D3D11_USAGE_DEFAULT,
+                    BindFlags = D3D11Flags.BindConstantBuffer,
+                    CPUAccessFlags = mapped ? D3D11Flags.CpuAccessWrite : 0,
+                };
+                ID3D11Buffer* buffer = null;
+                D3D11Interop.Check(device.Device->CreateBuffer(&desc, null, &buffer), "CreateBuffer (benchmark)");
+                buffers[i] = buffer;
+            }
+
+            Console.WriteLine($"BENCH: {draws} alternating 32/80-byte uploads + both-stage binds + 1px draws per sample");
+            Console.WriteLine("BENCH: round 0 warms each path; rounds 1..4 reverse order to reduce ordering bias.");
+            var binding = stackalloc ID3D11Buffer*[1];
+            for (var round = 0; round < 5; round++)
+            for (var order = 0; order < 3; order++)
+            {
+                var mode = (round & 1) == 0 ? order : 2 - order;
+                var createdBefore = cb.UniformBufferCreationCount;
+                cb.SetRenderTarget(target);
+                var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+                var start = Stopwatch.GetTimestamp();
+                for (var draw = 0; draw < draws; draw++)
+                {
+                    var index = draw & 1;
+                    var tint = new Vector4((draw & 2) == 0 ? 1 : 0.5f, 1, 1, 1);
+                    if (mode == 0)
+                    {
+                        cb.SetPipeline(fixture.Pipelines[index]);
+                        SubmissionFixture.SetVector(cb, 0, tint);
+                        SubmissionFixture.SetVector(cb, 16, new Vector4(0, 0, 1, 1));
+                        cb.Draw(0, 2);
+                    }
+                    else
+                    {
+                        fixture.Pipelines[index].Apply(device);
+                        var payload = payloads[index];
+                        MemoryMarshal.Write(payload.AsSpan(), in tint);
+                        var buffer = buffers[index + (mode == 2 ? 2 : 0)];
+                        if (mode == 1)
+                        {
+                            D3D11_MAPPED_SUBRESOURCE mapped;
+                            D3D11Interop.Check(device.Context->Map(
+                                (ID3D11Resource*)buffer,
+                                0,
+                                D3D11_MAP.D3D11_MAP_WRITE_DISCARD,
+                                0,
+                                &mapped
+                            ), "Map (benchmark)"
+                            );
+                            payload.AsSpan().CopyTo(new Span<byte>(mapped.pData, payload.Length));
+                            device.Context->Unmap((ID3D11Resource*)buffer, 0);
+                        }
+                        else
+                        {
+                            fixed (byte* data = payload)
+                                device.Context->UpdateSubresource((ID3D11Resource*)buffer, 0, null, data, 0, 0);
+                        }
+
+                        binding[0] = buffer;
+                        device.Context->VSSetConstantBuffers(0, 1, binding);
+                        device.Context->PSSetConstantBuffers(0, 1, binding);
+                        device.Context->Draw(6, 0);
+                    }
+                }
+
+                var cpuEnd = Stopwatch.GetTimestamp();
+                var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+                cb.SetRenderTarget(null);
+                device.ReadTexture(target.ColorTexture, 0, 0, 1, 1, pixel);
+                var completed = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+                var cpu = Stopwatch.GetElapsedTime(start, cpuEnd).TotalMilliseconds;
+                var modeName = mode switch { 0 => "production-update", 1 => "native-map", _ => "native-update" };
+                Console.WriteLine($"BENCH: round={round} mode={modeName} cpu_ms={cpu:F3} ns/draw={cpu * 1_000_000 / draws:F1}"
+                                  + $" completed_ms={completed:F3} managed_bytes={allocated}"
+                                  + $" production_buffer_creations={cb.UniformBufferCreationCount - createdBefore}"
+                );
+                Report(
+                    "BENCH",
+                    $"{modeName} final per-draw tint reaches the target",
+                    Math.Abs(pixel[0] - 128) <= 1 && pixel[1] == 0 && pixel[2] == 0
+                );
+                if (mode == 0)
+                    Report("BENCH", "warmed production sizes create no buffers", cb.UniformBufferCreationCount == createdBefore);
+            }
+        }
+        finally
+        {
+            foreach (var buffer in buffers)
+            {
+                var owned = buffer;
+                D3D11Interop.Release(ref owned);
+            }
+
+            cb.SetRenderTarget(null);
+            device.Submit(cb);
+        }
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────
