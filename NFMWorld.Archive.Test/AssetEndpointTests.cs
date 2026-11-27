@@ -55,6 +55,56 @@ public class AssetEndpointTests
         };
 
     [TestMethod]
+    public async Task Tags_BackfillAndSearchIncludeHashtagsWithoutSearchingOtherDescriptionText()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        var asset = NewAsset("Coast", AssetType.Stage, Hash('a'));
+        asset.Description = "Scenic #Rally #night_2 #rally #ПРИВЕТ, ordinary words";
+        var hidden = NewAsset("Hidden", AssetType.Stage, Hash('b'), isPublic: false);
+        hidden.Description = "#Rally";
+        await SeedAsync(factory, asset, hidden);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+            await Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(
+                db.Database,
+                "UPDATE Assets SET Tags = NULL"
+            );
+            await AssetTags.BackfillAsync(db, CancellationToken.None);
+        }
+
+        foreach (var query in new[] { "rally", "%23Rally", "night_2", Uri.EscapeDataString("#привет") })
+        {
+            var result = await client.GetFromJsonAsync<JsonElement>("/assets/search?query=" + query);
+            var items = result.GetProperty("items");
+            Assert.AreEqual(1, items.GetArrayLength());
+            Assert.AreEqual("Coast", items[0].GetProperty("name").GetString());
+            CollectionAssert.AreEqual(
+                new[] { "#Rally", "#night_2", "#ПРИВЕТ" },
+                items[0].GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ToArray()
+            );
+        }
+
+        var meta = await client.GetFromJsonAsync<JsonElement>("/assets/meta/" + Hash('a'));
+        Assert.AreEqual(3, meta.GetProperty("tags").GetArrayLength());
+        var noMatch = await client.GetFromJsonAsync<JsonElement>("/assets/search?query=ordinary");
+        Assert.AreEqual(0, noMatch.GetProperty("items").GetArrayLength());
+        var wildcard = await client.GetFromJsonAsync<JsonElement>("/assets/search?query=%25");
+        Assert.AreEqual(0, wildcard.GetProperty("items").GetArrayLength());
+        StringAssert.Contains(await client.GetStringAsync("/browse?query=%23Rally"), "Coast");
+        StringAssert.Contains(await client.GetStringAsync("/browse?query=" + Uri.EscapeDataString("привет")), "Coast");
+    }
+
+    [TestMethod]
+    public void Tags_ExtractUnicodeHashtagsAndDeduplicateIgnoringCase()
+    {
+        Assert.AreEqual("#First #second_2 #3 #é #車 #á", AssetTags.Extract("#First #first #second_2! #3 # #é #車 #á"));
+        Assert.AreEqual("", AssetTags.Extract(null));
+    }
+
+    [TestMethod]
     public async Task StockCleanup_RemovesSeededRowsAndFiles_AndPreservesUserUploads()
     {
         using var factory = new ArchiveAppFactory();

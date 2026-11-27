@@ -19,7 +19,8 @@ public sealed record RemoteAsset(
     string? Description,
     string? Author,
     bool Eligible,
-    bool AuthorVerified = false
+    bool AuthorVerified = false,
+    IReadOnlyList<string>? Tags = null
 )
 {
     public string? AuthorByline => string.IsNullOrWhiteSpace(Author) ? null : AuthorVerified ? $"{Author} ✓" : Author;
@@ -87,7 +88,8 @@ public sealed class ArchiveContentClient : IDisposable
                     item.TryGetProperty("description", out var description) ? description.GetString() : null,
                     item.TryGetProperty("author", out var author) ? author.GetString() : null,
                     item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean(),
-                    item.TryGetProperty("authorVerified", out var verified) && verified.ValueKind == JsonValueKind.True
+                    item.TryGetProperty("authorVerified", out var verified) && verified.ValueKind == JsonValueKind.True,
+                    ReadTags(item)
                 )
             );
         }
@@ -120,9 +122,16 @@ public sealed class ArchiveContentClient : IDisposable
             item.TryGetProperty("description", out var description) ? description.GetString() : null,
             item.TryGetProperty("author", out var author) ? author.GetString() : null,
             item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean(),
-            item.TryGetProperty("authorVerified", out var verified) && verified.ValueKind == JsonValueKind.True
+            item.TryGetProperty("authorVerified", out var verified) && verified.ValueKind == JsonValueKind.True,
+            ReadTags(item)
         );
     }
+
+    private static string[] ReadTags(JsonElement item)
+        => item.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Array
+            ? tags.EnumerateArray().Where(tag => tag.ValueKind == JsonValueKind.String)
+                .Select(tag => tag.GetString()!).ToArray()
+            : [];
 
     /// <summary>
     /// Downloads one asset, refusing more than <paramref name="maxBytes"/> and anything whose

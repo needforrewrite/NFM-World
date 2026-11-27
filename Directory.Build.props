@@ -37,9 +37,11 @@
 
         TargetFramework is pinned rather than inherited: both tools project net11.0 while a
         consumer may not, and the assembly paths name net11.0 explicitly.
+        Configuration is passed by each target at execution time: it may still be empty here,
+        before the SDK assigns its Debug default.
     -->
     <PropertyGroup>
-        <NFMWorldBuildHostToolProperties>Configuration=$(Configuration);TargetFramework=net11.0;RuntimeIdentifier=;SelfContained=false;PublishSingleFile=false;PublishReadyToRun=false</NFMWorldBuildHostToolProperties>
+        <NFMWorldBuildHostToolProperties>TargetFramework=net11.0;RuntimeIdentifier=;SelfContained=false;PublishSingleFile=false;PublishReadyToRun=false</NFMWorldBuildHostToolProperties>
     </PropertyGroup>
 
 </Project>

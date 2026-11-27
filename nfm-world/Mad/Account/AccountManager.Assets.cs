@@ -20,7 +20,8 @@ public sealed record OwnedAsset(
     bool Eligible,
     bool IsPublic,
     bool IsTakedown,
-    string? ReviewStatus = null
+    string? ReviewStatus = null,
+    IReadOnlyList<string>? Tags = null
 )
 {
     public string? ReviewLabel => ReviewStatus switch
@@ -229,7 +230,11 @@ public sealed partial class AccountManager
         item.TryGetProperty("eligible", out var eligible) && eligible.GetBoolean(),
         !item.TryGetProperty("isPublic", out var isPublic) || isPublic.GetBoolean(),
         item.TryGetProperty("isTakedown", out var takedown) && takedown.GetBoolean(),
-        item.TryGetProperty("reviewStatus", out var reviewStatus) ? reviewStatus.GetString() : null
+        item.TryGetProperty("reviewStatus", out var reviewStatus) ? reviewStatus.GetString() : null,
+        item.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Array
+            ? tags.EnumerateArray().Where(tag => tag.ValueKind == JsonValueKind.String)
+                .Select(tag => tag.GetString()!).ToArray()
+            : []
     );
 
     private static bool IsAwaitingAssetVerification(JsonElement asset)

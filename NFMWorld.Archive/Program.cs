@@ -121,6 +121,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
     db.Database.Migrate();
+    await AssetTags.BackfillAsync(db, CancellationToken.None);
 
     var storage = scope.ServiceProvider.GetRequiredService<FileStorage>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("StockAssetCleanup");

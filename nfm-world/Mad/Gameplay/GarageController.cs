@@ -1079,7 +1079,8 @@ internal sealed class GarageController
                         0
                     )
                     {
-                        Author = item.AuthorByline
+                        Author = item.AuthorByline,
+                        Tags = item.Tags
                     }
                 )
                 .ToArray();

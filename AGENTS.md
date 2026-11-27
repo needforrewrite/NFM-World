@@ -1402,6 +1402,10 @@ Added with the archive/content work; read this before touching content loading, 
   Visibility is one rule: `IsPublic && !IsTakedown`; eligibility additionally requires
   `IsValidated`. Legacy `.rad` uploads are validated out of process (`validator rad`), cannot claim
   Stage, and old rows are not trusted for multiplayer.
+- **Asset hashtags** — descriptions retain their text; Unicode `#tags` are extracted on save and
+  exposed as `tags` in asset metadata. Existing rows are backfilled at startup. Asset-name searches
+  also match tags case-insensitively, with or without the leading `#`; ordinary description text is
+  not searched.
 - **Stock content** — `StockCatalog` builds deterministic packages from an explicit shipped root with
   fixed metadata (`UnixEpoch`, no description). Stock is never inserted into Archive's asset table
   or upload storage. For replay validation, `stock:<hash>` asks the validator to resolve the claimed

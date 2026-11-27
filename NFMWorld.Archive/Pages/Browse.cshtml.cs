@@ -22,7 +22,13 @@ public sealed class BrowseModel(ArchiveDbContext db, ArchiveOptions options) : A
 
         var q = Db.Assets.Listed().Include(asset => asset.Owner).AsQueryable();
         if (!string.IsNullOrWhiteSpace(Query))
-            q = q.Where(a => a.Name.Contains(Query));
+        {
+            var pattern = "%" + Sql.LikeEscape(Query.Trim()) + "%";
+            var tagPattern = "%" + Sql.LikeEscape(AssetTags.SearchText(Query.Trim())) + "%";
+            q = q.Where(a => EF.Functions.Like(a.Name, pattern, "\\") ||
+                             EF.Functions.Like(a.TagsSearch!, tagPattern, "\\"));
+        }
+
         if (!string.IsNullOrWhiteSpace(Type) && Enum.TryParse<AssetType>(Type, true, out var parsed))
             q = q.Where(a => a.Type == parsed);
         if (After is { } after)

@@ -145,7 +145,9 @@ public static partial class GarageView
         foreach (var collection in collections)
         {
             var matched = collection.Cars
-                .Where(car => car.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Where(car => car.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                              || car.Tags?.Any(tag => tag.Contains(query, StringComparison.OrdinalIgnoreCase)) == true
+                )
                 .ToArray();
 
             if (matched.Length > 0)

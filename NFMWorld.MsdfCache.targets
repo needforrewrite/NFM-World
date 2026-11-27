@@ -54,10 +54,10 @@
              the referenced assemblies and their dependencies from their build output. -->
         <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Restore"
-                 Properties="$(NFMWorldBuildHostToolProperties);ExcludeRestorePackageImports=true" />
+                 Properties="$(NFMWorldBuildHostToolProperties);Configuration=$(Configuration);ExcludeRestorePackageImports=true" />
         <MSBuild Projects="$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'NFMWorld.MsdfCache.Tool', 'NFMWorld.MsdfCache.Tool.csproj'))"
                  Targets="Build"
-                 Properties="$(NFMWorldBuildHostToolProperties);BuildProjectReferences=false" />
+                 Properties="$(NFMWorldBuildHostToolProperties);Configuration=$(Configuration);BuildProjectReferences=false" />
     </Target>
 
     <!-- Bakes into the fonts directory itself, beside each font, so the output flows through the

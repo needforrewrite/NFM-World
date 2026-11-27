@@ -188,7 +188,8 @@ internal sealed class ArchivePublishDialog
     );
 
     private bool MatchesSearch(OwnedAsset asset)
-        => asset.Name.Contains(_search.Value.Trim(), StringComparison.OrdinalIgnoreCase);
+        => asset.Name.Contains(_search.Value.Trim(), StringComparison.OrdinalIgnoreCase)
+           || asset.Tags?.Any(tag => tag.Contains(_search.Value.Trim(), StringComparison.OrdinalIgnoreCase)) == true;
 
     private Node UploadRow(Document document, OwnedAsset asset)
     {

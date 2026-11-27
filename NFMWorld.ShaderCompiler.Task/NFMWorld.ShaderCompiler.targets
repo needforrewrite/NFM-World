@@ -82,10 +82,10 @@
              line; see Directory.Build.props for why they have to be cleared here. -->
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
                  Targets="Restore"
-                 Properties="$(NFMWorldBuildHostToolProperties);ExcludeRestorePackageImports=true"/>
+                 Properties="$(NFMWorldBuildHostToolProperties);Configuration=$(Configuration);ExcludeRestorePackageImports=true"/>
         <MSBuild Projects="$(MSBuildThisFileDirectory)..\NFMWorld.ShaderCompiler.Task\NFMWorld.ShaderCompiler.Task.csproj"
                  Targets="Build"
-                 Properties="$(NFMWorldBuildHostToolProperties)"/>
+                 Properties="$(NFMWorldBuildHostToolProperties);Configuration=$(Configuration)"/>
     </Target>
 
     <!-- Property defaults, so a consumer only has to name its shader directory. -->

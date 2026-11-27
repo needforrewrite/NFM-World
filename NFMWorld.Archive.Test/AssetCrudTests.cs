@@ -79,6 +79,38 @@ public class AssetCrudTests
     }
 
     [TestMethod]
+    public async Task Update_ReplacesAndClearsDerivedTagsAcrossOwnerAndPublicApis()
+    {
+        using var factory = new ArchiveAppFactory();
+        var (client, _) = await SignedInClient(factory, "artist");
+        var id = await SeedAssetAsync(factory, "artist");
+
+        var response = await client.PatchAsJsonAsync($"/assets/{id}", new { Description = "#First #second #FIRST" });
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("asset");
+        CollectionAssert.AreEqual(
+            new[] { "#First", "#second" },
+            updated.GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ToArray()
+        );
+        var mine = await client.GetFromJsonAsync<JsonElement>("/assets/mine");
+        Assert.AreEqual(2, mine.GetProperty("items")[0].GetProperty("tags").GetArrayLength());
+
+        response = await client.PatchAsJsonAsync($"/assets/{id}", new { Description = "#replacement" });
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var oldSearch = await client.GetFromJsonAsync<JsonElement>("/assets/search?query=first");
+        Assert.AreEqual(0, oldSearch.GetProperty("items").GetArrayLength());
+        var newSearch = await client.GetFromJsonAsync<JsonElement>("/assets/search?query=%23replacement");
+        Assert.AreEqual(1, newSearch.GetProperty("items").GetArrayLength());
+
+        response = await client.PatchAsJsonAsync($"/assets/{id}", new { Description = "" });
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        updated = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("asset");
+        Assert.AreEqual(0, updated.GetProperty("tags").GetArrayLength());
+        newSearch = await client.GetFromJsonAsync<JsonElement>("/assets/search?query=replacement");
+        Assert.AreEqual(0, newSearch.GetProperty("items").GetArrayLength());
+    }
+
+    [TestMethod]
     public async Task Mine_RequiresSignIn()
     {
         using var factory = new ArchiveAppFactory();

@@ -23,6 +23,31 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
     public DbSet<ModerationAction> ModerationActions => Set<ModerationAction>();
     public DbSet<ArchiveSettings> Settings => Set<ArchiveSettings>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        UpdateAssetTags();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        UpdateAssetTags();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void UpdateAssetTags()
+    {
+        foreach (var entry in ChangeTracker.Entries<Asset>())
+        {
+            if (entry.State == EntityState.Added ||
+                (entry.State == EntityState.Modified && entry.Property(a => a.Description).IsModified))
+            {
+                entry.Entity.Tags = AssetTags.Extract(entry.Entity.Description);
+                entry.Entity.TagsSearch = AssetTags.SearchText(entry.Entity.Tags);
+            }
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.Entity<ArchiveSettings>().Property(setting => setting.Id).ValueGeneratedNever();

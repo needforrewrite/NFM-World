@@ -483,6 +483,7 @@ public sealed record CarStatsViewModel(
 {
     /// <summary>The archive account that published a public car; null for a local one.</summary>
     public string? Author { get; init; }
+    public IReadOnlyList<string>? Tags { get; init; }
     public string? Class { get; init; }
 }
 

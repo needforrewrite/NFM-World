@@ -16,7 +16,7 @@ namespace NFMWorld.Archive.Migrations
         // If you encounter a merge conflict in the line below, it means you need to
         // discard one of the migration branches and recreate its migrations on top of
         // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-        public override string LastMigrationId => "20261123235000_AssetVerification";
+        public override string LastMigrationId => "20261127120000_AssetTags";
 
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -75,6 +75,12 @@ namespace NFMWorld.Archive.Migrations
 
                     b.Property<string>("StoragePath")
                     .IsRequired()
+                    .HasColumnType("TEXT");
+
+                    b.Property<string>("Tags")
+                    .HasColumnType("TEXT");
+
+                    b.Property<string>("TagsSearch")
                     .HasColumnType("TEXT");
 
                     b.Property<byte>("Type")

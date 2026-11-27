@@ -18,6 +18,7 @@ public sealed record AssetInfo(
     long SizeBytes,
     int DownloadCount,
     string? Description,
+    string[] Tags,
     string? Author,
     DateTimeOffset CreatedAt,
     bool Eligible,
@@ -39,6 +40,7 @@ public sealed record OwnedAssetInfo(
     long SizeBytes,
     int DownloadCount,
     string? Description,
+    string[] Tags,
     DateTimeOffset CreatedAt,
     bool Eligible,
     bool IsPublic,
@@ -203,7 +205,9 @@ public static class AssetEndpoints
                 if (!string.IsNullOrWhiteSpace(query))
                 {
                     var escaped = Sql.LikeEscape(query.Trim());
-                    q = q.Where(a => EF.Functions.Like(a.Name, "%" + escaped + "%", "\\"));
+                    var tagPattern = "%" + Sql.LikeEscape(AssetTags.SearchText(query.Trim())) + "%";
+                    q = q.Where(a => EF.Functions.Like(a.Name, "%" + escaped + "%", "\\") ||
+                                     EF.Functions.Like(a.TagsSearch!, tagPattern, "\\"));
                 }
 
                 // Newest first by id: SQLite cannot ORDER BY a DateTimeOffset, and ids follow
@@ -224,6 +228,7 @@ public static class AssetEndpoints
                             a.SizeBytes,
                             a.DownloadCount,
                             a.Description,
+                            a.Tags,
                             a.Owner != null ? a.Owner.Username : null,
                             a.CreatedAt,
                             a.IsValidated,
@@ -280,6 +285,7 @@ public static class AssetEndpoints
                             a.SizeBytes,
                             a.DownloadCount,
                             a.Description,
+                            a.Tags,
                             a.CreatedAt,
                             a.IsValidated,
                             a.IsPublic,
@@ -299,6 +305,7 @@ public static class AssetEndpoints
                         a.SizeBytes,
                         a.DownloadCount,
                         a.Description,
+                        AssetTags.Split(a.Tags),
                         a.CreatedAt,
                         a.IsValidated && AssetKinds.IsDataAsset(a.Type)
                         && a.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,
@@ -613,6 +620,7 @@ public static class AssetEndpoints
         long SizeBytes,
         int DownloadCount,
         string? Description,
+        string? Tags,
         string? Author,
         DateTimeOffset CreatedAt,
         bool IsValidated,
@@ -628,6 +636,7 @@ public static class AssetEndpoints
         a.SizeBytes,
         a.DownloadCount,
         a.Description,
+        a.Tags,
         a.Owner != null ? a.Owner.Username : null,
         a.CreatedAt,
         a.IsValidated,
@@ -645,6 +654,7 @@ public static class AssetEndpoints
         row.SizeBytes,
         row.DownloadCount,
         row.Description,
+        AssetTags.Split(row.Tags),
         row.Author,
         row.CreatedAt,
         row.IsValidated && AssetKinds.IsDataAsset(row.Type)
@@ -661,6 +671,7 @@ public static class AssetEndpoints
         asset.SizeBytes,
         asset.DownloadCount,
         asset.Description,
+        AssetTags.Split(asset.Tags),
         asset.CreatedAt,
         asset.IsValidated && AssetKinds.IsDataAsset((byte)asset.Type)
         && asset.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,

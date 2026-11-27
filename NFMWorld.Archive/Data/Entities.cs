@@ -186,6 +186,12 @@ public sealed class Asset
 
     public string? Description { get; set; }
 
+    /// <summary>Space-separated hashtags derived from the description; null denotes a legacy row awaiting backfill.</summary>
+    public string? Tags { get; set; }
+
+    /// <summary>Invariant-uppercase tags used for Unicode-insensitive SQLite searches.</summary>
+    public string? TagsSearch { get; set; }
+
     /// <summary>Lower-case hex SHA-256 of the stored bytes. This is what a replay pins.</summary>
     public required string ContentHash { get; set; }
 
