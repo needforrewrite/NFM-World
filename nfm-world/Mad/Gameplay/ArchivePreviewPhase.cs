@@ -222,13 +222,22 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
 
     public override void Render(ICommandBuffer cb, float alpha)
     {
-        if (_scene is null)
+        var thickness = World.OutlineThickness;
+        var pixelOutlines = World.PixelOutlines;
+        try
         {
-            base.Render(cb, alpha);
-            return;
+            World.OutlineThickness = thickness * Math.Clamp(Camera.Height / 720f, 0f, 1f);
+            World.PixelOutlines = false;
+            if (_scene is null)
+                base.Render(cb, alpha);
+            else
+                _scene.Render(cb, alpha, useShadowMapping: false);
         }
-
-        _scene.Render(cb, alpha, useShadowMapping: false);
+        finally
+        {
+            World.OutlineThickness = thickness;
+            World.PixelOutlines = pixelOutlines;
+        }
     }
 
     private void UpdateModelCamera()
