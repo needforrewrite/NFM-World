@@ -15,6 +15,18 @@ public static class AssetTags
 
         var tags = new List<string>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (start, length) in Find(description))
+        {
+            var tag = description.Substring(start, length);
+            if (seen.Add(tag))
+                tags.Add(tag);
+        }
+
+        return string.Join(' ', tags);
+    }
+
+    public static IEnumerable<(int Start, int Length)> Find(string description)
+    {
         for (var i = 0; i < description.Length; i++)
         {
             if (description[i] != '#')
@@ -25,13 +37,9 @@ public static class AssetTags
                 end += rune.Utf16SequenceLength;
             if (end == i + 1)
                 continue;
-            var tag = description[i..end];
-            if (seen.Add(tag))
-                tags.Add(tag);
+            yield return (i, end - i);
             i = end - 1;
         }
-
-        return string.Join(' ', tags);
     }
 
     public static string[] Split(string? tags) =>

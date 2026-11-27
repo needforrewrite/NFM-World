@@ -1466,8 +1466,10 @@ Added with the archive/content work; read this before touching content loading, 
 - **Packed stage music** — editor exports/publications include both referenced soundtracks in a
   `RadpackTrackWithMusic` payload. The reader attaches these bytes to `StageLoader.EmbeddedMusic`
   for stream playback; it does not extract files or overwrite `data/music`. Canonical stock and
-  replay packages keep the existing track format. New music-bearing packages need an updated
-  Archive validator; existing packages must be re-exported to acquire missing music.
+  replay packages keep the existing track format. Publishing checks the Archive's upload limit;
+  oversized packages re-encode tracks to Opus at 64 kbps, then 32 kbps if needed, without changing
+  the editor document or local files. New music-bearing packages need an updated Archive validator;
+  existing packages must be re-exported to acquire missing music.
 - **Time trials** — the client notifies `IClientCallbacks.TimeTrialCompleted` once per completed run
   (never for simulation), `TimeTrialSubmissions` writes the recording and a TightPack sidecar before
   network work, and `TimeTrialUploader` retries from the replay browser. The archive simulates the

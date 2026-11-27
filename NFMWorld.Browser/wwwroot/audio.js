@@ -66,6 +66,22 @@ export async function decodeAudio(bytes) {
     }
 }
 
+export function decodedSampleRate(id) { return buffers.get(id)?.sampleRate ?? 0; }
+export function decodedChannels(id) { return buffers.get(id)?.numberOfChannels ?? 0; }
+export function decodedPcm16(id) {
+    const buffer = buffers.get(id);
+    if (!buffer || buffer.numberOfChannels > 2) return new Uint8Array(0);
+    const channels = buffer.numberOfChannels;
+    const out = new Uint8Array(buffer.length * channels * 2);
+    const view = new DataView(out.buffer);
+    for (let ch = 0; ch < channels; ch++) {
+        const samples = buffer.getChannelData(ch);
+        for (let i = 0; i < buffer.length; i++)
+            view.setInt16((i * channels + ch) * 2, Math.max(-1, Math.min(1, samples[i])) * 32767, true);
+    }
+    return out;
+}
+
 export function startBuffer(buffer, volume, rate, loop) {
     return startBufferAt(buffer, volume, rate, loop, 0);
 }

@@ -7,6 +7,7 @@
 
 using NFMWorld.DriverInterface.DriverInterface;
 #if WEB_AUDIO
+using Maxine.Extensions.Collections;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 #endif
@@ -129,6 +130,35 @@ public static partial class WebAudioBackend
 
     [JSImport("decodeAudio", Module)]
     private static partial Task<int> DecodeAudioNative(byte[] encoded);
+
+    [JSImport("decodedSampleRate", Module)]
+    private static partial int DecodedSampleRate(int buffer);
+
+    [JSImport("decodedChannels", Module)]
+    private static partial int DecodedChannels(int buffer);
+
+    [JSImport("decodedPcm16", Module)]
+    private static partial byte[] DecodedPcm16(int buffer);
+
+    internal static async Task<DecodeResult> DecodeTrackForUploadAsync(byte[] encoded)
+    {
+        var buffer = await DecodeAudioNative(encoded);
+        if (buffer == 0) throw new InvalidDataException("The browser could not decode the soundtrack.");
+        try
+        {
+            var channels = DecodedChannels(buffer);
+            var pcm = DecodedPcm16(buffer);
+            if (pcm.Length == 0 || channels is < 1 or > 2)
+                throw new InvalidDataException("The soundtrack must have one or two audio channels.");
+            var samples = SafeArrayPool<byte>.Shared.Rent(pcm.Length);
+            pcm.CopyTo(samples.AsSpan(0, pcm.Length));
+            return new DecodeResult(samples, DecodedSampleRate(buffer), (AudioChannels)channels, true);
+        }
+        finally
+        {
+            ReleaseBuffer(buffer);
+        }
+    }
 
     [JSImport("startBuffer", Module)]
     internal static partial int StartBuffer(int buffer, double volume, double rate, bool loop);

@@ -9,6 +9,9 @@ namespace NFMWorldLibrary.Content;
 /// <summary>A canonical package for one piece of shipped content.</summary>
 public sealed record StockPackage(string Id, AssetKind Kind, byte[] Bytes, string Hash, long Size);
 
+/// <summary>A soundtrack's packaged path and bytes, keyed by its original path when packaging a stage.</summary>
+public sealed record StageMusic(string Path, byte[] Bytes);
+
 /// <summary>
 /// The build's own content, packaged deterministically so an archive can identify it by hash.
 /// </summary>
@@ -105,37 +108,77 @@ public static class StockCatalog
 
     /// <summary>The canonical bytes for a stage, so a recording pins the exact course it ran.</summary>
     public static byte[] PackageStage(string id, StageLoader stage, bool includeMusic = false)
+        => SerializeStage(id, stage, includeMusic ? ReadStageMusic(stage, enforceSizeLimit: true) : []);
+
+    /// <summary>Reads the referenced soundtracks, including embedded tracks, without imposing a package size limit.</summary>
+    public static Dictionary<string, byte[]> ReadStageMusic(StageLoader stage)
+        => ReadStageMusic(stage, enforceSizeLimit: false);
+
+    /// <summary>Packages replacement soundtracks without changing the live stage or its canonical package.</summary>
+    /// <param name="music">A replacement for each distinct, nonempty original soundtrack path.</param>
+    public static byte[] PackageStage(string id, StageLoader stage, IReadOnlyDictionary<string, StageMusic> music)
     {
-        var music = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-        if (includeMusic)
+        // Round-trip the canonical stage so changing serialized paths never alters the live loader.
+        var canonical = PackageStage(id, stage);
+        var copy = ((RadpackTrack)RadpackSerializer.Deserialize(canonical, int.MaxValue, int.MaxValue)).Stage;
+        var packagedMusic = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        foreach (var path in new[] { stage.musicPath, stage.remasteredMusicPath }.Where(path => !string.IsNullOrEmpty(path))
+            .Distinct())
         {
-            foreach (var path in new[] { stage.musicPath, stage.remasteredMusicPath }.Where(path => !string.IsNullOrEmpty(path))
-                .Distinct())
-            {
-                var normalized = path.Replace('\\', '/');
-                if (normalized.StartsWith('/') || normalized.Contains(':') || normalized.Split('/').Contains(".."))
-                    throw new InvalidDataException($"Music '{path}' must be a relative path under data/music.");
-                if (stage.EmbeddedMusic?.TryGetValue(path, out var embedded) == true)
-                {
-                    music.Add(path, embedded);
-                    continue;
-                }
-
-                using var source = VFS.OpenRead($"data/music/{path}");
-                using var bytes = new MemoryStream();
-                var buffer = new byte[81920];
-                int read;
-                while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    if (bytes.Length + read > RadpackLimits.MaxCompressedBytes)
-                        throw new InvalidDataException($"Music '{path}' exceeds the package size limit.");
-                    bytes.Write(buffer, 0, read);
-                }
-
-                music.Add(path, bytes.ToArray());
-            }
+            if (!music.TryGetValue(path, out var replacement))
+                throw new InvalidDataException($"No replacement music was provided for '{path}'.");
+            ValidateMusicPath(replacement.Path);
+            if (!packagedMusic.TryAdd(replacement.Path, replacement.Bytes))
+                throw new InvalidDataException($"Multiple soundtracks use the packaged path '{replacement.Path}'.");
         }
 
+        if (!string.IsNullOrEmpty(stage.musicPath))
+            copy.musicPath = music[stage.musicPath].Path;
+        if (!string.IsNullOrEmpty(stage.remasteredMusicPath))
+            copy.remasteredMusicPath = music[stage.remasteredMusicPath].Path;
+        return SerializeStage(id, copy, packagedMusic);
+    }
+
+    private static Dictionary<string, byte[]> ReadStageMusic(StageLoader stage, bool enforceSizeLimit)
+    {
+        var music = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        foreach (var path in new[] { stage.musicPath, stage.remasteredMusicPath }.Where(path => !string.IsNullOrEmpty(path))
+            .Distinct())
+        {
+            ValidateMusicPath(path);
+            if (stage.EmbeddedMusic?.TryGetValue(path, out var embedded) == true)
+            {
+                music.Add(path, embedded);
+                continue;
+            }
+
+            using var source = VFS.OpenRead($"data/music/{path}");
+            using var bytes = new MemoryStream();
+            var buffer = new byte[81920];
+            int read;
+            while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                if (enforceSizeLimit && bytes.Length + read > RadpackLimits.MaxCompressedBytes)
+                    throw new InvalidDataException($"Music '{path}' exceeds the package size limit.");
+                bytes.Write(buffer, 0, read);
+            }
+
+            music.Add(path, bytes.ToArray());
+        }
+
+        return music;
+    }
+
+    private static void ValidateMusicPath(string path)
+    {
+        var normalized = path.Replace('\\', '/');
+        if (string.IsNullOrEmpty(path) || normalized.StartsWith('/') || normalized.Contains(':') || normalized.Split('/')
+            .Contains(".."))
+            throw new InvalidDataException($"Music '{path}' must be a relative path under data/music.");
+    }
+
+    private static byte[] SerializeStage(string id, StageLoader stage, Dictionary<string, byte[]> music)
+    {
         var metadata = new RadpackMetadata { Name = id, CreationDate = DateTimeOffset.UnixEpoch, Type = RadpackType.Track };
         RadpackStage package = music.Count == 0
             ? new RadpackTrack { Metadata = metadata, Stage = stage }

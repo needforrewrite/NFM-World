@@ -1,4 +1,5 @@
 ﻿using System.Net.Http;
+using NFMWorld.Audio;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Content;
 using NFMWorldLibrary.Rad;
@@ -57,17 +58,62 @@ public static class ArchivePublisher
         ArchivePublication publication
     )
     {
-        byte[] bytes;
         try
         {
-            bytes = StockCatalog.PackageStage(publication.Name, stage, includeMusic: true);
+            var limit = await GameSparker.AccountManager.GetAssetUploadLimitAsync()
+                        ?? RadpackLimits.MaxCompressedBytes;
+            var music = StockCatalog.ReadStageMusic(stage);
+            var original = music.ToDictionary(pair => pair.Key, pair => new StageMusic(pair.Key, pair.Value));
+            var bytes = StockCatalog.PackageStage(publication.Name, stage, original);
+            if (bytes.Length <= limit)
+                return await UploadAsync(bytes, AssetKind.Stage, publication);
+
+            foreach (var bitrate in new[] { 64_000, 32_000 })
+            {
+                var converted = new Dictionary<string, StageMusic>();
+                foreach (var (path, data) in music)
+                {
+                    try
+                    {
+#if WEB_AUDIO
+                        using var decoded = Path.GetExtension(path)
+                            .ToLowerInvariant() is ".opus" or ".ogg" or ".oga" or ".aif" or ".aiff" or ".aifc"
+                            ? await WebAudioBackend.DecodeTrackForUploadAsync(data)
+                            : AudioDecoder.DecodeTrack(new MemoryStream(data, writable: false), Path.GetExtension(path));
+#else
+                        using var source = new MemoryStream(data, writable: false);
+                        using var decoded = AudioDecoder.DecodeTrack(source, Path.GetExtension(path));
+#endif
+                        var encoded = OpusTrackEncoder.Encode(decoded, bitrate);
+                        var outputPath = path + ".opus";
+                        while (music.ContainsKey(outputPath) || converted.Values.Any(item => item.Path == outputPath))
+                            outputPath += ".opus";
+                        converted[path] = encoded.Length < data.Length
+                            ? new StageMusic(outputPath, encoded)
+                            : original[path];
+                    }
+                    catch (Exception ex) when (ex is not OutOfMemoryException)
+                    {
+                        Logging.Warning($"Could not compress soundtrack '{path}': {ex.Message}");
+                        converted[path] = original[path];
+                    }
+                }
+
+                bytes = StockCatalog.PackageStage(publication.Name, stage, converted);
+                if (bytes.Length <= limit)
+                    return await UploadAsync(bytes, AssetKind.Stage, publication);
+            }
+
+            return new AssetUploadResult(
+                false,
+                "The stage exceeds the Archive upload limit even after compressing its soundtrack.",
+                null
+            );
         }
         catch (Exception ex)
         {
             return new AssetUploadResult(false, $"The stage could not be packaged: {ex.Message}", null);
         }
-
-        return await UploadAsync(bytes, AssetKind.Stage, publication);
     }
 
     /// <summary>Writes a model pack to the local radpack directory.</summary>

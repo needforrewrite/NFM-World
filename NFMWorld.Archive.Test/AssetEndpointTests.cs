@@ -98,6 +98,23 @@ public class AssetEndpointTests
     }
 
     [TestMethod]
+    public async Task AssetDetail_HashtagsLinkToBrowse_AndDescriptionIsEncoded()
+    {
+        using var factory = new ArchiveAppFactory();
+        using var client = factory.CreateClient();
+        var asset = NewAsset("Coast", AssetType.Stage, Hash('a'));
+        asset.Description = "<script> #Rally, #車 #Rally #!";
+        await SeedAsync(factory, asset);
+
+        var page = await client.GetStringAsync($"/asset/{asset.Id}");
+        StringAssert.Contains(page, "&lt;script&gt;");
+        StringAssert.Contains(page, "query=%23Rally");
+        StringAssert.Contains(page, "query=%23%E8%BB%8A");
+        Assert.AreEqual(2, page.Split("query=%23Rally").Length - 1);
+        StringAssert.Contains(await client.GetStringAsync("/browse?query=%23Rally"), "Coast");
+    }
+
+    [TestMethod]
     public void Tags_ExtractUnicodeHashtagsAndDeduplicateIgnoringCase()
     {
         Assert.AreEqual("#First #second_2 #3 #é #車 #á", AssetTags.Extract("#First #first #second_2! #3 # #é #車 #á"));

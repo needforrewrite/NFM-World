@@ -15,7 +15,18 @@
 
     @if (!string.IsNullOrWhiteSpace(Model.Asset.Description))
     {
-        <p class="asset-description">@Model.Asset.Description</p>
+        <p class="asset-description">@{
+            var description = Model.Asset.Description;
+            var position = 0;
+            foreach (var (start, length) in NFMWorld.Archive.Data.AssetTags.Find(description))
+            {
+                @description.Substring(position, start - position)
+                var tag = description.Substring(start, length);
+                <a asp-page="/Browse" asp-route-query="@tag">@tag</a>
+                position = start + length;
+            }
+            @description.Substring(position)
+        }</p>
     }
     else
     {

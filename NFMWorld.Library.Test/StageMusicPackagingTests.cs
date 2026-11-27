@@ -45,6 +45,86 @@ public class StageMusicPackagingTests
     }
 
     [TestMethod]
+    public void Export_ReplacementTracksDoNotMutateLiveStageOrCanonicalPackage()
+    {
+        var stage = new StageLoader
+        {
+            musicPath = "custom/original.mod",
+            remasteredMusicPath = "custom/remaster.wav",
+            musicFreqMul = 1.25,
+            musicTempoMul = 0.75,
+            EmbeddedMusic = new Dictionary<string, byte[]>
+            {
+                ["custom/original.mod"] = [1, 2],
+                ["custom/remaster.wav"] = [3, 4]
+            }
+        };
+        var canonical = StockCatalog.PackageStage("stage", stage);
+        var source = StockCatalog.ReadStageMusic(stage);
+        CollectionAssert.AreEqual(new byte[] { 1, 2 }, source[stage.musicPath]);
+        var replacements = new Dictionary<string, StageMusic>
+        {
+            [stage.musicPath] = new("custom/original.opus", [5, 6]),
+            [stage.remasteredMusicPath] = new("custom/remaster.opus", [7, 8])
+        };
+
+        var bytes = StockCatalog.PackageStage("stage", stage, replacements);
+        var loaded = (RadpackTrackWithMusic)RadpackSerializer.Deserialize(bytes);
+        Assert.AreEqual("custom/original.opus", loaded.Stage.musicPath);
+        Assert.AreEqual("custom/remaster.opus", loaded.Stage.remasteredMusicPath);
+        Assert.AreEqual(1.25, loaded.Stage.musicFreqMul);
+        Assert.AreEqual(0.75, loaded.Stage.musicTempoMul);
+        CollectionAssert.AreEqual(new byte[] { 5, 6 }, loaded.Stage.EmbeddedMusic![loaded.Stage.musicPath]);
+        CollectionAssert.AreEqual(new byte[] { 7, 8 }, loaded.Stage.EmbeddedMusic[loaded.Stage.remasteredMusicPath]);
+        Assert.AreEqual("custom/original.mod", stage.musicPath);
+        Assert.AreEqual("custom/remaster.wav", stage.remasteredMusicPath);
+        CollectionAssert.AreEqual(new byte[] { 1, 2 }, stage.EmbeddedMusic![stage.musicPath]);
+        CollectionAssert.AreEqual(canonical, StockCatalog.PackageStage("stage", stage));
+    }
+
+    [TestMethod]
+    public void Export_ReplacementTracksPreserveSharedPath()
+    {
+        var stage = new StageLoader { musicPath = "shared.wav", remasteredMusicPath = "shared.wav" };
+        var replacements = new Dictionary<string, StageMusic> { ["shared.wav"] = new("shared.opus", [1]) };
+        var loaded = (RadpackTrackWithMusic)RadpackSerializer.Deserialize(StockCatalog.PackageStage(
+            "stage",
+            stage,
+            replacements
+        )
+        );
+        Assert.AreEqual("shared.opus", loaded.Stage.musicPath);
+        Assert.AreEqual(loaded.Stage.musicPath, loaded.Stage.remasteredMusicPath);
+        Assert.AreEqual(1, loaded.Music.Count);
+    }
+
+    [TestMethod]
+    public void Export_UnchangedReplacementMatchesNormalPackage()
+    {
+        var stage = new StageLoader { musicPath = "custom/original.wav", remasteredMusicPath = "custom/remaster.wav" };
+        Write("data/music/custom/original.wav", [1, 2, 3]);
+        Write("data/music/custom/remaster.wav", [4, 5, 6]);
+        var source = StockCatalog.ReadStageMusic(stage);
+        var replacements = source.ToDictionary(entry => entry.Key, entry => new StageMusic(entry.Key, entry.Value));
+        CollectionAssert.AreEqual(
+            StockCatalog.PackageStage("stage", stage, includeMusic: true),
+            StockCatalog.PackageStage("stage", stage, replacements)
+        );
+    }
+
+    [TestMethod]
+    public void Export_ReplacementTracksMustBeCompleteAndHaveDistinctSafePaths()
+    {
+        var stage = new StageLoader { musicPath = "first.wav", remasteredMusicPath = "second.wav" };
+        var replacements = new Dictionary<string, StageMusic> { ["first.wav"] = new("first.opus", [1]) };
+        Assert.Throws<InvalidDataException>(() => StockCatalog.PackageStage("stage", stage, replacements));
+        replacements["second.wav"] = new("first.opus", [2]);
+        Assert.Throws<InvalidDataException>(() => StockCatalog.PackageStage("stage", stage, replacements));
+        replacements["second.wav"] = new("../outside.opus", [2]);
+        Assert.Throws<InvalidDataException>(() => StockCatalog.PackageStage("stage", stage, replacements));
+    }
+
+    [TestMethod]
     public void Export_MissingSoundtrackFailsInsteadOfWritingAnIncompletePackage()
     {
         var stage = new StageLoader { musicPath = $"custom/missing-{Guid.NewGuid():N}.mod" };
