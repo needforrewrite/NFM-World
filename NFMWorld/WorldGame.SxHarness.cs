@@ -139,6 +139,27 @@ public partial class WorldGame
             modelEditor.SetActiveTab(0);
         }
 
+        if (config.TryGetProperty("stockParts", out var stockParts) && stockParts.GetBoolean())
+        {
+            if (phase is not StageEditorPhase stageEditor)
+                throw new InvalidOperationException("stockParts requires the stage-editor view.");
+            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance
+                                                          | System.Reflection.BindingFlags.NonPublic;
+            var available = (System.Collections.ObjectModel.KeyedCollection<string, NFMWorldLibrary.Rad.Rad3d>)typeof(
+                    StageEditorPhase
+                )
+                .GetField("_availableParts", fields)!.GetValue(stageEditor)!;
+            foreach (var file in NFMWorldLibrary.BackendGameSparker.StageRads)
+            {
+                var path = $"data/models/nfmm/stage/{file}.rad";
+                var rad = NFMWorldLibrary.Rad.RadParser.ParseRad(
+                    System.Text.Encoding.UTF8.GetString(VFS.ReadAllBytes(path)),
+                    $"nfmm/{file}"
+                );
+                available.Add(rad);
+            }
+        }
+
         if (config.TryGetProperty("onlineParts", out var onlineParts) && onlineParts.GetBoolean())
         {
             if (phase is not StageEditorPhase stageEditor)

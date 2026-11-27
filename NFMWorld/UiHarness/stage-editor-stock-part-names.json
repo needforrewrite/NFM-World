@@ -1,0 +1,11 @@
+{
+  "view": "stage-editor",
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-menu-captures",
+  "stockParts": true,
+  "steps": [
+    { "action": "capture", "capture": "stage-editor-stock-part-names" }
+  ]
+}

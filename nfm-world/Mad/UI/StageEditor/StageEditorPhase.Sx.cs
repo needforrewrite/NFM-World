@@ -32,7 +32,7 @@ public partial class StageEditorPhase
     private const float HierarchyWidth = 200;
     private const float InspectorWidth = 240;
     private const float BottomPanelHeight = 224;
-    private const float PartTileSize = 64;
+    private const float PartTileSize = 112;
     private const float PartPreviewWidth = 54;
     private const float PartPreviewHeight = 38;
 
@@ -154,10 +154,13 @@ public partial class StageEditorPhase
     private Node EditorCheckbox(Func<bool> value, Action toggle, Func<string?>? label = null)
         => Controls.Checkbox(Observe(value), toggle, label);
 
-    private string ShortName(string name)
+    private string ShortName(string name, string? radName = null)
     {
-        if (_onlinePartNames.TryGetValue(name, out var label))
-            return label;
+        if (_onlinePartNames.TryGetValue(name, out var onlineName))
+            return onlineName;
+
+        if (!string.IsNullOrWhiteSpace(radName))
+            return radName;
 
         if (RadpackReader.IsArchiveId(name))
             return "part " + name[RadpackReader.ArchivePrefix.Length..][..8];
@@ -620,7 +623,7 @@ public partial class StageEditorPhase
         };
         return new HierarchyRowVm(
             HierarchyRowKind.Piece,
-            $"{ShortName(piece.Name)}{tag} (ID: {piece.Id})",
+            $"{ShortName(piece.Name, piece.Rad.Stats.Name)}{tag} (ID: {piece.Id})",
             piece.Id,
             -1,
             groupId,
@@ -1216,7 +1219,7 @@ public partial class StageEditorPhase
         var snap = _snapEnabled ? "Snap: ON" : "Snap: OFF";
         var grid = _gridSnapEnabled ? $"Grid: {_gridSnapSize:0}" : "Grid: OFF";
         var placement = _pendingPlacementPartIndex >= 0 && _pendingPlacementPartIndex < _availableParts.Count
-            ? $"  ·  Placing {ShortName(_availableParts[_pendingPlacementPartIndex].FileName)}  [Q/E] rotate  [LMB] place  [Esc] cancel"
+            ? $"  ·  Placing {ShortName(_availableParts[_pendingPlacementPartIndex].FileName, _availableParts[_pendingPlacementPartIndex].Stats.Name)}  [Q/E] rotate  [LMB] place  [Esc] cancel"
             : "";
         var cursor = _cursorPosition.Value;
         return $"Cursor {cursor.X},{cursor.Y}  ·  {ActiveTab.ViewMode}  ·  {snap}  ·  {grid}{placement}";
@@ -1289,7 +1292,7 @@ public partial class StageEditorPhase
             [
                 EditorText(
                     style: () => Sx.TextStyles(fontSize: 12, fontStyle: FontStyle.Bold, foregroundColor: new Color(170, 255, 170)),
-                    text: () => ShortName(piece.Name)
+                    text: () => ShortName(piece.Name, piece.Rad.Stats.Name)
                 ),
                 NumberField("X", () => (float)piece.Position.X, value => SetPieceX(piece, value)),
                 NumberField("Y", () => (float)piece.Position.Y - 250, value => SetPieceY(piece, value), "(0 = ground)"),
@@ -1620,7 +1623,10 @@ public partial class StageEditorPhase
         {
             var part = _availableParts[i];
             var name = part.FileName;
-            if (query.Length > 0 && !name.Contains(query, StringComparison.OrdinalIgnoreCase))
+            var displayName = ShortName(name, part.Stats.Name);
+            if (query.Length > 0
+                && !name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                && !displayName.Contains(query, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             var category = RadpackReader.IsArchiveId(name) ? OnlinePartsCategory
@@ -1716,7 +1722,7 @@ public partial class StageEditorPhase
                         fontSize: 9,
                         foregroundColor: active() ? new Color(128, 170, 255) : new Color(185, 211, 255)
                     ),
-                    text: () => ShortName(part.Part.FileName)
+                    text: () => ShortName(part.Part.FileName, part.Part.Stats.Name)
                 )
             ]
         );
