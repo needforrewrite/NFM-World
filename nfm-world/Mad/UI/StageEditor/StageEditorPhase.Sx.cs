@@ -159,7 +159,8 @@ public partial class StageEditorPhase
         if (_onlinePartNames.TryGetValue(name, out var onlineName))
             return onlineName;
 
-        if (!string.IsNullOrWhiteSpace(radName))
+        if (!string.IsNullOrWhiteSpace(radName)
+            && !string.Equals(radName, RadParser.DefaultName, StringComparison.OrdinalIgnoreCase))
             return radName;
 
         if (RadpackReader.IsArchiveId(name))
