@@ -36,6 +36,9 @@
         <Compile Include="..\nfm-world\Mad\Gameplay\LobbyStageSelection.cs" Link="LobbyStageSelection.cs"/>
         <Compile Include="..\nfm-world\UI\Components\Button.cs" Link="Button.cs"/>
         <Compile Include="..\nfm-world\UI\Components\Controls.cs" Link="Controls.cs"/>
+        <Compile Include="..\nfm-world\UI\Components\MenuTab.cs" Link="MenuTab.cs"/>
+        <Compile Include="..\nfm-world\UI\Components\MenuButton.cs" Link="MenuButton.cs"/>
+        <Compile Include="..\nfm-world\UI\Components\EditorControls.cs" Link="EditorControls.cs"/>
         <Compile Include="..\nfm-world\UI\Components\LoadingSpinner.cs" Link="LoadingSpinner.cs"/>
         <Compile Include="..\nfm-world\UI\Components\LobbyPlayerMenu.cs" Link="LobbyPlayerMenu.cs"/>
         <Compile Include="..\nfm-world\UI\Components\NotificationCenter.cs" Link="NotificationCenter.cs"/>

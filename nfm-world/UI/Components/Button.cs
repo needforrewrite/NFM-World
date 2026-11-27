@@ -22,7 +22,7 @@ public enum ButtonSize
 }
 
 /// <summary>
-/// The one button, shared by every view. Port of <c>data/library/ui/button.luau</c>.
+/// The base button shared by game views; menu-specific styling lives in MenuButton.
 /// </summary>
 /// <remarks>
 /// Hover is a signal local to each button, so moving the mouse re-styles the hovered

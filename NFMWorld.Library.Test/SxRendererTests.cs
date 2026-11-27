@@ -151,6 +151,121 @@ public class SxRendererTests
     }
 
     [TestMethod]
+    public void For_ReadsTheItemsOncePerSignalUpdate()
+    {
+        _ = UiScheduler.Instance;
+        var items = new Signal<IReadOnlyList<string>>(["a"]);
+        var reads = 0;
+
+        using var mounted = Renderer.Mount(() => Sx.For(
+            each: () =>
+            {
+                reads++;
+                return items.Value;
+            },
+            row: (item, _) => Sx.Text(text: () => item)
+        ));
+        Renderer.Flush();
+        var before = reads;
+
+        items.Value = ["b", "a"];
+        Renderer.Flush();
+
+        Assert.AreEqual(before + 1, reads);
+        CollectionAssert.AreEqual(
+            new[] { "b", "a" },
+            mounted.Root.VisualChildren.Cast<Text>()
+                .Select(node => node.Children.OfType<TextNode>().Single().Text).ToArray()
+        );
+    }
+
+    [TestMethod]
+    public void For_RootDisposalReleasesRemainingRowEffects()
+    {
+        _ = UiScheduler.Instance;
+        var items = new Signal<IReadOnlyList<string>>(["a", "b"]);
+        var probe = new Signal<int>(0);
+        var runs = 0;
+        using var mounted = Renderer.Mount(() => Sx.For(
+            each: () => items.Value,
+            row: (item, _) => Sx.Text(text: () =>
+                {
+                    runs++;
+                    return $"{item}{probe.Value}";
+                }
+            )
+        ));
+        Renderer.Flush();
+
+        items.Value = ["b"];
+        Renderer.Flush();
+        var before = runs;
+        probe.Value++;
+        Renderer.Flush();
+        Assert.AreEqual(before + 1, runs, "Only the retained row should react.");
+
+        mounted.Dispose();
+        before = runs;
+        probe.Value++;
+        items.Value = ["c"];
+        Renderer.Flush();
+        Assert.AreEqual(before, runs, "Root disposal left row effects alive.");
+    }
+
+    [TestMethod]
+    public void RenderScope_AdoptionTransfersOwnership()
+    {
+        using var first = new RenderScope();
+        using var second = new RenderScope();
+        var child = new RenderScope();
+        var resource = child.Own(new ScopeResource());
+        first.Adopt(child);
+        second.Adopt(child);
+        second.Adopt(child);
+
+        first.Dispose();
+        Assert.IsFalse(child.IsDisposed);
+        Assert.AreEqual(0, resource.DisposeCount);
+
+        second.Dispose();
+        Assert.IsTrue(child.IsDisposed);
+        Assert.AreEqual(1, resource.DisposeCount);
+        child.Dispose();
+        Assert.AreEqual(1, resource.DisposeCount);
+    }
+
+    [TestMethod]
+    public void RenderScope_DisposalCanDetachAnotherChild()
+    {
+        using var owner = new RenderScope();
+        var first = new RenderScope();
+        var firstResource = first.Own(new ScopeResource());
+        var second = new RenderScope();
+        var secondResource = second.Own(new ScopeResource(first.Dispose));
+        owner.Adopt(first);
+        owner.Adopt(second);
+
+        owner.Dispose();
+        owner.Dispose();
+
+        Assert.IsTrue(first.IsDisposed);
+        Assert.IsTrue(second.IsDisposed);
+        Assert.AreEqual(1, firstResource.DisposeCount);
+        Assert.AreEqual(1, secondResource.DisposeCount);
+    }
+
+    private sealed class ScopeResource(Action? onDispose = null) : IDisposable
+    {
+        public int DisposeCount { get; private set; }
+
+        public void Dispose()
+        {
+            DisposeCount++;
+            onDispose?.Invoke();
+        }
+    }
+
+    [TestMethod]
     public void Notifications_FlashDoesNotLeaveOrphanedCards()
     {
         var clock = new NotificationClock();
@@ -454,6 +569,40 @@ public class SxRendererTests
         CollectionAssert.AreEqual(new[] { "one", "two" }, texts);
 
         mounted.Dispose();
+    }
+
+    [TestMethod]
+    public void CollectionsOfChildren_FlattenNestedEnumerablesAndSlotsInOrder()
+    {
+        _ = UiScheduler.Instance;
+        var value = new Signal<string>("slot");
+
+        IEnumerable<object?> Children()
+        {
+            yield return "first";
+            yield return new object?[]
+            {
+                null,
+                new List<object?>
+                {
+                    Sx.Text(text: () => "nested"),
+                    (Func<object?>)(() => Sx.Text(text: () => value.Value))
+                }
+            };
+            yield return "last";
+        }
+
+        using var mounted = Renderer.Mount(() => Sx.View(children: [Children()]));
+        var children = mounted.Root.VisualChildren;
+        Assert.HasCount(4, children);
+        Assert.AreEqual("first", ((TextNode)children[0]).Text);
+        Assert.AreEqual("nested", ((Text)children[1]).Children.OfType<TextNode>().Single().Text);
+        Assert.AreEqual("slot", ((Text)children[2].VisualChildren.Single()).Children.OfType<TextNode>().Single().Text);
+        Assert.AreEqual("last", ((TextNode)children[3]).Text);
+
+        value.Value = "updated";
+        Renderer.Flush();
+        Assert.AreEqual("updated", ((Text)children[2].VisualChildren.Single()).Children.OfType<TextNode>().Single().Text);
     }
 
     [TestMethod]
@@ -770,6 +919,47 @@ public class SxRendererTests
         {
             FocusManager.ClearHover();
         }
+    }
+
+    [TestMethod]
+    public void ReactiveSlot_RootDisposalReleasesTheCurrentContentEffects()
+    {
+        _ = UiScheduler.Instance;
+        var revision = new Signal<int>(0);
+        var probe = new Signal<int>(0);
+        var builds = 0;
+        var runs = 0;
+        using var mounted = Renderer.Mount(() => Sx.View(children:
+        [
+            (Func<object?>)(() =>
+            {
+                var version = revision.Value;
+                builds++;
+                return Sx.Text(text: () =>
+                    {
+                        runs++;
+                        return $"{version}:{probe.Value}";
+                    }
+                );
+            })
+        ]));
+        Renderer.Flush();
+
+        revision.Value++;
+        Renderer.Flush();
+        Assert.AreEqual(2, builds);
+        var before = runs;
+        probe.Value++;
+        Renderer.Flush();
+        Assert.AreEqual(before + 1, runs, "Only the current slot content should react.");
+
+        mounted.Dispose();
+        before = runs;
+        probe.Value++;
+        revision.Value++;
+        Renderer.Flush();
+        Assert.AreEqual(before, runs, "Root disposal left slot content effects alive.");
+        Assert.AreEqual(2, builds);
     }
 
     [TestMethod]

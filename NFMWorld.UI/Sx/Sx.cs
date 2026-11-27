@@ -301,6 +301,7 @@ public static class Sx
         Func<string?>? placeholder = null,
         Action<string>? onsubmit = null,
         char? maskCharacter = null,
+        Func<TextStyles>? textStyle = null,
         params object?[] children
     )
     {
@@ -311,6 +312,9 @@ public static class Sx
         // Text: the input mirrors TextStyles onto its inner Text, so it has to be the
         // resolved form or that child would read nulls.
         node.TextStyles = node.TextStyles.Resolved;
+
+        if (textStyle is not null)
+            node.Bind(b => b.Bind(textStyle, value => node.TextStyles = value));
 
         if (text is not null)
             node.Bind(b => b.Bind(text, value => node.SetText(value ?? "")));
@@ -351,38 +355,31 @@ public static class Sx
         var host = FlowHost();
         var scope = new RenderScope();
 
-        // What is currently mounted: null, or which branch. Compared by value, not by the
-        // condition, so flipping `when` back and forth remounts rather than being ignored.
-        var mounted = new bool?[] { null };
-        var branchScope = new RenderScope?[] { null };
+        bool? mounted = null;
+        RenderScope? branchScope = null;
 
         void Mount(bool condition)
         {
-            if (scope.IsDisposed || mounted[0] == condition)
+            if (scope.IsDisposed || mounted == condition)
                 return;
 
-            // The outgoing branch's effects must die with its nodes: this component runs
-            // once, so a mounted branch's effects are only ever released here or when the
-            // host itself leaves the tree.
-            mounted[0] = condition;
-            branchScope[0]?.Dispose();
+            mounted = condition;
+            branchScope?.Dispose();
             Clear(host);
 
             var next = new RenderScope();
-            branchScope[0] = next;
+            branchScope = next;
 
             var content = Renderer.RunInScope(next, () => condition ? then() : otherwise?.Invoke());
             if (content is not null)
             {
-                // Owned by this component's scope, so a full tree teardown releases it too;
-                // Disposing is idempotent so the switch path below can dispose it first.
                 scope.Adopt(next);
-                AddChildren(host, [content]);
+                AddChild(host, content);
             }
             else
             {
                 next.Dispose();
-                branchScope[0] = null;
+                branchScope = null;
             }
         }
 
@@ -393,7 +390,7 @@ public static class Sx
 
         host.Bind(s => s.Bind(when, Mount));
         host.Own(scope);
-        host.Disposing += () => branchScope[0]?.Dispose();
+        host.Disposing += () => branchScope?.Dispose();
         return host;
     }
 
@@ -413,12 +410,11 @@ public static class Sx
 
         var rows = new Dictionary<T, (Node Node, RenderScope Scope)>(EqualityComparer<T>.Default);
 
-        void Update()
+        void Update(IReadOnlyList<T> items)
         {
             if (scope.IsDisposed)
                 return;
 
-            var items = each();
             var seen = new HashSet<T>(EqualityComparer<T>.Default);
 
             for (var i = 0; i < items.Count; i++)
@@ -430,7 +426,8 @@ public static class Sx
                     continue;
 
                 var rowScope = new RenderScope();
-                var node = Materialize(Scope.Root(rowScope, () => row(item, i)));
+                var node = Materialize(Renderer.RunInScope(rowScope, () => row(item, i)));
+                scope.Adopt(rowScope);
                 rows[item] = (node, rowScope);
                 host.AddChild(node);
             }
@@ -440,8 +437,7 @@ public static class Sx
                 if (seen.Contains(item))
                     continue;
 
-                // Dispose before detaching: the detach raises Disposing, and the scope
-                // must not be released twice.
+                // Release row effects before detaching its nodes.
                 entry.Scope.Dispose();
                 host.RemoveAt(host.Children.IndexOf(entry.Node));
                 rows.Remove(item);
@@ -463,9 +459,9 @@ public static class Sx
         // Untracked: the bind below re-reads `each`, so this first build must not make the
         // enclosing computation depend on it.
         using (Signal.UntrackedScope())
-            Update();
+            Update(each());
 
-        host.Bind(scope => scope.Bind(each, _ => Update()));
+        host.Bind(scope => scope.Bind(each, Update));
         host.Own(scope);
 
         host.Disposing += () =>
@@ -496,7 +492,7 @@ public static class Sx
         var owner = new RenderScope();
         var mounted = false;
         var currentKey = default(TKey)!;
-        var currentScope = new RenderScope?[] { null };
+        RenderScope? currentScope = null;
 
         void Update()
         {
@@ -510,11 +506,11 @@ public static class Sx
                         ?? throw new InvalidOperationException($"No branch for {nextKey}.");
             }
 
-            currentScope[0]?.Dispose();
+            currentScope?.Dispose();
             Clear(host);
 
             var scope = new RenderScope();
-            currentScope[0] = scope;
+            currentScope = scope;
             currentKey = nextKey;
             mounted = true;
 
@@ -529,7 +525,7 @@ public static class Sx
 
         host.Bind(b => b.Bind(() => key.Value, _ => Update()));
         host.Own(owner);
-        host.Disposing += () => currentScope[0]?.Dispose();
+        host.Disposing += () => currentScope?.Dispose();
         return host;
     }
 
@@ -557,7 +553,7 @@ public static class Sx
             component.Bind(b => b.Bind(name, value => component.Name = value));
     }
 
-    /// <summary>Runs a component method, mounting anything it creates under its own scope.</summary>
+    /// <summary>Requires a component or slot to return a single node.</summary>
     private static Node Materialize(object? value)
         => value switch
         {
@@ -566,38 +562,34 @@ public static class Sx
             _ => throw new InvalidOperationException($"A component returned {value.GetType().Name}, not a Node.")
         };
 
-    /// <summary>
-    /// A nested collection is flattened, so a helper that builds a list of rows can be passed
-    /// as one child. Without this it fell into the throw below - and an exception inside a
-    /// component's effect is swallowed by the signal machinery, so the whole subtree silently
-    /// failed to mount instead of reporting anything.
-    /// </summary>
+    /// <summary>Adds children, recursively flattening nested collections.</summary>
     internal static void AddChildren(Component parent, object?[] children)
     {
         foreach (var child in children)
+            AddChild(parent, child);
+    }
+
+    private static void AddChild(Component parent, object? child)
+    {
+        switch (child)
         {
-            switch (child)
-            {
-                case null:
-                    continue;
-                case Node node:
-                    parent.AddChild(node);
-                    break;
-                case string text:
-                    parent.AddChild(new TextNode { Text = text });
-                    break;
-                case Func<object?> slot:
-                    parent.AddChild(MountSlot(slot));
-                    break;
-                case System.Collections.IEnumerable items:
-                    var flattened = new List<object?>();
-                    foreach (var item in items)
-                        flattened.Add(item);
-                    AddChildren(parent, [.. flattened]);
-                    break;
-                default:
-                    throw new ArgumentException($"Unsupported child {child.GetType().Name} on {parent.GetType().Name}.");
-            }
+            case null:
+                break;
+            case Node node:
+                parent.AddChild(node);
+                break;
+            case string text:
+                parent.AddChild(new TextNode { Text = text });
+                break;
+            case Func<object?> slot:
+                parent.AddChild(MountSlot(slot));
+                break;
+            case System.Collections.IEnumerable items:
+                foreach (var item in items)
+                    AddChild(parent, item);
+                break;
+            default:
+                throw new ArgumentException($"Unsupported child {child.GetType().Name} on {parent.GetType().Name}.");
         }
     }
 
@@ -608,8 +600,8 @@ public static class Sx
     {
         var anchor = FlowHost();
         var scope = new RenderScope();
-        var current = new Node?[] { null };
-        var slotScope = new RenderScope?[] { null };
+        Node? current = null;
+        RenderScope? slotScope = null;
 
         // The slot runs inside the bind's own run, so the content it builds is the content
         // that gets mounted: running it eagerly as well would build (and tear down) the
@@ -629,22 +621,23 @@ public static class Sx
             }
 
             var node = Materialize(built.Content);
-            if (ReferenceEquals(current[0], node))
+            if (ReferenceEquals(current, node))
             {
                 built.Scope.Dispose();
                 return;
             }
 
-            slotScope[0]?.Dispose();
-            slotScope[0] = built.Scope;
-            current[0] = node;
+            slotScope?.Dispose();
+            scope.Adopt(built.Scope);
+            slotScope = built.Scope;
+            current = node;
             Clear(anchor);
             anchor.AddChild(node);
         }
 
         anchor.Bind(b => b.Bind(Build, Mount));
         anchor.Own(scope);
-        anchor.Disposing += () => slotScope[0]?.Dispose();
+        anchor.Disposing += () => slotScope?.Dispose();
         return anchor;
     }
 
@@ -653,10 +646,4 @@ public static class Sx
         while (parent.VisualChildren.Count > 0)
             parent.RemoveAt(0);
     }
-}
-
-file static class Scope
-{
-    /// <summary>Runs <paramref name="build"/> with <paramref name="scope"/> as the current mount scope.</summary>
-    public static T Root<T>(RenderScope scope, Func<T> build) => Renderer.RunInScope(scope, build);
 }

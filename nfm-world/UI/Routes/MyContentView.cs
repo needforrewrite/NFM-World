@@ -360,41 +360,16 @@ public static class MyContentView
         string name,
         ButtonVariant variant = ButtonVariant.Default
     )
-    {
-        var focused = new Signal<bool>(false);
-        var hovered = new Signal<bool>(false);
-        var node = Button.Create(
-            label: label,
-            onPress: onPress,
-            variant: variant,
+        => MenuButton.Create(
+            label,
+            onPress,
+            variant,
             size: ButtonSize.Sm,
             disabled: UiState.MyContent.Busy.Value,
             name: () => name,
-            style: () => Sx.Styles(
-                backgroundColor: focused.Value || hovered.Value ? Theme.MenuHighlight : Theme.MenuFill,
-                borderColor: focused.Value || hovered.Value ? new Color(205, 227, 255) : Theme.MenuBorder,
-                opacity: UiState.MyContent.Busy.Value ? 0.5f : 1
-            ),
-            textStyle: () => Sx.TextStyles(
-                fontSize: 13,
-                fontFamily: FontFamily.NotoSans,
-                fontStyle: FontStyle.Plain,
-                foregroundColor: focused.Value || hovered.Value ? new Color(235, 244, 255) : MenuBlue
-            )
+            style: () => Sx.Styles(opacity: UiState.MyContent.Busy.Value ? 0.5f : 1),
+            textStyle: () => Sx.TextStyles(fontSize: 13)
         );
-        node.MouseEntered += _ => hovered.Value = true;
-        node.MouseLeft += _ => hovered.Value = false;
-        return KeyboardNavigation.Bind(
-            node,
-            key =>
-            {
-                if (key is not (Key.Enter or Key.Space)) return false;
-                onPress();
-                return true;
-            },
-            value => focused.Value = value
-        );
-    }
 
     private static string FormatSize(long bytes)
         => bytes switch

@@ -191,6 +191,12 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 
 - **Where**: `NFMWorld.UI/Sx/` — `Sx.cs` (component API), `Renderer.cs` (mount), `RenderScope.cs` (ownership),
   `Styled.cs` (named styles), `UiScheduler.cs` (frame batching).
+- **Shared game components**: `nfm-world/UI/Components/` owns styled controls; keep document/controller behavior in
+  the caller. `MenuButton` supplies menu colours and keyboard focus; `MenuTab` supplies underlined tabs. Garage
+  tabs use `keyboardNavigation: false` because their controller owns navigation, with `highlighted` for its cursor.
+  `EditorControls` and `EditorPalette` share editor buttons, document tabs, fields, sections and lazy modal shells.
+  Pass live accessors (`Sx.TextInput` also accepts `textStyle`) and construct dialog content in its factory;
+  never reuse nodes from a disposed branch.
 - **`Sx.View(style: () => Sx.Styles(...), children)`** — `style` and `text` parameters are `Func<>` accessors, and a
   child that is a `Func` is a **reactive slot** installed as its own effect. A component method runs **once**.
 - **Flow**: `Sx.Show(when, then, otherwise)` (one branch exists), `Sx.For(each, row)` (keyed by value identity, no
@@ -199,8 +205,7 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
   layout pass) as their anchor.
 - **Styles**: `Sx.Styles(...)` builds a `Styles`; every field is nullable and `Styles.Over` leaves unset fields alone.
   Named/reusable styles are `Styled.StyleView(baseStyle: ..., hoverStyle: ...)` (`NFMWorld.UI/Sx/Styled.cs`), which
-  wires hover as a local signal so hovering restyles that node only — see `MainMenuView.ItemRow`. (The XML doc in
-  `Styled.cs` still shows an older `Sx.Styled(Sx.View, ...)` call shape; the real API is `Styled.StyleView`.)
+  wires hover as a local signal so hovering restyles that node only — see `MainMenuView.ItemRow`.
 - **Scheduler**: `UiScheduler.Instance` (installed on first `UiRenderer` construction) replaces
   `Effect.DefaultScheduler`, so every write made during a frame coalesces into **one effect pass** at end of frame.
   Nothing in the UI fires timers itself.
@@ -220,7 +225,7 @@ SolidJS-style: signals, per-slot effects, **no vnode and no diffing**. Backed by
 | Components run once | There is no re-render. Anything that must change feedbacks through a signal read inside a slot. |
 | Flow hosts | `Show`/`For`/`Switch`/slots insert into a `Display.Contents` host, which Yoga flattens out of layout. Don't give a flow host padding/background and expect it to apply. |
 | `For` keys by value | Rows are keyed by item equality and built **once**; moving them only reorders nodes. So a row remounts whenever `each` yields a new item value (a freshly built record or string does), and the `index` passed to the row is the one it was created with — read position from a signal inside the row, not from that argument. |
-| Scopes own effects | Content mounted by a flow helper lives in its own `RenderScope`; disposing that scope tears down everything created inside it. Reusing a node across mounts without adopting a new scope leaves its effects dead. |
+| Scopes own effects | Content mounted by a flow helper lives in its own `RenderScope`, adopted by the flow owner so root teardown releases it too. Disposed child scopes detach from their owner. Reusing a node across mounts without adopting a new scope leaves its effects dead. |
 | A bind's first run is untracked | `RenderScope.Bind` computes the initial value inside `Signal.UntrackedScope()` and only then installs the effect, and `Show`/`For`/`Switch` mount their first branch the same way. Running it eagerly under the caller's computation subscribed that enclosing effect to every signal the child read, so one child's hover re-ran the parent slot and rebuilt its whole subtree — which is what made the create dialog reload its gamemode plugin on hover. |
 | Style structs are nullable | `Styles` fields are `T?` on purpose (merge semantics). Setting a field to its CLR default is not the same as leaving it null. |
 | Rows in a scroll container | Yoga's web default `flexShrink: 1` squeezes list rows to their padding, so a long list shows crushed rows (or one solid block) instead of scrolling. List rows need `flexShrink: 0` — the main-menu items and `LobbyView.Row` set it. |

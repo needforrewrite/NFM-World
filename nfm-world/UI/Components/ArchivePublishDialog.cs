@@ -113,7 +113,14 @@ internal sealed class ArchivePublishDialog
                     style: () => Sx.Styles(flexShrink: 0, justifyContent: Justify.FlexEnd, gapColumn: 8),
                     children:
                     [
-                        Button.Create(() => "CLOSE", Close, ButtonVariant.Ghost, size: ButtonSize.Sm, consumeGesture: true),
+                        Button.Create(
+                            () => "CLOSE",
+                            Close,
+                            ButtonVariant.Ghost,
+                            size: ButtonSize.Sm,
+                            name: () => "Archive publishing close",
+                            consumeGesture: true
+                        ),
                         ..(document.Export is null ? Array.Empty<Node>() :
                             [Button.Create(() => "EXPORT PACK", () => Export(document), size: ButtonSize.Sm)]),
                         Sx.Show(

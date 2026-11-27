@@ -149,7 +149,7 @@ public partial class StageEditorPhase
                 ),
                 76
             ),
-            SmallButton("START TEST DRIVE", LaunchTestDrive),
+            EditorControls.ActionButton("START TEST DRIVE", LaunchTestDrive),
             EditorText(
                 style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(255, 255, 255, 110)),
                 layout: () => Sx.Styles(width: 340, flexShrink: 0),

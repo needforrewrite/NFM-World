@@ -63,54 +63,6 @@ public static class ReplayBrowserView
         }
     }
 
-    private static class Button
-    {
-        public static View Create(
-            Func<string?> label,
-            Action onPress,
-            ButtonVariant variant = ButtonVariant.Default,
-            Func<bool>? active = null,
-            ButtonSize size = ButtonSize.Md,
-            bool disabled = false,
-            Func<string?>? name = null
-        )
-        {
-            var focused = new Signal<bool>(false);
-            var hovered = new Signal<bool>(false);
-            var node = NFMWorld.UI.Components.Button.Create(
-                label,
-                onPress,
-                variant,
-                active,
-                size,
-                disabled: disabled,
-                name: name,
-                style: () => Sx.Styles(
-                    backgroundColor: focused.Value || hovered.Value || active?.Invoke() == true ? Theme.MenuHighlight : Theme.MenuFill,
-                    borderColor: focused.Value || hovered.Value ? new Color(205, 227, 255)
-                        : variant == ButtonVariant.Danger ? Theme.DangerBorder : Theme.MenuBorder,
-                    opacity: disabled ? 0.5f : 1
-                ),
-                textStyle: () => Sx.TextStyles(
-                    fontSize: 15,
-                    fontFamily: FontFamily.NotoSans,
-                    fontStyle: FontStyle.Plain,
-                    foregroundColor: focused.Value || hovered.Value ? new Color(235, 244, 255) : Theme.MenuBlue
-                )
-            );
-            node.MouseEntered += _ => hovered.Value = !disabled;
-            node.MouseLeft += _ => hovered.Value = false;
-            if (disabled) return node;
-            return KeyboardNavigation.Bind(node, key =>
-                {
-                    if (key is not (Key.Enter or Key.Space)) return false;
-                    onPress();
-                    return true;
-                }, value => focused.Value = value
-            );
-        }
-    }
-
     public sealed record Actions(
         Action<string> Open,
         Action<string> Upload,
@@ -202,7 +154,7 @@ public static class ReplayBrowserView
                     foregroundColor: Theme.MenuBlue
                 ), text: () => "REPLAYS"
                 ),
-                Button.Create(
+                MenuButton.Create(
                     label: () => "BACK",
                     onPress: actions.Back,
                     variant: ButtonVariant.Ghost,
@@ -224,14 +176,14 @@ public static class ReplayBrowserView
             ),
             children:
             [
-                Button.Create(
+                MenuButton.Create(
                     label: () => "LOCAL",
                     onPress: () => actions.SourceSelected(false),
                     active: () => !state.Online.Value,
                     size: ButtonSize.Sm,
                     name: () => "Replay source local"
                 ),
-                Button.Create(
+                MenuButton.Create(
                     label: () => "ONLINE",
                     onPress: () => actions.SourceSelected(true),
                     active: () => state.Online.Value,
@@ -240,7 +192,7 @@ public static class ReplayBrowserView
                 ),
                 Sx.Show(
                     when: () => !state.Online.Value && state.Entries.Value.Any(entry => entry.Uploadable),
-                    then: () => Button.Create(
+                    then: () => MenuButton.Create(
                         label: () => $"UPLOAD ALL ({state.Entries.Value.Count(entry => entry.Uploadable)})",
                         onPress: actions.UploadAll,
                         variant: ButtonVariant.Ghost,
@@ -469,14 +421,14 @@ public static class ReplayBrowserView
                     [
                         Sx.Show(
                             when: () => state.Selected is { Compatible: true } && !state.Busy.Value,
-                            then: () => Button.Create(
+                            then: () => MenuButton.Create(
                                 label: () => "PLAY REPLAY",
                                 onPress: () => { if (state.Selected is { } entry) actions.Open(entry.Id); },
                                 variant: ButtonVariant.Primary,
                                 size: ButtonSize.Sm,
                                 name: () => "Replay play"
                             ),
-                            otherwise: () => Button.Create(
+                            otherwise: () => MenuButton.Create(
                                 label: () => state.Busy.Value ? "PLEASE WAIT..." : "PLAY REPLAY",
                                 onPress: () => { },
                                 disabled: true,
@@ -486,7 +438,7 @@ public static class ReplayBrowserView
                         Sx.Show(
                             when: () => !state.Online.Value && state.Selected is { Compatible: true, Uploadable: true }
                                         && !state.Busy.Value,
-                            then: () => Button.Create(
+                            then: () => MenuButton.Create(
                                 label: () => "UPLOAD REPLAY",
                                 onPress: () => { if (state.Selected is { } entry) actions.Upload(entry.Id); },
                                 size: ButtonSize.Sm,
@@ -496,7 +448,7 @@ public static class ReplayBrowserView
                         Sx.Show(
                             when: () => !state.Online.Value && state.Selected is { Deletable: true }
                                         && !state.Busy.Value && actions.Delete is not null,
-                            then: () => Button.Create(
+                            then: () => MenuButton.Create(
                                 label: () => "DELETE REPLAY",
                                 onPress: () => state.DeleteCandidate.Value = state.Selected,
                                 variant: ButtonVariant.Danger,
@@ -597,7 +549,7 @@ public static class ReplayBrowserView
                         children:
                         [
                             KeyboardNavigation.Bind(
-                                Button.Create(
+                                MenuButton.Create(
                                     label: () => "CANCEL",
                                     onPress: Cancel,
                                     size: ButtonSize.Sm,
@@ -613,7 +565,7 @@ public static class ReplayBrowserView
                                 preferred: () => true
                             ),
                             KeyboardNavigation.Bind(
-                                Button.Create(
+                                MenuButton.Create(
                                     label: () => "DELETE REPLAY",
                                     onPress: () =>
                                     {
@@ -663,7 +615,7 @@ public static class ReplayBrowserView
                 ),
                 Sx.Show(
                     when: () => state.HasMore.Value,
-                    then: () => Button.Create(
+                    then: () => MenuButton.Create(
                         label: () => state.Busy.Value ? "LOADING..." : "MORE",
                         onPress: actions.LoadMore,
                         size: ButtonSize.Sm,

@@ -586,71 +586,33 @@ public static class SettingsView
             ),
             children:
             [
-                TabButton("Keyboard", () => tab.Value == Tab.Keyboard, () => selectTab(Tab.Keyboard), "Settings tab Keyboard"),
-                TabButton("Video", () => tab.Value == Tab.Video, () => selectTab(Tab.Video), "Settings tab Video"),
-                TabButton("Audio", () => tab.Value == Tab.Audio, () => selectTab(Tab.Audio), "Settings tab Audio"),
-                TabButton("Game", () => tab.Value == Tab.Game, () => selectTab(Tab.Game), "Settings tab Game")
+                MenuTab.Create(
+                    () => "Keyboard",
+                    () => tab.Value == Tab.Keyboard,
+                    () => selectTab(Tab.Keyboard),
+                    name: () => "Settings tab Keyboard"
+                ),
+                MenuTab.Create(
+                    () => "Video",
+                    () => tab.Value == Tab.Video,
+                    () => selectTab(Tab.Video),
+                    name: () => "Settings tab Video"
+                ),
+                MenuTab.Create(
+                    () => "Audio",
+                    () => tab.Value == Tab.Audio,
+                    () => selectTab(Tab.Audio),
+                    name: () => "Settings tab Audio"
+                ),
+                MenuTab.Create(
+                    () => "Game",
+                    () => tab.Value == Tab.Game,
+                    () => selectTab(Tab.Game),
+                    name: () => "Settings tab Game"
+                )
             ]
         )
     );
-
-    private static Node TabButton(string label, Func<bool> isActive, Action onPress, string name)
-    {
-        var hovered = new Signal<bool>(false);
-        var focused = new Signal<bool>(false);
-        var node = Sx.View(
-            name: () => name,
-            style: () => Sx.Styles(
-                position: Position.Relative,
-                paddingTop: 14,
-                paddingBottom: 14,
-                paddingLeft: 24,
-                paddingRight: 24,
-                minWidth: 110,
-                alignItems: Align.Center,
-                justifyContent: Justify.Center,
-                backgroundColor: isActive() ? new Color(22, 42, 80, 220)
-                : hovered.Value || focused.Value ? new Color(22, 42, 80, 130) : Theme.Transparent
-            ),
-            onmouseenter: _ => hovered.Value = true,
-            onmouseleave: _ => hovered.Value = false,
-            onmousedown: _ => onPress(),
-            children:
-            [
-                Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 14,
-                        fontStyle: FontStyle.Bold,
-                        foregroundColor: isActive() ? new Color(205, 227, 255)
-                        : hovered.Value ? TextBlue : new Color(130, 155, 195)
-                    ),
-                    text: () => label
-                ),
-                Sx.View(
-                    style: () => Sx.Styles(
-                        position: Position.Absolute,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: 3,
-                        backgroundColor: focused.Value ? new Color(230, 240, 255) : isActive() ? Blue : Theme.Transparent,
-                        pointerEvents: false
-                    )
-                )
-            ]
-        );
-        return KeyboardNavigation.Bind(
-            node,
-            key =>
-            {
-                if (key is not (Key.Enter or Key.Space)) return false;
-                onPress();
-                return true;
-            },
-            value => focused.Value = value,
-            isActive
-        );
-    }
 
     private static Node SettingsButton(
         string label,

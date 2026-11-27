@@ -10,6 +10,8 @@ using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 using SignalsDotnet;
+using static NFMWorld.UI.Components.EditorPalette;
+using static NFMWorld.UI.Components.EditorControls;
 
 namespace NFMWorld.UI.Routes;
 
@@ -128,12 +130,6 @@ public sealed class ModelEditorView
 
     private sealed record ErrorRequest(string Title, string Message);
 
-    private static readonly Color Blue = new(128, 170, 255);
-    private static readonly Color TextBlue = new(185, 211, 255);
-    private static readonly Color Panel = new(12, 22, 42, 245);
-    private static readonly Color PanelSoft = new(22, 42, 80, 220);
-    private static readonly Color Border = new(128, 170, 255, 100);
-    private static readonly Color Bar = new(8, 16, 32, 235);
 
     private static readonly Styles BarStyle = new()
     {
@@ -509,25 +505,13 @@ public sealed class ModelEditorView
                 size: ButtonSize.Sm,
                 style: () => Sx.Styles(minWidth: 68, flexShrink: 0)
             ),
-            BarButton("NEW", OpenNewModelDialog, ButtonVariant.Primary),
-            BarButton("OPEN", OpenLoadDialog),
-            BarButton("PUBLISH", PublishActiveModel),
-            BarButton("BACK TO MENU", RequestExit)
+            ToolbarButton("NEW", OpenNewModelDialog, ButtonVariant.Primary, name: "Model editor NEW"),
+            ToolbarButton("OPEN", OpenLoadDialog, name: "Model editor OPEN"),
+            ToolbarButton("PUBLISH", PublishActiveModel, name: "Model editor PUBLISH"),
+            ToolbarButton("BACK TO MENU", RequestExit, name: "Model editor BACK TO MENU")
         ]
     );
 
-    private static View BarButton(string label, Action action, ButtonVariant variant = ButtonVariant.Default)
-    {
-        var button = Button.Create(
-            () => label,
-            action,
-            variant,
-            size: ButtonSize.Sm,
-            style: () => Sx.Styles(minWidth: 70, flexShrink: 0)
-        );
-        button.Name = "Model editor " + label;
-        return button;
-    }
 
     private Node TabStrip() => Sx.View(
         style: () => TabStripStyle,
@@ -545,85 +529,14 @@ public sealed class ModelEditorView
         )
     );
 
-    private Node TabChip(ModelEditorTab tab)
-    {
-        var hovered = new Signal<bool>(false);
-
-        bool Active()
-        {
-            _ = _revision.Value;
-            return _phase.ActiveTab == tab;
-        }
-
-        return Sx.View(
-            style: () => new Styles
-            {
-                Position = Position.Relative,
-                FlexDirection = FlexDirection.Row,
-                AlignItems = Align.Center,
-                GapColumn = 6,
-                GapRow = 6,
-                PaddingLeft = 10,
-                PaddingRight = 6,
-                MaxWidth = 220,
-                MinWidth = 100,
-                FlexShrink = 0,
-                BackgroundColor = Active() ? PanelSoft : hovered.Value ? new Color(22, 42, 80, 110) : Theme.Transparent,
-                BorderTop = 1,
-                BorderLeft = 1,
-                BorderRight = 1,
-                BorderColor = Active() ? Border : Theme.Transparent,
-                BorderTopLeftRadius = 6,
-                BorderTopRightRadius = 6,
-            },
-            onmouseenter: _ => hovered.Value = true,
-            onmouseleave: _ => hovered.Value = false,
-            onmousedown: _ => _phase.SetActiveTab(IndexOfTab(tab)),
-            children:
-            [
-                Sx.View(
-                    style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexGrow: 1, minWidth: 0),
-                    children:
-                    [
-                        Sx.Text(
-                            style: () => Sx.TextStyles(
-                                fontSize: 12,
-                                fontStyle: Active() ? FontStyle.Bold : FontStyle.Plain,
-                                foregroundColor: Active() ? TextBlue : new Color(255, 255, 255, 170)
-                            ),
-                            layout: () => Sx.Styles(flexShrink: 0),
-                            text: () =>
-                            {
-                                _ = _revision.Value;
-                                return tab.GetDisplayName();
-                            }
-                        )
-                    ]
-                ),
-                Sx.View(
-                    style: () => Sx.Styles(
-                        width: 18,
-                        height: 18,
-                        alignItems: Align.Center,
-                        justifyContent: Justify.Center,
-                        borderRadius: 4
-                    ),
-                    onmousedown: e =>
-                    {
-                        e.StopPropagation();
-                        RequestCloseTab(IndexOfTab(tab));
-                    },
-                    children: Sx.Text(
-                        style: () => Sx.TextStyles(
-                            fontSize: 14,
-                            foregroundColor: new Color(255, 255, 255, 150)
-                        ),
-                        text: () => "×"
-                    )
-                )
-            ]
-        );
-    }
+    private Node TabChip(ModelEditorTab tab) => DocumentTab(
+        () => { _ = _revision.Value; return tab.GetDisplayName(); },
+        () => { _ = _revision.Value; return _phase.ActiveTab == tab; },
+        () => _phase.SetActiveTab(IndexOfTab(tab)),
+        () => RequestCloseTab(IndexOfTab(tab)),
+        appearance: EditorTabAppearance.Rounded,
+        keyboardNavigation: false
+    );
 
     private int IndexOfTab(ModelEditorTab tab)
     {
@@ -1114,7 +1027,7 @@ public sealed class ModelEditorView
                     Sx.View(style: () => Sx.Styles(flexGrow: 1)),
                     Sx.View(
                         style: () => Sx.Styles(alignSelf: Align.Center),
-                        children: SmallButton("SAVE MODEL", () => SaveActiveCode(false), minWidth: 78)
+                        children: StepButton("SAVE MODEL", () => SaveActiveCode(false), minWidth: 78)
                     )
                 ]
             ),
@@ -1712,9 +1625,9 @@ public sealed class ModelEditorView
                             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 4, gapRow: 4),
                             children:
                             [
-                                SmallButton("APPLY", ApplyPercentScale),
-                                SmallButton("SCALE ALL", ScaleAllAxes),
-                                SmallButton("RESET", ResetPercentScale)
+                                StepButton("APPLY", ApplyPercentScale),
+                                StepButton("SCALE ALL", ScaleAllAxes),
+                                StepButton("RESET", ResetPercentScale)
                             ]
                         )
                     ]
@@ -1739,8 +1652,8 @@ public sealed class ModelEditorView
                                 DivKindButton("DIV", false),
                                 DivKindButton("IDIV", true),
                                 ScaleNumberField(_scaleDivField),
-                                SmallButton("APPLY", ApplyDivScale),
-                                SmallButton("RESET", ResetDivScale)
+                                StepButton("APPLY", ApplyDivScale),
+                                StepButton("RESET", ResetDivScale)
                             ]
                         ),
                         Sx.Text(
@@ -1800,58 +1713,22 @@ public sealed class ModelEditorView
         );
     }
 
-    private Node ScaleAxisRow(string label, Signal<string> field) => Sx.View(
-        style: () => Sx.Styles(
-            flexDirection: FlexDirection.Row,
-            alignItems: Align.Center,
-            gapColumn: 4,
-            gapRow: 4,
-            height: 20
-        ),
-        children:
+    private Node ScaleAxisRow(string label, Signal<string> field) => FieldRow(
+        () => label,
+        10,
         [
-            Sx.Text(
-                style: () => Sx.TextStyles(fontSize: 10, foregroundColor: TextBlue),
-                layout: () => Sx.Styles(width: 10, flexShrink: 0),
-                text: () => label
-            ),
             ScaleNumberField(field),
-            SmallButton("-", () => StepScale(field, -5)),
-            SmallButton("+", () => StepScale(field, 5))
-        ]
+            StepButton("-", () => StepScale(field, -5)),
+            StepButton("+", () => StepScale(field, 5))
+        ],
+        style: () => Sx.Styles(gapColumn: 4, gapRow: 4, height: 20, flexShrink: 1)
     );
 
     private static Node ScaleNumberField(Signal<string> field, Action? onChanged = null)
-    {
-        var input = Sx.TextInput(
-            style: () => Sx.Styles(
-                width: 50,
-                minWidth: 0,
-                height: 20,
-                minHeight: 0,
-                flexShrink: 0,
-                paddingTop: 1,
-                paddingBottom: 1,
-                paddingLeft: 4,
-                paddingRight: 4,
-                backgroundColor: Theme.Surface,
-                borderTop: 1,
-                borderBottom: 1,
-                borderLeft: 1,
-                borderRight: 1,
-                borderColor: Theme.SurfaceBorder,
-                borderRadius: 4
-            ),
-            text: () => field.Value,
-            onchange: value =>
-            {
-                field.Value = value;
-                onChanged?.Invoke();
-            }
+        => NumberField(
+            () => field.Value,
+            value => { field.Value = value; onChanged?.Invoke(); }
         );
-        input.TextStyles = Sx.TextStyles(fontSize: 10);
-        return input;
-    }
 
     private void StepScale(Signal<string> field, int delta)
     {
@@ -1963,7 +1840,7 @@ public sealed class ModelEditorView
                 style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 4, gapRow: 4),
                 children:
                 [
-                    SmallButton("RESET ALIGN", ResetAlign)
+                    StepButton("RESET ALIGN", ResetAlign)
                 ]
             )
         ]
@@ -1984,9 +1861,9 @@ public sealed class ModelEditorView
                 layout: () => Sx.Styles(width: 10, flexShrink: 0),
                 text: () => label
             ),
-            SmallButton("ROT 90°", () => TransformAlign(axis, 0, rotate: true), minWidth: 64),
-            SmallButton("-10", () => TransformAlign(axis, -10, rotate: false)),
-            SmallButton("+10", () => TransformAlign(axis, 10, rotate: false))
+            StepButton("ROT 90°", () => TransformAlign(axis, 0, rotate: true), minWidth: 64),
+            StepButton("-10", () => TransformAlign(axis, -10, rotate: false)),
+            StepButton("+10", () => TransformAlign(axis, 10, rotate: false))
         ]
     );
 
@@ -2105,20 +1982,6 @@ public sealed class ModelEditorView
         ]
     );
 
-    private static Node SmallButton(string label, Action action, float minWidth = 30) =>
-        Button.Create(
-            () => label,
-            action,
-            size: ButtonSize.Sm,
-            style: () => Sx.Styles(
-                minWidth: minWidth,
-                paddingLeft: 6,
-                paddingRight: 6,
-                paddingTop: 3,
-                paddingBottom: 3,
-                flexShrink: 0
-            )
-        );
 
     private Node TestDriveTab() => Sx.Show(
         when: () =>
@@ -2250,57 +2113,57 @@ public sealed class ModelEditorView
                 ),
                 children:
                 [
-                    StatGroup(
+                    Section(
                         "CAR",
-                        [
-                            StatRow("Class (class)", "class", 80, 150),
-                            StatRow("Name (name)", "name", 80, 150),
-                            StatEngineRow(),
-                            StatRow("Strength (moment)", "moment", 50, 150),
-                            StatRow("Durability (maxmag)", "maxmag", 60, 150),
-                            StatRow("Damage Mult (dammult)", "dammult", 50, 150)
-                        ],
-                        width: 300
+                    [
+                        StatRow("Class (class)", "class", 80, 150),
+                        StatRow("Name (name)", "name", 80, 150),
+                        StatEngineRow(),
+                        StatRow("Strength (moment)", "moment", 50, 150),
+                        StatRow("Durability (maxmag)", "maxmag", 60, 150),
+                        StatRow("Damage Mult (dammult)", "dammult", 50, 150)
+                    ],
+                    width: 300
                     ),
-                    StatGroup(
+                    Section(
                         "PERFORMANCE",
-                        [
-                            StatTripleRow("Speed 1/2/3 (swits)", "switsX", "switsY", "switsZ"),
-                            StatTripleRow("Accel 1/2/3 (acelf)", "acelfX", "acelfY", "acelfZ"),
-                            Sx.Text(
-                                style: () => Sx.TextStyles(
-                                    fontSize: 9,
-                                    foregroundColor: new Color(255, 255, 255, 110)
-                                ),
-                                text: () => "Values are 1st, 2nd and 3rd gear."
-                            )
-                        ]
+                    [
+                        StatTripleRow("Speed 1/2/3 (swits)", "switsX", "switsY", "switsZ"),
+                        StatTripleRow("Accel 1/2/3 (acelf)", "acelfX", "acelfY", "acelfZ"),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 9,
+                                foregroundColor: new Color(255, 255, 255, 110)
+                            ),
+                            text: () => "Values are 1st, 2nd and 3rd gear."
+                        )
+                    ]
                     ),
-                    StatGroup(
+                    Section(
                         "COMBAT",
-                        [
-                            StatRow("Pushes Others (push)", "push", 50, 160),
-                            StatRow("Gets Pushed (revpush)", "revpush", 50, 160),
-                            StatRow("Lifts Others (lift)", "lift", 50, 160),
-                            StatRow("Gets Lifted (revlift)", "revlift", 50, 160)
-                        ]
+                    [
+                        StatRow("Pushes Others (push)", "push", 50, 160),
+                        StatRow("Gets Pushed (revpush)", "revpush", 50, 160),
+                        StatRow("Lifts Others (lift)", "lift", 50, 160),
+                        StatRow("Gets Lifted (revlift)", "revlift", 50, 160)
+                    ]
                     ),
-                    StatGroup(
+                    Section(
                         "STAT BARS (UI)",
-                        [
-                            StatRow("Endurance (outdam)", "outdam", 50, 160),
-                            StatRow("Steering Rating (dishandle)", "dishandle", 50, 160),
-                            Sx.Text(
-                                style: () => Sx.TextStyles(
-                                    fontSize: 9,
-                                    foregroundColor: new Color(255, 255, 255, 110),
-                                    breakType: BreakType.Word,
-                                    overflowBehavior: OverflowBehavior.ContinueVertically
-                                ),
-                                layout: () => Sx.Styles(width: 210),
-                                text: () => "Used by the car-select meters only; no physics effect."
-                            )
-                        ]
+                    [
+                        StatRow("Endurance (outdam)", "outdam", 50, 160),
+                        StatRow("Steering Rating (dishandle)", "dishandle", 50, 160),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 9,
+                                foregroundColor: new Color(255, 255, 255, 110),
+                                breakType: BreakType.Word,
+                                overflowBehavior: OverflowBehavior.ContinueVertically
+                            ),
+                            layout: () => Sx.Styles(width: 210),
+                            text: () => "Used by the car-select meters only; no physics effect."
+                        )
+                    ]
                     ),
                     StatActions()
                 ]
@@ -2334,48 +2197,48 @@ public sealed class ModelEditorView
                 ),
                 children:
                 [
-                    StatGroup(
+                    Section(
                         "HANDLING",
-                        [
-                            StatRow("Handbrake (handb)", "handb", 50, 150),
-                            StatRow("Turn Sens (turn)", "turn", 50, 150),
-                            StatRow("Tire Grip (grip)", "grip", 50, 150),
-                            StatRow("Bouncing (bounce)", "bounce", 50, 150)
-                        ]
+                    [
+                        StatRow("Handbrake (handb)", "handb", 50, 150),
+                        StatRow("Turn Sens (turn)", "turn", 50, 150),
+                        StatRow("Tire Grip (grip)", "grip", 50, 150),
+                        StatRow("Bouncing (bounce)", "bounce", 50, 150)
+                    ]
                     ),
-                    StatGroup(
+                    Section(
                         "AIR & MOTION",
-                        [
-                            StatRow("Aerial Rotation (airs)", "airs", 50, 170),
-                            StatRow("Aerial Control (airc)", "airc", 50, 170),
-                            StatRow("Power Loss (powerloss)", "powerloss", 60, 170),
-                            StatRow("Turn Radius (turnradius)", "turnradius", 60, 170),
-                            StatRow("Dust (simag, visual)", "simag", 50, 170),
-                            StatRow("Roof Height (flipy, visual)", "flipy", 50, 170)
-                        ]
+                    [
+                        StatRow("Aerial Rotation (airs)", "airs", 50, 170),
+                        StatRow("Aerial Control (airc)", "airc", 50, 170),
+                        StatRow("Power Loss (powerloss)", "powerloss", 60, 170),
+                        StatRow("Turn Radius (turnradius)", "turnradius", 60, 170),
+                        StatRow("Dust (simag, visual)", "simag", 50, 170),
+                        StatRow("Roof Height (flipy, visual)", "flipy", 50, 170)
+                    ]
                     ),
-                    StatGroup(
+                    Section(
                         "COLLISION",
-                        [
-                            StatRow("Hitbox Radius (comprad)", "comprad", 50, 170),
-                            StatRow("Collision Radius (clrad)", "clrad", 60, 170),
-                            StatRow("Roof Damage (msquash)", "msquash", 60, 170)
-                        ]
+                    [
+                        StatRow("Hitbox Radius (comprad)", "comprad", 50, 170),
+                        StatRow("Collision Radius (clrad)", "clrad", 60, 170),
+                        StatRow("Roof Damage (msquash)", "msquash", 60, 170)
+                    ]
                     ),
-                    StatGroup(
+                    Section(
                         "SURFACES",
-                        [
-                            StatRow("Road Grip (roadgrip)", "roadgrip", 50, 170),
-                            StatRow("Offroad Grip (offroadgrip)", "offroadgrip", 50, 170),
-                            StatRow("Offtrack Grip (offtrackgrip)", "offtrackgrip", 50, 170),
-                            Sx.Text(
-                                style: () => Sx.TextStyles(
-                                    fontSize: 10,
-                                    foregroundColor: new Color(255, 255, 255, 110)
-                                ),
-                                text: () => "Optional surface-specific grip overrides"
-                            )
-                        ]
+                    [
+                        StatRow("Road Grip (roadgrip)", "roadgrip", 50, 170),
+                        StatRow("Offroad Grip (offroadgrip)", "offroadgrip", 50, 170),
+                        StatRow("Offtrack Grip (offtrackgrip)", "offtrackgrip", 50, 170),
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 10,
+                                foregroundColor: new Color(255, 255, 255, 110)
+                            ),
+                            text: () => "Optional surface-specific grip overrides"
+                        )
+                    ]
                     ),
                     StatActions()
                 ]
@@ -2383,47 +2246,13 @@ public sealed class ModelEditorView
         }
     );
 
-    private static Node StatGroup(string title, IReadOnlyList<Node> rows, float width = 240) => Sx.View(
-        style: () => Sx.Styles(
-            width: width,
-            flexShrink: 0,
-            flexDirection: FlexDirection.Column,
-            gapRow: 2
-        ),
-        children:
-        [
-            Sx.Text(
-                style: () => Sx.TextStyles(
-                    fontSize: 10,
-                    fontStyle: FontStyle.Bold,
-                    foregroundColor: Blue
-                ),
-                text: () => title
-            ),
-            .. rows
-        ]
-    );
 
-    private Node StatRow(string label, string key, float inputWidth, float labelWidth) =>
-        Sx.View(
-            style: () => Sx.Styles(
-                flexDirection: FlexDirection.Row,
-                alignItems: Align.Center,
-                gapColumn: 6,
-                gapRow: 2,
-                height: 17,
-                flexShrink: 0
-            ),
-            children:
-            [
-                Sx.Text(
-                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: TextBlue),
-                    layout: () => Sx.Styles(width: labelWidth, flexShrink: 0),
-                    text: () => label
-                ),
-                StatInput(key, inputWidth)
-            ]
-        );
+    private Node StatRow(string label, string key, float inputWidth, float labelWidth) => FieldRow(
+        () => label,
+        labelWidth,
+        [StatInput(key, inputWidth)],
+        style: () => Sx.Styles(gapRow: 2, height: 17)
+    );
 
     private Node StatEngineRow() => Sx.View(
         style: () => Sx.Styles(
@@ -2466,60 +2295,19 @@ public sealed class ModelEditorView
             : 0;
     }
 
-    private Node StatTripleRow(string label, string key1, string key2, string key3) =>
-        Sx.View(
-            style: () => Sx.Styles(
-                flexDirection: FlexDirection.Row,
-                alignItems: Align.Center,
-                gapColumn: 6,
-                gapRow: 2,
-                height: 17,
-                flexShrink: 0
-            ),
-            children:
-            [
-                Sx.Text(
-                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: TextBlue),
-                    layout: () => Sx.Styles(width: 116, flexShrink: 0),
-                    text: () => label
-                ),
-                StatInput(key1, 34),
-                StatInput(key2, 34),
-                StatInput(key3, 34)
-            ]
-        );
+    private Node StatTripleRow(string label, string key1, string key2, string key3) => FieldRow(
+        () => label,
+        116,
+        [StatInput(key1, 34), StatInput(key2, 34), StatInput(key3, 34)],
+        style: () => Sx.Styles(gapRow: 2, height: 17)
+    );
 
-    private Node StatInput(string key, float width)
-    {
-        var input = Sx.TextInput(
-            style: () => Sx.Styles(
-                width: width,
-                minWidth: 0,
-                height: 16,
-                minHeight: 0,
-                flexShrink: 0,
-                paddingTop: 1,
-                paddingBottom: 1,
-                paddingLeft: 4,
-                paddingRight: 4,
-                backgroundColor: Theme.Surface,
-                borderTop: 1,
-                borderBottom: 1,
-                borderLeft: 1,
-                borderRight: 1,
-                borderColor: Theme.SurfaceBorder,
-                borderRadius: 4
-            ),
-            text: () => _statFields[key].Value,
-            onchange: value =>
-            {
-                _statFields[key].Value = value;
-                ScheduleStatsApply();
-            }
-        );
-        input.TextStyles = Sx.TextStyles(fontSize: 10);
-        return input;
-    }
+    private Node StatInput(string key, float width) => NumberField(
+        () => _statFields[key].Value,
+        value => { _statFields[key].Value = value; ScheduleStatsApply(); },
+        width: width,
+        height: 16
+    );
 
     private Node StatActions() => Sx.View(
         style: () => Sx.Styles(
@@ -2531,9 +2319,9 @@ public sealed class ModelEditorView
         ),
         children:
         [
-            SmallButton("COPY FROM NFMM", () => _copyStatsOpen.Value = true),
-            SmallButton("APPLY", ApplyStatsNow, minWidth: 72),
-            SmallButton("REVERT", RevertStats, minWidth: 72),
+            StepButton("COPY FROM NFMM", () => _copyStatsOpen.Value = true),
+            StepButton("APPLY", ApplyStatsNow, minWidth: 72),
+            StepButton("REVERT", RevertStats, minWidth: 72),
             Sx.Text(
                 style: () => Sx.TextStyles(
                     fontSize: 9,
@@ -2547,39 +2335,16 @@ public sealed class ModelEditorView
         ]
     );
 
-    private Node CopyStatsDialog() => Sx.Show(
-        when: () => _copyStatsOpen.Value,
-        then: () =>
+    private Node CopyStatsDialog() => Modal(
+        () => _copyStatsOpen.Value,
+        () =>
         {
             var cars = BackendGameSparker.cars[Collection.NFMM]
                 .OrderBy(car => car.Stats.Name, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            return Modal(
-                () => _copyStatsOpen.Value = false,
-                Sx.View(
-                    style: () => Sx.Styles(
-                        width: 420,
-                        maxWidth: "94%",
-                        height: "76%",
-                        maxHeight: 640,
-                        flexDirection: FlexDirection.Column,
-                        gapRow: 10,
-                        paddingTop: 18,
-                        paddingBottom: 18,
-                        paddingLeft: 18,
-                        paddingRight: 18,
-                        backgroundColor: Panel,
-                        borderTop: 1,
-                        borderBottom: 1,
-                        borderLeft: 1,
-                        borderRight: 1,
-                        borderColor: Border,
-                        borderRadius: 12
-                    ),
-                    onmousedown: e => e.StopPropagation(),
-                    children:
-                    [
+            return DialogPanel(
+                () => [
                         DialogTitle("COPY NFMM STATS", "Choose a car to replace this model's stats and physics settings."),
                         Sx.View(
                             style: () => Sx.Styles(
@@ -2604,10 +2369,21 @@ public sealed class ModelEditorView
                             variant: ButtonVariant.Ghost,
                             style: () => Sx.Styles(flexShrink: 0, alignSelf: Align.FlexEnd)
                         )
-                    ]
+                ],
+                style: () => Sx.Styles(
+                    width: 420,
+                    maxWidth: "94%",
+                    height: "76%",
+                    maxHeight: 640,
+                    gapRow: 10,
+                    paddingTop: 18,
+                    paddingBottom: 18,
+                    paddingLeft: 18,
+                    paddingRight: 18
                 )
             );
-        }
+        },
+        () => _copyStatsOpen.Value = false
     );
 
     private void CopyStats(CarStats source)
@@ -3098,7 +2874,7 @@ public sealed class ModelEditorView
                         )
                     ),
                     Sx.View(style: () => Sx.Styles(flexGrow: 1)),
-                    SmallButton("APPLY", () => ApplyWheel(index), minWidth: 50)
+                    StepButton("APPLY", () => ApplyWheel(index), minWidth: 50)
                 ]
             ),
             Sx.View(
@@ -3148,7 +2924,7 @@ public sealed class ModelEditorView
                         size: ButtonSize.Sm,
                         style: () => Sx.Styles(flexShrink: 0)
                     ),
-                    SmallButton("FLIP SIDE", () => FlipWheelSide(index), minWidth: 72),
+                    StepButton("FLIP SIDE", () => FlipWheelSide(index), minWidth: 72),
                     Button.Create(
                         () => "MIRROR",
                         () => _mirrorWheelEdit.Value = !_mirrorWheelEdit.Value,
@@ -3485,7 +3261,7 @@ public sealed class ModelEditorView
                         )
                     ),
                     Sx.View(style: () => Sx.Styles(flexGrow: 1)),
-                    SmallButton("APPLY", () => ApplyRims(), minWidth: 50)
+                    StepButton("APPLY", () => ApplyRims(), minWidth: 50)
                 ]
             ),
             new HsbColorPicker(() => new Color3(
@@ -3714,30 +3490,10 @@ public sealed class ModelEditorView
 
     // ── Dialogs ────────────────────────────────────────────────────────
 
-    private Node NewModelDialog() => Sx.Show(
-        when: () => _newModelOpen.Value,
-        then: () => Modal(
-            () => _newModelOpen.Value = false,
-            Sx.View(
-                style: () => Sx.Styles(
-                    width: 470,
-                    flexDirection: FlexDirection.Column,
-                    gapRow: 14,
-                    paddingTop: 22,
-                    paddingBottom: 22,
-                    paddingLeft: 24,
-                    paddingRight: 24,
-                    backgroundColor: Panel,
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderLeft: 1,
-                    borderRight: 1,
-                    borderColor: Border,
-                    borderRadius: 12
-                ),
-                onmousedown: e => e.StopPropagation(),
-                children:
-                [
+    private Node NewModelDialog() => Modal(
+        () => _newModelOpen.Value,
+        () => DialogPanel(
+            () => [
                     DialogTitle("NEW MODEL", "Create a model in data/models/user."),
                     Sx.Text(
                         style: () => Sx.TextStyles(fontSize: 11, foregroundColor: TextBlue),
@@ -3802,7 +3558,8 @@ public sealed class ModelEditorView
                                 () => "CANCEL",
                                 () => _newModelOpen.Value = false,
                                 variant: ButtonVariant.Ghost,
-                                style: () => Sx.Styles(minWidth: 100)
+                                style: () => Sx.Styles(minWidth: 100),
+                                name: () => "Model editor new cancel"
                             ),
                             Button.Create(
                                 () => "CREATE",
@@ -3812,9 +3569,11 @@ public sealed class ModelEditorView
                             )
                         ]
                     )
-                ]
-            )
-        )
+            ],
+            style: () => Sx.Styles(width: 470, paddingTop: 22, paddingBottom: 22, paddingLeft: 24, paddingRight: 24)
+        ),
+        () => _newModelOpen.Value = false,
+        name: () => "Model editor new dialog"
     );
 
     private Node TypeButton(string label, bool car)
@@ -3828,7 +3587,8 @@ public sealed class ModelEditorView
             },
             active: () => _newIsCar.Value == car,
             size: ButtonSize.Sm,
-            style: () => Sx.Styles(minWidth: 100)
+            style: () => Sx.Styles(minWidth: 100),
+            name: () => car ? "Model type Car" : "Model type Scenery"
         );
     }
 
@@ -3851,32 +3611,10 @@ public sealed class ModelEditorView
         _newImport.Value = false;
     }
 
-    private Node LoadModelDialog() => Sx.Show(
-        when: () => _loadOpen.Value,
-        then: () => Modal(
-            () => _loadOpen.Value = false,
-            Sx.View(
-                style: () => Sx.Styles(
-                    width: 640,
-                    height: "76%",
-                    maxHeight: 700,
-                    flexDirection: FlexDirection.Column,
-                    gapRow: 10,
-                    paddingTop: 20,
-                    paddingBottom: 20,
-                    paddingLeft: 22,
-                    paddingRight: 22,
-                    backgroundColor: Panel,
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderLeft: 1,
-                    borderRight: 1,
-                    borderColor: Border,
-                    borderRadius: 12
-                ),
-                onmousedown: e => e.StopPropagation(),
-                children:
-                [
+    private Node LoadModelDialog() => Modal(
+        () => _loadOpen.Value,
+        () => DialogPanel(
+            () => [
                     Sx.View(
                         style: () => Sx.Styles(
                             flexDirection: FlexDirection.Column,
@@ -3986,9 +3724,19 @@ public sealed class ModelEditorView
                             )
                         ]
                     )
-                ]
+            ],
+            style: () => Sx.Styles(
+                width: 640,
+                height: "76%",
+                maxHeight: 700,
+                gapRow: 10,
+                paddingTop: 20,
+                paddingBottom: 20,
+                paddingLeft: 22,
+                paddingRight: 22
             )
-        )
+        ),
+        () => _loadOpen.Value = false
     );
 
     private Node FileSection(string title, string prefix) => Sx.Show(
@@ -4266,187 +4014,86 @@ public sealed class ModelEditorView
         );
     }
 
-    private Node ConfirmDialog() => Sx.Show(
-        when: () => _confirm.Value is not null,
-        then: () => Sx.View(
-            style: () => Sx.Styles(
-                position: Position.Absolute,
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                alignItems: Align.Center,
-                justifyContent: Justify.Center,
-                backgroundColor: new Color(3, 8, 20, 190),
-                zIndex: 40
-            ),
-            onmousedown: _ => _confirm.Value = null,
-            children: Sx.View(
-                style: () => Sx.Styles(
-                    width: 460,
-                    flexDirection: FlexDirection.Column,
-                    gapRow: 14,
-                    paddingTop: 24,
-                    paddingBottom: 24,
-                    paddingLeft: 26,
-                    paddingRight: 26,
-                    backgroundColor: Panel,
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderLeft: 1,
-                    borderRight: 1,
-                    borderColor: Border,
-                    borderRadius: 12
-                ),
-                onmousedown: e => e.StopPropagation(),
-                children:
-                [
-                    Sx.Text(
-                        style: () => Sx.TextStyles(
-                            fontSize: 18,
-                            fontFamily: FontFamily.Adventure,
-                            fontStyle: FontStyle.Bold,
-                            foregroundColor: Blue
-                        ),
-                        text: () => _confirm.Value?.Title ?? ""
-                    ),
-                    Sx.Text(
-                        style: () => Sx.TextStyles(
-                            fontSize: 13,
-                            foregroundColor: TextBlue,
-                            breakType: BreakType.Word,
-                            overflowBehavior: OverflowBehavior.ContinueVertically
-                        ),
-                        layout: () => Sx.Styles(width: "100%"),
-                        text: () => _confirm.Value?.Message ?? ""
-                    ),
-                    Sx.View(
-                        style: () => Sx.Styles(
-                            flexDirection: FlexDirection.Row,
-                            justifyContent: Justify.FlexEnd,
-                            gapColumn: 10,
-                            gapRow: 10
-                        ),
-                        children: Sx.For(
-                            each: () => _confirm.Value?.Actions ?? (IReadOnlyList<ConfirmAction>)[],
-                            row: (action, index) => Button.Create(
-                                () => action.Label,
-                                () =>
-                                {
-                                    _confirm.Value = null;
-                                    action.Run();
-                                },
-                                index == 0 ? ButtonVariant.Primary : ButtonVariant.Default
-                            )
-                        )
-                    )
-                ]
-            )
-        )
-    );
-
-    private Node ErrorDialog() => Sx.Show(
-        when: () => _error.Value is not null,
-        then: () => Sx.View(
-            style: () => Sx.Styles(
-                position: Position.Absolute,
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                alignItems: Align.Center,
-                justifyContent: Justify.Center,
-                backgroundColor: new Color(3, 8, 20, 190),
-                zIndex: 50
-            ),
-            onmousedown: _ => _error.Value = null,
-            children: Sx.View(
-                style: () => Sx.Styles(
-                    width: 500,
-                    flexDirection: FlexDirection.Column,
-                    gapRow: 14,
-                    paddingTop: 24,
-                    paddingBottom: 24,
-                    paddingLeft: 26,
-                    paddingRight: 26,
-                    backgroundColor: Panel,
-                    borderTop: 1,
-                    borderBottom: 1,
-                    borderLeft: 1,
-                    borderRight: 1,
-                    borderColor: new Color(255, 120, 120, 160),
-                    borderRadius: 12
-                ),
-                onmousedown: e => e.StopPropagation(),
-                children:
-                [
-                    Sx.Text(
-                        style: () => Sx.TextStyles(
-                            fontSize: 18,
-                            fontFamily: FontFamily.Adventure,
-                            fontStyle: FontStyle.Bold,
-                            foregroundColor: new Color(255, 140, 140)
-                        ),
-                        text: () => _error.Value?.Title ?? ""
-                    ),
-                    Sx.Text(
-                        style: () => Sx.TextStyles(
-                            fontSize: 13,
-                            foregroundColor: TextBlue,
-                            breakType: BreakType.Word,
-                            overflowBehavior: OverflowBehavior.ContinueVertically
-                        ),
-                        layout: () => Sx.Styles(width: "100%"),
-                        text: () => _error.Value?.Message ?? ""
-                    ),
-                    Sx.View(
-                        style: () => Sx.Styles(flexDirection: FlexDirection.Row, justifyContent: Justify.FlexEnd),
-                        children: Button.Create(
-                            () => "OK",
-                            () => _error.Value = null,
-                            ButtonVariant.Primary,
-                            style: () => Sx.Styles(minWidth: 100)
-                        )
-                    )
-                ]
-            )
-        )
-    );
-
-    private static Node Modal(Action onDismiss, Node child) => Sx.View(
-        style: () => Sx.Styles(
-            position: Position.Absolute,
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            alignItems: Align.Center,
-            justifyContent: Justify.Center,
-            backgroundColor: new Color(3, 8, 20, 175),
-            zIndex: 30
-        ),
-        onmousedown: _ => onDismiss(),
-        children: child
-    );
-
-    private static Node DialogTitle(string title, string subtitle) => Sx.View(
-        style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4),
-        children:
-        [
+    private Node ConfirmDialog() => Modal(
+        () => _confirm.Value is not null,
+        () => DialogPanel(() => [
             Sx.Text(
                 style: () => Sx.TextStyles(
-                    fontSize: 22,
+                    fontSize: 18,
                     fontFamily: FontFamily.Adventure,
                     fontStyle: FontStyle.Bold,
                     foregroundColor: Blue
                 ),
-                text: () => title
+                text: () => _confirm.Value?.Title ?? ""
             ),
             Sx.Text(
-                style: () => Sx.TextStyles(fontSize: 12, foregroundColor: TextBlue),
-                text: () => subtitle
+                style: () => Sx.TextStyles(
+                    fontSize: 13,
+                    foregroundColor: TextBlue,
+                    breakType: BreakType.Word,
+                    overflowBehavior: OverflowBehavior.ContinueVertically
+                ),
+                layout: () => Sx.Styles(width: "100%"),
+                text: () => _confirm.Value?.Message ?? ""
+            ),
+            Sx.View(
+                style: () => Sx.Styles(
+                    flexDirection: FlexDirection.Row,
+                    justifyContent: Justify.FlexEnd,
+                    gapColumn: 10,
+                    gapRow: 10
+                ),
+                children: Sx.For(
+                    each: () => _confirm.Value?.Actions ?? (IReadOnlyList<ConfirmAction>)[],
+                    row: (action, index) => Button.Create(
+                        () => action.Label,
+                        () => { _confirm.Value = null; action.Run(); },
+                        index == 0 ? ButtonVariant.Primary : ButtonVariant.Default
+                    )
+                )
             )
-        ]
+        ]),
+        () => _confirm.Value = null,
+        style: () => Sx.Styles(backgroundColor: new Color(3, 8, 20, 190), zIndex: 40)
+    );
+
+    private Node ErrorDialog() => Modal(
+        () => _error.Value is not null,
+        () => DialogPanel(
+            () => [
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 18,
+                        fontFamily: FontFamily.Adventure,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: new Color(255, 140, 140)
+                    ),
+                    text: () => _error.Value?.Title ?? ""
+                ),
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 13,
+                        foregroundColor: TextBlue,
+                        breakType: BreakType.Word,
+                        overflowBehavior: OverflowBehavior.ContinueVertically
+                    ),
+                    layout: () => Sx.Styles(width: "100%"),
+                    text: () => _error.Value?.Message ?? ""
+                ),
+                Sx.View(
+                    style: () => Sx.Styles(flexDirection: FlexDirection.Row, justifyContent: Justify.FlexEnd),
+                    children: Button.Create(
+                        () => "OK",
+                        () => _error.Value = null,
+                        ButtonVariant.Primary,
+                        style: () => Sx.Styles(minWidth: 100)
+                    )
+                )
+            ],
+            style: () => Sx.Styles(width: 500, borderColor: new Color(255, 120, 120, 160))
+        ),
+        () => _error.Value = null,
+        style: () => Sx.Styles(backgroundColor: new Color(3, 8, 20, 190), zIndex: 50)
     );
 
     private void ShowConfirm(string title, string message, IReadOnlyList<ConfirmAction> actions)

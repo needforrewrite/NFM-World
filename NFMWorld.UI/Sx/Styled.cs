@@ -1,7 +1,4 @@
-﻿using Maxine.Extensions.Mathematics;
-using Microsoft.UI.Reactor.Layout;
-using NFMWorld.ClayDom.Events;
-using NFMWorld.DriverInterface.DriverInterface;
+﻿using NFMWorld.ClayDom.Events;
 using SignalsDotnet;
 
 namespace NFMWorld.Reactor.Sx;
@@ -25,15 +22,14 @@ public struct StyledStyle()
 }
 
 /// <summary>
-/// Named, reusable styles - the equivalent of the Luau <c>styled(Tag){...}</c>.
+/// Named, reusable style factories.
 /// </summary>
 /// <remarks>
 /// Usage:
 /// <code>
-/// private static readonly Func&lt;Func&lt;Styles&gt;?, View&gt; Panel = Sx.Styled(Sx.View, new StyledStyle
-/// {
-///     Base = Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6),
-/// });
+/// private static readonly StyledView Panel = Styled.StyleView(
+///     baseStyle: Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6)
+/// );
 /// ...
 /// Panel(children: ...);
 /// </code>
@@ -42,7 +38,8 @@ public struct StyledStyle()
 /// style effect, so a hover change costs one property write and re-runs nothing else.
 /// </remarks>
 /// <summary>A styled <see cref="View"/> factory.</summary>
-public delegate View StyledView(
+public delegate View
+    StyledView(
     Func<Styles>? style = null,
     string? name = null,
     Action<MouseEvent>? onmousedown = null,
@@ -76,14 +73,14 @@ public static class Styled
 
         return (style, name, onmousedown, children) =>
         {
-            var hovered = new Signal<bool>(false);
+            var hovered = definition.Hover is null ? null : new Signal<bool>(false);
 
             return Sx.View(
-                style: () => Merge(definition, style?.Invoke(), hovered.Value),
+                style: () => Merge(definition, style?.Invoke(), hovered?.Value ?? false),
                 name: () => name,
                 onmousedown: onmousedown,
-                onmouseenter: definition.Hover is null ? null : _ => hovered.Value = true,
-                onmouseleave: definition.Hover is null ? null : _ => hovered.Value = false,
+                onmouseenter: hovered is null ? null : _ => hovered.Value = true,
+                onmouseleave: hovered is null ? null : _ => hovered.Value = false,
                 children: children
             );
         };
@@ -107,10 +104,8 @@ public static class Styled
 
         return (style, text, children) =>
         {
-            var hovered = new Signal<bool>(false);
-
             return Sx.Text(
-                style: () => MergeText(definition, style?.Invoke(), hovered.Value),
+                style: () => MergeText(definition, style?.Invoke(), hovered: false),
                 text: text,
                 children: children
             );

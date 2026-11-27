@@ -433,60 +433,20 @@ public static partial class GarageView
         );
 
     private static View CategoryTab(string category, Actions actions)
-    {
-        var active = () => UiState.Garage.Category.Value == category;
-        var hovered = new Signal<bool>(false);
-
-        return Sx.View(
-            name: () => "Garage category " + category,
-            style: () => Sx.Styles(
-                position: Position.Relative,
-                paddingLeft: 24,
-                paddingRight: 24,
-                paddingTop: 14,
-                paddingBottom: 14,
-                minWidth: 110,
-                alignItems: Align.Center,
-                justifyContent: Justify.Center,
-                backgroundColor: active()
-                    ? new Color(22, 42, 80, 220)
-                    : hovered.Value ? new Color(22, 42, 80, 130) : Theme.Transparent,
-                flexShrink: 0
-            ),
-            onmousedown: _ =>
+        => MenuTab.Create(
+            () => category,
+            () => UiState.Garage.Category.Value == category,
+            () =>
             {
                 NavigatingCategories.Value = false;
                 actions.CategorySelected(category);
             },
-            onmouseenter: _ => hovered.Value = true,
-            onmouseleave: _ => hovered.Value = false,
-            children:
-            [
-                Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 14,
-                        fontFamily: FontFamily.NotoSans,
-                        fontStyle: FontStyle.Bold,
-                        foregroundColor: active() ? new Color(205, 227, 255)
-                            : hovered.Value ? new Color(185, 211, 255) : new Color(130, 155, 195)
-                    ),
-                    text: () => category
-                ),
-                Sx.View(
-                    style: () => Sx.Styles(
-                        position: Position.Absolute,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: 3,
-                        backgroundColor: active() && NavigatingCategories.Value ? new Color(230, 240, 255)
-                            : active() ? MenuBlue : Theme.Transparent,
-                        pointerEvents: false
-                    )
-                )
-            ]
+            name: () => "Garage category " + category,
+            highlighted: () => UiState.Garage.Category.Value == category && NavigatingCategories.Value,
+            keyboardNavigation: false,
+            style: () => Sx.Styles(flexShrink: 0),
+            textStyle: () => Sx.TextStyles(fontFamily: FontFamily.NotoSans)
         );
-    }
 
     private static Node SearchBox(Actions actions, bool releaseFocus = false, bool compact = false)
     {

@@ -11,8 +11,7 @@ using SignalsDotnet;
 namespace NFMWorld.UI.Components;
 
 /// <summary>
-/// The settings controls. Ports of <c>data/uis/components/{checkbox,dropdown,slider,
-/// toggleswitch,radio,textfield}.luau</c>.
+/// Shared checkbox, slider, dropdown and text-field components.
 /// </summary>
 public static class Controls
 {

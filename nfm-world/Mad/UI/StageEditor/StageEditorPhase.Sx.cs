@@ -16,6 +16,8 @@ using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 using SignalsDotnet;
+using static NFMWorld.UI.Components.EditorPalette;
+using static NFMWorld.UI.Components.EditorControls;
 
 namespace NFMWorld.UI;
 
@@ -33,10 +35,6 @@ public partial class StageEditorPhase
     private const float PartTileSize = 64;
     private const float PartPreviewWidth = 54;
     private const float PartPreviewHeight = 38;
-    private static readonly Color EditorPanel = new(12, 22, 42, 245);
-    private static readonly Color EditorBar = new(8, 16, 32, 235);
-    private static readonly Color EditorBorder = new(128, 170, 255, 100);
-    private static readonly Color EditorBlue = new(128, 170, 255);
 
     private bool CommandMenuOpen
     {
@@ -118,29 +116,9 @@ public partial class StageEditorPhase
         ]
     );
 
-    private static Node SmallButton(string label, Action action)
-    {
-        var button = Button.Create(
-            label: () => label,
-            onPress: action,
-            size: ButtonSize.Sm,
-            style: CompactStyle(),
-            textStyle: SmallButtonText
-        );
-        button.Name = "Editor action " + label;
-        return button;
-    }
 
-    private Node SmallButton(Func<string> label, Action action)
-        => Button.Create(
-            label: Observe(label),
-            onPress: action,
-            size: ButtonSize.Sm,
-            style: CompactStyle(),
-            textStyle: SmallButtonText
-        );
-
-    private static TextStyles SmallButtonText() => Sx.TextStyles(fontSize: 11, fontStyle: FontStyle.Bold);
+    private Node RevisionButton(Func<string> label, Action action)
+        => CompactButton(Observe(label), action);
 
     private Func<T> Observe<T>(Func<T> read) => () =>
     {
@@ -165,30 +143,13 @@ public partial class StageEditorPhase
         float minWidth = 160,
         Action? onSubmit = null
     )
-    {
-        var input = Sx.TextInput(
-            style: () => Sx.Styles(
-                minWidth: minWidth,
-                paddingTop: 3,
-                paddingBottom: 3,
-                paddingLeft: 8,
-                paddingRight: 8,
-                backgroundColor: new Color(22, 34, 54),
-                borderTop: 1,
-                borderBottom: 1,
-                borderLeft: 1,
-                borderRight: 1,
-                borderColor: new Color(128, 170, 255, 65),
-                borderRadius: 6
-            ),
-            text: Observe(value),
-            onchange: onChange,
-            placeholder: placeholder is null ? null : Observe(placeholder),
-            onsubmit: onSubmit is null ? null : _ => onSubmit()
+        => Field(
+            Observe(value),
+            onChange,
+            placeholder is null ? null : Observe(placeholder),
+            minWidth,
+            onSubmit
         );
-        input.TextStyles = Sx.TextStyles(fontSize: 11);
-        return input;
-    }
 
     private Node EditorCheckbox(Func<bool> value, Action toggle, Func<string?>? label = null)
         => Controls.Checkbox(Observe(value), toggle, label);
@@ -223,9 +184,9 @@ public partial class StageEditorPhase
                 gapColumn: 4,
                 paddingLeft: 12,
                 paddingRight: 12,
-                backgroundColor: EditorBar,
+                backgroundColor: Bar,
                 borderBottom: 1,
-                borderColor: EditorBorder,
+                borderColor: Border,
                 zIndex: 20
             ),
             children:
@@ -235,7 +196,7 @@ public partial class StageEditorPhase
                         fontSize: 11,
                         fontFamily: FontFamily.Adventure,
                         fontStyle: FontStyle.Bold,
-                        foregroundColor: EditorBlue
+                        foregroundColor: Blue
                     ),
                     layout: () => Sx.Styles(marginRight: 16, flexShrink: 0),
                     text: () => "STAGE EDITOR"
@@ -299,25 +260,12 @@ public partial class StageEditorPhase
     }
 
     private Node ModeButton(Func<string> label, Func<bool> active, Action onPress)
-        => Button.Create(
-            label: label,
-            onPress: onPress,
-            active: Observe(active),
-            size: ButtonSize.Sm,
-            style: CompactStyle(),
+        => CompactButton(
+            label,
+            onPress,
+            Observe(active),
             textStyle: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold),
             name: () => "Parts category " + label()
-        );
-
-    private static Func<Styles> CompactStyle(float minWidth = 0)
-        => () => Sx.Styles(
-            flexShrink: 0,
-            minWidth: minWidth,
-            paddingTop: 2,
-            paddingBottom: 2,
-            paddingLeft: 8,
-            paddingRight: 8,
-            borderRadius: 6
         );
 
     private Node MenuOverlay()
@@ -349,7 +297,7 @@ public partial class StageEditorPhase
                         borderBottom: 1,
                         borderLeft: 1,
                         borderRight: 1,
-                        borderColor: EditorBorder,
+                        borderColor: Border,
                         borderRadius: 6
                     ),
                     onmousedown: e => e.StopPropagation(),
@@ -486,71 +434,16 @@ public partial class StageEditorPhase
                     style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexGrow: 1, minWidth: 0, overflow: Overflow.Scroll),
                     children: Sx.For(each: Observe(() => _tabs.ToArray()), row: (tab, _) => TabChip(tab))
                 ),
-                SmallButton("+", OpenNewStage)
+                ActionButton("+", OpenNewStage)
             ]
         ));
 
-    private Node TabChip(StageEditorTab tab)
-    {
-        var hovered = new Signal<bool>(false);
-        var active = Observe(() => ReferenceEquals(ActiveTab, tab));
-        void Select() => SelectTab(_tabs.IndexOf(tab));
-        return KeyboardNavigation.Bind(
-            Sx.View(
-                style: () => Sx.Styles(
-                    position: Position.Relative,
-                    flexDirection: FlexDirection.Row,
-                    alignItems: Align.Center,
-                    justifyContent: Justify.SpaceBetween,
-                    gapColumn: 12,
-                    flexShrink: 0,
-                    minWidth: 140,
-                    maxWidth: 260,
-                    paddingLeft: 14,
-                    paddingRight: 6,
-                    backgroundColor: active() ? new Color(22, 42, 80) : hovered.Value ? new Color(17, 32, 57) : new Color(
-                        0,
-                        0,
-                        0,
-                        0
-                    ),
-                    borderRight: 1,
-                    borderColor: new Color(128, 170, 255, 30)
-                ),
-                onmouseenter: _ => hovered.Value = true,
-                onmouseleave: _ => hovered.Value = false,
-                onmousedown: e => { if (e.Button == MouseButton.Primary) Select(); },
-                children:
-                [
-                    EditorText(
-                        style: () => Sx.TextStyles(
-                            fontSize: 11,
-                            fontStyle: FontStyle.Bold,
-                            foregroundColor: active() ? new Color(205, 227, 255) : new Color(130, 155, 195)
-                        ),
-                        text: () => tab.TabName + (tab.HasUnsavedChanges ? " •" : "")
-                    ),
-                    Button.Create(
-                        label: () => "×",
-                        onPress: () => { CloseTab(_tabs.IndexOf(tab)); Touch(); },
-                        variant: ButtonVariant.Ghost,
-                        size: ButtonSize.Sm
-                    ),
-                    Sx.View(style: () => Sx.Styles(
-                        position: Position.Absolute,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: 3,
-                        backgroundColor: active() ? new Color(91, 163, 255) : new Color(0, 0, 0, 0),
-                        pointerEvents: false
-                    ))
-                ]
-            ),
-            key => { if (key is not (Key.Enter or Key.Space)) return false; Select(); return true; },
-            focused => hovered.Value = focused
-        );
-    }
+    private Node TabChip(StageEditorTab tab) => DocumentTab(
+        Observe(() => tab.TabName + (tab.HasUnsavedChanges ? " •" : "")),
+        Observe(() => ReferenceEquals(ActiveTab, tab)),
+        () => SelectTab(_tabs.IndexOf(tab)),
+        () => { CloseTab(_tabs.IndexOf(tab)); Touch(); }
+    );
 
     private void SelectTab(int index)
     {
@@ -591,9 +484,9 @@ public partial class StageEditorPhase
                 paddingLeft: 8,
                 paddingRight: 8,
                 gapRow: 6,
-                backgroundColor: EditorPanel,
+                backgroundColor: Panel,
                 borderRight: 1,
-                borderColor: EditorBorder
+                borderColor: Border
             ),
             children:
             [
@@ -605,7 +498,7 @@ public partial class StageEditorPhase
                             fontSize: 11,
                             fontStyle: FontStyle.Bold,
                             fontFamily: FontFamily.Adventure,
-                            foregroundColor: EditorBlue
+                            foregroundColor: Blue
                         ), text: () => "Hierarchy"
                         ),
                         EditorField(
@@ -641,10 +534,10 @@ public partial class StageEditorPhase
                 EditorShow(
                     when: () =>
                     {
-                        _uiRevision.Value.ToString();
+                        _ = _uiRevision.Value;
                         return ActiveTab is { } tab && tab.SelectedPieceIds.Count > 0;
                     },
-                    then: () => SmallButton("+ GROUP FROM SELECTION", CreateGroupFromSelection)
+                    then: () => ActionButton("+ GROUP FROM SELECTION", CreateGroupFromSelection)
                 )
             ]
         );
@@ -669,7 +562,7 @@ public partial class StageEditorPhase
 
     private IReadOnlyList<HierarchyRowVm> HierarchyRows()
     {
-        _uiRevision.Value.ToString();
+        _ = _uiRevision.Value;
         if (ActiveTab is not { } tab)
             return [];
 
@@ -743,7 +636,7 @@ public partial class StageEditorPhase
 
     private bool ActiveTabHasPieces()
     {
-        _uiRevision.Value.ToString();
+        _ = _uiRevision.Value;
         return ActiveTab is { } tab && (tab.ScenePieces.Count > 0 || tab.StageWalls.Count > 0);
     }
 
@@ -757,7 +650,7 @@ public partial class StageEditorPhase
         var view = Sx.View(
             style: () =>
             {
-                _uiRevision.Value.ToString();
+                _ = _uiRevision.Value;
                 var selected = IsRowSelected(row);
                 var dropTarget = _hierDropRow == row;
                 return Sx.Styles(
@@ -781,7 +674,7 @@ public partial class StageEditorPhase
                 EditorText(
                     style: () =>
                     {
-                        _uiRevision.Value.ToString();
+                        _ = _uiRevision.Value;
                         return Sx.TextStyles(
                             fontSize: 10,
                             fontStyle: heading ? FontStyle.Bold : FontStyle.Plain,
@@ -848,9 +741,9 @@ public partial class StageEditorPhase
                     () => _autoUpdateWalls,
                     () => { _autoUpdateWalls = !_autoUpdateWalls; Touch(); }
                 ),
-                SmallButton(
+                ActionButton(
                     "AUTO-GENERATE BORDERS",
-                    () =>
+                () =>
                     {
                         if (!HasPlaceableStageGeometry())
                             return;
@@ -1106,7 +999,7 @@ public partial class StageEditorPhase
 
     private IReadOnlyList<MenuRowVm> ContextMenuRows()
     {
-        _uiRevision.Value.ToString();
+        _ = _uiRevision.Value;
         if (_contextRow is not { } row || ActiveTab is not { } tab)
             return [];
 
@@ -1222,7 +1115,7 @@ public partial class StageEditorPhase
             name: () => "Hierarchy context overlay",
             style: () =>
             {
-                _uiRevision.Value.ToString();
+                _ = _uiRevision.Value;
                 return Sx.Styles(
                     position: Position.Absolute,
                     left: 0,
@@ -1262,7 +1155,7 @@ public partial class StageEditorPhase
                         borderBottom: 1,
                         borderLeft: 1,
                         borderRight: 1,
-                        borderColor: EditorBorder,
+                        borderColor: Border,
                         borderRadius: 6,
                         zIndex: 20
                     );
@@ -1316,7 +1209,7 @@ public partial class StageEditorPhase
 
     private string StatusText()
     {
-        _uiRevision.Value.ToString();
+        _ = _uiRevision.Value;
         if (ActiveTab is not { } tab)
             return "";
 
@@ -1344,9 +1237,9 @@ public partial class StageEditorPhase
                 paddingLeft: 10,
                 paddingRight: 10,
                 gapRow: 6,
-                backgroundColor: EditorPanel,
+                backgroundColor: Panel,
                 borderLeft: 1,
-                borderColor: EditorBorder
+                borderColor: Border
             ),
             children:
             [
@@ -1354,7 +1247,7 @@ public partial class StageEditorPhase
                     fontSize: 11,
                     fontStyle: FontStyle.Bold,
                     fontFamily: FontFamily.Adventure,
-                    foregroundColor: EditorBlue
+                    foregroundColor: Blue
                 ), text: () => "Inspector"
                 ),
                 Sx.View(
@@ -1377,13 +1270,13 @@ public partial class StageEditorPhase
 
     private StagePieceInstance? SelectedPiece()
     {
-        _uiRevision.Value.ToString();
+        _ = _uiRevision.Value;
         return ActiveTab is { } tab && tab.ActivePieceId >= 0 ? tab.ScenePieces.GetValueOrDefault(tab.ActivePieceId) : null;
     }
 
     private EditorStageWall? SelectedWall()
     {
-        _uiRevision.Value.ToString();
+        _ = _uiRevision.Value;
         return ActiveTab is { } tab && tab.SelectedWallId >= 0 ? tab.StageWalls.GetValueOrDefault(tab.SelectedWallId) : null;
     }
 
@@ -1418,8 +1311,11 @@ public partial class StageEditorPhase
                     },
                     width: 210
                 ),
-                SmallButton(() => ActiveTab?.SelectedPieceIds.Count > 1 ? "DELETE ALL SELECTED" : "DELETE PIECE", DeleteSelection),
-                SmallButton(() => _isSwapMode ? "CANCEL SWAP" : "SWAP PIECE…", () =>
+                RevisionButton(
+                    () => ActiveTab?.SelectedPieceIds.Count > 1 ? "DELETE ALL SELECTED" : "DELETE PIECE",
+                    DeleteSelection
+                ),
+                RevisionButton(() => _isSwapMode ? "CANCEL SWAP" : "SWAP PIECE…", () =>
                     {
                         _isSwapMode = !_isSwapMode;
                         _pendingPlacementPartIndex = -1;
@@ -1465,7 +1361,7 @@ public partial class StageEditorPhase
                         Touch();
                     }
                 ),
-                SmallButton("DELETE BORDER", () =>
+                ActionButton("DELETE BORDER", () =>
                     {
                         PushUndoSnapshot();
                         ActiveTab!.StageWalls.Remove(wall);
@@ -1486,27 +1382,11 @@ public partial class StageEditorPhase
         var draft = new Signal<string?>(null);
         var coordinate = label is "X" or "Y" or "Z";
         TextInput? input = null;
-        input = Sx.TextInput(
-            style: () => Sx.Styles(
-                flexGrow: 1,
-                minWidth: 0,
-                width: 0,
-                paddingTop: 3,
-                paddingBottom: 3,
-                paddingLeft: 8,
-                paddingRight: 8,
-                backgroundColor: new Color(22, 34, 54),
-                borderRadius: 6,
-                borderTop: 1,
-                borderBottom: 1,
-                borderLeft: 1,
-                borderRight: 1,
-                borderColor: new Color(128, 170, 255, 65)
-            ),
-            text: Observe(() => input is { IsFocused: true } && draft.Value is { } typed
+        input = Field(
+            value: Observe(() => input is { IsFocused: true } && draft.Value is { } typed
                 ? typed
                 : value().ToString("0.##", CultureInfo.InvariantCulture)),
-            onchange: text =>
+            onChange: text =>
             {
                 draft.Value = text;
                 if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || !float
@@ -1514,26 +1394,23 @@ public partial class StageEditorPhase
                     return;
                 set(parsed);
                 Touch();
-            }
+            },
+            minWidth: 0,
+            style: () => Sx.Styles(flexGrow: 1, width: 0)
         );
-        input.TextStyles = Sx.TextStyles(fontSize: 11);
-        return Sx.View(
-            name: () => "Inspector field " + label,
-            style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center, gapColumn: 6, flexShrink: 0),
-            children:
+        return FieldRow(
+            () => label,
+            coordinate ? 22 : 60,
             [
-                EditorText(
-                    style: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 130)),
-                    layout: () => Sx.Styles(width: coordinate ? 22 : 60, flexShrink: 0),
-                    text: () => label
-                ),
                 input,
                 coordinate ? EditorText(
                     style: () => Sx.TextStyles(fontSize: 9, foregroundColor: new Color(255, 255, 255, 110)),
                     layout: () => Sx.Styles(width: 68, flexShrink: 0),
                     text: () => hint ?? ""
                 ) : null
-            ]
+            ],
+            labelStyle: () => Sx.TextStyles(fontSize: 10, foregroundColor: new Color(255, 255, 255, 130)),
+            name: () => "Inspector field " + label
         );
     }
 
@@ -1661,16 +1538,19 @@ public partial class StageEditorPhase
                             }
                         ),
                         EditorShow(
-                            when: () => { _uiRevision.Value.ToString(); return _partsCategory == OnlinePartsCategory; },
-                            then: () => SmallButton("SEARCH", () => SearchOnlineParts(_partsSearch))
+                            when: () => { _ = _uiRevision.Value; return _partsCategory == OnlinePartsCategory; },
+                            then: () => ActionButton("SEARCH", () => SearchOnlineParts(_partsSearch))
                         ),
-                        SmallButton(() => _snapEnabled ? "SNAP ON" : "SNAP OFF", () => { _snapEnabled = !_snapEnabled; Touch(); }),
-                        SmallButton(
+                        RevisionButton(
+                            () => _snapEnabled ? "SNAP ON" : "SNAP OFF",
+                            () => { _snapEnabled = !_snapEnabled; Touch(); }
+                        ),
+                        RevisionButton(
                             () => _gridSnapEnabled ? $"GRID {_gridSnapSize:0}" : "GRID OFF",
                             () => { _gridSnapEnabled = !_gridSnapEnabled; Touch(); }
                         ),
                         EditorShow(
-                            when: () => { _uiRevision.Value.ToString(); return _gridSnapEnabled; },
+                            when: () => { _ = _uiRevision.Value; return _gridSnapEnabled; },
                             then: () => Controls.Dropdown(
                                 options: () => SnapPresets.Select(size => size.ToString("0")).ToArray(),
                                 value: Observe(() => _snapPresetIndex),
@@ -1684,7 +1564,7 @@ public partial class StageEditorPhase
                             )
                         ),
                         EditorShow(
-                            when: () => { _uiRevision.Value.ToString(); return _pendingPlacementPartIndex >= 0; },
+                            when: () => { _ = _uiRevision.Value; return _pendingPlacementPartIndex >= 0; },
                             then: () => Sx.View(
                                 style: () => Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center, gapColumn: 4),
                                 children:
@@ -1693,19 +1573,19 @@ public partial class StageEditorPhase
                                         style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(26, 230, 255)),
                                         text: () => $"Yaw {_pendingPlacementYaw:0}°"
                                     ),
-                                    SmallButton("-45", () =>
+                                    ActionButton("-45", () =>
                                         {
                                             _pendingPlacementYaw = ((_pendingPlacementYaw - 45f) % 360f + 360f) % 360f;
                                             Touch();
                                         }
                                     ),
-                                    SmallButton("+45", () =>
+                                    ActionButton("+45", () =>
                                         {
                                             _pendingPlacementYaw = (_pendingPlacementYaw + 45f) % 360f;
                                             Touch();
                                         }
                                     ),
-                                    SmallButton("RESET", () => { _pendingPlacementYaw = 0f; Touch(); })
+                                    ActionButton("RESET", () => { _pendingPlacementYaw = 0f; Touch(); })
                                 ]
                             )
                         )
@@ -1733,7 +1613,7 @@ public partial class StageEditorPhase
 
     private IReadOnlyList<(int Index, Rad3d Part)> FilteredParts()
     {
-        _uiRevision.Value.ToString();
+        _ = _uiRevision.Value;
         var query = _partsSearch.Trim();
         var result = new List<(int, Rad3d)>();
         for (var i = 0; i < _availableParts.Count; i++)
@@ -1760,16 +1640,16 @@ public partial class StageEditorPhase
     {
         QueuePartPreview(part.Part.FileName, part.Part);
 
-        var active = () => { _uiRevision.Value.ToString(); return _pendingPlacementPartIndex == part.Index; };
+        var active = () => { _ = _uiRevision.Value; return _pendingPlacementPartIndex == part.Index; };
         var swapTarget = () =>
         {
-            _uiRevision.Value.ToString();
+            _ = _uiRevision.Value;
             return _isSwapMode && ActiveTab is { ActivePieceId: >= 0 } tab
                    && tab.ScenePieces.GetValueOrDefault(tab.ActivePieceId)?.Name == part.Part.FileName;
         };
         var preview = () =>
         {
-            _previewRevision.Value.ToString();
+            _ = _previewRevision.Value;
             return _partPreviews.TryGetValue(part.Part.FileName, out var stored) ? stored.Image : null;
         };
 
@@ -1886,7 +1766,7 @@ public partial class StageEditorPhase
                     children: Sx.For(
                         each: () =>
                         {
-                            _uiRevision.Value.ToString();
+                            _ = _uiRevision.Value;
                             return _onlinePartResults;
                         },
                         row: (asset, _) => OnlinePartTile(asset)
@@ -1914,7 +1794,7 @@ public partial class StageEditorPhase
     {
         var downloading = () =>
         {
-            _uiRevision.Value.ToString();
+            _ = _uiRevision.Value;
             return _onlinePartDownloads.Contains(reference);
         };
         return Sx.View(
@@ -2080,7 +1960,7 @@ public partial class StageEditorPhase
                         paddingRight: 8
                     ),
                     children: Sx.For(
-                        each: () => { _uiRevision.Value.ToString(); return _availableStages.ToArray(); },
+                        each: () => { _ = _uiRevision.Value; return _availableStages.ToArray(); },
                         row: (stage, _) => Sx.View(
                             style: Observe(() => Sx.Styles(
                                 flexShrink: 0,
@@ -2239,71 +2119,44 @@ public partial class StageEditorPhase
         );
 
     private Node Dialog(Func<bool> open, string title, Func<Node[]> content)
-        => EditorShow(
-            when: () => { _uiRevision.Value.ToString(); return open(); },
-            then: () => Sx.View(
-                name: () => $"Stage dialog {title}",
-                style: () => Sx.Styles(
-                    position: Position.Absolute,
-                    left: 0,
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: new Color(3, 8, 20, 200),
-                    zIndex: 60,
-                    alignItems: Align.Center,
-                    justifyContent: Justify.Center
-                ),
-                onmousedown: e => e.StopPropagation(),
-                children: Sx.View(
-                    style: () => Sx.Styles(
-                        width: 460,
-                        maxHeight: 90.Percent(),
-                        // Clipped, not scrollable: these are bounded forms, and a scroll container
-                        // here draws a bar even when the content fits (layout rounding).
-                        overflow: Overflow.Hidden,
-                        flexDirection: FlexDirection.Column,
-                        gapRow: 8,
-                        paddingTop: 16,
-                        paddingBottom: 16,
-                        paddingLeft: 18,
-                        paddingRight: 18,
-                        backgroundColor: new Color(12, 22, 42, 250),
-                        borderTop: 1,
-                        borderBottom: 1,
-                        borderLeft: 1,
-                        borderRight: 1,
-                        borderColor: new Color(128, 170, 255, 90),
-                        borderRadius: 10
+        => Modal(
+            Observe(open),
+            () => DialogPanel(
+                () => [
+                    Sx.Text(
+                        style: () => Sx.TextStyles(fontSize: 16, fontStyle: FontStyle.Bold, foregroundColor: Blue),
+                        text: () => title
                     ),
-                    children:
-                    [
-                        EditorText(
-                            style: () => Sx.TextStyles(
-                                fontSize: 16,
-                                fontStyle: FontStyle.Bold,
-                                foregroundColor: new Color(128, 170, 255)
-                            ),
-                            text: () => title
-                        ),
-                        ..content()
-                    ],
-                    onmousedown: e => e.StopPropagation()
+                    .. content()
+                ],
+                style: () => Sx.Styles(
+                    maxHeight: 90.Percent(),
+                    overflow: Overflow.Hidden,
+                    gapRow: 8,
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    paddingLeft: 18,
+                    paddingRight: 18,
+                    backgroundColor: new Color(12, 22, 42, 250),
+                    borderColor: new Color(128, 170, 255, 90),
+                    borderRadius: 10
                 )
-            )
+            ),
+            style: () => Sx.Styles(backgroundColor: new Color(3, 8, 20, 200), zIndex: 60),
+            name: () => $"Stage dialog {title}"
         );
 
     private Node DialogButtons(string confirm, Action onConfirm, Action onCancel)
         => Sx.View(
             style: () => Sx.Styles(flexDirection: FlexDirection.Row, gapColumn: 8),
-            children: [SmallButton(confirm, onConfirm), SmallButton("CANCEL", onCancel)]
+            children: [ActionButton(confirm, onConfirm), ActionButton("CANCEL", onCancel)]
         );
 
     private Node RectSelectionOverlay()
         => Sx.View(
             style: () =>
             {
-                _uiRevision.Value.ToString();
+                _ = _uiRevision.Value;
                 var (minX, minY, maxX, maxY) = RectSelectionBounds();
 
                 // Mouse coordinates are window pixels; style lengths are multiplied by G.Scale.

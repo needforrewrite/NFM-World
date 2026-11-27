@@ -59,9 +59,9 @@ public partial class StageEditorPhase
                 bottom: 0,
                 height: BottomPanelHeight,
                 flexDirection: FlexDirection.Column,
-                backgroundColor: EditorBar,
+                backgroundColor: EditorPalette.Bar,
                 borderTop: 1,
-                borderColor: EditorBorder
+                borderColor: EditorPalette.Border
             ),
             children: [BottomTabBar(), BottomContent()]
         );
@@ -446,9 +446,9 @@ public partial class StageEditorPhase
                             compact: true
                         )
                     ),
-                    SmallButton(() => "IMPORT", ImportMusic),
-                    SmallButton(() => "PREVIEW", PreviewSelectedMusic),
-                    SmallButton(() => "STOP", () => StopMusicPreview())
+                    EditorControls.CompactButton(() => "IMPORT", ImportMusic),
+                    EditorControls.CompactButton(() => "PREVIEW", PreviewSelectedMusic),
+                    EditorControls.CompactButton(() => "STOP", () => StopMusicPreview())
                 ]
             ),
             EditorText(

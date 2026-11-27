@@ -8,7 +8,17 @@
   "steps": [
     { "action": "capture", "capture": "model-editor-closed" },
     { "action": "click", "target": "Model editor PUBLISH", "capture": "model-editor-publish" },
-    { "action": "click", "target": "Publish kind Car", "capture": "model-editor-publish-car" },
-    { "action": "click", "target": "Publish kind StagePiece", "capture": "model-editor-publish-stage" }
+    { "action": "assert-visible", "target": "Archive publishing" },
+    { "action": "click", "target": "Archive publishing close" },
+    { "action": "click", "target": "Model editor PUBLISH", "capture": "model-editor-publish-reopened" },
+    { "action": "assert-visible", "target": "Archive publishing" },
+    { "action": "click", "target": "Archive publishing close" },
+    { "action": "click", "target": "Model editor NEW", "capture": "model-editor-new" },
+    { "action": "click", "target": "Model type Scenery", "capture": "model-editor-new-scenery" },
+    { "action": "click", "target": "Model type Car", "capture": "model-editor-new-car" },
+    { "action": "click", "target": "Model editor new cancel" },
+    { "action": "click", "target": "Model editor NEW", "capture": "model-editor-new-reopened" },
+    { "action": "assert-visible", "target": "Model editor new dialog" },
+    { "action": "click", "target": "Model editor new cancel" }
   ]
 }

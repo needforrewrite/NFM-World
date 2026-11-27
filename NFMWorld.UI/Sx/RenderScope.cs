@@ -6,11 +6,6 @@ namespace NFMWorld.Reactor.Sx;
 /// What a mounted component owns: every effect and disposable a mount created, released
 /// together when the subtree goes away.
 /// </summary>
-/// <remarks>
-/// The Luau renderer needed an isolated root per <c>Switch</c> branch because a disposed
-/// effect could not be detached cleanly. Here disposal is just <see cref="Dispose"/>, so a
-/// scope is enough and branch switching needs no special case.
-/// </remarks>
 public sealed class RenderScope : IDisposable
 {
     private readonly List<IDisposable> _resources = [];
@@ -33,12 +28,7 @@ public sealed class RenderScope : IDisposable
     /// <summary>
     /// Adopts a scope created before its node was mounted, disposing it with this one.
     /// </summary>
-    /// <remarks>
-    /// A child scope is owned rather than merely appended, so that when it is disposed on
-    /// its own - which is what a <c>Show</c>/<c>Switch</c> remount does - it detaches from
-    /// here. Otherwise a subtree toggled repeatedly would leave one dead scope behind in
-    /// this list per toggle.
-    /// </remarks>
+    /// <remarks>Independently disposed children detach so remounts do not accumulate dead scopes.</remarks>
     public void Adopt(RenderScope scope)
     {
         if (ReferenceEquals(scope, this))
@@ -50,6 +40,10 @@ public sealed class RenderScope : IDisposable
             return;
         }
 
+        if (scope._disposed || ReferenceEquals(scope._owner, this))
+            return;
+
+        scope.Detach();
         scope._owner = this;
         _resources.Add(scope);
     }
@@ -62,12 +56,8 @@ public sealed class RenderScope : IDisposable
     /// The comparison against the previous value is what keeps a per-frame push cheap:
     /// a HUD write that does not change a given leaf does not touch that node at all.
     ///
-    /// The first run applies the value; it must not be evaluated eagerly instead, because
-    /// this bind is normally created while an enclosing computation runs (a slot building
-    /// its children). SignalsDotnet attributes every read to the innermost tracking scope,
-    /// so an eager run there subscribes the *enclosing* effect to this node's signals - a
-    /// slot would then re-run, and rebuild its whole subtree, whenever one child's hover
-    /// or value changed. The shield keeps the bind's own first run out of that scope too.
+    /// The effect's initial run is shielded from the enclosing computation, so a child's
+    /// signal reads cannot subscribe a parent slot and cause it to rebuild the subtree.
     /// </remarks>
     public Effect Bind<T>(Func<T> compute, Action<T> apply)
     {
@@ -97,16 +87,15 @@ public sealed class RenderScope : IDisposable
 
         _disposed = true;
 
-        // Reverse order: a parent's effects may read signals a child registered, and
-        // children are mounted after their parent. Iterated by index, not foreach, because
-        // a child scope's Dispose detaches it from this list.
-        for (var i = _resources.Count - 1; i >= 0; i--)
-            _resources[i].Dispose();
+        // Remove each resource before disposal: child scopes or callbacks may detach others.
+        while (_resources.Count > 0)
+        {
+            var index = _resources.Count - 1;
+            var resource = _resources[index];
+            _resources.RemoveAt(index);
+            resource.Dispose();
+        }
 
-        _resources.Clear();
-
-        // Dispose() detaches from the owner, so this is a no-op if the owner is what is
-        // disposing us, and drops us from it if a remount disposed us individually.
         Detach();
     }
 
