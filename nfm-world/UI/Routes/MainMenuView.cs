@@ -45,12 +45,14 @@ public static class MainMenuView
         Action Replays,
         Action Account,
         Action Multiplayer,
-        Action MyContent
+        Action MyContent,
+        Action? CheckForUpdates = null
     );
 
     private static readonly Signal<IReadOnlyList<MenuPage>> PageStack = new([]);
     private static readonly Signal<bool> SettingsOpen = new(false);
     private static readonly Signal<bool> QuitOpen = new(false);
+    public static bool HasBlockingOverlay => SettingsOpen.Value || QuitOpen.Value;
     private static readonly Signal<int> QuitChoice = new(0);
     private static readonly Signal<string> Description = new("Choose your next drive.");
     private static readonly Color MenuBlue = new(128, 170, 255);
@@ -447,6 +449,9 @@ public static class MainMenuView
             new("CREDITS", "View game credits.", () => actions.Unavailable("credits"), enabled: false),
             new("STATS", "View your gameplay statistics.", () => actions.Unavailable("stats"), enabled: false),
             new("REPLAYS", "Browse and watch saved replays.", actions.Replays),
+            .. (actions.CheckForUpdates is { } check
+                ? new[] { new MenuItem("CHECK FOR UPDATES", "Look for a new stable release.", check) }
+                : Array.Empty<MenuItem>()),
             new("BACK", "Return to the previous menu.", PopPage),
         ]
     );

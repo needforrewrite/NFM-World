@@ -38,6 +38,8 @@
             <AssemblyMetadata Include="NfmwBuildConfiguration" Value="$(Configuration)" />
             <AssemblyMetadata Include="NfmwTargetFramework" Value="$(TargetFramework)" />
             <AssemblyMetadata Include="NfmwRuntimeIdentifier" Value="$(NfmwBuildRuntimeIdentifier)" />
+            <AssemblyMetadata Include="NfmwReleaseTag" Value="$(NfmwReleaseTag)"
+                              Condition="'$(MSBuildProjectName)' == 'NFMWorld' and '$(Configuration)' == 'Release' and '$(NfmwReleaseTag)' != ''" />
         </ItemGroup>
     </Target>
 </Project>

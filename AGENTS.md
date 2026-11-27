@@ -863,6 +863,13 @@ reference it) but **no NFMWorld code uses it** — treat any MemoryPack referenc
 - Native libraries live under `NFMWorld.NativeLibs/libs/` and are resolved by the `DllImport` resolver in
   `NFMWorld/WorldGame.cs` — add a new native file there, not next to the consuming code.
 
+## Desktop updates and releases
+
+- Branch builds remain GitHub prereleases. Push an explicit `vMAJOR.MINOR.PATCH` tag on the intended commit to publish stable. Tag in version and ancestry order. The stable job makes the release latest only after verifying all four desktop archives. Use `artifacts_only` on a manual workflow run to build without releasing.
+- Set `DISCORD_RELEASE_WEBHOOK_URL` in repository Actions secrets. Only newly published stable releases announce, with per-platform links and commit subjects since the previous stable release. A failed announcement warns without changing the release; post its notes manually if needed.
+- Install the first stable package in a fresh writable folder. **Extras → Check for updates** is available in stable desktop builds only. The temp NativeAOT helper verifies `nfmworld-install.json` and the GitHub asset's SHA-256, then waits for clean game shutdown before replacing managed files. `data/cfg/`, `data/music/custom/`, `mods/` and unmanaged files are preserved.
+- If an interrupted update blocks startup, keep `.nfmw-update/journal.json` and its `backup/`. With the game closed, restore the backed-up entries, remove only journal paths marked `hadOriginal: false`, then move `.nfmw-update` aside. Alternatively extract the stable archive into a fresh folder and copy user files separately. Logs are under `<LocalApplicationData>/NFMWorld/updates/`.
+
 ## Archive server
 
 In-tree replacement for the Rust `nfmw-archive`. ASP.NET Core minimal APIs plus Razor Pages, EF Core on SQLite,

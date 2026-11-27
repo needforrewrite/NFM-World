@@ -76,6 +76,7 @@
   <Project Path="NFMWorld.Api/NFMWorld.Api.csproj" />
   <Project Path="NFMWorld.ClientOnlyAnalyzer/NFMWorld.ClientOnlyAnalyzer.csproj" />
   <Project Path="NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj" />
+  <Project Path="NFMWorld.Updater/NFMWorld.Updater.csproj" />
   <Project Path="NFMWorld.Audio.FAudio/NFMWorld.Audio.FAudio.csproj" />
   <Project Path="NFMWorld.Audio.FAudio.Smoke/NFMWorld.Audio.FAudio.Smoke.csproj" />
   <Project Path="NFMWorld.DriverInterface/NFMWorld.DriverInterface.csproj" />

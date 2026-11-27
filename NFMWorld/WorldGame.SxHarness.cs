@@ -78,9 +78,8 @@ public partial class WorldGame
             "lobby-match-finished" => new FixturePhase(() => LobbyMatchFixture(3)),
             "main-menu" => new FixturePhase(() => MainMenuFixture(
                 config.TryGetProperty("signedIn", out var signedIn) && signedIn.GetBoolean(),
-                config.TryGetProperty("deletionPending", out var deletionPending)
-                    ? deletionPending.GetString() ?? ""
-                    : ""
+                config.TryGetProperty("deletionPending", out var deletionPending) ? deletionPending.GetString() ?? "" : "",
+                config.TryGetProperty("updateFixture", out var update) && update.GetBoolean()
             )
             ),
             "text-input" => new FixturePhase(TextInputFixture),
@@ -457,7 +456,7 @@ public partial class WorldGame
     /// The real main menu: the page list plus the account chip in the corner. The stage
     /// name stands in for the attract stage the phase would load.
     /// </summary>
-    private static Node MainMenuFixture(bool signedIn, string deletionPending)
+    private static Node MainMenuFixture(bool signedIn, string deletionPending, bool updateFixture)
     {
         var state = UiState.MainMenu;
         state.StageName.Value = "Twisted Magic";
@@ -470,6 +469,14 @@ public partial class WorldGame
             AccountView.Show();
 
         var logo = TheGraphics.G.LoadImage("data/images/logo.svg");
+        var messages = new MessageWindow();
+
+        void OfferUpdate() => messages.ShowYesNo("Update available", "Download NFM World v1.10.0?", result =>
+            {
+                if (result == MessageWindow.MessageResult.Yes)
+                    messages.ShowProgress("Downloading update", () => "Downloading… 42%", () => { });
+            }
+        );
 
         return Sx.View(
             style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
@@ -487,7 +494,8 @@ public partial class WorldGame
                         Replays: static () => { },
                         Account: AccountView.Show,
                         Multiplayer: static () => { },
-                        MyContent: static () => { }
+                        MyContent: static () => { },
+                        CheckForUpdates: updateFixture ? OfferUpdate : null
                     ),
                     new NFMWorld.DriverInterface.UI.Image
                     {
@@ -511,7 +519,8 @@ public partial class WorldGame
                     () => state.PlayerName.Value,
                     () => deletionPending
                 ),
-                NFMWorld.UI.Routes.MainMenuView.SettingsOverlay()
+                NFMWorld.UI.Routes.MainMenuView.SettingsOverlay(),
+                messages.BuildUi()
             ]
         );
     }

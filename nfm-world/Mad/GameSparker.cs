@@ -178,6 +178,8 @@ public static partial class GameSparker
     public static bool UseRemasteredMusic = false;
 
     public static MessageWindow MessageWindow = new();
+    public static Action? CheckForDesktopUpdates;
+    public static Action? PumpDesktopUpdates;
 
     public static Mesh error_mesh = null!;
 

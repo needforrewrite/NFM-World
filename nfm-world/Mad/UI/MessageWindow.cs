@@ -30,7 +30,7 @@ public class MessageWindow
 
     private sealed record Message(
         string Title,
-        string Text,
+        Func<string> Text,
         string[] Labels,
         MessageResult[] Results,
         Action<MessageResult>? Callback);
@@ -41,24 +41,37 @@ public class MessageWindow
     public View? ActiveView { get; private set; }
 
     public void ShowMessage(string title, string message, Action<MessageResult>? callback = null)
-        => Show(title, message, ["OK"], [MessageResult.OK], callback);
+        => Show(title, () => message, ["OK"], [MessageResult.OK], callback);
 
     public void ShowYesNo(string title, string message, Action<MessageResult>? callback = null)
-        => Show(title, message, ["Yes", "No"], [MessageResult.Yes, MessageResult.No], callback, 1);
+        => Show(title, () => message, ["Yes", "No"], [MessageResult.Yes, MessageResult.No], callback, 1);
 
     public void ShowOKCancel(string title, string message, Action<MessageResult>? callback = null)
-        => Show(title, message, ["OK", "Cancel"], [MessageResult.OK, MessageResult.Cancel], callback, 1);
+        => Show(title, () => message, ["OK", "Cancel"], [MessageResult.OK, MessageResult.Cancel], callback, 1);
 
     public void ShowCustom(string title, string message, string[] buttonLabels, Action<MessageResult>? callback = null)
-        => Show(title, message, buttonLabels.ToArray(), buttonLabels.Select((_, index) => index switch
+        => Show(title, () => message, buttonLabels.ToArray(), buttonLabels.Select((_, index) => index switch
         {
             0 => MessageResult.Custom1, 1 => MessageResult.Custom2, 2 => MessageResult.Custom3,
             _ => MessageResult.None
         }).ToArray(), callback);
 
+    public (Func<bool> IsCurrent, Action Close) ShowProgress(string title, Func<string> text, Action cancel)
+    {
+        Show(title, text, ["Cancel"], [MessageResult.Cancel], _ => cancel());
+        return TrackCurrent();
+    }
+
+    public (Func<bool> IsCurrent, Action Close) TrackCurrent()
+    {
+        var message = _message.Value;
+        bool IsCurrent() => message is not null && ReferenceEquals(_message.Value, message);
+        return (IsCurrent, () => { if (IsCurrent()) Close(); });
+    }
+
     private void Show(
         string title,
-        string text,
+        Func<string> text,
         string[] labels,
         MessageResult[] results,
         Action<MessageResult>? callback,

@@ -10,6 +10,9 @@ public static class MessageDialog
     public sealed record ActionButton(string Label, Action OnPress);
 
     public static View Build(string title, string message, IReadOnlyList<ActionButton> buttons, Signal<int> selected)
+        => Build(title, () => message, buttons, selected);
+
+    public static View Build(string title, Func<string> message, IReadOnlyList<ActionButton> buttons, Signal<int> selected)
         => Sx.View(
             name: () => "Message dialog " + title,
             style: () => Sx.Styles(
@@ -59,7 +62,7 @@ public static class MessageDialog
                     Sx.Text(
                         style: () => Sx.WrappingText(fontSize: 14, foregroundColor: Theme.MenuTextBlue),
                         layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
-                        text: () => message
+                        text: message
                     ),
                     Sx.View(
                         style: () => Sx.Styles(

@@ -74,6 +74,9 @@ public partial class WorldGame : IDisposable, IGameHost
     /// declaration with no implementation makes the compiler drop the call there.
     /// </summary>
     static partial void RunSxHarness(string[] args);
+    static partial void AcquireUpdateLease(ref IDisposable? lease, ref bool blockStartup);
+    partial void InitializeUpdates(string[] args);
+    partial void FinishUpdates(bool cleanShutdown, ref bool updaterOwnsRestart);
 
     /// <summary>Compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
     public GraphicsSettingsShim Graphics { get; }
@@ -1705,6 +1708,12 @@ public partial class WorldGame : IDisposable, IGameHost
             return;
         }
 
+        IDisposable? updateLease = null;
+        var blockStartup = false;
+        AcquireUpdateLease(ref updateLease, ref blockStartup);
+        using var heldUpdateLease = updateLease;
+        if (blockStartup) return;
+
         var serverEnvironmentArgument = args.LastOrDefault(arg =>
             arg.StartsWith(ServerEnvironmentArgumentPrefix, StringComparison.Ordinal));
         ArchiveEndpoint.SetClientEnvironment(serverEnvironmentArgument?[ServerEnvironmentArgumentPrefix.Length..]);
@@ -1740,6 +1749,7 @@ public partial class WorldGame : IDisposable, IGameHost
             program = new WorldGame();
             GameSparker.Game = program;
             program.Initialize();
+            program.InitializeUpdates(args);
             program.LoadContent();
         }
         catch (Exception ex)
@@ -1793,8 +1803,19 @@ public partial class WorldGame : IDisposable, IGameHost
             }
         }
 
-        program.Dispose();
-        if (program._restartRequested)
+        var updaterOwnsRestart = false;
+        var cleanShutdown = false;
+        try
+        {
+            program.Dispose();
+            cleanShutdown = true;
+        }
+        finally
+        {
+            program.FinishUpdates(cleanShutdown, ref updaterOwnsRestart);
+        }
+
+        if (!updaterOwnsRestart && program._restartRequested)
         {
             if (program._restartServerEnvironment is { } environment)
             {

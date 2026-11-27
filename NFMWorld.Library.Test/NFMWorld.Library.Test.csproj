@@ -24,6 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="..\NFMWorld.Updater\Shared\*.cs;..\NFMWorld.Updater\*.cs" Link="Updates\%(Filename)%(Extension)" />
         <Compile Include="..\nfm-world\Mad\Gameplay\MenuHistory.cs" Link="MenuHistory.cs"/>
         <Compile Include="..\nfm-world\Content\LoadingWork.cs" Link="LoadingWork.cs"/>
         <Compile Include="..\nfm-world\UI\Routes\AccountView.cs" Link="AccountView.cs"/>

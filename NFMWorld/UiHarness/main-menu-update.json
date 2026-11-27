@@ -1,0 +1,20 @@
+{
+  "view": "main-menu",
+  "updateFixture": true,
+  "width": 1280,
+  "height": 720,
+  "scale": 1,
+  "output": "../../.git/sx-update-captures",
+  "steps": [
+    { "action": "click", "target": "Main menu item EXTRAS" },
+    { "action": "assert-visible", "target": "Main menu item CHECK FOR UPDATES" },
+    { "action": "click", "target": "Main menu item CHECK FOR UPDATES" },
+    { "action": "assert-visible", "target": "Message dialog Update available", "capture": "offer" },
+    { "action": "click", "target": "Message action Yes" },
+    { "action": "assert-visible", "target": "Message dialog Downloading update", "capture": "progress" },
+    { "action": "click", "target": "Message action Cancel" },
+    { "action": "click", "target": "Main menu item CHECK FOR UPDATES" },
+    { "action": "assert-visible", "target": "Message dialog Update available" },
+    { "action": "click", "target": "Message action No" }
+  ]
+}

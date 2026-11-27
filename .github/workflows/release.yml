@@ -2,420 +2,170 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - '**'
-  workflow_dispatch: {}
+    branches: ['**']
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      artifacts_only:
+        description: Build and upload workflow artifacts without publishing a release
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   prepare:
+    if: ${{ !github.event.deleted }}
     runs-on: ubuntu-latest
     outputs:
-      tag_name: ${{ steps.tag.outputs.tag_name }}
-      short_sha: ${{ steps.tag.outputs.short_sha }}
-      is_master: ${{ steps.check_branch.outputs.is_master }}
-      branch_name: ${{ steps.branch.outputs.branch_name }}
+      channel: ${{ steps.channel.outputs.channel }}
+      tag: ${{ steps.channel.outputs.tag }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
-
-      - name: Extract branch name
-        id: branch
-        run: |
-          BRANCH_NAME="${{ github.ref_name }}"
-          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
-
-      - name: Check if master branch
-        id: check_branch
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
-            echo "is_master=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_master=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Generate tag name
-        id: tag
-        run: |
-          SHORT_SHA=$(git rev-parse --short=8 HEAD)
-          DATETIME=$(date -u +"%Y%m%dT%H%M%SZ")
-          TAG_NAME="release-${DATETIME}-${SHORT_SHA}"
-          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
-          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-
-      - name: Create and push tag
-        # if: steps.check_branch.outputs.is_master == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          TAG_NAME="${{ steps.tag.outputs.tag_name }}"
-          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            git tag "$TAG_NAME"
-            git push origin "$TAG_NAME"
-          else
-            echo "Tag $TAG_NAME already exists, skipping tag creation"
-          fi
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Determine release channel
+        id: channel
+        env:
+          BUILD_SHA: ${{ github.sha }}
+          BUILD_REF_NAME: ${{ github.ref_name }}
+          BUILD_REF_TYPE: ${{ github.ref_type }}
+        run: python3 tools/desktop_release.py prepare
 
   test:
-    # Gates the publish jobs: the unit tests cover the plugin loader, the Sx renderer
-    # and the UI, and nothing else runs them.
+    needs: prepare
     runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+          ref: ${{ github.sha }}
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-
       - name: Test
         run: dotnet test NFMWorld.Library.Test/NFMWorld.Library.Test.csproj -c Debug
-
-      # The archive is deployed separately from the game, but its auth and endpoint
-      # behaviour is exactly what a broken change here would touch.
       - name: Test archive
         run: dotnet test NFMWorld.Archive.Test/NFMWorld.Archive.Test.csproj -c Debug
-
-  build-windows:
-    needs: [prepare, test]
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        rid:
-          - win-x64
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          submodules: 'recursive'
+          python-version: '3.12'
+      - name: Test release tooling
+        run: python -m unittest discover -s tools -p test_desktop_release.py
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+  build:
+    needs: [prepare, test]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            runner: windows-latest
+          - rid: linux-x64
+            runner: ubuntu-latest
+          - rid: osx-x64
+            runner: macos-15-intel
+          - rid: osx-arm64
+            runner: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          submodules: recursive
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '11.0.x'
-
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install MGFXC
+        if: runner.os == 'Windows'
         run: dotnet tool install -g dotnet-mgfxc
-
-      - name: Generate version string
-        id: version
+      - name: Check Xcode command-line tools
+        if: runner.os == 'macOS'
+        run: xcode-select -p && clang --version
+      - name: Build and package ${{ matrix.rid }}
         shell: bash
-        run: |
-          BRANCH_NAME="${{ github.ref_name }}"
-          DATE=$(date -u +"%Y.%m.%d")
-          SHORT_SHA=$(git rev-parse --short=8 HEAD)
-          SEMANTIC_VERSION="1.0.0"
-          INFO_VERSION="NFM-World ${BRANCH_NAME}-${DATE}-${SHORT_SHA}"
-          echo "semantic_version=${SEMANTIC_VERSION}" >> $GITHUB_OUTPUT
-          echo "info_version=${INFO_VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Publish ${{ matrix.rid }}
-        run: |
-          # Use /maxcpucount:1 to prevent a parallel-build race condition where MSBuild worker nodes
-          # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
-          # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
-          dotnet publish NFMWorld/NFMWorld.csproj `
-            -c Release `
-            -r ${{ matrix.rid }} `
-            -p:Version="${{ steps.version.outputs.semantic_version }}" `
-            -p:InformationalVersion="${{ steps.version.outputs.info_version }}" `
-            -o ./publish/${{ matrix.rid }} `
-            -p:SelfContained=true `
-            -p:PublishReadyToRun=true `
-            -p:PublishSingleFile=true `
-            -p:DebugType=embedded `
-            -p:IncludeNativeLibrariesForSelfExtract=false `
-            -p:IncludeAllContentForSelfExtract=false `
-            -p:ErrorOnDuplicatePublishOutputFiles=false `
-            -p:GeneratePackageOnBuild=false `
-            -- /maxcpucount:1
-
-      - name: Publish NFMWorld.Library native DLL (${{ matrix.rid }})
-        shell: bash
-        run: |
-          set -e
-          dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
-            -c Release \
-            -r "${{ matrix.rid }}" \
-            -o "./publish/${{ matrix.rid }}/native" \
-            -p:GeneratePackageOnBuild=false \
-            -- /maxcpucount:1
-
-      # A referenced Exe contributes its managed dll to this publish, never an apphost, so a
-      # single-file publish leaves nothing for CrashReportLibrary.Hook to start. AOT gives it one
-      # self-contained executable (the game is self-contained, so the child cannot borrow a
-      # runtime). Symbols are dropped with it: its pdb is 20 MB and nothing symbolizes it.
-      - name: Publish crash reporter (${{ matrix.rid }})
-        shell: bash
-        run: |
-          set -e
-          dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
-            -c Release \
-            -r "${{ matrix.rid }}" \
-            -p:SelfContained=true \
-            -p:PublishAot=true \
-            -p:DebugType=none \
-            -p:DebugSymbols=false \
-            -p:StripSymbols=true \
-            -o "./publish/${{ matrix.rid }}" \
-            -p:GeneratePackageOnBuild=false \
-            -- /maxcpucount:1
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nfm-world-${{ matrix.rid }}
-          path: ./publish/${{ matrix.rid }}/
-
-  build-linux:
-    needs: [prepare, test]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rid:
-          - linux-x64
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '11.0.x'
-
-      - name: Generate version string
-        id: version
-        run: |
-          BRANCH_NAME="${{ github.ref_name }}"
-          DATE=$(date -u +"%Y.%m.%d")
-          SHORT_SHA=$(git rev-parse --short=8 HEAD)
-          SEMANTIC_VERSION="1.0.0"
-          INFO_VERSION="NFM-World ${BRANCH_NAME}-${DATE}-${SHORT_SHA}"
-          echo "semantic_version=${SEMANTIC_VERSION}" >> $GITHUB_OUTPUT
-          echo "info_version=${INFO_VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Publish ${{ matrix.rid }}
-        run: |
-          # Use /maxcpucount:1 to prevent a parallel-build race condition where MSBuild worker nodes
-          # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
-          # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
-          dotnet publish NFMWorld/NFMWorld.csproj \
-            -c Release \
-            -r ${{ matrix.rid }} \
-            -p:Version="${{ steps.version.outputs.semantic_version }}" \
-            -p:InformationalVersion="${{ steps.version.outputs.info_version }}" \
-            -o ./publish/${{ matrix.rid }} \
-            -p:SelfContained=true \
-            -p:PublishReadyToRun=true \
-            -p:PublishSingleFile=true \
-            -p:DebugType=embedded \
-            -p:IncludeNativeLibrariesForSelfExtract=false \
-            -p:IncludeAllContentForSelfExtract=false \
-            -p:ErrorOnDuplicatePublishOutputFiles=false \
-            -p:GeneratePackageOnBuild=false \
-            -- /maxcpucount:1
-
-      - name: Publish NFMWorld.Library native library (${{ matrix.rid }})
-        run: |
-          set -e
-          dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
-            -c Release \
-            -r "${{ matrix.rid }}" \
-            -o "./publish/${{ matrix.rid }}/native" \
-            -p:GeneratePackageOnBuild=false \
-            -- /maxcpucount:1
-
-      # See the Windows job: a referenced Exe contributes no apphost, so the single-file publish
-      # has no crash reporter to start unless it is published as its own native executable.
-      - name: Publish crash reporter (${{ matrix.rid }})
-        run: |
-          set -e
-          dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
-            -c Release \
-            -r "${{ matrix.rid }}" \
-            -p:SelfContained=true \
-            -p:PublishAot=true \
-            -p:DebugType=none \
-            -p:DebugSymbols=false \
-            -p:StripSymbols=true \
-            -o "./publish/${{ matrix.rid }}" \
-            -p:GeneratePackageOnBuild=false \
-            -- /maxcpucount:1
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nfm-world-${{ matrix.rid }}
-          path: ./publish/${{ matrix.rid }}/
-
-  build-macos:
-    needs: [prepare, test]
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10
-
-      - name: Install Command Line Tools for Xcode
-        run: |
-          # Install Xcode Command Line Tools (required for NativeAOT)
-          # GitHub Actions runners typically have these pre-installed
-          # Verify they are available
-          if xcode-select -p &>/dev/null; then
-            echo "Command Line Tools already installed at: $(xcode-select -p)"
-          else
-            echo "Command Line Tools not found. They should be pre-installed on GitHub Actions runners."
-            echo "Installing manually may not work in CI environment."
-            exit 1
-          fi
-          
-          # Verify clang is available
-          clang --version
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '11.0.x'
-
-      - name: Generate version string
-        id: version
-        run: |
-          BRANCH_NAME="${{ github.ref_name }}"
-          DATE=$(date -u +"%Y.%m.%d")
-          SHORT_SHA=$(git rev-parse --short=8 HEAD)
-          SEMANTIC_VERSION="1.0.0"
-          INFO_VERSION="NFM-World ${BRANCH_NAME}-${DATE}-${SHORT_SHA}"
-          echo "semantic_version=${SEMANTIC_VERSION}" >> $GITHUB_OUTPUT
-          echo "info_version=${INFO_VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Publish macOS x64 and arm64 binaries
-        run: |
-          # Build for both architectures separately (NativeAOT doesn't support multi-RID publishing)
-          # Use /maxcpucount:1 to prevent a parallel-build race condition where MSBuild worker nodes
-          # simultaneously write NFMWorld.CrashReporter.runtimeconfig.json (diamond dependency via
-          # NFMWorld.Multiplayer.Base -> NFMWorld.Library -> NFMWorld.CrashReporter).
-          for RID in osx-x64 osx-arm64; do
-            dotnet publish NFMWorld/NFMWorld.csproj \
-              -c Release \
-              -r $RID \
-              -p:Version="${{ steps.version.outputs.semantic_version }}" \
-              -p:InformationalVersion="${{ steps.version.outputs.info_version }}" \
-              -o ./publish/$RID \
-              -p:SelfContained=true \
-              -p:PublishReadyToRun=true \
-              -p:PublishSingleFile=true \
-              -p:DebugType=embedded \
-              -p:IncludeNativeLibrariesForSelfExtract=false \
-              -p:IncludeAllContentForSelfExtract=false \
-              -p:ErrorOnDuplicatePublishOutputFiles=false \
-              -p:GeneratePackageOnBuild=false \
-              -- /maxcpucount:1
-
-            dotnet publish NFMWorld.Library/NFMWorld.Library.csproj \
-              -c Release \
-              -r "$RID" \
-              -o "./publish/$RID/native" \
-              -p:GeneratePackageOnBuild=false \
-              -- /maxcpucount:1
-
-            # See the Windows job. Unsigned by design, like the game itself.
-            dotnet publish NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj \
-              -c Release \
-              -r $RID \
-              -p:SelfContained=true \
-              -p:PublishAot=true \
-              -p:DebugType=none \
-              -p:DebugSymbols=false \
-              -p:StripSymbols=true \
-              -o ./publish/$RID \
-              -p:GeneratePackageOnBuild=false \
-              -- /maxcpucount:1
-          done
-
-      - name: Upload macOS x64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nfm-world-osx-x64
-          path: ./publish/osx-x64/
-
-      - name: Upload macOS arm64 artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nfm-world-osx-arm64
-          path: ./publish/osx-arm64/
-
-  release:
-    needs: [prepare, build-windows, build-linux, build-macos]
-    # macOS runners are often unavailable outright ("The job was not acquired by Runner of
-    # type hosted"), which never starts the job and so cannot be retried from here. Ship the
-    # other platforms rather than nothing; the packaging loop already skips absent directories.
-    if: ${{ !cancelled() && needs.build-windows.result == 'success' && needs.build-linux.result == 'success' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Package artifacts for release
-        run: |
-          set -e
-          shopt -s nullglob
-          cd artifacts
-          # Package all artifacts based on platform
-          for dir in nfm-world-*; do
-            if [ -d "$dir" ]; then
-              pushd "$dir" > /dev/null
-              # Use zip for Windows, tar.gz for Linux and macOS
-              if [[ "$dir" == nfm-world-win-* ]]; then
-                zip -r "../${dir}.zip" .
-              elif [[ "$dir" == nfm-world-linux-* ]] || [[ "$dir" == nfm-world-osx-* ]]; then
-                tar -czf "../${dir}.tar.gz" .
-              else
-                echo "Warning: Unknown platform for directory: $dir"
-              fi
-              popd > /dev/null
-              rm -rf "$dir"
-            fi
-          done
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.prepare.outputs.tag_name }}
-          name: Build ${{ needs.prepare.outputs.branch_name }} - ${{ needs.prepare.outputs.short_sha }}
-          # prerelease: ${{ needs.prepare.outputs.is_master != 'true' }}
-          files: |
-            artifacts/*.zip
-            artifacts/*.tar.gz
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          RID: ${{ matrix.rid }}
+          BUILD_REF: ${{ github.ref_name }}
+          BUILD_SHA: ${{ github.sha }}
+          CHANNEL: ${{ needs.prepare.outputs.channel }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          args=()
+          if [[ "$CHANNEL" == stable ]]; then args+=("--stable-tag=$TAG"); fi
+          python tools/desktop_release.py build --rid "$RID" --ref="$BUILD_REF" --sha "$BUILD_SHA" --output artifacts "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nfm-world-${{ matrix.rid }}
+          path: artifacts/nfm-world-*
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+
+  release-dev:
+    needs: [prepare, test, build]
+    # The publisher requires both core assets but tolerates unavailable macOS runners.
+    if: ${{ !cancelled() && !inputs.artifacts_only && needs.test.result == 'success' && needs.prepare.outputs.channel == 'dev' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/nfmw-assets
+          pattern: nfm-world-*
+          merge-multiple: true
+      - name: Publish development snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_REF: ${{ github.ref_name }}
+          BUILD_SHA: ${{ github.sha }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: python3 tools/desktop_release.py publish --channel dev --tag "$TAG" --sha "$BUILD_SHA" --ref="$BUILD_REF" --assets "$RUNNER_TEMP/nfmw-assets"
+
+  release-stable:
+    needs: [prepare, test, build]
+    if: ${{ !inputs.artifacts_only && needs.prepare.outputs.channel == 'stable' && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: nfmworld-stable-release
+      queue: max
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/nfmw-assets
+          pattern: nfm-world-*
+          merge-multiple: true
+      - name: Publish stable release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_REF: ${{ github.ref_name }}
+          BUILD_SHA: ${{ github.sha }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: python3 tools/desktop_release.py publish --channel stable --tag "$TAG" --sha "$BUILD_SHA" --ref="$BUILD_REF" --assets "$RUNNER_TEMP/nfmw-assets"
+      - name: Announce stable release in Discord
+        if: steps.publish.outputs.published == 'true'
+        env:
+          DISCORD_RELEASE_WEBHOOK_URL: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+        run: python3 tools/desktop_release.py announce --release-json "$RUNNER_TEMP/nfmw-release/release.json" --notes "$RUNNER_TEMP/nfmw-release/commits.txt"

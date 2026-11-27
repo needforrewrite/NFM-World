@@ -23,6 +23,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="..\NFMWorld.Updater\Shared\*.cs" Link="Updates\%(Filename)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\nfm-world\NFMWorld.Game.csproj"/>
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj"/>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>

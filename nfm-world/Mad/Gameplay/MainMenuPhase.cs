@@ -106,7 +106,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         Replays: OpenReplays,
                         Account: AccountView.Show,
                         Multiplayer: OnMultiplayerClicked,
-                        MyContent: OpenMyContent
+                        MyContent: OpenMyContent,
+                        CheckForUpdates: GameSparker.CheckForDesktopUpdates
                     ),
                     logo,
                     GameSparker.ExeVersion
@@ -547,6 +548,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
         _settingsCamera.RestoreNormal(Camera);
         ApplyMenuPreferences();
         if (CurrentStage is null) return;
+        if (ReferenceEquals(GameSparker.CurrentPhase, this) && EnableUiInput && _transitionTime < 0 && _garage is null &&
+            !_replaysOpen.Value && !_myContentOpen.Value && !AccountView.IsOpen && !MainMenuView.HasBlockingOverlay)
+            GameSparker.PumpDesktopUpdates?.Invoke();
         if (_menuVisible)
         {
             _menuTime += seconds;

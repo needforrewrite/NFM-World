@@ -47,6 +47,7 @@ public partial class WorldGame
 
     /// <summary>Set on the child, so the relaunch happens once.</summary>
     private const string CrashDumpChildVariable = "NFMW_CRASH_DUMP_CHILD";
+    private const string CrashDumpParentVariable = "NFMW_CRASH_DUMP_PARENT_PID";
 
     /// <summary>
     /// Where <c>createdump</c> writes. The same folder <c>CrashDump</c> in the crash reporter
@@ -106,6 +107,9 @@ public partial class WorldGame
         };
         foreach (var argument in args) start.ArgumentList.Add(argument);
         start.Environment[CrashDumpChildVariable] = "1";
+        start.Environment[CrashDumpParentVariable] = System.Environment.ProcessId.ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        );
         start.Environment["DOTNET_DbgEnableMiniDump"] = "1";
         // 4 = full dump. The runtime's default is a mini dump, which has no heap and so no
         // managed stack or object graph to read.
