@@ -355,11 +355,21 @@ def announce(release, notes, webhook, repo=REPO, opener=None):
         print("::warning::Discord release webhook is not configured.")
         return
     try:
-        url = urllib.parse.urlsplit(webhook)
-        if (url.scheme != "https" or url.netloc.lower() != "discord.com" or url.query or url.fragment
+        url = urllib.parse.urlsplit(webhook.strip())
+        if (url.scheme != "https" or url.netloc.lower() not in ("discord.com", "discordapp.com", "canary.discord.com") or url.query or url.fragment
                 or not re.fullmatch(r"/api(?:/v[0-9]+)?/webhooks/[0-9]+/[A-Za-z0-9_.-]+", url.path)):
-            raise ValueError()
+            print("::warning::Discord announcement failed (invalid webhook URL; expected a Discord HTTPS webhook without query parameters).")
+            return
+        url = url._replace(netloc="discord.com")
+    except ValueError:
+        print("::warning::Discord announcement failed (invalid webhook URL).")
+        return
+    try:
         content_type, body = discord_payload(release, notes, repo)
+    except (ValueError, KeyError, TypeError):
+        print("::warning::Discord announcement failed (invalid release metadata).")
+        return
+    try:
         request = urllib.request.Request(urllib.parse.urlunsplit(url._replace(query="wait=true")), data=body,
                                          headers={"Content-Type": content_type, "User-Agent": "NFMWorld-Releases/1"}, method="POST")
         with (opener or urllib.request.build_opener(NoRedirect())).open(request, timeout=15) as response:
@@ -369,9 +379,11 @@ def announce(release, notes, webhook, repo=REPO, opener=None):
         print(f"::warning::Discord announcement failed (HTTP {error.code}).")
     except TimeoutError:
         print("::warning::Discord announcement timed out.")
+    except urllib.error.URLError as error:
+        category = "timeout" if isinstance(error.reason, TimeoutError) else "network or TLS error"
+        print(f"::warning::Discord announcement failed ({category}).")
     except Exception:
-        # Do not print exceptions: they can contain the credential-bearing webhook URL.
-        print("::warning::Discord announcement failed (configuration or transport error).")
+        print("::warning::Discord announcement failed (unexpected transport error).")
 
 
 def prepare():

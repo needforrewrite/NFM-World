@@ -160,6 +160,41 @@ class DesktopReleaseTests(unittest.TestCase):
         for name in files:
             self.assertIn(name.name.encode(), body)
 
+    def test_long_notes_post_as_attachment_to_legacy_discord_host(self):
+        files = self.downloads(release.PLATFORMS)
+        notes = "- " + "😀" * 1100
+        opener = Mock()
+        opener.open.return_value = contextlib.nullcontext(SimpleNamespace(status=200))
+        release.announce(record("v1.10.0", files=files), notes,
+                         " https://discordapp.com/api/webhooks/123/example ", opener=opener)
+        request = opener.open.call_args.args[0]
+        self.assertEqual(request.host, "discord.com")
+        self.assertIn(b'filename="commits.txt"', request.data)
+        self.assertIn(notes.encode(), request.data)
+
+    def test_canary_webhook_posts_to_discord(self):
+        files = self.downloads(release.PLATFORMS)
+        opener = Mock()
+        opener.open.return_value = contextlib.nullcontext(SimpleNamespace(status=200))
+        release.announce(record("v1.10.0", files=files), "notes",
+                         "https://canary.discord.com/api/webhooks/123/example", opener=opener)
+        request = opener.open.call_args.args[0]
+        self.assertEqual(request.full_url, "https://discord.com/api/webhooks/123/example?wait=true")
+
+    def test_bad_webhook_and_network_failure_report_safe_categories(self):
+        files = self.downloads(release.PLATFORMS)
+        data = record("v1.10.0", files=files)
+        opener = Mock()
+        opener.open.side_effect = release.urllib.error.URLError("secret-token")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            release.announce(data, "notes", "https://discord.com/api/webhooks/123/example?secret-token", opener=opener)
+            release.announce(data, "notes", "https://discord.com/api/webhooks/123/example", opener=opener)
+        self.assertIn("invalid webhook URL", output.getvalue())
+        self.assertIn("network or TLS error", output.getvalue())
+        self.assertNotIn("secret-token", output.getvalue())
+        opener.open.assert_called_once()
+
     def test_missing_or_wrong_origin_webhook_never_posts(self):
         opener = Mock()
         with contextlib.redirect_stdout(io.StringIO()):
