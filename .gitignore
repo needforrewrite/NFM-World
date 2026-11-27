@@ -36,7 +36,9 @@ replay_pid*
 !/.vscode/tasks.json
 
 /publish
-/tools
+/tools/*
+!/tools/desktop_release.py
+!/tools/test_desktop_release.py
 /data
 /nfm-world/GPUCache
 /nfm-world/DawnCache
