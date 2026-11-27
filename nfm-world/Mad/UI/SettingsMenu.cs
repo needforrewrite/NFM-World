@@ -53,6 +53,7 @@ public class SettingsMenu()
         public Key ToggleSFX { get; set; } = Key.N;
         public Key ToggleArrace { get; set; } = Key.A;
         public Key ToggleRadar { get; set; } = Key.S;
+        public Key ToggleHud { get; set; } = Key.H;
         public Key ToggleDevConsole { get; set; } = Key.Oemtilde;
         public Key CycleView { get; set; } = Key.V;
         public Key CarCam { get; set; } = Key.W;
@@ -727,6 +728,7 @@ public class SettingsMenu()
         sw.WriteLine($"key_togglesfx {(int)Bindings.ToggleSFX}");
         sw.WriteLine($"key_togglearrace {(int)Bindings.ToggleArrace}");
         sw.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
+        sw.WriteLine($"key_togglehud {(int)Bindings.ToggleHud}");
         sw.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
         sw.WriteLine($"key_carcam {(int)Bindings.CarCam}");
         sw.WriteLine($"key_chat {(int)Bindings.OpenChat}");
@@ -940,6 +942,9 @@ public class SettingsMenu()
                     break;
                 case "key_toggleradar":
                     Bindings.ToggleRadar = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_togglehud":
+                    Bindings.ToggleHud = (Key)int.Parse(value, CultureInfo.InvariantCulture);
                     break;
                 case "key_cycleview":
                     Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
@@ -1250,6 +1255,7 @@ public class SettingsMenu()
                     : prop.Name switch
                     {
                         nameof(KeyBindings.OpenChat) => "Open Chat",
+                        nameof(KeyBindings.ToggleHud) => "Toggle HUD",
                         nameof(KeyBindings.CarCam) => "Car Cam",
                         string n when n.StartsWith("GamemodeAction") => $"Gamemode Action {n["GamemodeAction".Length..]}",
                         _ => prop.Name

@@ -18,6 +18,7 @@ using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 using NFMWorldLibrary.Hud;
+using SignalsDotnet;
 
 namespace NFMWorld.Gameplay;
 
@@ -39,7 +40,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             SendChat: SendChat,
             CloseChat: CloseChat,
             Finish: _finish,
-            ContinueFinish: ContinueRaceFinish
+            ContinueFinish: ContinueRaceFinish,
+            HudVisible: _hudVisible
         )
     );
 
@@ -57,6 +59,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     private readonly RaceInputController _input = new();
     private readonly RaceCameraDirector _cameraDirector = new();
+    private readonly Signal<bool> _hudVisible = new(true);
     private readonly SettingsCameraPreview _settingsCamera = new();
     private BackendCar? _carCamOpponent;
 
@@ -916,6 +919,12 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         // ── While paused, the UI owns input ────────────────────────
         if (IsPaused)
             return;
+
+        if (key != Key.None && key == SettingsMenu.Bindings.ToggleHud)
+        {
+            _hudVisible.Value = !_hudVisible.Value;
+            return;
+        }
 
         if (key == SettingsMenu.Bindings.CycleView)
         {

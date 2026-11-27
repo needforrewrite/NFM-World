@@ -5,6 +5,7 @@ using NFMWorld.UI.Components;
 using NFMWorld.UI.Hud;
 using NFMWorld.UI.ViewModels;
 using NFMWorldLibrary.Hud;
+using SignalsDotnet;
 
 namespace NFMWorld.UI.Routes;
 
@@ -19,7 +20,8 @@ public static class RaceHudView
         Action<string>? SendChat = null,
         Action? CloseChat = null,
         RaceFinishState? Finish = null,
-        Action? ContinueFinish = null);
+        Action? ContinueFinish = null,
+        Signal<bool>? HudVisible = null);
 
     public static Node Build(Actions actions)
         => Sx.View(style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()), children: [
@@ -39,6 +41,9 @@ public static class RaceHudView
             style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent(), position: Position.Relative),
             children:
             [
+                Sx.Show(() => actions.HudVisible?.Value != false, () => Sx.View(
+                    style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent(), position: Position.Absolute),
+                    children: [
                 HudSkinRegistry.BuildWithGamemodeWidgets(
                     race,
                     () => Sx.Switch(race.Skin, HudSkinRegistry.Branches(race), () => HudSkinRegistry.BuildDefault(race))
@@ -68,6 +73,8 @@ public static class RaceHudView
                     () => race.Finished.Value && (race.ResultTitle.Value is not null || race.ClientWon.Value || race.ClientLost.Value),
                     () => new HudScaleHost(RaceFinishView.Banner(race, actions.Finish))
                 ),
+                    ]
+                )),
                 Sx.Show(() => actions.Chat is not null, () => RaceChatView.Build(
                     actions.Chat!,
                     () => HudSkinRegistry.UsesClassicSkin(race.Skin.Value),
