@@ -5,7 +5,7 @@ using NFMWorldLibrary.Hud;
 namespace NFMWorld.UI.Hud.GadgetSkin;
 
 /// <summary>
-/// The radar every gadget skin shares: the rotating map (baked stage image or checkpoint loop)
+/// The radar every gadget skin shares: the rotating map (stage polygons or checkpoint loop)
 /// with one oriented chevron per racer. phy drew it into a clipped frame; the skin owns the frame
 /// and passes the radar's screen centre and side, so the same body serves every variant.
 /// </summary>
@@ -18,32 +18,21 @@ internal static class GadgetRadar
         if (race.ClientPosition is not { } client) return;
         var sin = MathF.Sin(race.ClientHeading);
         var cos = MathF.Cos(race.ClientHeading);
-        var half = screenSize / 2;
 
         Vector2 ToRadar(float worldX, float worldZ)
             => RadarMap.ToRadar(worldX, worldZ, client.X, client.Z, sin, cos, center.X, center.Y, screenSize, Range);
 
-        if (race.MapImage is IImage image && race.MapFrame.UnitsPerPixel > 0)
-        {
-            var placement = RadarMap.ToUnitSquare(
-                RadarMap.Place(
-                    race.MapFrame.MinX,
-                    race.MapFrame.MaxZ,
-                    race.MapFrame.UnitsPerPixel,
-                    client.X,
-                    client.Z,
-                    race.ClientHeading,
-                    center.X - half,
-                    center.Y - half,
-                    screenSize,
-                    Range
-                ),
-                image.Width,
-                image.Height
-            );
-            hud.DrawImage(placement, image);
-        }
-        else
+        if (!RadarPolygons.Draw(
+            race.MapPolygons,
+            client.X,
+            client.Z,
+            sin,
+            cos,
+                center.X,
+            center.Y,
+            screenSize,
+            Range
+        ))
         {
             var line = GadgetHud.Snap(190, 220, 245, 180);
             var checkpoints = race.Checkpoints;

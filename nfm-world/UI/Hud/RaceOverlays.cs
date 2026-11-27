@@ -103,9 +103,19 @@ public sealed class RaceOverlays : Component
         var corner = CornerRadius * scale;
         G.IntersectScissor(x, y, w, w, corner);
 
-        if (!DrawMap(client.X, client.Z, x, y, w))
+        if (!RadarPolygons.Draw(
+            _race.MapPolygons,
+            client.X,
+            client.Z,
+            sin,
+            cos,
+                x + centerX,
+            y + centerY,
+            w,
+            RadarRange
+        ))
         {
-            // No baked map yet: the connecting line between checkpoints, closed into a loop.
+            // No stage polygons: connect the checkpoints into a loop.
             G.SetColor(new Color(190, 220, 245, 180));
             G.SetStrokeWidth(MathF.Max(1, 1.5f * scale));
             var checkpoints = _race.Checkpoints;
@@ -230,45 +240,8 @@ public sealed class RaceOverlays : Component
 
     private Color Snap(int r, int g, int b) => Snap(new Color(r, g, b));
 
-    /// <summary>
-    /// Draws the baked stage image rotated so the car's heading points up, and clipped to the
-    /// radar square. Returns false when there is no image yet, leaving the caller the line map.
-    /// </summary>
-    private bool DrawMap(float clientX, float clientZ, float x, float y, float size)
-    {
-        if (_race.MapImage is not NFMWorld.DriverInterface.DriverInterface.IImage image)
-            return false;
 
-        var (minX, maxZ, unitsPerPixel) = _race.MapFrame;
-        if (unitsPerPixel <= 0f)
-            return false;
-
-        // The placement is shared with the blips' transform (RadarMap), so the image cannot drift
-        // from the markers drawn on top of it. Its axes are per image pixel; the draw maps the
-        // unit square, so they scale by the image's size.
-        var placement = RadarMap.ToUnitSquare(
-            RadarMap.Place(
-                minX,
-                maxZ,
-                unitsPerPixel,
-                clientX,
-                clientZ,
-                _race.ClientHeading,
-                x,
-                y,
-                size,
-                RadarRange
-            ),
-            image.Width,
-            image.Height
-        );
-
-        G.DrawImageTransformed(image, placement.Origin, placement.AxisX, placement.AxisY, new Color(255, 255, 255, 200));
-        return true;
-    }
-
-    // World XZ offset from the car, scaled into the radar, then rotated by the car's heading so
-    // forward maps to the top of the map. Shared with the map image's own placement.
+    // World XZ offset from the car, scaled and rotated so forward maps to the top.
     private static Vector2 ToRadar(
         float x,
         float z,

@@ -16,7 +16,7 @@ namespace NFMWorld;
 /// </summary>
 /// <remarks>
 /// A bake is a scene draw, so it borrows the caller's frame buffer and restores the
-/// backbuffer before returning (same contract as <see cref="StageMinimap"/>).
+/// backbuffer before returning.
 /// </remarks>
 internal static class CarThumbnails
 {

@@ -6,7 +6,7 @@ using NFMWorldLibrary.Hud;
 
 namespace NFMWorld.UI.Hud.WorldSkin;
 
-/// <summary>Circular radar: the baked stage (or checkpoint loop) rotated into the client car's frame, with racers as blips.</summary>
+/// <summary>Circular radar: the stage (or checkpoint loop) rotated into the client car's frame, with racers as blips.</summary>
 internal sealed class WorldRadar : Component
 {
     public const float Size = 164;
@@ -56,7 +56,17 @@ internal sealed class WorldRadar : Component
         Vector2 ToRadar(float worldX, float worldZ)
             => RadarMap.ToRadar(worldX, worldZ, client.X, client.Z, sin, cos, center, center, w, Range);
 
-        if (!DrawMap(client.X, client.Z, x, y, w))
+        if (!RadarPolygons.Draw(
+            _race.MapPolygons,
+            client.X,
+            client.Z,
+            sin,
+            cos,
+                x + center,
+            y + center,
+            w,
+            Range
+        ))
         {
             G.SetColor(new Color(185, 211, 255, 150));
             G.SetStrokeWidth(MathF.Max(1, 1.5f * scale));
@@ -102,20 +112,5 @@ internal sealed class WorldRadar : Component
         G.SetColor(Theme.TextPrimary);
         G.SetStrokeWidth(MathF.Max(1, scale));
         G.DrawPolygon(px, py, 3);
-    }
-
-    private bool DrawMap(float clientX, float clientZ, float x, float y, float size)
-    {
-        if (_race.MapImage is not IImage image) return false;
-        var (minX, maxZ, unitsPerPixel) = _race.MapFrame;
-        if (unitsPerPixel <= 0f) return false;
-
-        var placement = RadarMap.ToUnitSquare(
-            RadarMap.Place(minX, maxZ, unitsPerPixel, clientX, clientZ, _race.ClientHeading, x, y, size, Range),
-            image.Width,
-            image.Height
-        );
-        G.DrawImageTransformed(image, placement.Origin, placement.AxisX, placement.AxisY, new Color(255, 255, 255, 200));
-        return true;
     }
 }

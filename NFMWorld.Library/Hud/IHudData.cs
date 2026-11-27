@@ -83,16 +83,17 @@ public interface IHudData
     /// <summary>Live camera view-projection, for projecting name tags onto the screen.</summary>
     System.Numerics.Matrix4x4 ViewProjection { get; }
 
-    // ── Optional real map image (see StageMinimap) ──────────────────────
-    /// <summary>
-    /// A baked top-down image of the stage, when one is ready. The HUD draws it as-is, so it is
-    /// typed as the driver's <c>IImage</c>; null until <c>StageMinimap</c> has rendered one.
-    /// </summary>
-    object? MapImage => null;
-
-    /// <summary>The image's world frame: top-left corner in world XZ, and world units per pixel.</summary>
-    (float MinX, float MaxZ, float UnitsPerPixel) MapFrame => default;
+    /// <summary>Stage surfaces projected into world XZ, in back-to-front drawing order.</summary>
+    IReadOnlyList<MinimapPolygon> MapPolygons => [];
 }
+
+/// <summary>A colored stage surface in world XZ coordinates.</summary>
+public readonly record struct MinimapPolygon(
+    IReadOnlyList<(float X, float Z)> Vertices,
+    byte R,
+    byte G,
+    byte B
+);
 
 /// <param name="LockSlot">
 /// The digit that locks this racer, 1 through 10, or 0 for the client and for opponents past the

@@ -67,10 +67,8 @@ public static class UiState
         /// <summary>Live camera view-projection, for projecting name tags onto the screen.</summary>
         public Matrix ViewProjection { get; set; } = Matrix.Identity;
 
-        /// <summary>The baked top-down stage image, once <see cref="NFMWorld.StageMinimap"/> has one.</summary>
-        public NFMWorld.DriverInterface.DriverInterface.IImage? MapImage { get; set; }
-
-        public (float MinX, float MaxZ, float UnitsPerPixel) MapFrame { get; set; }
+        /// <summary>World-space stage surfaces for the minimap.</summary>
+        public IReadOnlyList<MinimapPolygon> MapPolygons { get; set; } = [];
         public Signal<float> Speed { get; } = new(0);
         public Signal<float> Power { get; } = new(1);
         public Signal<float> Damage { get; } = new(0);
@@ -116,8 +114,6 @@ public static class UiState
         IReadOnlyList<(float X, float Z)> IHudData.Checkpoints => Checkpoints;
         IReadOnlyList<HudRacerMarker> IHudData.Markers => Markers;
         Matrix IHudData.ViewProjection => ViewProjection;
-        object? IHudData.MapImage => MapImage;
-        (float MinX, float MaxZ, float UnitsPerPixel) IHudData.MapFrame => MapFrame;
 
         public string Message
         {

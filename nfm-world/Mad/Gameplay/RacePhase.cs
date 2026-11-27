@@ -352,16 +352,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             hud.Checkpoints.Add(((float)checkpoint.Position.X, (float)checkpoint.Position.Z));
         hud.TrackCenter = default;
         hud.ViewProjection = Camera.ViewProjectionMatrix;
-        if (CurrentStage is { Minimap.IsBaked: true } stage)
-        {
-            hud.MapImage = stage.Minimap.Image;
-            hud.MapFrame = (stage.Minimap.Bounds.MinX, stage.Minimap.Bounds.MaxZ, stage.Minimap.UnitsPerPixel);
-        }
-        else
-        {
-            hud.MapImage = null;
-            hud.MapFrame = default;
-        }
+        hud.MapPolygons = SettingsMenu.HudRadar ? CurrentStage.Minimap : [];
 
         hud.ArrowAngle = null;
         hud.ArrowTarget = "";
@@ -1137,11 +1128,6 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         GamemodeInstance?.Render();
 
         (G3D as ImmediateBatch3D)?.Flush(cb, Camera);
-
-        // The minimap bake is a separate scene pass, so it goes after the main one and restores
-        // the backbuffer itself. One bake per stage; the HUD picks the image up next tick.
-        if (GamemodeInstance is not null && SettingsMenu.HudRadar && CurrentStage.Minimap is { IsAttempted: false } minimap)
-            minimap.Bake(cb, GameSparker.Game.Window.Width, GameSparker.Game.Window.Height);
     }
 
     private void ApplyPlayerState(int carIndex, PlayerState state)

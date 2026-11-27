@@ -458,10 +458,6 @@ internal abstract class GadgetHud(IHudData race) : Component
         G.DrawPolygon(px, py, x.Length);
     }
 
-    /// <summary>Draws the radar's baked stage image as the parallelogram the placement describes.</summary>
-    internal void DrawImage(RadarMapPlacement placement, IImage image)
-        => G.DrawImageTransformed(image, placement.Origin, placement.AxisX, placement.AxisY, new Color(255, 255, 255, 220));
-
 
     internal static Color Snap(Color color) => HudColorSnap.Apply(color, World.Snap);
 

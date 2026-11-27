@@ -25,6 +25,10 @@ public interface IGraphics
     void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos);
     void SetColor(Color c);
 
+    /// <summary>Fills screen-space triangles from consecutive vertex triples, with straight RGBA colors per vertex.
+    /// The current global alpha and clipping apply.</summary>
+    void FillTriangles(ReadOnlySpan<Vector2> positions, ReadOnlySpan<Color> colors);
+
     void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
     {
         if (n < 1) return;

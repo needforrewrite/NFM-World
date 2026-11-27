@@ -1939,8 +1939,13 @@ public partial class WorldGame
             race.Checkpoints.Add((MathF.Sin(angle) * 6000, MathF.Cos(angle) * 6000));
         }
 
-        race.MapImage = null;
-        race.MapFrame = default;
+        race.MapPolygons =
+        [
+            new MinimapPolygon([(-5000, -1500), (5000, -1500), (5000, 1500)], 110, 110, 110),
+            new MinimapPolygon([(-5000, -1500), (5000, 1500), (-5000, 1500)], 110, 110, 110),
+            new MinimapPolygon([(-1500, -5000), (1500, -5000), (1500, 5000)], 145, 145, 145),
+            new MinimapPolygon([(-1500, -5000), (1500, 5000), (-1500, 5000)], 145, 145, 145)
+        ];
         var node = RaceHudView.Build(
             new RaceHudView.Actions(
                 Resume: () => { },

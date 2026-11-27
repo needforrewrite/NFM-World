@@ -182,6 +182,10 @@ public class YogaScrollFlexTests
         {
         }
 
+        public void FillTriangles(ReadOnlySpan<Vector2> positions, ReadOnlySpan<Color> colors)
+        {
+        }
+
         public float Alpha
         {
             set { }

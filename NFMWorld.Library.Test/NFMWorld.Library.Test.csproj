@@ -31,6 +31,7 @@
         <Compile Include="..\nfm-world\UI\Routes\ReplayBrowserView.cs" Link="ReplayBrowserView.cs"/>
         <Compile Include="..\nfm-world\UI\Routes\StageSelectView.cs" Link="StageSelectView.cs"/>
         <Compile Include="..\nfm-world\UI\ViewModels\HsbColorState.cs" Link="HsbColorState.cs"/>
+        <Compile Include="..\nfm-world\UI\Hud\RadarPolygonIndex.cs" Link="RadarPolygonIndex.cs"/>
         <Compile Include="..\nfm-world\UI\ViewModels\RaceChatState.cs" Link="RaceChatState.cs"/>
         <Compile Include="..\nfm-world\UI\ViewModels\RaceFinishState.cs" Link="RaceFinishState.cs"/>
         <Compile Include="..\nfm-world\Mad\Gameplay\LobbyStageSelection.cs" Link="LobbyStageSelection.cs"/>

@@ -823,6 +823,11 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             );
         }
 
+        public void FillTriangles(ReadOnlySpan<Vector2> positions, ReadOnlySpan<Color> colors)
+        {
+            _sb.FillTriangles(positions, colors, _alpha.A / 255f);
+        }
+
         public void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
         {
             if (n < 3) return;

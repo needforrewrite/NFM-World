@@ -75,6 +75,10 @@ public class DummyBackend : IBackend
         {
         }
 
+        public void FillTriangles(ReadOnlySpan<Vector2> positions, ReadOnlySpan<Color> colors)
+        {
+        }
+
         public float Alpha
         {
             set { }
