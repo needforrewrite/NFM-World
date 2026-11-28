@@ -56,10 +56,10 @@ public class FileStorageTests
         using var stream = new MemoryStream(new byte[2048]);
 
         await Assert.ThrowsExactlyAsync<InvalidDataException>(() => storage.PutAsync(
-                stream,
-                maxBytes: 1024,
-                CancellationToken.None
-            )
+            stream,
+            maxBytes: 1024,
+            CancellationToken.None
+        )
         );
     }
 

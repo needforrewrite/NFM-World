@@ -64,12 +64,15 @@ internal sealed class Stars : IDisposable
         Span<float> channels = [200, 200, 200];
         channels[primary] += _random.NextSingle() * 55;
         channels[secondary] += 55;
+
         return new Vector3(channels[0], channels[1], channels[2]) / 255;
     }
 
     public void Render(ICommandBuffer cb, Camera camera)
     {
-        if (camera.Width <= 0 || camera.Height <= 0) return;
+        if (camera.Width <= 0 || camera.Height <= 0)
+
+            return;
 
         var view = camera.ViewMatrix;
         view.Translation = Vector3.Zero;
@@ -81,10 +84,16 @@ internal sealed class Stars : IDisposable
         foreach (ref var star in _stars.AsSpan())
         {
             var clip = Vector4.Transform(new Vector4(star.Position, 1), viewProjection);
-            if (clip.W <= 0) continue;
+
+            if (clip.W <= 0)
+
+                continue;
             var x = clip.X / clip.W;
             var y = clip.Y / clip.W;
-            if (x < -1 || x > 1 || y < -1 || y > 1) continue;
+
+            if (x < -1 || x > 1 || y < -1 || y > 1)
+
+                continue;
 
             var core = Vector3.Lerp(star.Tint, Vector3.One, 0.5f);
             var brightness = 0.88f + 0.12f * MathF.Sin(time * star.TwinkleSpeed + star.Phase);
@@ -94,7 +103,9 @@ internal sealed class Stars : IDisposable
             AddGlow(camera, new Vector2(pixelX, pixelY), radius, core, brightness);
         }
 
-        if (_vertexCount == 0) return;
+        if (_vertexCount == 0)
+
+            return;
         cb.SetPipeline(_pipeline);
         cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_vertices.AsSpan(0, _vertexCount)));
         cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
@@ -106,12 +117,14 @@ internal sealed class Stars : IDisposable
     {
         ReadOnlySpan<float> radii = [0, 0.3f, 0.55f, 1];
         ReadOnlySpan<float> opacity = [1, 0.86f, 0.28f, 0];
+
         for (var ring = 0; ring < radii.Length - 1; ring++)
         {
             var inner = radius * radii[ring];
             var outer = radius * radii[ring + 1];
             var innerColor = new Color(tint, opacity[ring] * brightness);
             var outerColor = new Color(tint, opacity[ring + 1] * brightness);
+
             for (var segment = 0; segment < Segments; segment++)
             {
                 var a = Circle[segment];
@@ -119,7 +132,10 @@ internal sealed class Stars : IDisposable
                 AddVertex(camera, center + a * inner, innerColor);
                 AddVertex(camera, center + a * outer, outerColor);
                 AddVertex(camera, center + b * outer, outerColor);
-                if (ring == 0) continue;
+
+                if (ring == 0)
+
+                    continue;
                 AddVertex(camera, center + a * inner, innerColor);
                 AddVertex(camera, center + b * outer, outerColor);
                 AddVertex(camera, center + b * inner, innerColor);

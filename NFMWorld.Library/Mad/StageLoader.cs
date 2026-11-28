@@ -259,6 +259,7 @@ public partial class StageLoader
     {
         var references = new List<string>();
         var length = RadpackReader.ArchivePrefix.Length + 64;
+
         foreach (var rawLine in stageLines)
         {
             // Only a placement names a model. Anything else (a briefing or a comment) must not be
@@ -268,18 +269,27 @@ public partial class StageLoader
                 line = line[3..];
             if (line.StartsWith("?"))
                 line = line[1..];
-            if (!line.StartsWith("set(") && !line.StartsWith("fset(") && !line.StartsWith("chk(")
-                && !line.StartsWith("fchk(") && !line.StartsWith("fix("))
+
+            if (!line.StartsWith("set(")
+                && !line.StartsWith("fset(")
+                && !line.StartsWith("chk(")
+                && !line.StartsWith("fchk(")
+                && !line.StartsWith("fix("))
+
                 continue;
 
             var rest = line;
+
             while (true)
             {
                 var index = rest.IndexOf(RadpackReader.ArchivePrefix, StringComparison.OrdinalIgnoreCase);
+
                 if (index < 0)
+
                     break;
 
                 rest = rest[index..];
+
                 if (rest.Length >= length && RadpackReader.IsArchiveId(rest[..length].ToString()))
                 {
                     var reference = rest[..length].ToString().ToLowerInvariant();
@@ -328,22 +338,29 @@ public partial class StageLoader
                 line = aline.Trim();
 
                 // ds:/? prefixes mark lines a phy-addons stage editor added; load them as usual.
-                if (line.StartsWith("ds:")) line = line[3..];
-                if (line.StartsWith('?')) line = line[1..];
+                if (line.StartsWith("ds:"))
+                    line = line[3..];
+                if (line.StartsWith('?'))
+                    line = line[1..];
 
                 lineNumber++;
 
                 // amodel2 payload: the model data continues on `//- ` lines.
+
                 if (embeddedLabel != null)
                 {
                     if (line.StartsWith("//- "))
                     {
                         embeddedData.Append(line[4..]);
-                        if (--embeddedLines > 0) continue;
+
+                        if (--embeddedLines > 0)
+
+                            continue;
 
                         RegisterEmbeddedModel(embeddedLabel, embeddedData.ToString());
                         embeddedLabel = null;
                         embeddedData.Clear();
+
                         continue;
                     }
 
@@ -353,6 +370,7 @@ public partial class StageLoader
                 if (line.StartsWith("#editor_group"))
                 {
                     HierarchyGroup group;
+
                     if (!line.Contains(','))
                     {
                         group = new HierarchyGroup(Utility.GetString("#editor_group", line, 0), [], []);
@@ -362,6 +380,7 @@ public partial class StageLoader
                         // Old format
                         var gparts = line["#editor_group(".Length..^1].Split(',');
                         group = new HierarchyGroup(gparts[0], [], []);
+
                         if (gparts.Length >= 1)
                         {
                             var keys = gparts.Skip(1).Select(s => s.Trim());
@@ -480,6 +499,7 @@ public partial class StageLoader
                     {
                         // Support both single seed value and full cloud parameters
                         var cloudParams = line.Split(')', 2)[0].Split(',');
+
                         if (cloudParams.Length == 1) // clouds(seed) format
                         {
                             CloudCoverage = Utility.GetInt("clouds", line, 0);
@@ -507,6 +527,7 @@ public partial class StageLoader
                 else if (line.StartsWith("density"))
                 {
                     FogDensity = (Utility.GetInt("density", line, 0) + 1) * 2 - 1;
+
                     if (FogDensity < 1)
                     {
                         FogDensity = 1;
@@ -541,6 +562,7 @@ public partial class StageLoader
                 else if (line.StartsWith("mountains"))
                 {
                     // Check for mountains(false) first
+
                     if (line.Contains("false", StringComparison.OrdinalIgnoreCase))
                     {
                         DrawMountains = false;
@@ -587,9 +609,13 @@ public partial class StageLoader
                     // from the ground plane.
                     var setPrefix = line.StartsWith("fset") ? "fset" : "set";
                     var setModel = Utility.GetString(setPrefix, line, 0);
-                    if (!TryGetPieceToPlace(setModel, out var set)) continue;
+
+                    if (!TryGetPieceToPlace(setModel, out var set))
+
+                        continue;
 
                     // phy marks a handful of part ids as candidates for the converging-wall centre.
+
                     if (int.TryParse(setModel, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rawModel)
                         && IsWallCentre(rawModel))
                     {
@@ -606,6 +632,7 @@ public partial class StageLoader
                     var setheight = (double)World.Ground;
 
                     var hasCustomY = line.Split(',').Length >= 5;
+
                     if (hasCustomY)
                     {
                         if (absoluteY)
@@ -634,9 +661,11 @@ public partial class StageLoader
                             f64AngleSingle.ZeroAngle
                         )
                     );
+
                     if (line.Contains(")p")) //AI tags
                     {
                         obj = obj with { NodeKind = AiNodeKind.Road };
+
                         if (line.Contains(")pt"))
                         {
                             obj = obj with { NodeKind = AiNodeKind.Turn };
@@ -654,20 +683,34 @@ public partial class StageLoader
                             obj = obj with { NodeKind = AiNodeKind.Halfpipe };
                         }
                     }
-                    else if (line.Contains(")nfmw_CheckPoint")) obj = obj with { NodeKind = AiNodeKind.CheckPoint };
-                    else if (line.Contains(")nfmw_Road")) obj = obj with { NodeKind = AiNodeKind.Road };
-                    else if (line.Contains(")nfmw_Turn")) obj = obj with { NodeKind = AiNodeKind.Turn };
-                    else if (line.Contains(")nfmw_Auto")) obj = obj with { NodeKind = AiNodeKind.Auto };
-                    else if (line.Contains(")nfmw_Ramp")) obj = obj with { NodeKind = AiNodeKind.Ramp };
-                    else if (line.Contains(")nfmw_Halfpipe")) obj = obj with { NodeKind = AiNodeKind.Halfpipe };
-                    else if (line.Contains(")nfmw_SequenceStart")) obj = obj with { NodeKind = AiNodeKind.SequenceStart };
-                    else if (line.Contains(")nfmw_SequenceEnd")) obj = obj with { NodeKind = AiNodeKind.SequenceEnd };
-                    else if (line.Contains(")nfmw_FixRoadStart")) obj = obj with { NodeKind = AiNodeKind.FixRoadStart };
-                    else if (line.Contains(")nfmw_FixRamp")) obj = obj with { NodeKind = AiNodeKind.FixRamp };
-                    else if (line.Contains(")nfmw_FixHoop")) obj = obj with { NodeKind = AiNodeKind.FixHoop };
-                    else if (line.Contains(")nfmw_FixRoadEnd")) obj = obj with { NodeKind = AiNodeKind.FixRoadEnd };
-                    else if (line.Contains(")nfmw_Avoid")) obj = obj with { NodeKind = AiNodeKind.Avoid };
-                    else if (line.Contains(")nfmw_Reset")) obj = obj with { NodeKind = AiNodeKind.Reset };
+                    else if (line.Contains(")nfmw_CheckPoint"))
+                        obj = obj with { NodeKind = AiNodeKind.CheckPoint };
+                    else if (line.Contains(")nfmw_Road"))
+                        obj = obj with { NodeKind = AiNodeKind.Road };
+                    else if (line.Contains(")nfmw_Turn"))
+                        obj = obj with { NodeKind = AiNodeKind.Turn };
+                    else if (line.Contains(")nfmw_Auto"))
+                        obj = obj with { NodeKind = AiNodeKind.Auto };
+                    else if (line.Contains(")nfmw_Ramp"))
+                        obj = obj with { NodeKind = AiNodeKind.Ramp };
+                    else if (line.Contains(")nfmw_Halfpipe"))
+                        obj = obj with { NodeKind = AiNodeKind.Halfpipe };
+                    else if (line.Contains(")nfmw_SequenceStart"))
+                        obj = obj with { NodeKind = AiNodeKind.SequenceStart };
+                    else if (line.Contains(")nfmw_SequenceEnd"))
+                        obj = obj with { NodeKind = AiNodeKind.SequenceEnd };
+                    else if (line.Contains(")nfmw_FixRoadStart"))
+                        obj = obj with { NodeKind = AiNodeKind.FixRoadStart };
+                    else if (line.Contains(")nfmw_FixRamp"))
+                        obj = obj with { NodeKind = AiNodeKind.FixRamp };
+                    else if (line.Contains(")nfmw_FixHoop"))
+                        obj = obj with { NodeKind = AiNodeKind.FixHoop };
+                    else if (line.Contains(")nfmw_FixRoadEnd"))
+                        obj = obj with { NodeKind = AiNodeKind.FixRoadEnd };
+                    else if (line.Contains(")nfmw_Avoid"))
+                        obj = obj with { NodeKind = AiNodeKind.Avoid };
+                    else if (line.Contains(")nfmw_Reset"))
+                        obj = obj with { NodeKind = AiNodeKind.Reset };
 
                     pieces.Add(obj);
                     // if (Medium.Loadnew)
@@ -684,7 +727,9 @@ public partial class StageLoader
                     var ymult = -1;
                     var isAirCheckpoint = false;
 
-                    if (!TryGetPieceToPlace(Utility.GetString(chkPrefix, line, 0), out var mesh)) continue;
+                    if (!TryGetPieceToPlace(Utility.GetString(chkPrefix, line, 0), out var mesh))
+
+                        continue;
 
                     if (mesh.FileName == "nfmm/aircheckpoint")
                     {
@@ -757,7 +802,9 @@ public partial class StageLoader
                 }
                 else if (line.StartsWith("fix"))
                 {
-                    if (!TryGetPieceToPlace(Utility.GetString("set", line, 0), out var mesh)) continue;
+                    if (!TryGetPieceToPlace(Utility.GetString("set", line, 0), out var mesh))
+
+                        continue;
 
                     var fix = new PiecePlacement(
                         PiecePlacementType.FixHoop,
@@ -812,15 +859,23 @@ public partial class StageLoader
                 {
                     nlaps = (ushort)Utility.GetInt("nlaps", line, 0);
                 }
-                else if (line.StartsWith("desc")) ParseDescription(line);
-                else if (line.StartsWith("xstart")) ParseStart(line, StartAxis.X);
-                else if (line.StartsWith("zstart")) ParseStart(line, StartAxis.Z);
-                else if (line.StartsWith("ystart")) ParseStart(line, StartAxis.Y);
-                else if (line.StartsWith("xzstart")) ParseStart(line, StartAxis.Yaw);
-                else if (line.StartsWith("xystart")) ParseStart(line, StartAxis.Pitch);
-                else if (line.StartsWith("zystart")) ParseStart(line, StartAxis.Roll);
+                else if (line.StartsWith("desc"))
+                    ParseDescription(line);
+                else if (line.StartsWith("xstart"))
+                    ParseStart(line, StartAxis.X);
+                else if (line.StartsWith("zstart"))
+                    ParseStart(line, StartAxis.Z);
+                else if (line.StartsWith("ystart"))
+                    ParseStart(line, StartAxis.Y);
+                else if (line.StartsWith("xzstart"))
+                    ParseStart(line, StartAxis.Yaw);
+                else if (line.StartsWith("xystart"))
+                    ParseStart(line, StartAxis.Pitch);
+                else if (line.StartsWith("zystart"))
+                    ParseStart(line, StartAxis.Roll);
                 // `angle` is the ds-addons spelling of the yaw tag.
-                else if (line.StartsWith("angle")) ParseStart(line, StartAxis.Yaw);
+                else if (line.StartsWith("angle"))
+                    ParseStart(line, StartAxis.Yaw);
                 else if (line.StartsWith("startheight"))
                 {
                     // One height for every car; phy subtracts it from the stock 250.
@@ -926,7 +981,8 @@ public partial class StageLoader
                     // would fetch instead; NFMW never fetches from a stage file.
                     var label = Utility.GetString("amodel", line, 0);
                     var data = Utility.GetString("amodel", line, 1);
-                    if (data.Length > 0) RegisterEmbeddedModel(label, data);
+                    if (data.Length > 0)
+                        RegisterEmbeddedModel(label, data);
                 }
                 else if (line.StartsWith("amodel2("))
                 {
@@ -934,12 +990,16 @@ public partial class StageLoader
                     embeddedLabel = Utility.GetString("amodel2", line, 0);
                     embeddedLines = Math.Max(Utility.GetInt("amodel2", line, 1), 0);
                     embeddedData.Clear();
-                    if (embeddedLines == 0) embeddedLabel = null;
+                    if (embeddedLines == 0)
+                        embeddedLabel = null;
                 }
                 else if (line.StartsWith("model("))
                 {
                     // phy-addons free-placed model: model(label,x,y,z,xy,xz,zy)
-                    if (!TryGetPieceToPlace(Utility.GetString("model", line, 0), out var model)) continue;
+
+                    if (!TryGetPieceToPlace(Utility.GetString("model", line, 0), out var model))
+
+                        continue;
 
                     var obj = new PiecePlacement(
                         PiecePlacementType.CollisionObject,
@@ -1008,7 +1068,9 @@ public partial class StageLoader
                 // stage walls
                 else if (line.StartsWith("maxr"))
                 {
-                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
+                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall))
+
+                        continue;
 
                     var n = GetWallCount("maxr", line);
                     var o = Utility.GetInt("maxr", line, 1);
@@ -1046,7 +1108,9 @@ public partial class StageLoader
                 }
                 else if (line.StartsWith("maxl"))
                 {
-                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
+                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall))
+
+                        continue;
 
                     var n = GetWallCount("maxl", line);
                     var o = Utility.GetInt("maxl", line, 1);
@@ -1084,7 +1148,9 @@ public partial class StageLoader
                 }
                 else if (line.StartsWith("maxt"))
                 {
-                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
+                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall))
+
+                        continue;
 
                     var n = GetWallCount("maxt", line);
                     var o = Utility.GetInt("maxt", line, 1);
@@ -1122,7 +1188,9 @@ public partial class StageLoader
                 }
                 else if (line.StartsWith("maxb"))
                 {
-                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall)) continue;
+                    if (!TryGetPieceToPlace("nfmm/thewall", out var wall))
+
+                        continue;
 
                     var n = GetWallCount("maxb", line);
                     var o = Utility.GetInt("maxb", line, 1);
@@ -1204,17 +1272,28 @@ public partial class StageLoader
     private void ParseDescription(string line)
     {
         var end = line.LastIndexOf(')');
-        if (end < 0) end = line.Length;
-        if (end <= 5) return;
+        if (end < 0)
+            end = line.Length;
+
+        if (end <= 5)
+
+            return;
 
         var body = line[5..end];
+
         if (body.Length >= 2 && body[0] is >= '0' and <= '9' && body[1] == ',')
         {
             var comma = body.IndexOf(',');
-            if (!int.TryParse(body[..comma], NumberStyles.Integer, CultureInfo.InvariantCulture, out var index)) return;
-            if (index is < 0 or >= MaxDescriptionLines) return;
+
+            if (!int.TryParse(body[..comma], NumberStyles.Integer, CultureInfo.InvariantCulture, out var index))
+
+                return;
+            if (index is < 0 or >= MaxDescriptionLines)
+
+                return;
 
             SetDescriptionLine(index, body[(comma + 1)..]);
+
             return;
         }
 
@@ -1226,7 +1305,8 @@ public partial class StageLoader
 
     private void SetDescriptionLine(int index, string text)
     {
-        while (Description.Count <= index) Description.Add("");
+        while (Description.Count <= index)
+            Description.Add("");
         Description[index] = text;
     }
 
@@ -1237,24 +1317,36 @@ public partial class StageLoader
     private void ParseStart(string line, StartAxis axis)
     {
         var open = line.IndexOf('(');
-        if (open < 0) return;
+
+        if (open < 0)
+
+            return;
 
         var close = line.LastIndexOf(')');
         var args = close > open ? line[(open + 1)..close] : line[(open + 1)..];
         var parts = args.Split(',');
 
-        if (parts.Length < 2) return;
-        if (!int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var count)) return;
-        if (count is <= 0 or > 8) return;
+        if (parts.Length < 2)
+
+            return;
+        if (!int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+
+            return;
+        if (count is <= 0 or > 8)
+
+            return;
 
         var values = new List<float>(count);
+
         for (var i = 1; i < parts.Length && values.Count < count; i++)
         {
             if (float.TryParse(parts[i].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
                 values.Add(value);
         }
 
-        if (values.Count == 0) return;
+        if (values.Count == 0)
+
+            return;
 
         Starts.Add(new StageStart(axis, count, [.. values]));
     }
@@ -1276,11 +1368,14 @@ public partial class StageLoader
     /// <summary>Registers an amodel/amodel2 payload so <c>set</c>/<c>chk</c>/<c>fix</c> can place it.</summary>
     private void RegisterEmbeddedModel(string label, string data)
     {
-        if (string.IsNullOrWhiteSpace(label)) return;
+        if (string.IsNullOrWhiteSpace(label))
+
+            return;
 
         if (LegacyAssets.LegacyAssetImporter.DecodeEmbeddedRad(data) is not { } text)
         {
             Logging.Error($"Could not decode embedded stage model '{label}'.");
+
             return;
         }
 
@@ -1301,6 +1396,7 @@ public partial class StageLoader
         {
             setindex -= indexOffset;
             mesh = BackendGameSparker.stage_parts[setindex];
+
             if (mesh == null!)
             {
                 SentrySdk.CaptureMessage($"Stage part '{setstring}' not found.");
@@ -1314,22 +1410,27 @@ public partial class StageLoader
         {
             // Numbered labels stay stock parts, as in phy-addons, which only reaches its model
             // cache for a label it cannot parse as an index.
+
             if (_embeddedModels.TryGetValue(setstring, out var embedded))
             {
                 mesh = embedded;
+
                 return true;
             }
 
             var stagePart = BackendGameSparker.GetStagePart(setstring);
+
             if (stagePart.Rad == null)
             {
                 SentrySdk.CaptureMessage($"Stage part '{setstring}' not found.");
                 Logging.Error($"Stage part '{setstring}' not found.");
                 mesh = BackendGameSparker.error_mesh;
+
                 return true;
             }
 
             mesh = stagePart.Rad;
+
             return true;
         }
     }

@@ -21,6 +21,7 @@ public static class MenuHistory
     {
         var fs = fileSystem ?? TheVFS.VFS;
         LastPlayed = new();
+
         try
         {
             if (fs.FileExists(SavePath))
@@ -46,16 +47,21 @@ public static class MenuHistory
         {
             var identity = (LastPlayed.Car ?? DefaultCar).Replace('\\', '/');
             var rad = BackendGameSparker.GetCar(identity).Rad;
+
             if (rad is null)
             {
                 rad = BackendGameSparker.GetCar(DefaultCar).Rad
                       ?? BackendGameSparker.cars.Values.SelectMany(cars => cars).FirstOrDefault();
-                if (rad is not null) identity = rad.FileName;
+                if (rad is not null)
+                    identity = rad.FileName;
             }
 
-            if (rad is null) return null;
+            if (rad is null)
+
+                return null;
             var instance = CarPaint.CreateInstance(rad);
             CarPaint.Apply(instance, identity);
+
             return instance;
         }
     }
@@ -63,8 +69,12 @@ public static class MenuHistory
     public static void Remember(string? stage = null, string? car = null, VirtualFS? fileSystem = null)
     {
         var next = new Selection(stage ?? LastPlayed.Stage, car ?? LastPlayed.Car);
-        if (next == LastPlayed) return;
+
+        if (next == LastPlayed)
+
+            return;
         LastPlayed = next;
+
         try
         {
             using var stream = (fileSystem ?? TheVFS.VFS).OpenWrite(SavePath);

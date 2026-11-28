@@ -13,60 +13,60 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiComboFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiComboFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Align the popup toward the left by default<br/>
-		/// </summary>
-		PopupAlignLeft = unchecked(1),
+        /// <summary>
+        /// Align the popup toward the left by default<br/>
+        /// </summary>
+        PopupAlignLeft = unchecked(1),
 
-		/// <summary>
-		/// Max ~4 items visible. Tip: If you want your combo popup to be a specific size you can use SetNextWindowSizeConstraints() prior to calling BeginCombo()<br/>
-		/// </summary>
-		HeightSmall = unchecked(2),
+        /// <summary>
+        /// Max ~4 items visible. Tip: If you want your combo popup to be a specific size you can use SetNextWindowSizeConstraints() prior to calling BeginCombo()<br/>
+        /// </summary>
+        HeightSmall = unchecked(2),
 
-		/// <summary>
-		/// Max ~8 items visible (default)<br/>
-		/// </summary>
-		HeightRegular = unchecked(4),
+        /// <summary>
+        /// Max ~8 items visible (default)<br/>
+        /// </summary>
+        HeightRegular = unchecked(4),
 
-		/// <summary>
-		/// Max ~20 items visible<br/>
-		/// </summary>
-		HeightLarge = unchecked(8),
+        /// <summary>
+        /// Max ~20 items visible<br/>
+        /// </summary>
+        HeightLarge = unchecked(8),
 
-		/// <summary>
-		/// As many fitting items as possible<br/>
-		/// </summary>
-		HeightLargest = unchecked(16),
+        /// <summary>
+        /// As many fitting items as possible<br/>
+        /// </summary>
+        HeightLargest = unchecked(16),
 
-		/// <summary>
-		/// Display on the preview box without the square arrow button<br/>
-		/// </summary>
-		NoArrowButton = unchecked(32),
+        /// <summary>
+        /// Display on the preview box without the square arrow button<br/>
+        /// </summary>
+        NoArrowButton = unchecked(32),
 
-		/// <summary>
-		/// Display only a square arrow button<br/>
-		/// </summary>
-		NoPreview = unchecked(64),
+        /// <summary>
+        /// Display only a square arrow button<br/>
+        /// </summary>
+        NoPreview = unchecked(64),
 
-		/// <summary>
-		/// Width dynamically calculated from preview contents<br/>
-		/// </summary>
-		WidthFitPreview = unchecked(128),
+        /// <summary>
+        /// Width dynamically calculated from preview contents<br/>
+        /// </summary>
+        WidthFitPreview = unchecked(128),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		HeightMask = unchecked(30),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        HeightMask = unchecked(30),
+    }
 }

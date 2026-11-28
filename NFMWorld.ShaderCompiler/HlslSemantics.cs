@@ -66,7 +66,9 @@ public static class HlslSemantics
     {
         var text = StripComments(source);
         var parameters = ParametersOf(text, entryPoint);
+
         if (parameters is null)
+
             return Array.Empty<DeclaredInput>();
 
         var structs = ParseStructs(text);
@@ -75,7 +77,9 @@ public static class HlslSemantics
         foreach (var parameter in SplitTopLevel(parameters))
         {
             var match = ParameterRegex.Match(parameter.Trim());
+
             if (!match.Success)
+
                 continue;
 
             var type = match.Groups[1].Value;
@@ -86,6 +90,7 @@ public static class HlslSemantics
             {
                 if (!IsSystemValue(semantic))
                     inputs.Add(new DeclaredInput(field, semantic, MatrixRows(type)));
+
                 continue;
             }
 
@@ -106,7 +111,9 @@ public static class HlslSemantics
     public static (string Name, int Index) SplitSemantic(string semantic)
     {
         var split = semantic.Length;
-        while (split > 0 && char.IsAsciiDigit(semantic[split - 1])) split--;
+        while (split > 0 && char.IsAsciiDigit(semantic[split - 1]))
+            split--;
+
         return split == semantic.Length ? (semantic, 0) : (semantic[..split], int.Parse(semantic[split..]));
     }
 
@@ -125,9 +132,12 @@ public static class HlslSemantics
     private static int MatrixRows(string type)
     {
         var match = MatrixTypeRegex.Match(type);
+
         if (!match.Success)
+
             return 1;
         var rows = int.Parse(match.Groups[1].Value);
+
         return rows > 1 ? rows : 1;
     }
 
@@ -138,9 +148,11 @@ public static class HlslSemantics
     private static Dictionary<string, List<DeclaredInput>> ParseStructs(string text)
     {
         var structs = new Dictionary<string, List<DeclaredInput>>(StringComparer.Ordinal);
+
         foreach (Match match in StructRegex.Matches(text))
         {
             var fields = new List<DeclaredInput>();
+
             foreach (Match field in StructFieldRegex.Matches(match.Groups["body"].Value))
             {
                 var semantic = field.Groups[3].Value;
@@ -165,14 +177,18 @@ public static class HlslSemantics
         {
             var open = match.Index + match.Length - 1;
             var close = MatchingDelimiter(text, open, '(', ')');
+
             if (close < 0)
+
                 continue;
 
             // A definition's body opens somewhere after the parameter list, before the next `;`.
             var rest = text[(close + 1)..];
             var terminator = rest.IndexOf(';');
             var brace = rest.IndexOf('{');
+
             if (brace >= 0 && (terminator < 0 || brace < terminator))
+
                 return text[(open + 1)..close];
         }
 
@@ -182,10 +198,14 @@ public static class HlslSemantics
     private static int MatchingDelimiter(string text, int open, char openChar, char closeChar)
     {
         var depth = 0;
+
         for (var i = open; i < text.Length; i++)
         {
-            if (text[i] == openChar) depth++;
-            else if (text[i] == closeChar && --depth == 0) return i;
+            if (text[i] == openChar)
+                depth++;
+            else if (text[i] == closeChar && --depth == 0)
+
+                return i;
         }
 
         return -1;
@@ -196,6 +216,7 @@ public static class HlslSemantics
     {
         var depth = 0;
         var start = 0;
+
         for (var i = 0; i < text.Length; i++)
         {
             switch (text[i])
@@ -203,13 +224,16 @@ public static class HlslSemantics
                 case '(' or '[' or '<': depth++; break;
                 case ')' or ']' or '>': depth--; break;
                 case ',' when depth == 0:
+
                     yield return text[start..i];
                     start = i + 1;
+
                     break;
             }
         }
 
         if (start < text.Length)
+
             yield return text[start..];
     }
 
@@ -222,16 +246,19 @@ public static class HlslSemantics
     {
         var sb = new StringBuilder(text.Length);
         var i = 0;
+
         while (i < text.Length)
         {
             if (text[i] == '/' && i + 1 < text.Length && text[i + 1] == '/')
             {
-                while (i < text.Length && text[i] != '\n') i++;
+                while (i < text.Length && text[i] != '\n')
+                    i++;
             }
             else if (text[i] == '/' && i + 1 < text.Length && text[i + 1] == '*')
             {
                 i += 2;
-                while (i + 1 < text.Length && !(text[i] == '*' && text[i + 1] == '/')) i++;
+                while (i + 1 < text.Length && !(text[i] == '*' && text[i + 1] == '/'))
+                    i++;
                 i = Math.Min(i + 2, text.Length);
             }
             else

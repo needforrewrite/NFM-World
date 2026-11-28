@@ -48,11 +48,17 @@ public sealed partial class AccountManager
         try
         {
             using var response = await _http.GetAsync(new Uri(_baseUri, "assets/limits"));
-            if (!response.IsSuccessStatusCode) return null;
+
+            if (!response.IsSuccessStatusCode)
+
+                return null;
 
             var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
-            return body.ValueKind == JsonValueKind.Object && body.TryGetProperty("maxUploadBytes", out var limit)
-                   && limit.ValueKind == JsonValueKind.Number && limit.TryGetInt32(out var bytes)
+
+            return body.ValueKind == JsonValueKind.Object
+                   && body.TryGetProperty("maxUploadBytes", out var limit)
+                   && limit.ValueKind == JsonValueKind.Number
+                   && limit.TryGetInt32(out var bytes)
                    && bytes is > 0 and <= RadpackLimits.MaxCompressedBytes
                 ? bytes
                 : null;
@@ -67,11 +73,14 @@ public sealed partial class AccountManager
     public async Task<IReadOnlyList<OwnedAsset>> ListOwnedAssetsAsync(string? type = null)
     {
         if (ActiveAccount is not { } account)
+
             return [];
 
         var items = new List<OwnedAsset>();
         int? cursor = null;
+
         // Bounded: the inventory is a menu, not a data export.
+
         for (var page = 0; page < 10; page++)
         {
             var url = $"assets/mine?limit={OwnedPageSize}";
@@ -83,7 +92,9 @@ public sealed partial class AccountManager
             using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_baseUri, url));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
             using var response = await _http.SendAsync(request);
+
             if (!response.IsSuccessStatusCode)
+
                 throw new HttpRequestException(await ReadErrorAsync(response, assetRequest: true), null, response.StatusCode);
 
             var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
@@ -91,6 +102,7 @@ public sealed partial class AccountManager
                 items.Add(ReadOwned(item));
 
             if (!body.TryGetProperty("nextCursor", out var next) || next.ValueKind != JsonValueKind.Number)
+
                 break;
             cursor = next.GetInt32();
         }
@@ -107,6 +119,7 @@ public sealed partial class AccountManager
     )
     {
         if (ActiveAccount is not { } account)
+
             return new RequestResult("Sign in to edit your uploads.", false);
 
         try
@@ -121,6 +134,7 @@ public sealed partial class AccountManager
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
 
             using var response = await _http.SendAsync(request);
+
             return response.IsSuccessStatusCode
                 ? new RequestResult("Changes saved.", true)
                 : new RequestResult(await ReadErrorAsync(response), false);
@@ -128,6 +142,7 @@ public sealed partial class AccountManager
         catch (Exception ex)
         {
             // Called fire-and-forget from the menu; nothing may escape as an unobserved fault.
+
             return new RequestResult($"Could not reach the archive: {ex.Message}", false);
         }
     }
@@ -145,9 +160,11 @@ public sealed partial class AccountManager
     )
     {
         if (ActiveAccount is not { } account)
+
             return new AssetUploadResult(false, "Sign in to edit your uploads.", null);
 
         if (radpack.Length > RadpackLimits.MaxCompressedBytes)
+
             return new AssetUploadResult(false, "The package is too large to publish.", null);
 
         try
@@ -167,13 +184,16 @@ public sealed partial class AccountManager
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
 
             using var response = await _http.SendAsync(request);
+
             if (IsPublicationRouteUnavailable(response))
+
                 return new AssetUploadResult(
                     false,
                     "The upload is unavailable or this Archive does not support editor updates yet.",
                     null
                 );
             if (!response.IsSuccessStatusCode)
+
                 return new AssetUploadResult(false, await ReadErrorAsync(response, assetRequest: true), null);
 
             var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
@@ -184,6 +204,7 @@ public sealed partial class AccountManager
             var message = IsAwaitingAssetVerification(asset)
                 ? $"Updated \"{name}\". Awaiting verification."
                 : $"Updated \"{name}\".";
+
             return new AssetUploadResult(true, message, hash);
         }
         catch (Exception ex)
@@ -199,6 +220,7 @@ public sealed partial class AccountManager
     public async Task<RequestResult> DeleteAssetAsync(int id)
     {
         if (ActiveAccount is not { } account)
+
             return new RequestResult("Sign in to delete your uploads.", false);
 
         try
@@ -206,6 +228,7 @@ public sealed partial class AccountManager
             using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri(_baseUri, $"assets/{id}"));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
             using var response = await _http.SendAsync(request);
+
             return response.IsSuccessStatusCode
                 ? new RequestResult("Upload deleted.", true)
                 : new RequestResult(await ReadErrorAsync(response), false);
@@ -238,6 +261,7 @@ public sealed partial class AccountManager
     );
 
     private static bool IsAwaitingAssetVerification(JsonElement asset)
-        => asset.ValueKind == JsonValueKind.Object && asset.TryGetProperty("reviewStatus", out var status)
+        => asset.ValueKind == JsonValueKind.Object
+           && asset.TryGetProperty("reviewStatus", out var status)
            && status.GetString() == "Pending";
 }

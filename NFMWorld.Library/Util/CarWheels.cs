@@ -43,7 +43,9 @@ public static class CarWheels
     {
         lock (Gate)
         {
-            if (!_loaded) Load();
+            if (!_loaded)
+                Load();
+
             return Normalize(Saved.GetValueOrDefault(RadpackReader.Identity(id)));
         }
     }
@@ -52,10 +54,12 @@ public static class CarWheels
     {
         lock (Gate)
         {
-            if (!_loaded) Load();
+            if (!_loaded)
+                Load();
             Saved[RadpackReader.Identity(id)] = Normalize(appearance);
             _dirty = true;
-            if (Environment.TickCount64 - _lastSave >= 250) Flush(fileSystem);
+            if (Environment.TickCount64 - _lastSave >= 250)
+                Flush(fileSystem);
         }
     }
 
@@ -66,13 +70,18 @@ public static class CarWheels
             _loaded = true;
             _dirty = false;
             Saved.Clear();
+
             try
             {
                 var fs = fileSystem ?? TheVFS.VFS;
-                if (!fs.FileExists(SavePath)) return;
+
+                if (!fs.FileExists(SavePath))
+
+                    return;
                 var data = JsonSerializer.Deserialize<Dictionary<string, WheelAppearance>>(fs.ReadAllText(SavePath));
                 if (data is not null)
-                    foreach (var (id, appearance) in data) Saved[id] = Normalize(appearance);
+                    foreach (var (id, appearance) in data)
+                        Saved[id] = Normalize(appearance);
             }
             catch (Exception ex)
             {
@@ -85,7 +94,10 @@ public static class CarWheels
     {
         lock (Gate)
         {
-            if (!_dirty) return;
+            if (!_dirty)
+
+                return;
+
             try
             {
                 using var stream = (fileSystem ?? TheVFS.VFS).OpenWrite(SavePath);
@@ -124,7 +136,9 @@ public static class CarWheels
         {
             Rims = ApplyRimColor(wheel.Rims, stock.Rims, style, groups[index]),
             Polys = style.OriginalWheels ? null : wheel.Polys?.Select(poly =>
-                poly.ColNum is { } slot && slot >= 0 && slot < (style.Colors?.Length ?? 0)
+                poly.ColNum is { } slot
+                && slot >= 0
+                && slot < (style.Colors?.Length ?? 0)
                 && style.Colors![slot] is { } color ? poly with { Color = color } : poly
             ).ToArray()
         }).ToArray();
@@ -138,17 +152,22 @@ public static class CarWheels
     )
     {
         if (style.RimColors is { } colors && group < colors.Length && colors[group] is { } color)
+
             return (rims ?? fallback ?? Rad3dRimsDef.Default) with { Color = color };
+
         return rims is { } defined && style.RimColor is { } legacy ? defined with { Color = legacy } : rims;
     }
 
     private static int[] RimGroups(Baseline stock)
     {
         var groups = new Dictionary<Rad3dRimsDef, int>();
+
         return stock.Wheels.Select(wheel =>
             {
                 var rims = wheel.Rims ?? stock.Rims ?? Rad3dRimsDef.Default;
-                if (!groups.TryGetValue(rims, out var group)) groups.Add(rims, group = groups.Count);
+                if (!groups.TryGetValue(rims, out var group))
+                    groups.Add(rims, group = groups.Count);
+
                 return group;
             }
         ).ToArray();
@@ -157,6 +176,7 @@ public static class CarWheels
     public static IReadOnlyList<CarColorSlot> RimSlots(Rad3d rad)
     {
         var groups = RimGroups(Stock(rad));
+
         return rad.Wheels.Select((wheel, index) => (Wheel: wheel, Group: groups[index]))
             .Where(entry => entry.Wheel.Polys is null)
             .DistinctBy(entry => entry.Group)

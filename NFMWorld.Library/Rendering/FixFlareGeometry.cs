@@ -36,15 +36,18 @@ public static class FixFlareGeometry
     public static void WriteShell(Vector3 center, Vector3 halfSize, float inflation, Span<Vector3> points)
     {
         if (points.Length < ShellVertexCount)
+
             throw new ArgumentException($"A shell needs {ShellVertexCount} points.", nameof(points));
 
         var radius = halfSize * inflation;
         points[0] = center + new Vector3(0, radius.Y, 0);
         points[ShellVertexCount - 1] = center - new Vector3(0, radius.Y, 0);
+
         for (var ring = 0; ring < LatitudeRings; ring++)
         {
             var phi = MathF.PI / 2 - (ring + 1) * MathF.PI / (LatitudeRings + 1);
             var (sinPhi, cosPhi) = MathF.SinCos(phi);
+
             for (var i = 0; i < Sides; i++)
             {
                 var theta = MathF.Tau * i / Sides;
@@ -66,10 +69,13 @@ public static class FixFlareGeometry
     public static void WriteShellIndices(Span<ushort> indices, ushort vertexOffset)
     {
         var required = ShellTriangleCount * 3;
+
         if (indices.Length < required)
+
             throw new ArgumentException($"A shell needs {required} indices.", nameof(indices));
 
         var index = 0;
+
         for (var i = 0; i < Sides; i++)
         {
             var next = (i + 1) % Sides;
@@ -82,6 +88,7 @@ public static class FixFlareGeometry
         {
             var lower = 1 + ring * Sides;
             var upper = lower + Sides;
+
             for (var i = 0; i < Sides; i++)
             {
                 var next = (i + 1) % Sides;
@@ -96,6 +103,7 @@ public static class FixFlareGeometry
 
         var bottomRing = 1 + (LatitudeRings - 1) * Sides;
         ushort bottom = (ushort)(vertexOffset + ShellVertexCount - 1);
+
         for (var i = 0; i < Sides; i++)
         {
             var next = (i + 1) % Sides;

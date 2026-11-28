@@ -11,7 +11,8 @@ public partial class RacePhase
     private bool _finishRequested;
     private bool _deathSpectating;
     private bool WatchingPlayers => _spectating || (_deathSpectating && ClientCar is { Wasted: true });
-    private bool ShowingDeathResult => !_spectating && !_deathSpectating
+    private bool ShowingDeathResult => !_spectating
+                                       && !_deathSpectating
                                        && UsesStandardRaceCompletion
                                        && ClientCar is { Wasted: true }
                                        && GamemodeInstance is BaseClientGamemode
@@ -27,32 +28,48 @@ public partial class RacePhase
 
     private void ResetWithdrawnFinish()
     {
-        if (GamemodeInstance is not BaseClientGamemode { HudState.Finished: false }) return;
-        if (ShowingDeathResult) return;
+        if (GamemodeInstance is not BaseClientGamemode { HudState.Finished: false })
+
+            return;
+        if (ShowingDeathResult)
+
+            return;
         _finishRequested = false;
-        if (_finish.Active.Value) _finish.Reset();
+        if (_finish.Active.Value)
+            _finish.Reset();
     }
 
     internal bool HandleRaceFinishKey(Key key)
     {
-        if (!_finish.Active.Value || IsPaused) return false;
+        if (!_finish.Active.Value || IsPaused)
+
+            return false;
+
         if (_finish.ShowSummary.Value && key == Key.Escape)
         {
             QuitRace();
+
             return true;
         }
 
-        if (key != Key.Enter && key != SettingsMenu.Bindings.Enter) return false;
+        if (key != Key.Enter && key != SettingsMenu.Bindings.Enter)
+
+            return false;
         ContinueRaceFinish();
+
         return true;
     }
 
     private void ContinueRaceFinish()
     {
-        if (!_finish.CanContinue.Value) return;
+        if (!_finish.CanContinue.Value)
+
+            return;
+
         if (_finish.ShowSummary.Value)
         {
             QuitRace();
+
             return;
         }
 
@@ -60,21 +77,26 @@ public partial class RacePhase
         {
             CloseChat();
             _input.Reset(ClientCar?.Control);
+
             if (_host is NFMWorld.Gameplay.RaceHost.NetworkRaceHost)
             {
                 _deathSpectating = true;
                 _finish.Reset();
             }
-            else _finish.TryShowSummary();
+            else
+                _finish.TryShowSummary();
 
             return;
         }
 
-        if (_host is NFMWorld.Gameplay.RaceHost.NetworkRaceHost && !_spectating
-            && RaceState != NFMWorldLibrary.RaceState.Finished && GamemodeInstance is BaseClientGamemode gamemode)
+        if (_host is NFMWorld.Gameplay.RaceHost.NetworkRaceHost
+            && !_spectating
+            && RaceState != NFMWorldLibrary.RaceState.Finished
+            && GamemodeInstance is BaseClientGamemode gamemode)
         {
             _finishRequested = true;
             gamemode.ConfirmFinish();
+
             return;
         }
 

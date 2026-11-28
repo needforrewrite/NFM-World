@@ -53,6 +53,7 @@ public static class TightPackFormatterProvider
     public static bool IsRegistered(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
+
         return s_formatters.ContainsKey(type);
     }
 
@@ -68,6 +69,7 @@ public static class TightPackFormatterProvider
 
         s_untyped.TryRemove(type, out _);
         Interlocked.Increment(ref s_generation);
+
         return true;
     }
 
@@ -87,6 +89,7 @@ public static class TightPackFormatterProvider
         ArgumentNullException.ThrowIfNull(assembly);
 
         int dropped = 0;
+
         foreach (KeyValuePair<Type, object> entry in s_formatters)
         {
             if (Involves(entry.Key, assembly) && s_formatters.TryRemove(entry.Key, out _))
@@ -102,6 +105,7 @@ public static class TightPackFormatterProvider
 
         // The bridge holds no state of its own, but a closed generic over the plugin's types is
         // exactly the sort of type argument that keeps a collectible context alive.
+
         foreach (Type key in s_untyped.Keys)
         {
             if (Involves(key, assembly))
@@ -156,6 +160,7 @@ public static class TightPackFormatterProvider
             && Volatile.Read(ref Cache<T>.Formatter) is { } cached)
         {
             formatter = cached;
+
             return true;
         }
 
@@ -166,6 +171,7 @@ public static class TightPackFormatterProvider
 
         // A registration during the resolve may have changed the answer, so this lookup is served
         // without being memoised rather than memoising a stale result.
+
         if (Volatile.Read(ref s_generation) == generation)
         {
             Volatile.Write(ref Cache<T>.Formatter, formatter);
@@ -180,16 +186,19 @@ public static class TightPackFormatterProvider
         if (s_formatters.TryGetValue(typeof(T), out object? boxed))
         {
             formatter = (TightPackFormatter<T>)boxed;
+
             return true;
         }
 
         if (Internal.DefaultFormatters.TryCreate(typeof(T)) is TightPackFormatter<T> created)
         {
             formatter = created;
+
             return true;
         }
 
         formatter = null;
+
         return false;
     }
 
@@ -201,6 +210,7 @@ public static class TightPackFormatterProvider
         }
 
         TightPackSerializationException.ThrowNotRegistered(typeof(T));
+
         return null!;
     }
 
@@ -243,6 +253,7 @@ public static class TightPackFormatterProvider
         )!;
 
         s_untyped[type] = created;
+
         return created;
     }
 }

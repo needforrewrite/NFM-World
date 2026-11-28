@@ -36,6 +36,7 @@ public sealed class RaceInputController
         get
         {
             var bindings = SettingsMenu.Bindings;
+
             return new FreelookInput(
                 _pressedKeys.Contains(bindings.Accelerate),
                 _pressedKeys.Contains(bindings.Brake),
@@ -52,14 +53,19 @@ public sealed class RaceInputController
         _pressedKeys.Clear();
         CarCamHeld = false;
         UpdateControlState(control);
-        if (control is null) return;
+
+        if (control is null)
+
+            return;
         control.Enter = false;
         control.Lookback = 0;
     }
 
     public void SetCarCamHeld(bool held, Control? control)
     {
-        if (CarCamHeld == held) return;
+        if (CarCamHeld == held)
+
+            return;
         CarCamHeld = held;
         UpdateControlState(control);
     }
@@ -70,7 +76,9 @@ public sealed class RaceInputController
     public void Refresh(in Keys keys, Control? control, bool airborne)
     {
         _airborne = airborne;
+
         if (control is null)
+
             return;
 
         var bindings = SettingsMenu.Bindings;
@@ -114,6 +122,7 @@ public sealed class RaceInputController
             SettingsMenu.ToggleSfxMute();
 
         if (control is null)
+
             return;
 
         if (key == bindings.Enter)
@@ -133,20 +142,28 @@ public sealed class RaceInputController
             control.Arrace = canTargetCars && !control.Arrace;
             // Turning the car targeting on by hand starts from the automatic pick, not from
             // whatever slot was locked when it was last switched off.
-            if (!control.Arrace) control.ArrowLock = -1;
+            if (!control.Arrace)
+                control.ArrowLock = -1;
         }
 
         if (firstPress && canTargetCars)
         {
             var slots = bindings.LockSlots;
+
             for (var slot = 0; slot < slots.Length; slot++)
             {
-                if (key != slots[slot]) continue;
+                if (key != slots[slot])
+
+                    continue;
                 var target = lockTarget?.Invoke(slot) ?? -1;
-                if (target < 0) break;
+
+                if (target < 0)
+
+                    break;
                 // Locking implies targeting; pressing the same digit again releases it.
                 control.ArrowLock = control.ArrowLock == target ? -1 : target;
                 control.Arrace = true;
+
                 break;
             }
         }
@@ -164,6 +181,7 @@ public sealed class RaceInputController
         UpdateControlState(control);
 
         if (control is null)
+
             return;
 
         if (key == Key.Escape)
@@ -179,6 +197,7 @@ public sealed class RaceInputController
     private void UpdateControlState(Control? control)
     {
         if (control is null)
+
             return;
 
         var bindings = SettingsMenu.Bindings;

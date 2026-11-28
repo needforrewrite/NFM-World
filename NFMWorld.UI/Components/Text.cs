@@ -123,6 +123,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
     )
     {
         RelayoutText(new Vector2(availableWidth, availableHeight), out var width, out var height);
+
         return new YogaSize(width, height);
     }
 
@@ -133,6 +134,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
 
         var resolved = ResolvedStyles;
         var font = new Font(resolved.FontFamily!.Value, resolved.FontStyle!.Value, resolved.FontSize!.Value);
+
         if (resolved.OverflowBehavior is not OverflowBehavior.Stretch and not OverflowBehavior.None
             && resolved.BreakType is not BreakType.None)
         {
@@ -179,6 +181,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
         base.OnPostLayout();
 
         var resolved = ResolvedStyles;
+
         if (HasNewLayout
             && resolved.OverflowBehavior is not Reactor.OverflowBehavior.Stretch and not Reactor.OverflowBehavior.None
             && resolved.BreakType is not Reactor.BreakType.None)
@@ -191,6 +194,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
         {
             OnInvalidated();
             RelayoutText(LayoutContentSize, out _, out _);
+
             return true;
         }
 
@@ -224,6 +228,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
         foreach (var element in LaidOutComplexText.Value.Elements)
         {
             G.SetFont(element.Font with { Size = (element.FontSize ?? resolved.FontSize!.Value) });
+
             if ((element.Background ?? Styles.BackgroundColor) is { } background)
             {
                 G.SetColor(background);
@@ -231,6 +236,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
             }
 
             float yOff = 0;
+
             if (resolved.VerticalAlignment == TextVerticalAlignment.Center)
             {
                 yOff = (G.GetFontMetrics().LineHeight / 2.0f);
@@ -244,6 +250,7 @@ public class Text : Component, IRichTextContainer, IReceivesTextInvalidation
             int y = (int)(basePosition.Y + (element.Position.Y) + yOff);
 
             G.SetColor(element.Foreground ?? resolved.ForegroundColor!.Value);
+
             if ((element.Stroke ?? resolved.StrokeColor) is { } stroke)
             {
                 G.DrawStringOutlined(element.Text, x, y, stroke, resolved.StrokeWidth!.Value);

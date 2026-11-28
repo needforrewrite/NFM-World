@@ -19,10 +19,12 @@ public class CollisionShapeUnion : IUnion
         if (_unionKind == 1)
         {
             value = _union1ShapeRoad;
+
             return true;
         }
 
         value = default!;
+
         return false;
     }
 
@@ -39,10 +41,12 @@ public class CollisionShapeUnion : IUnion
         if (_unionKind == 2)
         {
             value = _union2ShapeWall;
+
             return true;
         }
 
         value = default!;
+
         return false;
     }
 
@@ -59,10 +63,12 @@ public class CollisionShapeUnion : IUnion
         if (_unionKind == 3)
         {
             value = _union3ShapeRamp;
+
             return true;
         }
 
         value = default!;
+
         return false;
     }
 
@@ -79,10 +85,12 @@ public class CollisionShapeUnion : IUnion
         if (_unionKind == 4)
         {
             value = _union4ShapeMesh;
+
             return true;
         }
 
         value = default!;
+
         return false;
     }
 
@@ -99,10 +107,12 @@ public class CollisionShapeUnion : IUnion
         if (_unionKind == 5)
         {
             value = _union5ShapeHull;
+
             return true;
         }
 
         value = default!;
+
         return false;
     }
 

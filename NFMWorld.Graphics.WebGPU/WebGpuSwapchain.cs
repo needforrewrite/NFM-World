@@ -54,6 +54,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         get
         {
             if (_multisampled is not null)
+
                 return _multisampled.View;
 
             return _surfaceView is not null ? _surfaceView : _offscreen?.View;
@@ -66,6 +67,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         get
         {
             if (_multisampled is null)
+
                 return null;
 
             return _surfaceView is not null ? _surfaceView : _offscreen?.View;
@@ -95,6 +97,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         set
         {
             if (field == value)
+
                 return;
             field = value;
             Configure();
@@ -128,6 +131,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
     internal bool BeginFrame()
     {
         if (_surface is null || _surfaceView is not null)
+
             return true;
 
         var surfaceTexture = default(Wg.SurfaceTexture);
@@ -139,6 +143,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
             // dropping it would show a stall for a change the next Configure picks up anyway.
             case Wg.SurfaceGetCurrentTextureStatus.SuccessOptimal:
             case Wg.SurfaceGetCurrentTextureStatus.SuccessSuboptimal:
+
                 break;
             case Wg.SurfaceGetCurrentTextureStatus.Outdated:
             case Wg.SurfaceGetCurrentTextureStatus.Lost:
@@ -147,10 +152,13 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
                 if (surfaceTexture.Texture is not null)
                     _device.Api.TextureRelease(surfaceTexture.Texture);
                 Configure();
+
                 return false;
             default:
+
                 // Timeout and Error. Both leave the texture's ownership with wgpu, so releasing it
                 // here would be a double free; only the frame is lost.
+
                 return false;
         }
 
@@ -172,16 +180,20 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         _surfaceView = _device.Api.TextureCreateView(_surfaceTexture, &descriptor);
         _device.CheckCreated(_surfaceView is not null, "surface texture view");
         _frameAcquired = true;
+
         return true;
     }
 
     public void Resize(int width, int height, int multiSampleCount = 0)
     {
         if (width <= 0 || height <= 0)
+
             return;
 
         var samples = multiSampleCount > 0 ? NormalizeSampleCount(multiSampleCount) : _sampleCount;
+
         if (width == _width && height == _height && samples == _sampleCount)
+
             return;
 
         _width = width;
@@ -221,6 +233,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
     public void Present()
     {
         if (_surface is null || !_frameAcquired)
+
             return;
 
         _frameAcquired = false;
@@ -238,6 +251,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         // A browser has no present call at all: wgpuSurfacePresent aborts, and the canvas shows the
         // screen at the end of the animation frame that wrote it. Releasing the texture is the whole
         // of a present there.
+
         if (!_device.IsBrowser)
         {
             var status = _device.Api.SurfacePresent(_surface);
@@ -302,15 +316,18 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
     private void Configure()
     {
         if (_surface is null)
+
             return;
 
         var capabilities = default(Wg.SurfaceCapabilities);
+
         if (_device.Api.SurfaceGetCapabilities(_surface, _device.Adapter, &capabilities) != Wg.Status.Success)
         {
             // An unconfigured surface still needs a configuration; without capabilities the current
             // format is the only sane guess, so configure with it and let the next acquisition fail
             // loudly rather than silently reusing a stale size.
             ConfigureWith(_format, VSync ? Wg.PresentMode.Fifo : Wg.PresentMode.Immediate);
+
             return;
         }
 
@@ -323,6 +340,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
 
             var presentMode = VSync ? Wg.PresentMode.Fifo : Wg.PresentMode.Immediate;
             var supported = false;
+
             for (nuint i = 0; i < capabilities.PresentModeCount; i++)
             {
                 if (capabilities.PresentModes[i] == presentMode)
@@ -369,7 +387,9 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
     )
     {
         var capabilities = default(Wg.SurfaceCapabilities);
+
         if (api.SurfaceGetCapabilities(surface, adapter, &capabilities) != Wg.Status.Success)
+
             return fallback;
 
         try
@@ -389,8 +409,10 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
     private static Wg.TextureFormat ChooseFormat(in Wg.SurfaceCapabilities capabilities, Wg.TextureFormat fallback)
     {
         if (HasFormat(capabilities, Wg.TextureFormat.Bgra8Unorm))
+
             return Wg.TextureFormat.Bgra8Unorm;
         if (HasFormat(capabilities, Wg.TextureFormat.Rgba8Unorm))
+
             return Wg.TextureFormat.Rgba8Unorm;
 
         return capabilities.FormatCount > 0 ? capabilities.Formats[0] : fallback;
@@ -401,6 +423,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         for (nuint i = 0; i < capabilities.FormatCount; i++)
         {
             if (capabilities.Formats[i] == format)
+
                 return true;
         }
 
@@ -415,6 +438,7 @@ internal sealed unsafe class WebGpuSwapchain : ISwapchain
         _depth = null;
 
         // A headless back buffer is resized by replacing it; a surface's is the compositor's.
+
         if (_offscreen is not null)
         {
             _offscreen.Dispose();

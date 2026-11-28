@@ -105,6 +105,7 @@ public partial class TextArea : View
         set
         {
             if (_textStyles == value)
+
                 return;
 
             _textStyles = value;
@@ -161,6 +162,7 @@ public partial class TextArea : View
     public void SetTextExternal(string text)
     {
         if (_value == text)
+
             return;
 
         _value = text;
@@ -180,6 +182,7 @@ public partial class TextArea : View
     private void SetValueFromUser(string text)
     {
         if (_value == text)
+
             return;
 
         EditStarted?.Invoke();
@@ -200,7 +203,9 @@ public partial class TextArea : View
         get
         {
             if (_selectionAnchor is not { } anchor || anchor == _cursor)
+
                 return null;
+
             return (Math.Min(anchor, _cursor), Math.Max(anchor, _cursor));
         }
     }
@@ -208,6 +213,7 @@ public partial class TextArea : View
     private void DeleteSelection()
     {
         if (Selection is not { } range)
+
             return;
 
         SetValueFromUser(_value[..range.Start] + _value[range.End..]);
@@ -234,6 +240,7 @@ public partial class TextArea : View
     private void CutSelection()
     {
         if (Selection is not { } cut)
+
             return;
 
         ResolveSetClipboard?.Invoke(_value[cut.Start..cut.End]);
@@ -245,6 +252,7 @@ public partial class TextArea : View
     private void PasteClipboard()
     {
         if (ResolveGetClipboard?.Invoke() is not { } pasted)
+
             return;
 
         // A multiline editor keeps the line breaks; only CRLF/CR become LF so the
@@ -262,12 +270,15 @@ public partial class TextArea : View
     private void PushHistory(bool typing)
     {
         if (_suppressHistory || !UseLocalHistory)
+
             return;
 
         var now = Environment.TickCount64;
+
         if (typing && _lastEditWasTyping && now - _lastEditTimestamp <= TypingCoalesceMs)
         {
             _lastEditTimestamp = now;
+
             return;
         }
 
@@ -282,6 +293,7 @@ public partial class TextArea : View
     private void Undo()
     {
         if (_suppressHistory || _undo.Count == 0)
+
             return;
 
         _redo.Add(new HistoryEntry(_value, _cursor, _selectionAnchor));
@@ -294,6 +306,7 @@ public partial class TextArea : View
     private void Redo()
     {
         if (_suppressHistory || _redo.Count == 0)
+
             return;
 
         _undo.Add(new HistoryEntry(_value, _cursor, _selectionAnchor));
@@ -306,6 +319,7 @@ public partial class TextArea : View
     private void ApplyHistory(HistoryEntry entry)
     {
         _suppressHistory = true;
+
         try
         {
             _value = entry.Text;
@@ -358,6 +372,7 @@ public partial class TextArea : View
     private List<LineInfo> GetLines()
     {
         if (_lineCache is not null)
+
             return _lineCache;
 
         var elements = _text.LaidOutComplexText?.Elements;
@@ -368,6 +383,7 @@ public partial class TextArea : View
         for (var i = 0; i <= _value.Length; i++)
         {
             if (i < _value.Length && _value[i] != '\n')
+
                 continue;
 
             ComplexTextMetrics.PositionedRichText? element = elements is not null && line < elements.Count
@@ -380,16 +396,20 @@ public partial class TextArea : View
         }
 
         _lineCache = lines;
+
         return lines;
     }
 
     private float LineHeight()
     {
         var elements = _text.LaidOutComplexText?.Elements;
+
         if (elements is { Count: > 0 })
+
             return G.GetFontMetrics(elements[0].Font).LineHeight;
 
         var resolved = _textStyles.Resolved;
+
         return G.GetFontMetrics(
             new Font(
                 resolved.FontFamily!.Value,
@@ -402,6 +422,7 @@ public partial class TextArea : View
     private float MeasurePrefix(ComplexTextMetrics.PositionedRichText? element, IFontMetrics? metrics, int length)
     {
         if (element is not { } e || metrics is null || length <= 0)
+
             return 0f;
 
         return metrics.MeasureText(e.Text.AsSpan(0, Math.Min(length, e.Text.Length))).X;
@@ -410,12 +431,15 @@ public partial class TextArea : View
     private (int Line, int Column) LineColumnOf(int index)
     {
         var lines = GetLines();
+
         if (lines.Count == 0)
+
             return (0, 0);
 
         for (var i = lines.Count - 1; i >= 0; i--)
         {
             if (index >= lines[i].Start || i == 0)
+
                 return (i, Math.Clamp(index - lines[i].Start, 0, lines[i].End - lines[i].Start));
         }
 
@@ -425,10 +449,13 @@ public partial class TextArea : View
     private int IndexOf(int line, int column)
     {
         var lines = GetLines();
+
         if (lines.Count == 0)
+
             return 0;
 
         var info = lines[Math.Clamp(line, 0, lines.Count - 1)];
+
         return info.Start + Math.Clamp(column, 0, info.End - info.Start);
     }
 
@@ -438,7 +465,9 @@ public partial class TextArea : View
     private int IndexForPoint(float x, float y)
     {
         var lines = GetLines();
+
         if (lines.Count == 0)
+
             return 0;
 
         var lineHeight = Math.Max(LineHeight(), 1f);
@@ -450,15 +479,19 @@ public partial class TextArea : View
         var target = Math.Max(0f, x - (info.Element?.Position.X ?? 0));
         var text = info.Element?.Text ?? "";
         var metrics = info.Metrics;
+
         if (metrics is null)
+
             return info.Start;
 
         var best = 0;
         var bestDistance = float.MaxValue;
+
         for (var i = 0; i <= text.Length; i++)
         {
             var width = metrics.MeasureText(text.AsSpan(0, i)).X;
             var distance = Math.Abs(width - target);
+
             if (distance < bestDistance)
             {
                 bestDistance = distance;
@@ -472,7 +505,9 @@ public partial class TextArea : View
     private void EnsureCaretVisible()
     {
         var lines = GetLines();
+
         if (lines.Count == 0)
+
             return;
 
         var (line, column) = LineColumnOf(_cursor);
@@ -500,7 +535,9 @@ public partial class TextArea : View
     protected override void OnKeyTyped(KeyboardTypingEvent @event)
     {
         var c = @event.KeyChar;
+
         if (c is '\r' or '\n' || char.IsControl(c))
+
             return;
 
         PushHistory(typing: true);
@@ -520,52 +557,67 @@ public partial class TextArea : View
         {
             case Key.Escape when _contextMenu.IsOpen:
                 CloseContextMenu();
+
                 break;
             case Key.Left when ctrl:
                 MoveCaret(PreviousWord(_cursor), shift);
+
                 break;
             case Key.Right when ctrl:
                 MoveCaret(NextWord(_cursor), shift);
+
                 break;
             case Key.Left:
                 MoveCaret(_cursor - 1, shift);
+
                 break;
             case Key.Right:
                 MoveCaret(_cursor + 1, shift);
+
                 break;
             case Key.Up:
                 MoveVertical(-1, shift);
+
                 break;
             case Key.Down:
                 MoveVertical(1, shift);
+
                 break;
             case Key.PageUp:
                 MoveVertical(-Math.Max(1, (int)(LayoutContentSize.Y / Math.Max(LineHeight(), 1f)) - 1), shift);
+
                 break;
             case Key.PageDown:
                 MoveVertical(Math.Max(1, (int)(LayoutContentSize.Y / Math.Max(LineHeight(), 1f)) - 1), shift);
+
                 break;
             case Key.Home when ctrl:
                 MoveCaret(0, shift);
+
                 break;
             case Key.End when ctrl:
                 MoveCaret(_value.Length, shift);
+
                 break;
             case Key.Home:
                 MoveCaret(IndexOf(LineColumnOf(_cursor).Line, 0), shift);
+
                 break;
             case Key.End:
             {
                 var (line, _) = LineColumnOf(_cursor);
                 var lines = GetLines();
                 MoveCaret(IndexOf(line, lines.Count > 0 ? lines[line].End - lines[line].Start : 0), shift);
+
                 break;
             }
             case Key.Back:
+
                 if (Selection is not null)
                 {
                     PushHistory(typing: true);
                     DeleteSelection();
+
                     break;
                 }
 
@@ -579,10 +631,12 @@ public partial class TextArea : View
 
                 break;
             case Key.Delete:
+
                 if (Selection is not null)
                 {
                     PushHistory(typing: true);
                     DeleteSelection();
+
                     break;
                 }
 
@@ -600,6 +654,7 @@ public partial class TextArea : View
                 SetValueFromUser(_value[..insertAt] + "\n" + _value[insertAt..]);
                 _cursor = insertAt + 1;
                 _selectionAnchor = null;
+
                 break;
             case Key.Tab:
                 PushHistory(typing: false);
@@ -609,27 +664,38 @@ public partial class TextArea : View
                 SetValueFromUser(_value[..tabAt] + spaces + _value[tabAt..]);
                 _cursor = tabAt + spaces.Length;
                 _selectionAnchor = null;
+
                 break;
             case Key.Z when ctrl && shift:
-                if (UseLocalHistory) Redo();
+                if (UseLocalHistory)
+                    Redo();
+
                 break;
             case Key.Z when ctrl:
-                if (UseLocalHistory) Undo();
+                if (UseLocalHistory)
+                    Undo();
+
                 break;
             case Key.Y when ctrl:
-                if (UseLocalHistory) Redo();
+                if (UseLocalHistory)
+                    Redo();
+
                 break;
             case Key.A when ctrl:
                 SelectAll();
+
                 break;
             case Key.C when ctrl:
                 CopySelection();
+
                 break;
             case Key.X when ctrl:
                 CutSelection();
+
                 break;
             case Key.V when ctrl:
                 PasteClipboard();
+
                 break;
         }
     }
@@ -644,15 +710,21 @@ public partial class TextArea : View
 
     private int PreviousWord(int index)
     {
-        while (index > 0 && !char.IsWhiteSpace(_value[index - 1])) index--;
-        while (index > 0 && char.IsWhiteSpace(_value[index - 1])) index--;
+        while (index > 0 && !char.IsWhiteSpace(_value[index - 1]))
+            index--;
+        while (index > 0 && char.IsWhiteSpace(_value[index - 1]))
+            index--;
+
         return index;
     }
 
     private int NextWord(int index)
     {
-        while (index < _value.Length && !char.IsWhiteSpace(_value[index])) index++;
-        while (index < _value.Length && char.IsWhiteSpace(_value[index])) index++;
+        while (index < _value.Length && !char.IsWhiteSpace(_value[index]))
+            index++;
+        while (index < _value.Length && char.IsWhiteSpace(_value[index]))
+            index++;
+
         return index;
     }
 
@@ -668,6 +740,7 @@ public partial class TextArea : View
 
             // Keep an existing selection (browsers do), and place the caret only when there is
             // none, so Cut/Copy act on what the user had and Paste lands where they pointed.
+
             if (Selection is null)
             {
                 var caret = IndexForPoint(LocalTextX(@event.Position), LocalTextY(@event.Position));
@@ -678,15 +751,18 @@ public partial class TextArea : View
             }
 
             OpenContextMenu(@event.Position);
+
             return;
         }
 
         if (@event.Button != MouseButton.Primary)
+
             return;
 
         CloseContextMenu();
 
         if (TryBeginScrollbarDrag(@event.Position))
+
             return;
 
         var index = IndexForPoint(LocalTextX(@event.Position), LocalTextY(@event.Position));
@@ -722,20 +798,24 @@ public partial class TextArea : View
     {
         // A release outside this node never reaches OnMouseReleased (release dispatch is
         // hit-tested at the release point), so stop on the first button-less drag.
+
         if (!@event.Buttons.HasFlag(MouseButtons.Primary))
         {
             _dragging = false;
             _draggingScrollbar = false;
+
             return;
         }
 
         if (_draggingScrollbar)
         {
             DragScrollbar(@event.Position);
+
             return;
         }
 
         if (!_dragging)
+
             return;
 
         _clickCount = 1;
@@ -754,6 +834,7 @@ public partial class TextArea : View
         if (ScrollableHeight > 0f && size.Y > 0f)
         {
             var trackLeft = origin.X + size.X - ScrollbarWidth;
+
             if (position.X >= trackLeft
                 && position.X <= origin.X + size.X
                 && position.Y >= origin.Y
@@ -788,6 +869,7 @@ public partial class TextArea : View
         if (ScrollableWidth > 0f && size.X > 0f)
         {
             var trackTop = origin.Y + size.Y - ScrollbarWidth;
+
             if (position.Y >= trackTop
                 && position.Y <= origin.Y + size.Y
                 && position.X >= origin.X
@@ -846,6 +928,7 @@ public partial class TextArea : View
     private void SetScrollTopFromThumb(float thumbTop, float origin, float travel)
     {
         if (ScrollableHeight <= 0f || travel <= 0f)
+
             return;
 
         var local = Math.Clamp(thumbTop - origin, 0f, travel);
@@ -855,6 +938,7 @@ public partial class TextArea : View
     private void SetScrollLeftFromThumb(float thumbLeft, float origin, float travel)
     {
         if (ScrollableWidth <= 0f || travel <= 0f)
+
             return;
 
         var local = Math.Clamp(thumbLeft - origin, 0f, travel);
@@ -877,8 +961,10 @@ public partial class TextArea : View
     {
         var start = Math.Clamp(index, 0, _value.Length);
         var end = start;
-        while (start > 0 && !char.IsWhiteSpace(_value[start - 1])) start--;
-        while (end < _value.Length && !char.IsWhiteSpace(_value[end])) end++;
+        while (start > 0 && !char.IsWhiteSpace(_value[start - 1]))
+            start--;
+        while (end < _value.Length && !char.IsWhiteSpace(_value[end]))
+            end++;
         _selectionAnchor = start;
         _cursor = end;
         _scrollCaretIntoView = true;
@@ -890,6 +976,7 @@ public partial class TextArea : View
     {
         base.GameTick();
         _blinkTimer += FrameDeltaMs;
+
         if (_blinkTimer >= BlinkPeriodMs)
         {
             _blinkTimer -= BlinkPeriodMs;
@@ -898,6 +985,7 @@ public partial class TextArea : View
 
         // The menu follows focus: a press elsewhere closes it, and while it is open its
         // enabled state tracks edits (a selection, a cleared document).
+
         if (_contextMenu.IsOpen)
         {
             if (!IsFocused)
@@ -946,6 +1034,7 @@ public partial class TextArea : View
             if (LaidOutComplexText is not { } text)
             {
                 owner.DrawCaretAndSelection(position);
+
                 return;
             }
 
@@ -969,9 +1058,12 @@ public partial class TextArea : View
             foreach (var element in text.Elements)
             {
                 var elementTop = basePosition.Y + element.Position.Y;
+
                 // Draw only lines intersecting the editor's clip; a long model is
                 // thousands of lines and every DrawString is otherwise paid per frame.
+
                 if (clip is { } c && (elementTop + lineHeight * 1.5f < c.Y || elementTop > c.Y + c.Height))
+
                     continue;
 
                 G.SetFont(element.Font with { Size = element.FontSize ?? resolved.FontSize!.Value });
@@ -1011,10 +1103,13 @@ public partial class TextArea : View
     private void DrawCaretAndSelection(Vector2 position)
     {
         if (!IsFocused && Selection is null)
+
             return;
 
         var lines = GetLines();
+
         if (lines.Count == 0)
+
             return;
 
         var lineHeight = LineHeight();
@@ -1030,13 +1125,17 @@ public partial class TextArea : View
                 var info = lines[i];
                 var from = Math.Max(selection.Start, info.Start) - info.Start;
                 var to = Math.Min(selection.End, info.End) - info.Start;
+
                 if (to <= from && i >= endLine)
+
                     continue;
 
                 var x1 = CaretX(info, from);
                 var x2 = CaretX(info, Math.Max(to, from + (to <= from ? 1 : 0)));
                 var y = (info.Element?.Position.Y ?? i * lineHeight) + lineHeight * GlyphTopRatio;
+
                 if (ClipRect is { } clip && (position.Y + y + lineHeight < clip.Y || position.Y + y > clip.Y + clip.Height))
+
                     continue;
                 G.FillRect(
                     (int)(position.X + x1),
@@ -1048,10 +1147,13 @@ public partial class TextArea : View
         }
 
         if (!IsFocused || !_caretVisible)
+
             return;
 
         var (line, column) = LineColumnOf(_cursor);
+
         if (line >= lines.Count)
+
             return;
 
         var caretLine = lines[line];

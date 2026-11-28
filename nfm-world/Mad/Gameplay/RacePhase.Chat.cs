@@ -15,18 +15,23 @@ public partial class RacePhase
 
     internal bool HandleChatKey(Key key)
     {
-        if (_host is not NetworkRaceHost || IsPaused || _finish.ShowSummary.Value) return false;
+        if (_host is not NetworkRaceHost || IsPaused || _finish.ShowSummary.Value)
+
+            return false;
+
         if (_chat.Open.Value)
         {
             if (key == Key.Escape)
             {
                 CloseChat();
+
                 return true;
             }
 
             if (key == Key.Enter)
             {
                 SendChat(_chat.Draft.Value);
+
                 return true;
             }
 
@@ -34,30 +39,38 @@ public partial class RacePhase
         }
 
         if (key == Key.None || key != SettingsMenu.Bindings.OpenChat || FocusManager.FocusedNode is TextInput or TextArea)
+
             return false;
         _input.Reset(ClientCar?.Control);
         _chat.Open.Value = true;
         _chatOpeningKey = key;
+
         return true;
     }
 
     internal bool ConsumeChatOpeningText()
     {
-        if (_chatOpeningKey is null || !_chat.Open.Value) return false;
+        if (_chatOpeningKey is null || !_chat.Open.Value)
+
+            return false;
         _chatOpeningKey = null;
+
         return true;
     }
 
     private void SendChat(string message)
     {
-        if (_host is NetworkRaceHost network) network.SendChat(message);
+        if (_host is NetworkRaceHost network)
+            network.SendChat(message);
         _chat.Draft.Value = "";
         CloseChat();
     }
 
     private void CloseChat()
     {
-        if (!_chat.Open.Value) return;
+        if (!_chat.Open.Value)
+
+            return;
         _chat.Open.Value = false;
         _chatOpeningKey = null;
         FocusManager.ClearFocus();
@@ -78,7 +91,9 @@ public partial class RacePhase
 
     private void ReceivePlayerLeft(S2C_PlayerLeft departure)
     {
-        if (_raceDisposed || GamemodeInstance is not BaseClientGamemode gamemode) return;
+        if (_raceDisposed || GamemodeInstance is not BaseClientGamemode gamemode)
+
+            return;
         foreach (var player in gamemode.Players)
             if (player.Info.Id == departure.PlayerId)
                 player.Car?.MarkDeparted(departure.Reason, departure.Announce);

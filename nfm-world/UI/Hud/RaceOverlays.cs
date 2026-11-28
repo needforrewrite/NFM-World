@@ -62,14 +62,19 @@ public sealed class RaceOverlays : Component
 
     protected override void RenderContent(Vector2 position, Vector2 size)
     {
-        if (_race.IsPreview || _race.Paused) return;
+        if (_race.IsPreview || _race.Paused)
+
+            return;
         G.SaveState();
+
         try
         {
-            if (SettingsMenu.HudRadar && !_skinDrawsRadar()) DrawRadar(position, size);
+            if (SettingsMenu.HudRadar && !_skinDrawsRadar())
+                DrawRadar(position, size);
             // The standings panel belongs to the skin: ClassicHud and JSON skins each draw their
             // own, so one here would be a second list beside theirs.
-            if (SettingsMenu.HudNameTags) DrawNameTags(position, size);
+            if (SettingsMenu.HudNameTags)
+                DrawNameTags(position, size);
         }
         finally
         {
@@ -83,9 +88,14 @@ public sealed class RaceOverlays : Component
     /// </summary>
     private void DrawRadar(Vector2 position, Vector2 size)
     {
-        if (_race.ClientPosition is not { } client) return;
+        if (_race.ClientPosition is not { } client)
+
+            return;
         var scale = MathF.Min(size.X / 960, size.Y / 540) * HudScaleSettings.Default * SettingsMenu.HudScale;
-        if (scale <= 0) return;
+
+        if (scale <= 0)
+
+            return;
         var bounds = HudSafeZone.Bounds(position, size);
         var x = bounds.X + 8 * scale;
         var y = bounds.Y + bounds.Height - RadarSize * scale - 8 * scale;
@@ -109,7 +119,7 @@ public sealed class RaceOverlays : Component
             client.Z,
             sin,
             cos,
-                x + centerX,
+            x + centerX,
             y + centerY,
             w,
             RadarRange
@@ -119,6 +129,7 @@ public sealed class RaceOverlays : Component
             G.SetColor(new Color(190, 220, 245, 180));
             G.SetStrokeWidth(MathF.Max(1, 1.5f * scale));
             var checkpoints = _race.Checkpoints;
+
             for (var i = 0; i < checkpoints.Count; i++)
             {
                 var a = checkpoints[i];
@@ -130,6 +141,7 @@ public sealed class RaceOverlays : Component
         }
 
         // Checkpoint the player is heading for.
+
         if (_race.TargetCheckpoint is { } checkpoint)
         {
             var p = ToRadar(checkpoint.X, checkpoint.Z, client.X, client.Z, sin, cos, centerX, centerY, w);
@@ -139,10 +151,14 @@ public sealed class RaceOverlays : Component
 
         foreach (var marker in _race.Markers)
         {
-            if (marker.Wasted) continue;
+            if (marker.Wasted)
+
+                continue;
             var p = ToRadar(marker.X, marker.Z, client.X, client.Z, sin, cos, centerX, centerY, w);
-            if (marker.IsClient) G.SetColor(new Color(90, 195, 255, 255));
-            else G.SetColor(new Color(244, 90, 70, 255));
+            if (marker.IsClient)
+                G.SetColor(new Color(90, 195, 255, 255));
+            else
+                G.SetColor(new Color(244, 90, 70, 255));
             var r = (marker.IsClient ? 4 : 3) * scale;
             G.FillOval((int)(x + p.X - r), (int)(y + p.Y - r), (int)(r * 2), (int)(r * 2));
         }
@@ -159,21 +175,30 @@ public sealed class RaceOverlays : Component
     /// </summary>
     private void DrawNameTags(Vector2 position, Vector2 size)
     {
-        if (_race.Racers.Count <= 1 || _race.ClientPosition is null) return;
+        if (_race.Racers.Count <= 1 || _race.ClientPosition is null)
+
+            return;
         var hudScale = HudScaleSettings.Normalize(SettingsMenu.HudScale);
-        if (hudScale <= 0) return;
+
+        if (hudScale <= 0)
+
+            return;
         var classic = _classicSkin();
 
         foreach (var marker in _race.Markers)
         {
-            if (marker.IsClient || marker.Wasted) continue;
+            if (marker.IsClient || marker.Wasted)
+
+                continue;
             if (!Project(
-                    new Vector3(marker.X, marker.Y - TagRoofOffset, marker.Z),
-                    out var screen,
-                    out var depth,
-                    position,
-                    size
-                )) continue;
+                new Vector3(marker.X, marker.Y - TagRoofOffset, marker.Z),
+                out var screen,
+                out var depth,
+                position,
+                size
+            ))
+
+                continue;
 
             var tagScale = hudScale * Math.Clamp(TagFullSizeDepth / depth, TagSmallestScale, 1f);
             var font = new Font(FontFamily.DroidSans, FontStyle.Bold, TagFontSize * tagScale);
@@ -228,11 +253,18 @@ public sealed class RaceOverlays : Component
         var clip = Vector4.Transform(new Vector4(world, 1f), _race.ViewProjection);
         screen = default;
         depth = clip.W;
-        if (clip.W <= 0.001f) return false;
+
+        if (clip.W <= 0.001f)
+
+            return false;
         var ndcX = clip.X / clip.W;
         var ndcY = clip.Y / clip.W;
-        if (ndcX is < -1 or > 1 || ndcY is < -1 or > 1) return false;
+
+        if (ndcX is < -1 or > 1 || ndcY is < -1 or > 1)
+
+            return false;
         screen = position + new Vector2((ndcX + 1f) * 0.5f * size.X, (1f - ndcY) * 0.5f * size.Y);
+
         return true;
     }
 

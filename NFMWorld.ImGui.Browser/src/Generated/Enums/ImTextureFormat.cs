@@ -13,20 +13,20 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImTextureFormat : int
-	{
-		/// <summary>
-		/// 4 components per pixel, each is unsigned 8-bit. Total size = TexWidth * TexHeight * 4<br/>
-		/// </summary>
-		Rgba32 = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImTextureFormat : int
+    {
+        /// <summary>
+        /// 4 components per pixel, each is unsigned 8-bit. Total size = TexWidth * TexHeight * 4<br/>
+        /// </summary>
+        Rgba32 = unchecked(0),
 
-		/// <summary>
-		/// 1 component per pixel, each is unsigned 8-bit. Total size = TexWidth * TexHeight<br/>
-		/// </summary>
-		Alpha8 = unchecked(1),
-	}
+        /// <summary>
+        /// 1 component per pixel, each is unsigned 8-bit. Total size = TexWidth * TexHeight<br/>
+        /// </summary>
+        Alpha8 = unchecked(1),
+    }
 }

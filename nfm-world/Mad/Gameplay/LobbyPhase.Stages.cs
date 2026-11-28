@@ -26,15 +26,21 @@ public partial class LobbyPhase
     private async Task ResolveSessionStageNamesAsync(CancellationToken cancellation)
     {
         _resolvingSessionStages = true;
+
         try
         {
             using var loading = LoadingWork.Begin("Loading stage names...");
+
             while (!cancellation.IsCancellationRequested)
             {
                 var identity = _activeSessions.Select(session => session.StageName)
                     .FirstOrDefault(id => !_sessionStages.ContainsKey(id));
-                if (identity is null) break;
+
+                if (identity is null)
+
+                    break;
                 var name = RadpackReader.IsArchiveId(identity) ? "Unavailable stage" : SessionStageName(identity);
+
                 try
                 {
                     if (RadpackReader.IsArchiveId(identity))
@@ -61,7 +67,10 @@ public partial class LobbyPhase
                 }
 
                 await LoadingWork.NextFrame;
-                if (cancellation.IsCancellationRequested) return;
+
+                if (cancellation.IsCancellationRequested)
+
+                    return;
                 _sessionStages[identity] = name;
                 Publish();
             }
@@ -70,7 +79,8 @@ public partial class LobbyPhase
         {
             await LoadingWork.NextFrame;
             _resolvingSessionStages = false;
-            if (_carsActive) ResolveSessionStageNames();
+            if (_carsActive)
+                ResolveSessionStageNames();
         }
     }
 
@@ -80,7 +90,9 @@ public partial class LobbyPhase
         var packedPath = $"data/stages/{identity}.radpack";
         var hasText = VFS.FileExists(textPath);
         var hasPack = VFS.FileExists(packedPath);
+
         if (!hasText && !hasPack)
+
             return identity;
 
         var fallbackName = identity[(identity.LastIndexOf('/') + 1)..];
@@ -103,6 +115,7 @@ public partial class LobbyPhase
         }
 
         var textName = hasText ? MenuPreferences.GetStageName(VFS, textPath) : null;
+
         return textName ?? fallbackName;
     }
 }

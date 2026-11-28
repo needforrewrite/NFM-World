@@ -90,12 +90,14 @@ internal sealed class MenuStagePicker : IDisposable
                 children: StageSelectView.Build(_state, _actions, "Menu Background")
             )
         );
+
         return _view;
     }
 
     public void Tick()
     {
-        while (_completions.TryDequeue(out var complete)) complete();
+        while (_completions.TryDequeue(out var complete))
+            complete();
     }
 
     public bool HandleKey(Key key)
@@ -105,12 +107,14 @@ internal sealed class MenuStagePicker : IDisposable
             if (key == Key.PageUp)
             {
                 Source(false);
+
                 return true;
             }
 
             if (key == Key.PageDown)
             {
                 Source(true);
+
                 return true;
             }
         }
@@ -120,14 +124,18 @@ internal sealed class MenuStagePicker : IDisposable
 
     private void Pick(string id)
     {
-        if (_state.Busy.Value) return;
+        if (_state.Busy.Value)
+
+            return;
         _state.Selected.Value = id;
         _state.ConfirmEnabled.Value = true;
     }
 
     private void StageCollection(string collection)
     {
-        if (_state.OnlineSource.Value) return;
+        if (_state.OnlineSource.Value)
+
+            return;
         _state.Collection.Value = collection;
         RefreshLocal();
     }
@@ -135,15 +143,18 @@ internal sealed class MenuStagePicker : IDisposable
     private void Filter(string query)
     {
         _state.Search.Value = query;
-        if (!_state.OnlineSource.Value) RefreshLocal();
+        if (!_state.OnlineSource.Value)
+            RefreshLocal();
     }
 
     private void RefreshLocal()
     {
         var query = _state.Search.Value.Trim();
         IEnumerable<StageOption> stages = _local;
-        if (_state.Collection.Value != "All") stages = stages.Where(stage => stage.Subtitle == _state.Collection.Value);
-        else stages = stages.Prepend(new StageOption(MenuPreferences.LastPlayedStage, "Last played stage", "Automatic"));
+        if (_state.Collection.Value != "All")
+            stages = stages.Where(stage => stage.Subtitle == _state.Collection.Value);
+        else
+            stages = stages.Prepend(new StageOption(MenuPreferences.LastPlayedStage, "Last played stage", "Automatic"));
         _state.Stages.Value = stages.Where(stage => query.Length == 0
                                                     || stage.Label.Contains(query, StringComparison.OrdinalIgnoreCase)
                                                     || stage.Id.Contains(query, StringComparison.OrdinalIgnoreCase)
@@ -152,7 +163,9 @@ internal sealed class MenuStagePicker : IDisposable
 
     private void Source(bool online)
     {
-        if (_state.OnlineSource.Value == online) return;
+        if (_state.OnlineSource.Value == online)
+
+            return;
         CancelRequest();
         _state.OnlineSource.Value = online;
         _state.BrowsingCollections.Value = false;
@@ -161,15 +174,19 @@ internal sealed class MenuStagePicker : IDisposable
         _state.Status.Value = "";
         _state.Stages.Value = [];
         _state.Busy.Value = false;
-        if (online) _ = SearchAsync("");
-        else RefreshLocal();
+        if (online)
+            _ = SearchAsync("");
+        else
+            RefreshLocal();
     }
 
-    private bool IsCurrent(int generation) => !_disposed && generation == _generation
+    private bool IsCurrent(int generation) => !_disposed
+                                              && generation == _generation
                                               && Contains(GameSparker.UiRenderer?.ActiveRoot, _view);
 
     private static bool Contains(Node? root, Node? target)
-        => root is not null && target is not null
+        => root is not null
+           && target is not null
            && (ReferenceEquals(root, target) || root.VisualChildren.Any(child => Contains(child, target)));
 
     private async Task SearchAsync(string query)
@@ -180,16 +197,19 @@ internal sealed class MenuStagePicker : IDisposable
         var generation = _generation;
         _state.Busy.Value = true;
         _state.Status.Value = "Searching the archive...";
+
         try
         {
             var page = await GarageController.ContentClient.SearchAsync(query, "Stage", 40, null, cancellation.Token);
             _completions.Enqueue(() =>
                 {
-                    if (!IsCurrent(generation)) return;
+                    if (!IsCurrent(generation))
+
+                        return;
                     _state.Stages.Value = page.Items.Where(item => item.Eligible)
                         .Select(item => new StageOption(
                             RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
-                        item.Name,
+                            item.Name,
                             item.AuthorByline
                         )
                         ).ToArray();
@@ -204,7 +224,8 @@ internal sealed class MenuStagePicker : IDisposable
         {
             _completions.Enqueue(() =>
                 {
-                    if (IsCurrent(generation)) _state.Status.Value = "Could not search the archive: " + ex.Message;
+                    if (IsCurrent(generation))
+                        _state.Status.Value = "Could not search the archive: " + ex.Message;
                 }
             );
         }
@@ -216,7 +237,9 @@ internal sealed class MenuStagePicker : IDisposable
 
     private async Task ConfirmAsync()
     {
-        if (_state.Busy.Value || !_state.ConfirmEnabled.Value) return;
+        if (_state.Busy.Value || !_state.ConfirmEnabled.Value)
+
+            return;
         using var loading = LoadingWork.Begin("Preparing background stage...");
         var selected = _state.Selected.Value;
         CancelRequest();
@@ -224,6 +247,7 @@ internal sealed class MenuStagePicker : IDisposable
         var generation = _generation;
         _state.Busy.Value = true;
         _state.Status.Value = "Preparing background stage...";
+
         try
         {
             if (RadpackReader.IsArchiveId(selected))
@@ -236,6 +260,7 @@ internal sealed class MenuStagePicker : IDisposable
                     token
                 )
                 );
+
                 if (!result.Ok)
                 {
                     _completions.Enqueue(() =>
@@ -244,13 +269,16 @@ internal sealed class MenuStagePicker : IDisposable
                                 _state.Status.Value = result.Error ?? "That stage could not be downloaded.";
                         }
                     );
+
                     return;
                 }
             }
 
             _completions.Enqueue(() =>
                 {
-                    if (!IsCurrent(generation)) return;
+                    if (!IsCurrent(generation))
+
+                        return;
                     _select(selected);
                     Close();
                 }
@@ -263,7 +291,8 @@ internal sealed class MenuStagePicker : IDisposable
         {
             _completions.Enqueue(() =>
                 {
-                    if (IsCurrent(generation)) _state.Status.Value = "Could not prepare the stage: " + ex.Message;
+                    if (IsCurrent(generation))
+                        _state.Status.Value = "Could not prepare the stage: " + ex.Message;
                 }
             );
         }
@@ -289,7 +318,9 @@ internal sealed class MenuStagePicker : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         CancelRequest();
     }

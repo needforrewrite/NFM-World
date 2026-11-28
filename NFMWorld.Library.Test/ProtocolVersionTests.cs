@@ -23,6 +23,7 @@ public class ProtocolVersionTests
         using var writer = new ArrayPoolBufferWriter<byte>();
         writer.Write(packet.Opcode);
         packet.Write(writer);
+
         return writer.WrittenSpan.ToArray();
     }
 

@@ -29,6 +29,7 @@ public class VirtualFsConfigPersistenceTests
             fs.MountDirectory(install);
             fs.MountWriteDestination(user);
             fs.MountDirectory(user, prepend: true);
+
             return fs;
         }
 

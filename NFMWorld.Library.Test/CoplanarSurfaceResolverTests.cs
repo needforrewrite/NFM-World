@@ -15,6 +15,7 @@ public class CoplanarSurfaceResolverTests
     {
         Assert.AreEqual(0, surface.Triangles.Length % 3);
         double area = 0;
+
         for (var i = 0; i < surface.Triangles.Length; i += 3)
         {
             var a = surface.Points[surface.Triangles[i]];
@@ -128,6 +129,7 @@ public class CoplanarSurfaceResolverTests
     public void RandomizedRectangleClippingMatchesAnalyticIntersectionArea()
     {
         var random = new Random(1234);
+
         for (var i = 0; i < 300; i++)
         {
             var x = (float)(random.NextDouble() * 20 - 5);

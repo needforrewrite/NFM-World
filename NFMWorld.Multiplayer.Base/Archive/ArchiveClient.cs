@@ -86,12 +86,15 @@ public sealed class ArchiveClient
             using var response = await _http.SendAsync(request, ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+
                 return (TokenVerification.Rejected, null);
 
             if (!response.IsSuccessStatusCode)
+
                 return (TokenVerification.Unavailable, null);
 
             var account = await response.Content.ReadFromJsonAsync<ArchiveAccount>(ct);
+
             return account is { AccountId: > 0 }
                 ? (TokenVerification.Valid, account)
                 : (TokenVerification.Unavailable, null);
@@ -102,6 +105,7 @@ public sealed class ArchiveClient
             // back HTML with a 200, and a bad charset surfaces as an invalid operation. Anything
             // that is not a definitive refusal must leave the player's session alone.
             Logging.Warning($"[Archive] Token verification failed: {ex.Message}");
+
             return (TokenVerification.Unavailable, null);
         }
     }
@@ -110,6 +114,7 @@ public sealed class ArchiveClient
     public async Task<bool> ReportMatchAsync(MatchReport report, CancellationToken ct)
     {
         if (_keyId is null || _secret is null)
+
             throw new InvalidOperationException("This archive client has no server key; it cannot report results.");
 
         var body = JsonSerializer.SerializeToUtf8Bytes(report, JsonSerializerOptions.Web);
@@ -127,11 +132,13 @@ public sealed class ArchiveClient
             using var response = await _http.SendAsync(request, ct);
             if (!response.IsSuccessStatusCode)
                 Logging.Warning($"[Archive] Result report rejected: {(int)response.StatusCode} {response.ReasonPhrase}");
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             Logging.Warning($"[Archive] Result report failed: {ex.Message}");
+
             return false;
         }
     }
@@ -140,6 +147,7 @@ public sealed class ArchiveClient
     public async Task<(bool Ok, string? Error)> ModerateAsync(ModerationEvent request, CancellationToken ct)
     {
         if (_keyId is null || _secret is null)
+
             throw new InvalidOperationException("This archive client has no server key; it cannot moderate.");
 
         var body = JsonSerializer.SerializeToUtf8Bytes(request, JsonSerializerOptions.Web);
@@ -155,15 +163,19 @@ public sealed class ArchiveClient
         try
         {
             using var response = await _http.SendAsync(http, ct);
+
             if (!response.IsSuccessStatusCode)
+
                 return (false, $"The archive refused the action ({(int)response.StatusCode}).");
 
             var result = await response.Content.ReadFromJsonAsync<ModerationResult>(ct);
+
             return result is null ? (false, "The archive returned no answer.") : (result.Ok, result.Error);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             Logging.Warning($"[Archive] Moderation request failed: {ex.Message}");
+
             return (false, "The archive could not be reached.");
         }
     }
@@ -172,6 +184,7 @@ public sealed class ArchiveClient
     public async Task<ArchiveAccount?> RevalidateAsync(int accountId, CancellationToken ct)
     {
         if (_keyId is null || _secret is null)
+
             return null;
 
         var path = $"auth/account/{accountId}";
@@ -183,13 +196,17 @@ public sealed class ArchiveClient
         try
         {
             using var response = await _http.SendAsync(request, ct);
+
             if (!response.IsSuccessStatusCode)
+
                 return null;
+
             return await response.Content.ReadFromJsonAsync<ArchiveAccount>(ct);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             Logging.Warning($"[Archive] Account revalidation failed: {ex.Message}");
+
             return null;
         }
     }

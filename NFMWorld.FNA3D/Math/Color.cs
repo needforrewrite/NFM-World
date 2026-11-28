@@ -817,9 +817,7 @@ namespace NFMWorld.FNA3D
 
         internal string DebugDisplayString
         {
-            get
-            {
-                return string.Concat(
+            get { return string.Concat(
                     R.ToString(),
                     " ",
                     G.ToString(),
@@ -827,8 +825,7 @@ namespace NFMWorld.FNA3D
                     B.ToString(),
                     " ",
                     A.ToString()
-                );
-            }
+                ); }
         }
 
         #endregion
@@ -1138,6 +1135,7 @@ namespace NFMWorld.FNA3D
         public static Color Lerp(Color value1, Color value2, float amount)
         {
             amount = float.Clamp(amount, 0.0f, 1.0f);
+
             return new Color(
                 (int)float.Lerp(value1.R, value2.R, amount),
                 (int)float.Lerp(value1.G, value2.G, amount),
@@ -1281,6 +1279,7 @@ namespace NFMWorld.FNA3D
             sb.Append(" A:");
             sb.Append(A);
             sb.Append("}");
+
             return sb.ToString();
         }
 

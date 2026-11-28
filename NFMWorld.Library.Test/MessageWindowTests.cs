@@ -59,6 +59,7 @@ public class MessageWindowTests
         using var mounted = Renderer.Mount(() =>
             {
                 root.AddChild(message.BuildUi());
+
                 return root;
             }
         );
@@ -77,8 +78,14 @@ public class MessageWindowTests
 
     private static IEnumerable<Component> Descendants(Node root)
     {
-        if (root is Component component) yield return component;
+        if (root is Component component)
+
+            yield return component;
+
         foreach (var child in root.VisualChildren)
-        foreach (var descendant in Descendants(child)) yield return descendant;
+
+        foreach (var descendant in Descendants(child))
+
+            yield return descendant;
     }
 }

@@ -191,13 +191,16 @@ namespace Poly2Tri
         protected override void Add(Point2D p, int idx, bool bCalcWindingOrderAndEpsilon)
         {
             TriangulationPoint pt = p as TriangulationPoint;
+
             if (pt == null)
             {
                 // we only store TriangulationPoints and PolygonPoints in this class
+
                 return;
             }
 
             // do not insert duplicate points
+
             if (mPointMap.ContainsKey(pt.VertexCode))
             {
                 return;
@@ -208,9 +211,11 @@ namespace Poly2Tri
             base.Add(p, idx, bCalcWindingOrderAndEpsilon);
 
             PolygonPoint pp = p as PolygonPoint;
+
             if (pp != null)
             {
                 pp.Previous = _last;
+
                 if (_last != null)
                 {
                     pp.Next = _last.Next;
@@ -237,11 +242,14 @@ namespace Poly2Tri
             }
 
             int numPoints = points.Count;
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown)
+                                     && (windingOrder != WindingOrderType.Unknown)
                                      && (WindingOrder != windingOrder);
+
             for (int i = 0; i < numPoints; ++i)
             {
                 int idx = i;
+
                 if (bReverseReadOrder)
                 {
                     idx = points.Count - i - 1;
@@ -272,11 +280,14 @@ namespace Poly2Tri
             }
 
             int numPoints = points.Count;
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown)
+                                     && (windingOrder != WindingOrderType.Unknown)
                                      && (WindingOrder != windingOrder);
+
             for (int i = 0; i < numPoints; ++i)
             {
                 int idx = i;
+
                 if (bReverseReadOrder)
                 {
                     idx = points.Count - i - 1;
@@ -322,6 +333,7 @@ namespace Poly2Tri
             mPoints.Remove(p);
 
             mBoundingBox.Clear();
+
             foreach (PolygonPoint tmp in mPoints)
             {
                 mBoundingBox.AddPoint(tmp);
@@ -338,6 +350,7 @@ namespace Poly2Tri
         public void CopyTo(TriangulationPoint[] array, int arrayIndex)
         {
             int numElementsToCopy = Math.Min(Count, array.Length - arrayIndex);
+
             for (int i = 0; i < numElementsToCopy; ++i)
             {
                 array[arrayIndex + i] = mPoints[i] as TriangulationPoint;
@@ -436,6 +449,7 @@ namespace Poly2Tri
             }
 
             // Outer constraints
+
             for (int i = 0; i < mPoints.Count - 1; i++)
             {
                 //tcx.NewConstraint(mPoints[i], mPoints[i + 1]);
@@ -446,6 +460,7 @@ namespace Poly2Tri
             tcx.Points.AddRange(this);
 
             // Hole constraints
+
             if (mHoles != null)
             {
                 foreach (Polygon p in mHoles)

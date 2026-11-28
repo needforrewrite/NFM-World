@@ -16,13 +16,16 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         Position();
         Anchor(HudAnchor.TopRight);
         Status();
-        if (!Race.TimeTrial && Race.Racers.Count > 1) Opponents();
-        if (Race.Opponents == 0 && Race.LapSplits.Count > 1) Chronometer();
+        if (!Race.TimeTrial && Race.Racers.Count > 1)
+            Opponents();
+        if (Race.Opponents == 0 && Race.LapSplits.Count > 1)
+            Chronometer();
         Anchor(HudAnchor.Top);
         Arrow();
         Anchor(HudAnchor.BottomLeft);
         Radar();
-        if (Race.MusicTrack is { } track) TrackVisor(track);
+        if (Race.MusicTrack is { } track)
+            TrackVisor(track);
         Anchor(HudAnchor.BottomRight);
         Speedometer();
     }
@@ -38,6 +41,7 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         RoundedRectOutline(accent, 1, 13, 29, 165, 26, 5);
 
         var white = Snap(250, 250, 250);
+
         if (Race.TotalLaps > 0)
         {
             Text("Lap:", 19, 20, 12, white);
@@ -49,7 +53,9 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         if (!Race.TimeTrial)
             Text($"{Race.Wasted} / {Race.Opponents}", 150, 20, 12, white);
 
-        if (!Race.HasPosition) return;
+        if (!Race.HasPosition)
+
+            return;
         Text($"{Race.Position}", 98, 51, 23, accent);
         Text(OrdinalSuffix(Race.Position), 99 + TextWidth($"{Race.Position}", 23), 50, 11, white);
     }
@@ -112,10 +118,16 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         var accent = Snap(50, 204, 255, 220);
         var white = Snap(250, 250, 250);
         var row = 0;
+
         foreach (var racer in Race.Racers)
         {
-            if (racer.Wasted) continue;
-            if (row >= maxRows) break;
+            if (racer.Wasted)
+
+                continue;
+
+            if (row >= maxRows)
+
+                break;
             var y = 60 + 30 * row;
             // phy's tapered row: a trapezoid narrowing on the right.
             Span<float> xs = [682, 793, 787, 676];
@@ -138,7 +150,9 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
 
     private void Arrow()
     {
-        if (Race.ArrowAngle is not { } angle) return;
+        if (Race.ArrowAngle is not { } angle)
+
+            return;
         var shell = Snap(50, 50, 50, 220);
         RoundedRect(shell, 328, 13, 149, 49, 24);
         var accent = Race.ArrowAtCars ? Snap(50, 204, 255, 220) : Snap(250, 250, 20);
@@ -146,6 +160,7 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
 
         var name = Race.ArrowTarget;
         Text(name, 384, 37, MathF.Min(15, 83f / MathF.Max(1, name.Length) * 1.6f), white);
+
         if (Race.ArrowDistanceMeters is { } meters)
         {
             TextCenter($"{(int)(meters / 10) * 10}", 349, 38, 13, white);
@@ -175,7 +190,9 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
 
     private void Radar()
     {
-        if (Race.ClientPosition is null) return;
+        if (Race.ClientPosition is null)
+
+            return;
         var side = S(172);
         var x = X(6);
         var y = Y(290);
@@ -204,6 +221,7 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         Line(Snap(50, 50, 50), 713, 65, 713, 65 + h - 1);
 
         var cumulative = 0;
+
         for (var i = 0; i < rows; i++)
         {
             cumulative += splits[i];
@@ -228,6 +246,7 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         var p1 = Gauge(SpeedoX + 1, SpeedoY + 2, -120, 62);
         var p2 = Gauge(SpeedoX, SpeedoY - 1, -120, 62);
         var p3 = Gauge(SpeedoX - 1, SpeedoY - 1, 120, 62);
+
         return new ShapeRegion()
             .Add(ShapeRegion.Pie(729.5f, 378.5f, 62.5f, 62.5f, -30, 240))
             .Add(ShapeRegion.Polygon(
@@ -262,14 +281,19 @@ internal sealed class BlackFusionHud(IHudData race) : GadgetHud(race)
         // The ramp's twelve segments. phy sets the colour at i = 3..0 only when not speeding and
         // lets it carry, so a speeding car keeps the rim's red on every one.
         var color = rim;
+
         for (var i = 11; i >= 0; --i)
         {
             if (!goingFast)
             {
-                if (i == 3) color = Snap(50, 204, 120, 220);
-                if (i == 2) color = Snap(250, 250, 20, 220);
-                if (i == 1) color = Snap(250, 150, 20, 220);
-                if (i == 0) color = Snap(250, 20, 20, 220);
+                if (i == 3)
+                    color = Snap(50, 204, 120, 220);
+                if (i == 2)
+                    color = Snap(250, 250, 20, 220);
+                if (i == 1)
+                    color = Snap(250, 150, 20, 220);
+                if (i == 0)
+                    color = Snap(250, 20, 20, 220);
             }
 
             ArcStroke(color, 5, 729.5f, 378.5f, 54.5f, 54.5f, -30 + (int)(20.8 * i), 10);

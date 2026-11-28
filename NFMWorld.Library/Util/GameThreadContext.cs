@@ -40,6 +40,7 @@ public class GameThreadContext : SynchronizationContext
         protected override IEnumerable<Task>? GetScheduledTasks()
         {
             // We cannot access the tasks in the ConcurrentQueue when other threads are frozen.
+
             return null;
         }
 
@@ -86,6 +87,7 @@ public class GameThreadContext : SynchronizationContext
         if (SynchronizationContext.Current is GameThreadContext present)
         {
             _threadContext = present;
+
             return present;
         }
 
@@ -93,6 +95,7 @@ public class GameThreadContext : SynchronizationContext
         // once must not strand work already queued on the previous instance.
         var context = _threadContext ??= new GameThreadContext(Thread.CurrentThread);
         SetSynchronizationContext(context);
+
         return context;
     }
 
@@ -164,6 +167,7 @@ public class GameThreadContext : SynchronizationContext
         // The profiler's platform detection does not know wasm and throws on the first touch, which
         // is every task batch, so it is desktop-only.
         var profile = hasTasks && !OperatingSystem.IsBrowser();
+
         if (profile)
         {
             MeasureProfiler.StartCollectingData();

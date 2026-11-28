@@ -8,11 +8,16 @@ public static class SoundSpatialization
 
     public static float DistanceGain(float distance)
     {
-        if (!float.IsFinite(distance) || distance >= MaximumDistance) return 0;
-        if (distance <= ReferenceDistance) return 1;
+        if (!float.IsFinite(distance) || distance >= MaximumDistance)
+
+            return 0;
+        if (distance <= ReferenceDistance)
+
+            return 1;
         var gain = ReferenceDistance / distance;
         if (distance > FadeDistance)
             gain *= (MaximumDistance - distance) / (MaximumDistance - FadeDistance);
+
         return gain;
     }
 }

@@ -26,6 +26,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         // move), and without this the host tree grows by one node on every
         // such re-render — the "components multiply on hover/click" bug.
         var existingIndex = Items.IndexOf(item);
+
         if (existingIndex >= 0)
         {
             if (existingIndex == index)
@@ -49,9 +50,11 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
             // List.Insert throws ArgumentOutOfRangeException (index > Yoga child count).
             var yogaIndex = 0;
             var limit = index < Items.Count ? index : Items.Count;
+
             for (var i = 0; i < limit; i++)
             {
-                if (Items[i] is Component) yogaIndex++;
+                if (Items[i] is Component)
+                    yogaIndex++;
             }
 
             parent.NodeInternal.InsertChild(cmp.Contents, yogaIndex);
@@ -69,6 +72,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
     public void MoveChild(int oldIndex, int newIndex)
     {
         if (oldIndex == newIndex)
+
             return;
 
         var item = Items[oldIndex];
@@ -91,9 +95,11 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
     {
         var count = 0;
         var limit = Math.Min(index, Items.Count);
+
         for (var i = 0; i < limit; i++)
         {
-            if (Items[i] is Component) count++;
+            if (Items[i] is Component)
+                count++;
         }
 
         return count;
@@ -106,6 +112,7 @@ public class ComponentChildCollection(Component parent) : NonSynchronizedObserva
         oldItem.VisualParent = null;
         SetDisposed(oldItem, true);
         oldItem.Disposing?.Invoke();
+
         if (item is Component cmp)
         {
             // itemYogaIndex, not index: Items interleaves TextNode anchors, and Yoga only

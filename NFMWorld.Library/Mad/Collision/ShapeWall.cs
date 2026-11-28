@@ -30,19 +30,23 @@ public readonly struct ShapeWall(
     {
         f64Vector3 localPosition = ((position + (contoPosition * -1)).RotateXz(-contoXz)
                                     + (trackersPosition * -1)).RotateXz(-trackersXz);
+
         if (fix64.Abs(localPosition.X) > rad.X || fix64.Abs(localPosition.Y) > rad.Y || fix64.Abs(localPosition.Z) > rad.Z)
         {
             // Inside?
+
             return null;
         }
 
         if (f64Vector3.Dot(velocity, pushDir) >= 0)
         {
             // Moving into the wall?
+
             return null;
         }
 
         fix64 penetration = rad.Z - localPosition.Z;
+
         if (penetration < 0)
         {
             ThrowInvalidOperationException(penetration);
@@ -50,6 +54,7 @@ public readonly struct ShapeWall(
 
         f64Vector3 positionDelta = pushDir * penetration;
         f64Vector3 impactComponent = pushDir * (f64Vector3.Dot(pushDir, velocity));
+
         return new Collision(positionDelta, impactComponent);
 
         [DoesNotReturn]

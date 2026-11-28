@@ -72,6 +72,7 @@ static async Task HandleRequestAsync(
 
     // Unauthenticated liveness probe, so the lobby can tell a GM that recovered from one that
     // is still down. It says nothing about this host beyond "the process is serving".
+
     if (req.HttpMethod == "GET" && req.Url!.LocalPath == "/health")
     {
         var ok = Encoding.UTF8.GetBytes("ok");
@@ -79,11 +80,13 @@ static async Task HandleRequestAsync(
         res.ContentLength64 = ok.Length;
         res.OutputStream.Write(ok);
         res.Close();
+
         return;
     }
 
     // The wire version is part of the request, not the body: a mismatch has to be decided
     // before the body is deserialized with a layout from another revision.
+
     if (req.Headers[Protocol.HeaderName] is not { } declared
         || !int.TryParse(declared, out var declaredVersion)
         || declaredVersion != Protocol.Version)
@@ -94,6 +97,7 @@ static async Task HandleRequestAsync(
         res.StatusCode = 409;
         res.StatusDescription = $"protocol {Protocol.Version}";
         res.Close();
+
         return;
     }
 
@@ -113,6 +117,7 @@ static async Task HandleRequestAsync(
         res.ContentLength64 = errBytes.Length;
         res.OutputStream.Write(errBytes);
         res.Close();
+
         return;
     }
 

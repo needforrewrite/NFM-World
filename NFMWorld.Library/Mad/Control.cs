@@ -36,7 +36,8 @@ public partial class Control
     [PluginVisible]
     public void SetGamemodeAction(int index, bool value)
     {
-        if (index >= 0 && index < GamemodeActionCount) GamemodeActions[index] = value;
+        if (index >= 0 && index < GamemodeActionCount)
+            GamemodeActions[index] = value;
     }
 
     [PluginVisible] public bool Down;
@@ -80,6 +81,7 @@ public partial class Control
         Lookback = 0;
         Enter = false;
         Exit = false;
+
         if (i == 1)
         {
             return;
@@ -89,6 +91,7 @@ public partial class Control
         Arrace = false;
         ArrowLock = -1;
         Chatup = 0;
+
         if (i != 2)
         {
             Multion = 0;

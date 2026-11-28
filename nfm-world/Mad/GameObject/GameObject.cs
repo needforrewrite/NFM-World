@@ -23,6 +23,7 @@ public class GameObject : Transform, IRenderable
     public override void OnBeforeRender(float alpha)
     {
         base.OnBeforeRender(alpha);
+
         foreach (var child in Children)
         {
             child.OnBeforeRender(alpha);
@@ -32,6 +33,7 @@ public class GameObject : Transform, IRenderable
     public override void GameTick(BackendStage? stage = null)
     {
         base.GameTick(stage);
+
         foreach (var child in Children)
         {
             child.GameTick(stage);

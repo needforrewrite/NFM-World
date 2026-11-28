@@ -37,6 +37,7 @@ internal static class Deflate
         using var output = new MemoryStream();
         using (var stream = new DeflateStream(output, CompressionLevel.Fastest, leaveOpen: true))
             stream.Write(source);
+
         return output.ToArray();
     }
 
@@ -47,6 +48,7 @@ internal static class Deflate
         using var stream = new DeflateStream(input, CompressionMode.Decompress);
         using var output = new MemoryStream();
         stream.CopyTo(output);
+
         return output.ToArray();
     }
 
@@ -65,9 +67,11 @@ internal static class Deflate
         using var output = new MemoryStream();
         var buffer = new byte[81920];
         int read;
+
         while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
         {
             if (output.Length + read > maxOutputBytes)
+
                 throw new InvalidDataException($"Decompressed payload exceeds {maxOutputBytes} bytes");
             output.Write(buffer, 0, read);
         }

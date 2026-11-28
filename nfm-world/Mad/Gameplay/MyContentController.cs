@@ -44,38 +44,47 @@ internal sealed class MyContentController : IDisposable
         var state = UiState.MyContent;
 
         // The editor is a modal: its fields own the keyboard while it is open.
+
         if (state.Editing.Value is not null)
         {
             if (key == Key.Escape)
                 state.Editing.Value = null;
+
             return;
         }
 
         if (FocusManager.FocusedNode is TextInput or TextArea)
+
             return;
 
         switch (key)
         {
             case Key.Up:
                 Move(-1);
+
                 break;
             case Key.Down:
                 Move(1);
+
                 break;
             case Key.Enter:
                 if (state.Selected is { } selected)
                     BeginEdit(selected);
+
                 break;
             case Key.H:
                 if (state.Selected is { IsTakedown: false } row)
                     _ = ToggleVisibilityAsync(row);
+
                 break;
             case Key.Delete:
                 if (state.Selected is { } doomed)
                     ConfirmDelete(doomed);
+
                 break;
             case Key.Escape:
                 NavigateBack();
+
                 break;
         }
     }
@@ -92,6 +101,7 @@ internal sealed class MyContentController : IDisposable
         if (UiState.MyContent.Editing.Value is not null)
         {
             UiState.MyContent.Editing.Value = null;
+
             return;
         }
 
@@ -102,7 +112,9 @@ internal sealed class MyContentController : IDisposable
     {
         var state = UiState.MyContent;
         var count = state.Items.Value.Count;
+
         if (count == 0)
+
             return;
 
         state.Cursor.Value = (Math.Clamp(state.Cursor.Value, 0, count - 1) + delta + count) % count;
@@ -121,6 +133,7 @@ internal sealed class MyContentController : IDisposable
             state.Items.Value = [];
             state.Busy.Value = false;
             state.Status.Value = "Sign in from the main menu to manage your uploads.";
+
             return;
         }
 
@@ -128,7 +141,9 @@ internal sealed class MyContentController : IDisposable
         {
             var items = await Task.Run(() => GameSparker.AccountManager.ListOwnedAssetsAsync());
             await LoadingWork.NextFrame;
+
             if (_disposed || generation != _generation)
+
                 return;
 
             state.Items.Value = items;
@@ -170,9 +185,11 @@ internal sealed class MyContentController : IDisposable
     {
         var state = UiState.MyContent;
         var name = state.EditName.Value.Trim();
+
         if (name.Length == 0)
         {
             state.Status.Value = "A name is required.";
+
             return;
         }
 
@@ -187,6 +204,7 @@ internal sealed class MyContentController : IDisposable
 
         state.Busy.Value = false;
         state.Status.Value = result.Success ? "Changes saved." : result.Message ?? "The archive refused the change.";
+
         if (result.Success)
         {
             state.Editing.Value = null;
@@ -232,6 +250,7 @@ internal sealed class MyContentController : IDisposable
 
         state.Busy.Value = false;
         state.Status.Value = result.Success ? "Upload deleted." : result.Message ?? "The archive refused the delete.";
+
         if (result.Success)
         {
             state.Cursor.Value = Math.Max(0, state.Cursor.Value - 1);

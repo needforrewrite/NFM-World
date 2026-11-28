@@ -50,6 +50,7 @@ public class DiscordTests
         var form = new Dictionary<string, string> { ["__RequestVerificationToken"] = antiforgery };
         var missing = await client.PostAsync("/auth/discord/start", new FormUrlEncodedContent(form));
         Assert.AreEqual(HttpStatusCode.BadRequest, missing.StatusCode);
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();

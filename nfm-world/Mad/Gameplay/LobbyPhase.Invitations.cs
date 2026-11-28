@@ -19,11 +19,15 @@ public partial class LobbyPhase
     private IPacketServerToClient[] ReadLobbyPackets()
     {
         var packets = Transport.GetNewPackets();
-        if (_deferredLobbyPackets.Count == 0) return packets;
+
+        if (_deferredLobbyPackets.Count == 0)
+
+            return packets;
 
         _deferredLobbyPackets.AddRange(packets);
         var pending = _deferredLobbyPackets.ToArray();
         _deferredLobbyPackets.Clear();
+
         return pending;
     }
 
@@ -45,16 +49,20 @@ public partial class LobbyPhase
                         "Return to the lobby to join."
                     )
                 );
+
                 return true;
             case S2C_GameLobbyNotice notice:
                 GameSparker.UiRenderer?.Notifications.Show(this, "Game lobby", notice.Message);
+
                 return true;
             default:
+
                 return false;
         }
     }
 
-    private bool CanManageGame(uint sessionId) => CanAct && Lobby.ViewedSessionId.Value == sessionId
+    private bool CanManageGame(uint sessionId) => CanAct
+                                                  && Lobby.ViewedSessionId.Value == sessionId
                                                   && Lobby.Sessions.Value.Any(
                                                       session => session.Id == sessionId && session.CanManage
                                                   );
@@ -67,7 +75,8 @@ public partial class LobbyPhase
 
     private void OnInviteGamePlayer(uint sessionId, Guid playerId)
     {
-        if (CanAct && Lobby.CurrentSession.Value is { CanManage: true, EmptySlots: > 0 } session
+        if (CanAct
+            && Lobby.CurrentSession.Value is { CanManage: true, EmptySlots: > 0 } session
             && session.Id == sessionId)
             Transport.SendPacketToServer(new C2S_InviteGamePlayer { SessionId = sessionId, PlayerId = playerId });
     }

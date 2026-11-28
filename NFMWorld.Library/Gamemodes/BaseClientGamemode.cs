@@ -55,6 +55,7 @@ public abstract class BaseClientGamemode : IGamemode
         foreach (var player in players)
         {
             if (player.Info.IsClientPlayer)
+
                 return player;
         }
 
@@ -149,7 +150,8 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     public virtual void GameTick()
     {
-        if (_raceNoticeTicks > 0 && --_raceNoticeTicks == 0) RaceNotice = null;
+        if (_raceNoticeTicks > 0 && --_raceNoticeTicks == 0)
+            RaceNotice = null;
     }
 
     /// <summary>
@@ -326,15 +328,18 @@ public abstract class BaseClientGamemode : IGamemode
     protected PluginAi? AttachBot(string aiId, ClientSidePlayer player)
     {
         var plugin = AiPlugin.Load(aiId, PluginPaths.For("ais", aiId, "ai.dll"));
+
         if (plugin is null)
         {
             Logging.Warning($"No AI plugin at data/ais/{aiId}/ai.dll; '{player.Info.PlayerName}' will not be driven.");
+
             return null;
         }
 
         var instance = plugin.Create(player, this);
         player.Bot = instance;
         _bots.Add((plugin, [instance]));
+
         return instance;
     }
 
@@ -344,11 +349,13 @@ public abstract class BaseClientGamemode : IGamemode
     private void ReleaseBots()
     {
         if (_bots.Count == 0)
+
             return;
 
         // Drop the references the gamemode holds before releasing the assemblies: an
         // instance's type lives in the plugin's context, so anything still pointing at
         // one keeps the whole context resident.
+
         foreach (var (_, instances) in _bots)
         {
             foreach (var instance in instances)
@@ -443,7 +450,8 @@ public abstract class BaseClientGamemode : IGamemode
         if (car.CurrentCheckpoint != _lastClientCheckpoint)
         {
             _lastClientCheckpoint = car.CurrentCheckpoint;
-            if (!GamemodeContext.IsSpectating) SfxLibrary.checkpoint?.Play();
+            if (!GamemodeContext.IsSpectating)
+                SfxLibrary.checkpoint?.Play();
         }
 
         // A stage can declare laps and no checkpoint gates at all (football/stadium does), and

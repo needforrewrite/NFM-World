@@ -13,30 +13,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiMouseButton : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Left = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiMouseButton : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Left = unchecked(0),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Right = unchecked(1),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Right = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Middle = unchecked(2),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Middle = unchecked(2),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Count = unchecked(5),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Count = unchecked(5),
+    }
 }

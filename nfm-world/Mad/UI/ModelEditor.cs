@@ -26,7 +26,9 @@ public class ModelEditorTab
         get;
         set
         {
-            if (ReferenceEquals(field, value)) return;
+            if (ReferenceEquals(field, value))
+
+                return;
             var previous = field;
             field = value;
             previous?.Dispose();
@@ -106,8 +108,11 @@ public class ModelEditorTab
 
     public string GetDisplayName()
     {
-        if (ModelPath == null) return "Untitled";
+        if (ModelPath == null)
+
+            return "Untitled";
         var name = Path.GetFileName(ModelPath);
+
         return TextEditorDirty ? name + "*" : name;
     }
 }
@@ -183,10 +188,14 @@ public class ModelEditorPhase : BasePhase
     {
         const string userModelsPath = "./data/models/user";
         var modelList = new List<string>();
+
         foreach (var category in new[] { "cars", "stage" })
         {
             var categoryPath = Path.Combine(userModelsPath, category);
-            if (!Directory.Exists(categoryPath)) continue;
+
+            if (!Directory.Exists(categoryPath))
+
+                continue;
 
             foreach (var file in Directory.EnumerateFiles(categoryPath, "*.rad", SearchOption.AllDirectories))
                 modelList.Add(Path.GetRelativePath(userModelsPath, file).Replace('\\', '/'));
@@ -205,7 +214,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetActiveTab(int index)
     {
-        if (index < 0 || index >= _tabs.Count) return;
+        if (index < 0 || index >= _tabs.Count)
+
+            return;
         _modelLoadGeneration++;
         _activeTabIndex = index;
         _view?.OnActiveTabChanged();
@@ -223,16 +234,22 @@ public class ModelEditorPhase : BasePhase
     internal string? StartTestDrive(bool withOtherCars)
     {
         if (ActiveTab is not { ModelType: ModelEditorTab.ModelTypeEnum.Car } tab)
+
             return "Test drive is only available for car models.";
         if (tab.Object is null)
+
             return "The model must parse before it can be test driven.";
 
         var rad = tab.Object.Rad;
+
         if (rad.Wheels.Length == 0)
+
             return "This car has no wheels. Add wheels in the Wheels tab before test driving.";
 
         var invalidStat = rad.Stats.Validate(rad.FileName);
+
         if (invalidStat is not null)
+
             return $"This car's {invalidStat} stat is missing or invalid. Fix it in Stats & Physics before test driving.";
 
         // Race car lookup goes through BackendGameSparker. Keep both the internal
@@ -243,6 +260,7 @@ public class ModelEditorPhase : BasePhase
         BackendGameSparker.dynamic_models[rad.FileName] = (index, rad);
 
         TestDriveStageSelectPhase stageSelect;
+
         try
         {
             stageSelect = new TestDriveStageSelectPhase();
@@ -250,6 +268,7 @@ public class ModelEditorPhase : BasePhase
         catch (Exception ex)
         {
             Logging.Error($"Unable to start test drive stage select: {ex.Message}");
+
             return ex.Message;
         }
 
@@ -258,18 +277,22 @@ public class ModelEditorPhase : BasePhase
 
         _preserveTabsOnExit = true;
         GameSparker.PushPhase(stageSelect, PhaseManager.Groups.Event);
+
         return null;
     }
 
     private void StartTestDriveRace(string stageName, bool withOtherCars)
     {
         var tab = ActiveTab;
+
         if (tab?.Object is null)
+
             return;
 
         var players = FreePlayRoster.Create(TestDriveCarName, withOtherCars);
 
         BaseGamemodeFactory factory;
+
         try
         {
             factory = GamemodeFactory.Create(
@@ -284,10 +307,12 @@ public class ModelEditorPhase : BasePhase
         {
             Logging.Error($"Unable to start test drive gamemode: {ex.Message}");
             GameSparker.MessageWindow.ShowMessage("Test drive unavailable", ex.Message);
+
             return;
         }
 
         LocalRaceHost host;
+
         try
         {
             host = LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = players });
@@ -297,10 +322,12 @@ public class ModelEditorPhase : BasePhase
             factory.End();
             Logging.Error($"Unable to start test drive: {ex.Message}");
             GameSparker.MessageWindow.ShowMessage("Test drive unavailable", ex.Message);
+
             return;
         }
 
         RacePhase race;
+
         try
         {
             race = new RacePhase(stageName, factory, players, host);
@@ -309,6 +336,7 @@ public class ModelEditorPhase : BasePhase
         {
             Logging.Error($"Unable to initialize test drive: {ex.Message}");
             GameSparker.MessageWindow.ShowMessage("Test drive unavailable", ex.Message);
+
             return;
         }
 
@@ -326,6 +354,7 @@ public class ModelEditorPhase : BasePhase
             if (!imguiWantsKeyboard && key == Key.Escape)
             {
                 Cancelled?.Invoke(this, EventArgs.Empty);
+
                 return;
             }
 
@@ -336,6 +365,7 @@ public class ModelEditorPhase : BasePhase
     public override NFMWorld.Reactor.Node BuildUi()
     {
         _view ??= new ModelEditorView(this);
+
         return _view.Build();
     }
 
@@ -366,9 +396,11 @@ public class ModelEditorPhase : BasePhase
         base.Exit();
 
         _isOpen = false;
+
         if (!_preserveTabsOnExit)
         {
-            foreach (var tab in _tabs) tab.Object = null;
+            foreach (var tab in _tabs)
+                tab.Object = null;
             _tabs.Clear();
             _activeTabIndex = -1;
         }
@@ -382,6 +414,7 @@ public class ModelEditorPhase : BasePhase
     {
         var tab = new ModelEditorTab();
         ResetTabView(tab);
+
         return tab;
     }
 
@@ -391,7 +424,8 @@ public class ModelEditorPhase : BasePhase
         {
             _modelLoadGeneration++;
             _isOpen = false;
-            foreach (var tab in _tabs) tab.Object = null;
+            foreach (var tab in _tabs)
+                tab.Object = null;
             _tabs.Clear();
             DisposeWheelHighlight();
             DisposeSelectionOverlay();
@@ -408,13 +442,16 @@ public class ModelEditorPhase : BasePhase
 
     internal void PerformCloseTab(int index)
     {
-        if (index < 0 || index >= _tabs.Count) return;
+        if (index < 0 || index >= _tabs.Count)
+
+            return;
         _modelLoadGeneration++;
 
         _tabs[index].Object = null;
         _tabs.RemoveAt(index);
 
         // Adjust active tab index
+
         if (_tabs.Count == 0)
         {
             _activeTabIndex = -1;
@@ -435,6 +472,7 @@ public class ModelEditorPhase : BasePhase
     internal string? ReloadActiveTabFromText()
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
 
         try
@@ -445,12 +483,14 @@ public class ModelEditorPhase : BasePhase
         {
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error parsing model after history step: {ex.Message}");
+
             return ex.Message;
         }
 
         RefreshPolygonEditorAfterTextChange(tab);
         _view?.OnContentChanged();
         _view?.Refresh();
+
         return null;
     }
 
@@ -458,6 +498,7 @@ public class ModelEditorPhase : BasePhase
     internal string? SaveTab(ModelEditorTab tab, bool collapseEditor = false)
     {
         if (tab.ModelPath is null)
+
             return "This model has no file path.";
 
         try
@@ -470,12 +511,14 @@ public class ModelEditorPhase : BasePhase
             if (collapseEditor)
                 tab.TextEditorExpanded = false;
             _view?.Refresh();
+
             return null;
         }
         catch (Exception ex)
         {
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error saving/reloading model: {ex.Message}");
+
             return ex.Message;
         }
     }
@@ -483,6 +526,7 @@ public class ModelEditorPhase : BasePhase
     internal string? OpenInExternalEditor(ModelEditorTab tab)
     {
         if (tab.ModelPath is null)
+
             return "This model has no file path.";
 
         try
@@ -498,12 +542,14 @@ public class ModelEditorPhase : BasePhase
                     UseShellExecute = true
                 }
             );
+
             return null;
         }
         catch (Exception ex)
         {
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error opening external editor: {ex.Message}");
+
             return ex.Message;
         }
     }
@@ -517,6 +563,7 @@ public class ModelEditorPhase : BasePhase
     )
     {
         if (string.IsNullOrWhiteSpace(name))
+
             return "Enter a model name.";
 
         var category = isCar ? "cars" : "stage";
@@ -526,6 +573,7 @@ public class ModelEditorPhase : BasePhase
         var filePath = Path.Combine(userPath, name + ".rad");
 
         if (File.Exists(filePath))
+
             return $"A model named '{Path.GetFileName(filePath)}' already exists.";
 
         string radContent;
@@ -536,10 +584,13 @@ public class ModelEditorPhase : BasePhase
             var refModels = isCar ? BackendGameSparker.CarRads : BackendGameSparker.StageRads;
 
             if (selectedReferenceModel >= refModels.Length)
+
                 return "Select a reference model.";
 
             var refFile = $"data/models/nfmm/{category}/{refModels[selectedReferenceModel]}.rad";
+
             if (!VFS.FileExists(refFile))
+
                 return $"Reference model not found: {refFile}";
 
             radContent = VFS.ReadAllText(refFile);
@@ -556,12 +607,14 @@ public class ModelEditorPhase : BasePhase
 
         // Refresh list
         RefreshUserModels();
+
         return null;
     }
 
     private string CreateEmptyRadFile()
     {
         // Create a minimal valid .rad file
+
         return @"// Created with NFM World Model Editor
 
 ";
@@ -572,6 +625,7 @@ public class ModelEditorPhase : BasePhase
     internal string? LoadModel(string filePath, bool openInNewTab = false)
     {
         _ = LoadCreatedModelAsync(filePath, openInNewTab);
+
         return null;
     }
 
@@ -579,7 +633,8 @@ public class ModelEditorPhase : BasePhase
     {
         var error = await LoadModelAsync(filePath, openInNewTab);
         await LoadingWork.NextFrame;
-        if (_isOpen && error is not null) GameSparker.MessageWindow.ShowMessage("Could not load model", error);
+        if (_isOpen && error is not null)
+            GameSparker.MessageWindow.ShowMessage("Could not load model", error);
     }
 
     internal async Task<string?> LoadModelAsync(string filePath, bool openInNewTab = false)
@@ -587,18 +642,21 @@ public class ModelEditorPhase : BasePhase
         var generation = ++_modelLoadGeneration;
         // Check if already open
         var existingTabIndex = _tabs.FindIndex(t => t.ModelPath == filePath);
+
         if (existingTabIndex >= 0 && !openInNewTab)
         {
             // Switch to existing tab
             _activeTabIndex = existingTabIndex;
             _view?.OnActiveTabChanged();
             _view?.Refresh();
+
             return null;
         }
 
         var target = openInNewTab ? null : ActiveTab;
         var targetText = target?.TextContent;
         using var loading = LoadingWork.Begin("Loading model...");
+
         try
         {
             var radContent = await Task.Run(() => File.ReadAllText(filePath));
@@ -617,11 +675,18 @@ public class ModelEditorPhase : BasePhase
                 }
             );
             await LoadingWork.NextFrame;
-            if (!_isOpen || generation != _modelLoadGeneration
-                || (target is not null && (!_tabs.Contains(target) || !ReferenceEquals(ActiveTab, target)
-                                           || target.TextContent != targetText))) return null;
+
+            if (!_isOpen
+                || generation != _modelLoadGeneration
+                || (target is not null
+                    && (!_tabs.Contains(target)
+                        || !ReferenceEquals(ActiveTab, target)
+                        || target.TextContent != targetText)))
+
+                return null;
 
             ModelEditorTab tab;
+
             if (openInNewTab || _activeTabIndex < 0 || _tabs.Count == 0)
             {
                 // Create new tab
@@ -638,15 +703,20 @@ public class ModelEditorPhase : BasePhase
             var parseError = LoadModelIntoTab(tab, filePath, radContent, parsed.Mesh, parsed.Error);
             _view?.OnActiveTabChanged();
             _view?.Refresh();
+
             return parseError;
         }
         catch (Exception ex)
         {
             await LoadingWork.NextFrame;
-            if (!_isOpen || generation != _modelLoadGeneration) return null;
+
+            if (!_isOpen || generation != _modelLoadGeneration)
+
+                return null;
             SentrySdk.CaptureException(ex);
             var err = $"Error loading file: {ex.Message}";
             Logging.Error(err);
+
             return err;
         }
     }
@@ -670,10 +740,12 @@ public class ModelEditorPhase : BasePhase
             : ModelEditorTab.ModelTypeEnum.Car;
 
         // Try to parse the model, but keep the file loaded even if it fails
+
         try
         {
             tab.Object = prepared is null ? null : new EditorObject(prepared);
             ResetTabView(tab);
+
             return parseError;
         }
         catch (Exception parseEx)
@@ -682,6 +754,7 @@ public class ModelEditorPhase : BasePhase
             var err = $"Error parsing model: {parseEx.Message}\n\nFile loaded in text editor for correction.";
             Logging.Error($"Parse error in {Path.GetFileName(filePath)}: {parseEx.Message}");
             tab.Object = null;
+
             return err;
         }
     }
@@ -703,11 +776,14 @@ public class ModelEditorPhase : BasePhase
     private Vector3 GetViewportShift(ModelEditorTab tab)
     {
         if (_view?.LeftPanelOpen != true)
+
             return Vector3.Zero;
 
         var forward = (Vector3)tab.ModelPosition - tab.CameraPosition;
         var distance = forward.Length();
+
         if (distance < 0.001f)
+
             return Vector3.Zero;
 
         forward /= distance;
@@ -739,9 +815,12 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetModelRotation(int axis, double degrees)
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         var rotation = tab.ModelRotation;
+
         switch (axis)
         {
             case 0: rotation.X = (fix64)degrees; break;
@@ -755,7 +834,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetModelHeight(double height)
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         var position = tab.ModelPosition;
         position.Y = (fix64)height;
@@ -766,7 +847,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetCameraDistance(double distance)
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         tab.CameraDistance = Math.Clamp((float)distance, 100f, 10000f);
         UpdateTabCameraPosition(tab);
@@ -775,7 +858,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void ResetActiveView()
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         ResetTabView(tab);
         _view?.Refresh();
@@ -783,9 +868,12 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetEditMode(ModelEditorTab.EditModeEnum mode)
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         tab.EditMode = mode;
+
         if (mode == ModelEditorTab.EditModeEnum.Polygon)
         {
             tab.SelectedCollisionIndex = -1;
@@ -802,7 +890,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void ClearSelection()
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         tab.SelectedPolygonIndex = -1;
         tab.SelectedWheelIndex = -1;
@@ -813,7 +903,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetReferenceOverlay(bool shown)
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         tab.ShowReferenceOverlay = shown;
         _view?.Refresh();
@@ -821,7 +913,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetReferenceCar(int index)
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         tab.ReferenceCarIndex = index;
         _view?.Refresh();
@@ -829,7 +923,9 @@ public class ModelEditorPhase : BasePhase
 
     internal void SetReferenceOpacity(double opacity)
     {
-        if (ActiveTab is not { } tab) return;
+        if (ActiveTab is not { } tab)
+
+            return;
 
         tab.ReferenceOpacity = Math.Clamp((float)opacity, 0.1f, 1.0f);
         _view?.Refresh();
@@ -853,9 +949,11 @@ public class ModelEditorPhase : BasePhase
     internal List<ColorDefinition> GetColorDefinitions(ModelEditorTab tab)
     {
         var colors = new Color3?[ColorPrefixes.Length];
+
         foreach (var raw in tab.TextContent.Split('\n'))
         {
             var line = raw.Trim();
+
             for (var slot = 0; slot < ColorPrefixes.Length; slot++)
             {
                 if (TryParseColorCall(line, ColorPrefixes[slot], out var color))
@@ -864,6 +962,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         var result = new List<ColorDefinition>(ColorPrefixes.Length);
+
         for (var slot = 0; slot < colors.Length; slot++)
         {
             if (colors[slot] is { } color)
@@ -876,12 +975,15 @@ public class ModelEditorPhase : BasePhase
     internal Color3? GetSlotColor(ModelEditorTab tab, int slot)
     {
         if (slot < 0 || slot >= ColorPrefixes.Length)
+
             return null;
 
         foreach (var raw in tab.TextContent.Split('\n'))
         {
             var line = raw.Trim();
+
             if (TryParseColorCall(line, ColorPrefixes[slot], out var color))
+
                 return color;
         }
 
@@ -896,26 +998,35 @@ public class ModelEditorPhase : BasePhase
     internal string? DefineDefaultColors()
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
         if (tab.ModelType != ModelEditorTab.ModelTypeEnum.Car)
+
             return "Colour definitions are only available for cars.";
         if (tab.Object is null)
+
             return "The model must parse before colours can be defined.";
 
         var first = GetSlotColor(tab, 0);
         var second = GetSlotColor(tab, 1);
+
         if (first is not null && second is not null)
+
             return null;
 
         var detected = FirstDistinctPolyColors(tab.TextContent);
         var used = new HashSet<Color3>();
-        if (first is { } firstColor) used.Add(firstColor);
-        if (second is { } secondColor) used.Add(secondColor);
+        if (first is { } firstColor)
+            used.Add(firstColor);
+        if (second is { } secondColor)
+            used.Add(secondColor);
 
         Color3 NextColor(Color3 fallback)
         {
             foreach (var color in detected)
+
                 if (!used.Contains(color))
+
                     return color;
 
             return used.Contains(fallback) ? new Color3(255, 0, 0) : fallback;
@@ -941,6 +1052,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         if (lines.Count == 0)
+
             return null;
 
         var insertion = tab.TextContent.IndexOf("<p>", StringComparison.Ordinal);
@@ -957,6 +1069,7 @@ public class ModelEditorPhase : BasePhase
         tab.TextEditorDirty = true;
         _view?.OnContentChanged();
         _view?.Refresh();
+
         return null;
     }
 
@@ -990,10 +1103,13 @@ public class ModelEditorPhase : BasePhase
             }
 
             if (!inPoly || skipPoly || !TryParseColorCall(line, "c(", out var color) || result.Contains(color))
+
                 continue;
 
             result.Add(color);
+
             if (result.Count == 2)
+
                 break;
         }
 
@@ -1004,8 +1120,10 @@ public class ModelEditorPhase : BasePhase
     internal string? SetSlotChannel(int slot, int channel, short value)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
         if (GetSlotColor(tab, slot) is not { } old)
+
             return $"{ColorSlotName(slot)} is not defined.";
 
         var clamped = (short)Math.Clamp(value, (short)0, (short)255);
@@ -1021,14 +1139,20 @@ public class ModelEditorPhase : BasePhase
 
     internal string? SetSlotColor(int slot, Color3 color)
     {
-        if (ActiveTab is not { } tab) return "No model open.";
-        if (GetSlotColor(tab, slot) is not { } old) return $"{ColorSlotName(slot)} is not defined.";
+        if (ActiveTab is not { } tab)
+
+            return "No model open.";
+        if (GetSlotColor(tab, slot) is not { } old)
+
+            return $"{ColorSlotName(slot)} is not defined.";
+
         return SetSlotColor(tab, slot, old, color);
     }
 
     private string? SetSlotColor(ModelEditorTab tab, int slot, Color3 oldColor, Color3 color)
     {
         if (oldColor == color)
+
             return null;
 
         // The text definition may have been edited by hand since the last parse; the
@@ -1041,16 +1165,20 @@ public class ModelEditorPhase : BasePhase
         RefreshPolygonEditorAfterTextChange(tab);
         _view?.OnContentChanged();
         _view?.Refresh();
+
         return null;
     }
 
     private static Color3? FindLiveSlotColor(EditorObject? obj, int slot)
     {
         if (obj is null)
+
             return null;
 
         foreach (var poly in obj.Mesh.Polys)
+
             if (poly.ColNum == slot)
+
                 return poly.Color;
 
         return null;
@@ -1062,21 +1190,28 @@ public class ModelEditorPhase : BasePhase
     private static bool TryParseColorCall(string trimmedLine, string prefix, out Color3 color)
     {
         color = default;
+
         if (!trimmedLine.StartsWith(prefix, StringComparison.Ordinal))
+
             return false;
 
         var close = trimmedLine.IndexOf(')', prefix.Length);
+
         if (close < 0)
+
             return false;
 
         var parts = trimmedLine[prefix.Length..close].Split(',');
+
         if (parts.Length != 3
             || !short.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var r)
             || !short.TryParse(parts[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var g)
             || !short.TryParse(parts[2].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var b))
+
             return false;
 
         color = new Color3(r, g, b);
+
         return true;
     }
 
@@ -1086,6 +1221,7 @@ public class ModelEditorPhase : BasePhase
         var indent = line[..^trimmed.Length];
         var close = trimmed.IndexOf(')', prefix.Length);
         var rest = close >= 0 ? trimmed[(close + 1)..] : "";
+
         return indent + prefix + $"{color.R},{color.G},{color.B})" + rest;
     }
 
@@ -1144,9 +1280,12 @@ public class ModelEditorPhase : BasePhase
         for (var i = start; i < lines.Length; i++)
         {
             var line = lines[i].Trim();
+
             if (line.StartsWith("</p>", StringComparison.Ordinal) || line.StartsWith("[/p]", StringComparison.Ordinal))
+
                 return false;
             if (line.Equals("wheel", StringComparison.Ordinal) || line.StartsWith("wheel(", StringComparison.Ordinal))
+
                 return true;
         }
 
@@ -1157,6 +1296,7 @@ public class ModelEditorPhase : BasePhase
     private static void TagColorSlot(EditorObject obj, int slot, Color3 color)
     {
         var polys = obj.Mesh.Polys;
+
         for (var i = 0; i < polys.Length; i++)
         {
             var poly = polys[i];
@@ -1168,6 +1308,7 @@ public class ModelEditorPhase : BasePhase
     private static void ApplyColorToObject(EditorObject? obj, int slot, Color3 oldColor, Color3 newColor)
     {
         if (obj is null)
+
             return;
 
         // Wheels/rims are not player-editable slots at the moment.
@@ -1182,6 +1323,7 @@ public class ModelEditorPhase : BasePhase
         for (var i = 0; i < polys.Length; i++)
         {
             var poly = polys[i];
+
             if (poly.ColNum == slot || (poly.ColNum is null && poly.Color == oldColor))
             {
                 polys[i] = poly with { Color = newColor, ColNum = slot };
@@ -1215,9 +1357,13 @@ public class ModelEditorPhase : BasePhase
         foreach (var raw in tab.TextContent.Split('\n'))
         {
             var line = raw.Trim();
-            if (TryParseSingleInt(line, "ScaleX(", out var value)) x = value;
-            else if (TryParseSingleInt(line, "ScaleY(", out value)) y = value;
-            else if (TryParseSingleInt(line, "ScaleZ(", out value)) z = value;
+
+            if (TryParseSingleInt(line, "ScaleX(", out var value))
+                x = value;
+            else if (TryParseSingleInt(line, "ScaleY(", out value))
+                y = value;
+            else if (TryParseSingleInt(line, "ScaleZ(", out value))
+                z = value;
             else if (TryParseSingleInt(line, "div(", out value))
             {
                 hasDiv = true;
@@ -1245,6 +1391,7 @@ public class ModelEditorPhase : BasePhase
     internal string? UseScaleMode(bool percent)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
 
         var settings = GetScaleSettings(tab);
@@ -1256,6 +1403,7 @@ public class ModelEditorPhase : BasePhase
                 : settings.X;
             var y = settings.Mode == ScaleMode.Div ? x : settings.Y;
             var z = settings.Mode == ScaleMode.Div ? x : settings.Z;
+
             return SetScalePercent(x, y, z);
         }
 
@@ -1263,12 +1411,14 @@ public class ModelEditorPhase : BasePhase
         var value = settings.Mode is ScaleMode.Percent or ScaleMode.None
             ? settings.X
             : settings.DivValue;
+
         return SetScaleDiv(idiv: true, value);
     }
 
     internal string? SetScalePercent(int x, int y, int z)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
 
         x = Math.Clamp(x, 1, 1000);
@@ -1279,12 +1429,14 @@ public class ModelEditorPhase : BasePhase
             RemoveScaleDefinitionLines(tab.TextContent),
             [$"ScaleX({x})", $"ScaleY({y})", $"ScaleZ({z})"]
         );
+
         return ApplyEditedText(tab, text, clearAlignBaseline: true);
     }
 
     internal string? SetScaleDiv(bool idiv, int value)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
 
         value = Math.Clamp(value, 1, 1000);
@@ -1292,15 +1444,18 @@ public class ModelEditorPhase : BasePhase
             RemoveScaleDefinitionLines(tab.TextContent),
             [$"{(idiv ? "idiv" : "div")}({value})"]
         );
+
         return ApplyEditedText(tab, text, clearAlignBaseline: true);
     }
 
     internal string? RotateModel(int axis)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
 
         tab.AlignBaseline ??= tab.TextContent;
+
         return ApplyEditedText(
             tab,
             TransformPoints(tab.TextContent, axis, 0, rotate: true),
@@ -1311,9 +1466,11 @@ public class ModelEditorPhase : BasePhase
     internal string? OffsetModel(int axis, int delta)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
 
         tab.AlignBaseline ??= tab.TextContent;
+
         return ApplyEditedText(
             tab,
             TransformPoints(tab.TextContent, axis, delta, rotate: false),
@@ -1324,15 +1481,18 @@ public class ModelEditorPhase : BasePhase
     internal string? ResetAlignment()
     {
         if (ActiveTab is not { } tab || tab.AlignBaseline is not { } baseline)
+
             return null;
 
         tab.AlignBaseline = null;
+
         return ApplyEditedText(tab, baseline, clearAlignBaseline: false);
     }
 
     private string? ApplyEditedText(ModelEditorTab tab, string text, bool clearAlignBaseline)
     {
         var previous = tab.TextContent;
+
         try
         {
             tab.Object = new EditorObject(RadParser.ParseRad(text, "editing"));
@@ -1341,6 +1501,7 @@ public class ModelEditorPhase : BasePhase
         {
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error parsing edited model: {ex.Message}");
+
             return ex.Message;
         }
 
@@ -1351,6 +1512,7 @@ public class ModelEditorPhase : BasePhase
         RefreshPolygonEditorAfterTextChange(tab);
         _view?.OnContentChanged();
         _view?.Refresh();
+
         return null;
     }
 
@@ -1358,6 +1520,7 @@ public class ModelEditorPhase : BasePhase
     private void RefreshPolygonEditorAfterTextChange(ModelEditorTab tab)
     {
         if (!tab.ShowPolygonEditor)
+
             return;
 
         if (tab.PolygonEditorIsCollision && tab.SelectedCollisionIndex >= 0)
@@ -1375,11 +1538,15 @@ public class ModelEditorPhase : BasePhase
     private static bool TryParseSingleInt(string trimmedLine, string prefix, out int value)
     {
         value = 0;
+
         if (!trimmedLine.StartsWith(prefix, StringComparison.Ordinal))
+
             return false;
 
         var close = trimmedLine.IndexOf(')', prefix.Length);
+
         if (close < 0)
+
             return false;
 
         return int.TryParse(
@@ -1398,11 +1565,13 @@ public class ModelEditorPhase : BasePhase
         foreach (var raw in lines)
         {
             var line = raw.TrimStart();
+
             if (line.StartsWith("ScaleX(", StringComparison.Ordinal)
                 || line.StartsWith("ScaleY(", StringComparison.Ordinal)
                 || line.StartsWith("ScaleZ(", StringComparison.Ordinal)
                 || line.StartsWith("div(", StringComparison.Ordinal)
                 || line.StartsWith("idiv(", StringComparison.Ordinal))
+
                 continue;
 
             kept.Add(raw);
@@ -1415,6 +1584,7 @@ public class ModelEditorPhase : BasePhase
     {
         var newline = text.Contains("\r\n") ? "\r\n" : "\n";
         var body = text.TrimStart('\r', '\n');
+
         return string.Join(newline, definitions) + newline + newline + body;
     }
 
@@ -1446,6 +1616,7 @@ public class ModelEditorPhase : BasePhase
             var trimmed = line.TrimStart();
 
             if (!TryParsePointCall(trimmed, out var x, out var y, out var z))
+
                 continue;
 
             if (rotate)
@@ -1479,14 +1650,19 @@ public class ModelEditorPhase : BasePhase
     private static bool TryParsePointCall(string trimmedLine, out int x, out int y, out int z)
     {
         x = y = z = 0;
+
         if (!trimmedLine.StartsWith("p(", StringComparison.Ordinal))
+
             return false;
 
         var close = trimmedLine.IndexOf(')', 2);
+
         if (close < 0)
+
             return false;
 
         var parts = trimmedLine[2..close].Split(',');
+
         return parts.Length == 3
                && int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out x)
                && int.TryParse(parts[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out y)
@@ -1516,7 +1692,9 @@ public class ModelEditorPhase : BasePhase
         foreach (var raw in lines)
         {
             var line = raw.Trim();
+
             if (!TryParseIntCall(line, "w(", 6, out var values))
+
                 continue;
 
             var custom = tab.Object is { } obj
@@ -1546,6 +1724,7 @@ public class ModelEditorPhase : BasePhase
     {
         var lines = tab.TextContent.Split('\n');
         var index = FindRimsLine(lines, wheelIndex, out _);
+
         return index >= 0 && TryParseIntCall(lines[index].Trim(), "rims(", 5, out var values)
             ? new RimsSpec(values[0], values[1], values[2], values[3], values[4])
             : new RimsSpec(120, 120, 120, 20, 30);
@@ -1558,9 +1737,11 @@ public class ModelEditorPhase : BasePhase
         var selectedRims = -1;
         var rimCount = 0;
         var wheel = 0;
+
         for (var i = 0; i < lines.Length; i++)
         {
             var line = lines[i].TrimStart();
+
             if (line.StartsWith("rims(", StringComparison.Ordinal))
             {
                 lastRims = i;
@@ -1568,8 +1749,10 @@ public class ModelEditorPhase : BasePhase
             }
             else if (line.StartsWith("w(", StringComparison.Ordinal))
             {
-                if (firstWheel < 0) firstWheel = i;
-                if (wheel++ == wheelIndex) selectedRims = lastRims;
+                if (firstWheel < 0)
+                    firstWheel = i;
+                if (wheel++ == wheelIndex)
+                    selectedRims = lastRims;
             }
         }
 
@@ -1580,10 +1763,13 @@ public class ModelEditorPhase : BasePhase
     internal string? CreateBasicWheels()
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
         if (tab.ModelType != ModelEditorTab.ModelTypeEnum.Car)
+
             return "Wheels are only available for cars.";
         if (GetWheelSpecs(tab).Count > 0)
+
             return null;
 
         var minX = float.MaxValue;
@@ -1596,6 +1782,7 @@ public class ModelEditorPhase : BasePhase
         if (tab.Object is { } obj)
         {
             foreach (var poly in obj.Mesh.Polys)
+
             foreach (var point in poly.Points)
             {
                 minX = Math.Min(minX, point.X);
@@ -1629,13 +1816,16 @@ public class ModelEditorPhase : BasePhase
         lines.Add($"w({x},{y},{rear},0,{-wheelWidth},{wheelHeight})");
 
         var text = InsertBeforeFirstPoly(tab.TextContent, lines);
+
         return ApplyEditedText(tab, text, clearAlignBaseline: true);
     }
 
     private static bool HasRimsDefinition(ModelEditorTab tab)
     {
         foreach (var raw in tab.TextContent.Split('\n'))
+
             if (raw.TrimStart().StartsWith("rims(", StringComparison.Ordinal))
+
                 return true;
 
         return false;
@@ -1647,7 +1837,9 @@ public class ModelEditorPhase : BasePhase
     internal int FindMirrorPartner(ModelEditorTab tab, int index)
     {
         var specs = GetWheelSpecs(tab);
+
         if (index < 0 || index >= specs.Count)
+
             return -1;
 
         var self = specs[index];
@@ -1657,17 +1849,22 @@ public class ModelEditorPhase : BasePhase
         for (var i = 0; i < specs.Count; i++)
         {
             if (i == index)
+
                 continue;
 
             var other = specs[i];
+
             if (self.X != 0 && Math.Sign(other.X) == Math.Sign(self.X))
+
                 continue;
 
             var dx = -self.X - other.X;
             var dy = self.Y - other.Y;
             var dz = self.Z - other.Z;
             var distance = dx * dx + dy * dy + dz * dz;
+
             if (distance >= bestDistance)
+
                 continue;
 
             bestDistance = distance;
@@ -1680,8 +1877,10 @@ public class ModelEditorPhase : BasePhase
     internal string? SetWheels(IReadOnlyList<WheelEdit> edits)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
         if (edits.Count == 0)
+
             return null;
 
         var byIndex = new Dictionary<int, WheelEdit>(edits.Count);
@@ -1698,7 +1897,9 @@ public class ModelEditorPhase : BasePhase
             var carriageReturn = raw.EndsWith('\r');
             var line = carriageReturn ? raw[..^1] : raw;
             var trimmed = line.TrimStart();
+
             if (!trimmed.StartsWith("w(", StringComparison.Ordinal))
+
                 continue;
 
             if (byIndex.TryGetValue(ordinal, out var edit))
@@ -1715,6 +1916,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         if (replaced == 0)
+
             return "Wheel not found.";
 
         return ApplyEditedText(tab, string.Join("\n", lines), clearAlignBaseline: true);
@@ -1753,13 +1955,16 @@ public class ModelEditorPhase : BasePhase
         if (_view is not { WheelsTabActive: true } || tab.Object is null)
         {
             _view?.HideWheelGizmo();
+
             return;
         }
 
         var index = _view.HighlightedWheelIndex;
+
         if (index < 0 || index >= tab.Object.Wheels.Count || index >= tab.Object.WheelObjects.Count)
         {
             _view.HideWheelGizmo();
+
             return;
         }
 
@@ -1792,6 +1997,7 @@ public class ModelEditorPhase : BasePhase
         if (origin is not { } o || xEnd is not { } ex || yEnd is not { } ey || zEnd is not { } ez)
         {
             _view.HideWheelGizmo();
+
             return;
         }
 
@@ -1801,10 +2007,13 @@ public class ModelEditorPhase : BasePhase
     private static Vector2? ProjectToScreen(Vector3 world, Matrix viewProjection, int width, int height)
     {
         var clip = Vector4.Transform(new Vector4(world, 1f), viewProjection);
+
         if (clip.W <= 0.0001f)
+
             return null;
 
         var inverse = 1f / clip.W;
+
         return new Vector2(
             (clip.X * inverse * 0.5f + 0.5f) * width,
             (0.5f - clip.Y * inverse * 0.5f) * height
@@ -1814,6 +2023,7 @@ public class ModelEditorPhase : BasePhase
     internal string? SetRims(int wheelIndex, int r, int g, int b, int size, int depth)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
 
         r = Math.Clamp(r, 0, 255);
@@ -1823,13 +2033,16 @@ public class ModelEditorPhase : BasePhase
         var replacement = $"rims({r},{g},{b},{size},{depth})";
         var lines = tab.TextContent.Split('\n');
         var index = FindRimsLine(lines, wheelIndex, out var firstWheel);
+
         if (index >= 0 && TryParseIntCall(lines[index].Trim(), "rims(", 5, out var selected))
         {
             for (var i = 0; i < lines.Length; i++)
             {
                 var line = lines[i];
                 var trimmed = line.TrimStart();
+
                 if (!TryParseIntCall(trimmed, "rims(", 5, out var current) || !current.SequenceEqual(selected))
+
                     continue;
 
                 var suffix = trimmed[(trimmed.IndexOf(')') + 1)..];
@@ -1864,12 +2077,16 @@ public class ModelEditorPhase : BasePhase
     internal string? SetStats(IReadOnlyList<string> definitions)
     {
         if (ActiveTab is not { } tab)
+
             return "No model open.";
         if (tab.Object is null)
+
             return "The model must parse before its stats can be edited.";
 
         var text = NormalizeStatBlock(tab.TextContent, definitions);
+
         if (text == tab.TextContent)
+
             return null;
 
         return ApplyEditedText(tab, text, clearAlignBaseline: false);
@@ -1883,9 +2100,11 @@ public class ModelEditorPhase : BasePhase
 
         var blockStart = Array.FindLastIndex(lines, line => HasDirective(line, "stats")) + 1;
         var kept = new List<string>(lines.Length - blockStart);
+
         for (var i = blockStart; i < lines.Length; i++)
         {
             if (IsManagedStatLine(lines[i]))
+
                 continue;
             kept.Add(lines[i]);
         }
@@ -1893,6 +2112,7 @@ public class ModelEditorPhase : BasePhase
         CollapseBlankLines(kept);
 
         var insertion = 0;
+
         if (blockStart == 0)
         {
             while (insertion < kept.Count
@@ -1934,6 +2154,7 @@ public class ModelEditorPhase : BasePhase
     {
         var trimmed = raw.Trim();
         var open = trimmed.IndexOf('(');
+
         return open > 0 ? trimmed[..open] : null;
     }
 
@@ -1942,26 +2163,34 @@ public class ModelEditorPhase : BasePhase
     private static bool TryParseIntCall(string trimmedLine, string prefix, int count, out int[] values)
     {
         values = [];
+
         if (!trimmedLine.StartsWith(prefix, StringComparison.Ordinal))
+
             return false;
 
         var close = trimmedLine.IndexOf(')', prefix.Length);
+
         if (close < 0)
+
             return false;
 
         var parts = trimmedLine[prefix.Length..close].Split(',');
+
         if (parts.Length < count)
+
             return false;
 
         values = new int[count];
+
         for (var i = 0; i < count; i++)
         {
             if (!int.TryParse(
-                    parts[i].Trim(),
-                    NumberStyles.Integer,
-                    CultureInfo.InvariantCulture,
-                    out values[i]
-                ))
+                parts[i].Trim(),
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out values[i]
+            ))
+
                 return false;
         }
 
@@ -1971,15 +2200,24 @@ public class ModelEditorPhase : BasePhase
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
-        if (!_isOpen) return;
-        if (imguiWantsKeyboard) return;
+
+        if (!_isOpen)
+
+            return;
+        if (imguiWantsKeyboard)
+
+            return;
 
         if (key == Key.Escape)
         {
-            if (_view?.HandleEscape() == true) return;
+            if (_view?.HandleEscape() == true)
+
+                return;
+
             if (GameSparker.UiRenderer?.WantsKeyboard == true)
             {
                 NFMWorld.Reactor.FocusManager.ClearFocus();
+
                 return;
             }
 
@@ -1987,19 +2225,23 @@ public class ModelEditorPhase : BasePhase
                 view.RequestExit();
             else
                 ExitModelViewer();
+
             return;
         }
 
         // Save works even while the code editor or a stat field has focus.
+
         if (keys.ControlKey && key == Key.S && _view is { ModalOpen: false } saveView)
         {
             saveView.SaveActiveDocument();
+
             return;
         }
 
         // Document undo/redo works from any focus while the editor is open. The code
         // editor's local history is disabled so both code and structural edits share
         // one stack; the docked polygon editor keeps its own local history.
+
         if (keys.ControlKey
             && _view is { } historyView
             && !historyView.ModalOpen
@@ -2010,11 +2252,15 @@ public class ModelEditorPhase : BasePhase
                 historyView.RedoDocument();
             else
                 historyView.UndoDocument();
+
             return;
         }
 
         // A focused UI control or an open dialog owns the keyboard.
-        if (GameSparker.UiRenderer?.WantsKeyboard == true || _view?.ModalOpen == true) return;
+
+        if (GameSparker.UiRenderer?.WantsKeyboard == true || _view?.ModalOpen == true)
+
+            return;
 
         var keyboardKeys = SdlWindow.GetKeyboardState();
         bool isShiftPressed = keyboardKeys[Key.LShiftKey] || keyboardKeys[Key.RShiftKey];
@@ -2026,44 +2272,54 @@ public class ModelEditorPhase : BasePhase
                     _panUp = true;
                 else
                     _zoomIn = true; // Zoom in like scroll up
+
                 break;
             case Key.S:
                 if (isShiftPressed)
                     _panDown = true;
                 else
                     _zoomOut = true; // Zoom out like scroll down
+
                 break;
             case Key.A:
                 if (isShiftPressed)
                     _panLeft = true;
                 else
                     _orbitLeft = true;
+
                 break;
             case Key.D:
                 if (isShiftPressed)
                     _panRight = true;
                 else
                     _orbitRight = true;
+
                 break;
             case Key.Up:
                 _orbitUp = true;
+
                 break;
             case Key.Down:
                 _orbitDown = true;
+
                 break;
             case Key.Left:
                 _orbitLeft = true;
+
                 break;
             case Key.Right:
                 _orbitRight = true;
+
                 break;
             case Key.Oemplus:
             case Key.Add:
                 _zoomInAlt = true;
+
                 break;
             case Key.OemMinus:
             case Key.Subtract:
                 _zoomOutAlt = true;
+
                 break;
         }
     }
@@ -2072,47 +2328,61 @@ public class ModelEditorPhase : BasePhase
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);
 
-        if (imguiWantsKeyboard) return;
+        if (imguiWantsKeyboard)
 
-        if (!_isOpen) return;
+            return;
+
+        if (!_isOpen)
+
+            return;
 
         switch (key)
         {
             case Key.W:
                 _zoomIn = false;
                 _panUp = false;
+
                 break;
             case Key.S:
                 _zoomOut = false;
                 _panDown = false;
+
                 break;
             case Key.A:
                 _orbitLeft = false;
                 _panLeft = false;
+
                 break;
             case Key.D:
                 _orbitRight = false;
                 _panRight = false;
+
                 break;
             case Key.Up:
                 _orbitUp = false;
+
                 break;
             case Key.Down:
                 _orbitDown = false;
+
                 break;
             case Key.Left:
                 _orbitLeft = false;
+
                 break;
             case Key.Right:
                 _orbitRight = false;
+
                 break;
             case Key.Oemplus:
             case Key.Add:
                 _zoomInAlt = false;
+
                 break;
             case Key.OemMinus:
             case Key.Subtract:
                 _zoomOutAlt = false;
+
                 break;
         }
     }
@@ -2129,14 +2399,21 @@ public class ModelEditorPhase : BasePhase
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (imguiWantsMouse) return;
-        if (!GameSparker.Game.IsActive) return;
+        if (imguiWantsMouse)
 
-        if (!_isOpen) return;
+            return;
+        if (!GameSparker.Game.IsActive)
+
+            return;
+
+        if (!_isOpen)
+
+            return;
 
         _view?.WheelGizmoMouseMoved(x, y);
 
         var tab = ActiveTab;
+
         if (tab != null && tab.IsDragging)
         {
             // Calculate mouse delta
@@ -2201,12 +2478,21 @@ public class ModelEditorPhase : BasePhase
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
-        if (imguiWantsMouse) return;
-        if (!GameSparker.Game.IsActive) return;
-        if (!_isOpen) return;
-        if (GameSparker.UiRenderer?.WantsMouse(x, y) == true) return;
+        if (imguiWantsMouse)
+
+            return;
+        if (!GameSparker.Game.IsActive)
+
+            return;
+        if (!_isOpen)
+
+            return;
+        if (GameSparker.UiRenderer?.WantsMouse(x, y) == true)
+
+            return;
 
         var tab = ActiveTab;
+
         if (tab != null)
         {
             // Check which button was pressed
@@ -2219,6 +2505,7 @@ public class ModelEditorPhase : BasePhase
             _isShiftPressed = keyboardKeys[Key.LShiftKey] || keyboardKeys[Key.RShiftKey];
 
             // Start dragging for camera control with left or right mouse button
+
             if (_isLeftButtonDown || _isRightButtonDown)
             {
                 tab.IsDragging = true;
@@ -2244,12 +2531,21 @@ public class ModelEditorPhase : BasePhase
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (imguiWantsMouse) return;
-        if (!GameSparker.Game.IsActive) return;
-        if (!_isOpen) return;
-        if (GameSparker.UiRenderer?.WantsMouse(x, y) == true) return;
+        if (imguiWantsMouse)
+
+            return;
+        if (!GameSparker.Game.IsActive)
+
+            return;
+        if (!_isOpen)
+
+            return;
+        if (GameSparker.UiRenderer?.WantsMouse(x, y) == true)
+
+            return;
 
         var tab = ActiveTab;
+
         if (tab != null)
         {
             // Zoom in/out by adjusting camera distance
@@ -2279,7 +2575,9 @@ public class ModelEditorPhase : BasePhase
         _view?.EndWheelGizmoDrag();
 
         var tab = ActiveTab;
+
         if (tab is { IsDragging: false } && GameSparker.UiRenderer?.WantsMouse(x, y) == true)
+
             return;
 
         if (tab != null)
@@ -2299,6 +2597,7 @@ public class ModelEditorPhase : BasePhase
             _isRightButtonDown = mouseButtons.HasFlag(MouseButtons.Secondary);
 
             // Process click for polygon/collision selection only if it was a simple click, not a drag
+
             if (wasClick && !imguiWantsMouse && tab.Object != null)
             {
                 if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
@@ -2355,6 +2654,7 @@ public class ModelEditorPhase : BasePhase
     private void SyncPolygonEditorToSelection(ModelEditorTab tab)
     {
         if (!tab.ShowPolygonEditor || tab.Object is null)
+
             return;
 
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
@@ -2363,6 +2663,7 @@ public class ModelEditorPhase : BasePhase
                 && (!tab.PolygonEditorIsCollision
                     || tab.PolygonEditorLastSelectedIndex != tab.SelectedCollisionIndex))
                 JumpToSelectedCollisionInText();
+
             return;
         }
 
@@ -2372,6 +2673,7 @@ public class ModelEditorPhase : BasePhase
                 || tab.PolygonEditorWheelIndex != tab.SelectedWheelIndex
                 || tab.PolygonEditorLastSelectedIndex != tab.SelectedWheelPolygonIndex)
                 JumpToSelectedWheelPolygonInText();
+
             return;
         }
 
@@ -2402,6 +2704,7 @@ public class ModelEditorPhase : BasePhase
         var result = Vector3.Transform(source, inverse);
 
         var w = (source.X * inverse.M14) + (source.Y * inverse.M24) + (source.Z * inverse.M34) + inverse.M44;
+
         if (!(MathF.Abs(w - 1.0f) <= 1.192092896e-07f))
         {
             result.X /= w;
@@ -2414,7 +2717,9 @@ public class ModelEditorPhase : BasePhase
 
     private RayPickResult PerformRayPicking(int screenX, int screenY, ModelEditorTab tab)
     {
-        if (tab.Object == null) return new RayPickResult(-1, -1);
+        if (tab.Object == null)
+
+            return new RayPickResult(-1, -1);
 
         var viewportWidth = GameSparker.Game.Window.Width;
         var viewportHeight = GameSparker.Game.Window.Height;
@@ -2475,6 +2780,7 @@ public class ModelEditorPhase : BasePhase
             var poly = tab.Object.Mesh.Polys[i];
 
             // Test each triangle in this polygon
+
             for (int t = 0; t < poly.Triangles.Length; t += 3)
             {
                 var i0 = poly.Triangles[t];
@@ -2503,6 +2809,7 @@ public class ModelEditorPhase : BasePhase
         int closestWheelPolyIndex = -1;
 
         var wheelObjects = tab.Object.WheelObjects;
+
         for (int wi = 0; wi < wheelObjects.Count; wi++)
         {
             var wheelObj = wheelObjects[wi];
@@ -2536,6 +2843,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Return the closest hit: prefer wheel if closer, otherwise body
+
         if (closestWheelIndex >= 0 && (closestBodyPolyIndex < 0 || closestWheelDistance < closestBodyDistance))
         {
             return new RayPickResult(closestWheelPolyIndex, closestWheelIndex);
@@ -2563,7 +2871,9 @@ public class ModelEditorPhase : BasePhase
         var a = Vector3.Dot(edge1, h);
 
         // Check if ray is parallel to triangle (with smaller tolerance)
+
         if (a > -EPSILON && a < EPSILON)
+
             return false;
 
         var f = 1.0f / a;
@@ -2571,25 +2881,32 @@ public class ModelEditorPhase : BasePhase
         var u = f * Vector3.Dot(s, h);
 
         // Allow slightly outside bounds for edge cases
+
         if (u < -EPSILON || u > 1.0f + EPSILON)
+
             return false;
 
         var q = Vector3.Cross(s, edge1);
         var v = f * Vector3.Dot(rayDirection, q);
 
         // Allow slightly outside bounds for edge cases
+
         if (v < -EPSILON || u + v > 1.0f + EPSILON)
+
             return false;
 
         distance = f * Vector3.Dot(edge2, q);
 
         // Only accept intersections in front of the ray
+
         return distance > EPSILON;
     }
 
     private int PerformCollisionPicking(int screenX, int screenY, ModelEditorTab tab)
     {
-        if (tab.Object == null || tab.Object.Boxes.Count == 0) return -1;
+        if (tab.Object == null || tab.Object.Boxes.Count == 0)
+
+            return -1;
 
         var viewportWidth = GameSparker.Game.Window.Width;
         var viewportHeight = GameSparker.Game.Window.Height;
@@ -2629,6 +2946,7 @@ public class ModelEditorPhase : BasePhase
             var box = tab.Object.Boxes[i];
 
             // Check if ray intersects this box
+
             if (RayIntersectsBox(rayOrigin, rayDirection, box, out float distance))
             {
                 if (distance < closestDistance)
@@ -2673,6 +2991,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         if ((tmin > tymax) || (tymin > tmax))
+
             return false;
 
         if (tymin > tmin)
@@ -2692,6 +3011,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         if ((tmin > tzmax) || (tzmin > tmax))
+
             return false;
 
         if (tzmin > tmin)
@@ -2701,17 +3021,23 @@ public class ModelEditorPhase : BasePhase
             tmax = tzmax;
 
         // Check if intersection is in front of ray
+
         if (tmax < 0)
+
             return false;
 
         distance = tmin > 0 ? tmin : tmax;
+
         return true;
     }
 
     private void FlipSelectedPolygonVertexOrder()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null) return;
+
+        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null)
+
+            return;
 
         var poly = tab.Object.Mesh.Polys[tab.SelectedPolygonIndex];
         Array.Reverse(poly.Points);
@@ -2726,7 +3052,10 @@ public class ModelEditorPhase : BasePhase
     private void RemoveSelectedPolygon()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null) return;
+
+        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null)
+
+            return;
 
         var polyList = tab.Object.Mesh.Polys.ToList();
         polyList.RemoveAt(tab.SelectedPolygonIndex);
@@ -2745,16 +3074,23 @@ public class ModelEditorPhase : BasePhase
     internal void JumpToSelectedPolygonInText()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.Object == null) return;
+
+        if (tab == null || tab.Object == null)
+
+            return;
 
         // Handle wheel polygon selection
+
         if (tab.SelectedWheelIndex >= 0 && tab.SelectedWheelPolygonIndex >= 0)
         {
             JumpToSelectedWheelPolygonInText();
+
             return;
         }
 
-        if (tab.SelectedPolygonIndex < 0) return;
+        if (tab.SelectedPolygonIndex < 0)
+
+            return;
 
         // Body polys can be written as <p>…</p> or [p]…[/p], often mixed in one
         // file, and wheel blocks are not part of the body index. Count only the
@@ -2766,6 +3102,7 @@ public class ModelEditorPhase : BasePhase
         tab.TextEditorSelectionEnd = selectionEnd;
 
         // Extract the polygon code and open the editor window
+
         if (selectionStart >= 0 && selectionEnd >= 0 && selectionEnd <= tab.TextContent.Length)
         {
             tab.PolygonEditorContent = tab.TextContent.Substring(selectionStart, selectionEnd - selectionStart);
@@ -2778,6 +3115,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Debug output
+
         if (selectionStart >= 0)
         {
             Logging.Debug($"Polygon {tab.SelectedPolygonIndex + 1}: selection range {selectionStart}-{selectionEnd}");
@@ -2791,6 +3129,7 @@ public class ModelEditorPhase : BasePhase
     private static (int Start, int End) FindBodyPolygonBlock(string text, int index)
     {
         if (index < 0)
+
             return (-1, -1);
 
         var count = 0;
@@ -2802,14 +3141,17 @@ public class ModelEditorPhase : BasePhase
             {
                 var wheelEnd = text.IndexOf("</wheel>", i, StringComparison.Ordinal);
                 i = wheelEnd < 0 ? text.Length : wheelEnd + 8;
+
                 continue;
             }
 
             var isAngle = text.AsSpan(i).StartsWith("<p>", StringComparison.Ordinal);
             var isSquare = !isAngle && text.AsSpan(i).StartsWith("[p]", StringComparison.Ordinal);
+
             if (!isAngle && !isSquare)
             {
                 i++;
+
                 continue;
             }
 
@@ -2817,6 +3159,7 @@ public class ModelEditorPhase : BasePhase
             var closeTag = isAngle ? "</p>" : "[/p]";
             var close = text.IndexOf(closeTag, i + openLength, StringComparison.Ordinal);
             var end = close < 0 ? -1 : close + closeTag.Length;
+
             if (end < 0)
             {
                 var nextAngle = text.IndexOf("<p>", i + openLength, StringComparison.Ordinal);
@@ -2830,6 +3173,7 @@ public class ModelEditorPhase : BasePhase
             if (!BlockLooksLikeWheel(text, i, end))
             {
                 if (count == index)
+
                     return (i, end);
                 count++;
             }
@@ -2845,7 +3189,9 @@ public class ModelEditorPhase : BasePhase
         foreach (var raw in text[start..Math.Min(end, text.Length)].Split('\n'))
         {
             var line = raw.Trim();
+
             if (line.Equals("wheel", StringComparison.Ordinal) || line.StartsWith("wheel(", StringComparison.Ordinal))
+
                 return true;
         }
 
@@ -2855,7 +3201,10 @@ public class ModelEditorPhase : BasePhase
     internal void JumpToSelectedWheelPolygonInText()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedWheelIndex < 0 || tab.SelectedWheelPolygonIndex < 0 || tab.Object == null) return;
+
+        if (tab == null || tab.SelectedWheelIndex < 0 || tab.SelectedWheelPolygonIndex < 0 || tab.Object == null)
+
+            return;
 
         int selectionStart = -1;
         int selectionEnd = -1;
@@ -2879,11 +3228,13 @@ public class ModelEditorPhase : BasePhase
                     srcWheelBlockStart = i;
                     // Find closing </wheel>
                     int searchPos = i + 7;
+
                     while (searchPos + 8 <= text.Length)
                     {
                         if (text.Substring(searchPos, 8) == "</wheel>")
                         {
                             srcWheelBlockEnd = searchPos + 8;
+
                             break;
                         }
 
@@ -2900,15 +3251,18 @@ public class ModelEditorPhase : BasePhase
                      && text.IndexOf("radius=", i, Math.Min(30, text.Length - i)) > i)
             {
                 // PhyShot format: <wheel radius="..." depth="...">
+
                 if (srcWheelBlockCount == wheelIndex)
                 {
                     srcWheelBlockStart = i;
                     int searchPos = i + 7;
+
                     while (searchPos + 8 <= text.Length)
                     {
                         if (text.Substring(searchPos, 8) == "</wheel>")
                         {
                             srcWheelBlockEnd = searchPos + 8;
+
                             break;
                         }
 
@@ -2927,13 +3281,16 @@ public class ModelEditorPhase : BasePhase
             // SRC/PhyShot format: find the Nth polygon block inside this <wheel> block.
             // Supports both <p>/</p> and [p]/[/p] formats.
             int polyCount = 0;
+
             for (int i = srcWheelBlockStart; i < srcWheelBlockEnd && i < text.Length; i++)
             {
                 // Check for open tag: <p> or [p]
+
                 if (i + 3 <= text.Length)
                 {
                     string openTag = text.Substring(i, 3);
                     bool isOpenTag = openTag == "<p>" || openTag == "[p]";
+
                     if (isOpenTag)
                     {
                         if (polyCount == polyIndex)
@@ -2941,11 +3298,13 @@ public class ModelEditorPhase : BasePhase
                             selectionStart = i;
                             string closeTag = openTag == "<p>" ? "</p>" : "[/p]";
                             int searchPos = i + 3;
+
                             while (searchPos + closeTag.Length <= text.Length && searchPos < srcWheelBlockEnd)
                             {
                                 if (text.Substring(searchPos, closeTag.Length) == closeTag)
                                 {
                                     selectionEnd = searchPos + closeTag.Length;
+
                                     break;
                                 }
 
@@ -2954,6 +3313,7 @@ public class ModelEditorPhase : BasePhase
 
                             if (selectionEnd == -1 || selectionEnd > srcWheelBlockEnd)
                                 selectionEnd = srcWheelBlockEnd;
+
                             break;
                         }
 
@@ -2975,13 +3335,17 @@ public class ModelEditorPhase : BasePhase
                 {
                     // Find the closing ) of w(...)
                     int closeParen = text.IndexOf(')', i + 2);
+
                     if (closeParen > 0 && closeParen + 1 < text.Length && text[closeParen + 1] == 'c')
                     {
                         // This is a phy-addons wheel: w(...)c
+
                         if (phyWheelCount == wheelIndex)
                         {
                             phyWheelLineEnd = text.IndexOf('\n', closeParen + 1);
-                            if (phyWheelLineEnd < 0) phyWheelLineEnd = text.Length;
+                            if (phyWheelLineEnd < 0)
+                                phyWheelLineEnd = text.Length;
+
                             break;
                         }
 
@@ -3013,11 +3377,13 @@ public class ModelEditorPhase : BasePhase
                         int polyEnd = -1;
                         string closeTag = openLen == 3 && text[i] == '<' ? "</p>" : "[/p]";
                         int searchPos = i + openLen;
+
                         while (searchPos + closeTag.Length <= text.Length)
                         {
                             if (text.Substring(searchPos, closeTag.Length) == closeTag)
                             {
                                 polyEnd = searchPos + closeTag.Length;
+
                                 break;
                             }
 
@@ -3028,6 +3394,7 @@ public class ModelEditorPhase : BasePhase
                         {
                             // No closing tag found; skip this block
                             i = searchPos;
+
                             continue;
                         }
 
@@ -3037,11 +3404,13 @@ public class ModelEditorPhase : BasePhase
 
                         // Check for wheel(N) — specific wheel assignment
                         int wheelMarkerPos = text.IndexOf("wheel(", polyStart, polyEnd - polyStart);
+
                         if (wheelMarkerPos > polyStart && wheelMarkerPos < polyEnd)
                         {
                             isWheelPoly = true;
                             int numStart = wheelMarkerPos + 6;
                             int numEnd = text.IndexOf(')', numStart);
+
                             if (numEnd > numStart && numEnd < polyEnd)
                             {
                                 if (int.TryParse(text.Substring(numStart, numEnd - numStart), out int parsedWheelId))
@@ -3054,20 +3423,24 @@ public class ModelEditorPhase : BasePhase
                         {
                             // Check for bare "wheel" (shared mesh)
                             int bareWheelPos = text.IndexOf("wheel", polyStart, polyEnd - polyStart);
+
                             if (bareWheelPos > polyStart && bareWheelPos < polyEnd)
                             {
                                 // Make sure it's not "wheel("
+
                                 if (bareWheelPos + 5 >= polyEnd || text[bareWheelPos + 5] != '(')
                                 {
                                     isWheelPoly = true;
                                     // Shared mesh — belongs to all wheels without specific meshes
                                     // Check if THIS wheel uses the shared mesh (no specific polys)
                                     bool wheelHasSpecificPolys = false;
+
                                     for (int checkI = phyWheelLineEnd; checkI < polyStart; checkI++)
                                     {
                                         if (text.IndexOf($"wheel({wheelIndex})", checkI, polyStart - checkI) > checkI)
                                         {
                                             wheelHasSpecificPolys = true;
+
                                             break;
                                         }
                                     }
@@ -3083,6 +3456,7 @@ public class ModelEditorPhase : BasePhase
                             {
                                 selectionStart = polyStart;
                                 selectionEnd = polyEnd;
+
                                 break;
                             }
 
@@ -3096,6 +3470,7 @@ public class ModelEditorPhase : BasePhase
                         while (nextCheck < text.Length
                                && (text[nextCheck] == '\n' || text[nextCheck] == '\r' || text[nextCheck] == '-'))
                             nextCheck++;
+
                         if (nextCheck < text.Length
                             && text[nextCheck] == 'w'
                             && nextCheck + 1 < text.Length
@@ -3135,7 +3510,10 @@ public class ModelEditorPhase : BasePhase
     internal void JumpToSelectedCollisionInText()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedCollisionIndex < 0 || tab.Object == null) return;
+
+        if (tab == null || tab.SelectedCollisionIndex < 0 || tab.Object == null)
+
+            return;
 
         // Find the collision box in the text by searching for <track> tags and counting
         int collisionCount = 0;
@@ -3145,6 +3523,7 @@ public class ModelEditorPhase : BasePhase
         for (int i = 0; i < tab.TextContent.Length; i++)
         {
             // Check if we're at the start of a <track> tag
+
             if (i + 7 <= tab.TextContent.Length && tab.TextContent.Substring(i, 7) == "<track>")
             {
                 if (collisionCount == tab.SelectedCollisionIndex)
@@ -3154,11 +3533,13 @@ public class ModelEditorPhase : BasePhase
 
                     // Now find the closing </track> tag
                     int searchPos = i + 7;
+
                     while (searchPos + 8 <= tab.TextContent.Length)
                     {
                         if (tab.TextContent.Substring(searchPos, 8) == "</track>")
                         {
                             selectionEnd = searchPos + 8; // Include the closing tag
+
                             break;
                         }
 
@@ -3166,14 +3547,17 @@ public class ModelEditorPhase : BasePhase
                     }
 
                     // If we didn't find a closing tag, select until the next <track> or end of file
+
                     if (selectionEnd == -1)
                     {
                         searchPos = i + 7;
+
                         while (searchPos + 7 <= tab.TextContent.Length)
                         {
                             if (tab.TextContent.Substring(searchPos, 7) == "<track>")
                             {
                                 selectionEnd = searchPos;
+
                                 break;
                             }
 
@@ -3198,6 +3582,7 @@ public class ModelEditorPhase : BasePhase
         tab.TextEditorSelectionEnd = selectionEnd;
 
         // Extract the collision code and open the editor window
+
         if (selectionStart >= 0 && selectionEnd >= 0 && selectionEnd <= tab.TextContent.Length)
         {
             tab.PolygonEditorContent = tab.TextContent.Substring(selectionStart, selectionEnd - selectionStart);
@@ -3210,6 +3595,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Debug output
+
         if (selectionStart >= 0)
         {
             Logging.Debug($"Collision {tab.SelectedCollisionIndex + 1}: selection range {selectionStart}-{selectionEnd}");
@@ -3221,7 +3607,9 @@ public class ModelEditorPhase : BasePhase
 
     private void UpdateTextContentFromModel(ModelEditorTab tab)
     {
-        if (tab.Object == null) return;
+        if (tab.Object == null)
+
+            return;
 
         // Don't regenerate from scratch - this would lose comments and formatting
         // Instead, this method should only be called when we've done structural changes
@@ -3254,16 +3642,22 @@ public class ModelEditorPhase : BasePhase
     {
         base.GameTick();
 
-        if (!_isOpen) return;
+        if (!_isOpen)
+
+            return;
 
         var tab = ActiveTab;
-        if (tab == null) return;
+
+        if (tab == null)
+
+            return;
 
         // Apply camera orbit (A/D and Arrow keys)
         if (_orbitLeft)
             tab.CameraYaw -= ORBIT_SPEED;
         if (_orbitRight)
             tab.CameraYaw += ORBIT_SPEED;
+
         if (_orbitUp)
         {
             tab.CameraPitch += ORBIT_SPEED;
@@ -3277,6 +3671,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Apply panning (Shift+WASD for all directions)
+
         if (_panLeft || _panRight || _panUp || _panDown)
         {
             var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
@@ -3294,6 +3689,7 @@ public class ModelEditorPhase : BasePhase
             var pos = tab.ModelPosition;
 
             // Sideways panning (Shift+A/D)
+
             if (_panLeft)
             {
                 pos.X += rightX * PAN_SPEED;
@@ -3307,6 +3703,7 @@ public class ModelEditorPhase : BasePhase
             }
 
             // Height panning (Shift+W/S)
+
             if (_panUp)
             {
                 pos.X -= upX * PAN_SPEED;
@@ -3325,6 +3722,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Apply camera zoom (W/S and +/- keys)
+
         if (_zoomIn || _zoomInAlt)
         {
             tab.CameraDistance -= ZOOM_SPEED;
@@ -3367,19 +3765,25 @@ public class ModelEditorPhase : BasePhase
     internal void InsertPolygonFlag(string command)
     {
         var tab = ActiveTab;
-        if (tab == null) return;
+
+        if (tab == null)
+
+            return;
 
         // Find the c(...) line in the polygon editor content
         var lines = tab.PolygonEditorContent.Split('\n');
+
         for (int i = 0; i < lines.Length; i++)
         {
             var trimmed = lines[i].Trim();
+
             if (trimmed.StartsWith("c(") && trimmed.EndsWith(")"))
             {
                 // Insert the command on the next line
                 lines[i] = lines[i] + "\n" + command;
                 tab.PolygonEditorContent = string.Join("\n", lines);
                 tab.PolygonEditorDirty = true;
+
                 break;
             }
         }
@@ -3392,10 +3796,13 @@ public class ModelEditorPhase : BasePhase
     internal string? ApplyPolygonEditorChanges(bool removeElement)
     {
         var tab = ActiveTab;
+
         if (tab == null || tab.TextEditorSelectionStart < 0 || tab.TextEditorSelectionEnd < 0)
+
             return "Invalid selection range. Please select a polygon again.";
 
         // Validate selection indices are within bounds
+
         if (tab.TextEditorSelectionStart >= tab.TextContent.Length
             || tab.TextEditorSelectionEnd > tab.TextContent.Length
             || tab.TextEditorSelectionStart >= tab.TextEditorSelectionEnd)
@@ -3411,6 +3818,7 @@ public class ModelEditorPhase : BasePhase
             tab.ShowPolygonEditor = false;
             _view?.OnPolygonContentChanged();
             _view?.Refresh();
+
             return err;
         }
 
@@ -3433,6 +3841,7 @@ public class ModelEditorPhase : BasePhase
         tab.TextEditorDirty = true;
 
         // Try to reload the model with the new code
+
         try
         {
             tab.Object = new EditorObject(RadParser.ParseRad(tab.TextContent, "editing"));
@@ -3442,6 +3851,7 @@ public class ModelEditorPhase : BasePhase
             {
                 // Element was removed, close editor and deselect
                 tab.ShowPolygonEditor = false;
+
                 if (editingCollision)
                 {
                     tab.SelectedCollisionIndex = -1;
@@ -3463,6 +3873,7 @@ public class ModelEditorPhase : BasePhase
             {
                 // Re-select the same polygon/collision and update selection range
                 // This allows the user to continue editing without having to reselect
+
                 if (editingCollision)
                 {
                     tab.SelectedCollisionIndex = editedIndex;
@@ -3496,6 +3907,7 @@ public class ModelEditorPhase : BasePhase
             _view?.OnContentChanged();
             _view?.OnPolygonContentChanged();
             _view?.Refresh();
+
             return null;
         }
         catch (Exception ex)
@@ -3503,6 +3915,7 @@ public class ModelEditorPhase : BasePhase
             SentrySdk.CaptureException(ex);
             var err = $"Error parsing updated code:\n{ex.Message}";
             Logging.Error(err);
+
             return err;
         }
     }
@@ -3517,9 +3930,11 @@ public class ModelEditorPhase : BasePhase
         base.Render3DOverlays(cb);
 
         var tab = ActiveTab;
+
         if (!_isOpen || tab == null || tab.Object == null)
         {
             _view?.HideWheelGizmo();
+
             return;
         }
 
@@ -3554,6 +3969,7 @@ public class ModelEditorPhase : BasePhase
         UpdateWheelGizmo(tab);
 
         // Render reference car overlay with transparency (rendered separately after main model)
+
         if (tab.ShowReferenceOverlay
             && tab.ReferenceCarIndex >= 0
             && tab.ReferenceCarIndex < BackendGameSparker.cars[Collection.NFMM].Count)
@@ -3591,6 +4007,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Render selected polygon overlay with transparency
+
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
         {
             if (tab.SelectedWheelIndex >= 0
@@ -3606,6 +4023,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Render selected collision box overlay
+
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision
             && tab.SelectedCollisionIndex >= 0
             && tab.SelectedCollisionIndex < tab.Object.Boxes.Count)
@@ -3614,6 +4032,7 @@ public class ModelEditorPhase : BasePhase
         }
 
         // Highlight the wheel being edited in the Wheels tab.
+
         if (_view is { WheelsTabActive: true }
             && _view.HighlightedWheelIndex is var wheelIndex
             && wheelIndex >= 0
@@ -3634,6 +4053,7 @@ public class ModelEditorPhase : BasePhase
     private void RenderWheelHighlight(NFMWorld.Graphics.ICommandBuffer cb, ModelEditorTab tab, int index)
     {
         var wheel = tab.Object!.WheelObjects[index];
+
         if (_wheelHighlight is null || _wheelHighlightOwner != tab.Object || _wheelHighlightIndex != index)
         {
             DisposeWheelHighlight();
@@ -3673,6 +4093,7 @@ public class ModelEditorPhase : BasePhase
         if (tab.Object == null
             || tab.SelectedPolygonIndex < 0
             || tab.SelectedPolygonIndex >= tab.Object.Mesh.Polys.Length)
+
             return;
 
         var obj = tab.Object;
@@ -3727,6 +4148,7 @@ public class ModelEditorPhase : BasePhase
         hash.Add(poly.DecalOffset);
         foreach (var point in poly.Points)
             hash.Add(point);
+
         return hash.ToHashCode();
     }
 
@@ -3772,11 +4194,18 @@ public class ModelEditorPhase : BasePhase
 
     private void RenderWheelSelectionOverlay(NFMWorld.Graphics.ICommandBuffer cb, ModelEditorTab tab)
     {
-        if (tab.Object == null || tab.SelectedWheelIndex < 0 || tab.SelectedWheelPolygonIndex < 0) return;
-        if (tab.SelectedWheelIndex >= tab.Object.WheelObjects.Count) return;
+        if (tab.Object == null || tab.SelectedWheelIndex < 0 || tab.SelectedWheelPolygonIndex < 0)
+
+            return;
+        if (tab.SelectedWheelIndex >= tab.Object.WheelObjects.Count)
+
+            return;
 
         var wheelObj = tab.Object.WheelObjects[tab.SelectedWheelIndex];
-        if (tab.SelectedWheelPolygonIndex >= wheelObj.Mesh.Polys.Length) return;
+
+        if (tab.SelectedWheelPolygonIndex >= wheelObj.Mesh.Polys.Length)
+
+            return;
 
         var index = tab.SelectedWheelPolygonIndex;
         var selectedPoly = wheelObj.Mesh.Polys[index];
@@ -3827,7 +4256,9 @@ public class ModelEditorPhase : BasePhase
         ModelEditorTab tab
     )
     {
-        if (tab.Object == null || tab.SelectedCollisionIndex < 0) return;
+        if (tab.Object == null || tab.SelectedCollisionIndex < 0)
+
+            return;
 
         // Create a highlighted collision box mesh for the selected collision
         var selectedBox = tab.Object.Boxes[tab.SelectedCollisionIndex];

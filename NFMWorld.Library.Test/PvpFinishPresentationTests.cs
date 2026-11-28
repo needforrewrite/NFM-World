@@ -30,6 +30,7 @@ public class PvpFinishPresentationTests
         var carName = $"finish-test/{Guid.NewGuid():N}";
         var factory = GamemodeFactory.Create("nfmm/pvp");
         BaseClientGamemode? client = null;
+
         try
         {
             BackendGameSparker.dynamic_models.Add(
@@ -64,6 +65,7 @@ public class PvpFinishPresentationTests
             });
             Assert.AreEqual(title, client.HudState.ResultTitle);
             Assert.AreEqual(description, client.HudState.StateText);
+
             if (lastCarStanding)
             {
                 client.Players[0].Car!.CurrentLap = 2;

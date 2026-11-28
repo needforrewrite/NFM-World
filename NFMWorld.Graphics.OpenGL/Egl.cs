@@ -124,9 +124,11 @@ internal static class Egl
             get
             {
                 var modules = System.Diagnostics.Process.GetCurrentProcess().Modules;
+
                 foreach (System.Diagnostics.ProcessModule module in modules)
                 {
                     var name = module.FileName;
+
                     if (name.EndsWith("libEGL.dll", StringComparison.OrdinalIgnoreCase)
                         || name.EndsWith("libEGL.so", StringComparison.OrdinalIgnoreCase)
                         || name.EndsWith("libEGL.dylib", StringComparison.OrdinalIgnoreCase))
@@ -179,13 +181,16 @@ internal static class Egl
             try
             {
                 display = GetAngleDisplay(egl, selection);
+
                 if (display == 0)
+
                     throw new InvalidOperationException(
                         $"eglGetPlatformDisplay returned no display for {selection.Describe()} "
                         + $"(EGL error {ErrorText(egl)})."
                     );
 
                 if (!egl.Initialize(display, out var major, out var minor))
+
                     throw new InvalidOperationException(
                         $"eglInitialize failed for {selection.Describe()} (EGL error {ErrorText(egl)}). "
                         + "This is what an unavailable backend looks like: ANGLE's Vulkan platform needs "
@@ -210,12 +215,16 @@ internal static class Egl
 
                 Span<nint> configs = stackalloc nint[1];
                 Span<int> configCount = stackalloc int[1];
+
                 if (!egl.ChooseConfig(display, configAttribs, configs, 1, configCount) || configCount[0] < 1)
+
                     throw new InvalidOperationException($"eglChooseConfig found no ES3 config (EGL error {ErrorText(egl)}).");
                 var config = configs[0];
 
                 context = egl.CreateContext(display, config, 0, [(int)EGLEnum.ContextClientVersion, 3, (int)EGLEnum.None]);
+
                 if (context == 0)
+
                     throw new InvalidOperationException($"eglCreateContext failed (EGL error {ErrorText(egl)}).");
 
                 surface = egl.CreatePbufferSurface(
@@ -223,7 +232,9 @@ internal static class Egl
                     config,
                     [(int)EGLEnum.Width, width, (int)EGLEnum.Height, height, (int)EGLEnum.None]
                 );
+
                 if (surface == 0)
+
                     throw new InvalidOperationException($"eglCreatePbufferSurface failed (EGL error {ErrorText(egl)}).");
 
                 var result = new Context(egl, glContext)
@@ -237,19 +248,24 @@ internal static class Egl
                 };
 
                 result.MakeCurrent();
+
                 return result;
             }
             catch
             {
                 // Release whatever EGL objects were created before the failure, so a broken
                 // backend selection does not leave ANGLE's display and D3D device alive.
-                if (surface != 0) egl.DestroySurface(display, surface);
-                if (context != 0) egl.DestroyContext(display, context);
-                if (display != 0) egl.Terminate(display);
+                if (surface != 0)
+                    egl.DestroySurface(display, surface);
+                if (context != 0)
+                    egl.DestroyContext(display, context);
+                if (display != 0)
+                    egl.Terminate(display);
 
                 // The same single-owner rule as Dispose: releasing the multi-context releases the
                 // contexts it was built over.
                 glContext.Dispose();
+
                 throw;
             }
         }
@@ -295,6 +311,7 @@ internal static class Egl
             // built. Reaching the same entry point by name needs neither: ANGLE exports
             // eglGetPlatformDisplay and the bindings declare it, with an identical platform enum and
             // attribute list.
+
             fixed (nint* pinned = attribs)
             {
                 return egl.GetPlatformDisplay((EGLEnum)EglPlatformAngleAngle, null, pinned);
@@ -326,6 +343,7 @@ internal static class Egl
             );
 
             if (surface == 0)
+
                 throw new InvalidOperationException(
                     $"eglCreatePbufferSurface failed for {width}x{height} (EGL error {ErrorText(_egl)})."
                 );
@@ -345,9 +363,12 @@ internal static class Egl
             // EGL teardown first, while the loader is still standing: after the native contexts are
             // released there is no way to call eglTerminate at all.
             ReleaseCurrent();
-            if (Surface != 0) _egl.DestroySurface(Display, Surface);
-            if (Handle != 0) _egl.DestroyContext(Display, Handle);
-            if (Display != 0) _egl.Terminate(Display);
+            if (Surface != 0)
+                _egl.DestroySurface(Display, Surface);
+            if (Handle != 0)
+                _egl.DestroyContext(Display, Handle);
+            if (Display != 0)
+                _egl.Terminate(Display);
 
             // Then the native contexts, and only through _glContext. MultiNativeContext takes
             // ownership of the contexts it is constructed over, so disposing it frees the EGL

@@ -41,13 +41,17 @@ public static class DdsReader
         using var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
 
         if (reader.ReadUInt32() != DdsMagic)
+
             throw new NotSupportedException("Not a DDS file (bad magic).");
 
         if (reader.ReadUInt32() != DdsHeaderSize)
+
             throw new NotSupportedException("Invalid DDS header.");
 
         var flags = reader.ReadUInt32();
+
         if ((flags & DdsdRequired) != DdsdRequired)
+
             throw new NotSupportedException("Invalid DDS flags.");
 
         var height = reader.ReadInt32();
@@ -59,6 +63,7 @@ public static class DdsReader
         reader.ReadBytes(4 * 11); // "reserved"
 
         if (reader.ReadUInt32() != DdsPixelFormatSize)
+
             throw new NotSupportedException("Invalid DDS pixel format header.");
 
         var formatFlags = reader.ReadUInt32();
@@ -70,11 +75,15 @@ public static class DdsReader
         reader.ReadUInt32(); // dwABitMask
 
         var caps = reader.ReadUInt32();
+
         if ((caps & DdsCapsTexture) == 0)
+
             throw new NotSupportedException("DDS file does not contain a texture.");
 
         var caps2 = reader.ReadUInt32();
+
         if (caps2 != 0 && (caps2 & DdsCaps2Cubemap) != 0)
+
             throw new NotSupportedException("DDS cube maps are not supported.");
 
         reader.ReadUInt32(); // dwCaps3, unused
@@ -82,6 +91,7 @@ public static class DdsReader
         reader.ReadUInt32(); // "reserved"
 
         if ((formatFlags & DdpfFourCC) == 0)
+
             throw new NotSupportedException("Only DDS files with a FourCC (DXT1/DXT3/DXT5) pixel format are supported.");
 
         var format = formatFourCc switch
@@ -96,7 +106,9 @@ public static class DdsReader
 
         var levelSize = CalculateLevelSize(width, height, format);
         var data = reader.ReadBytes(levelSize);
+
         if (data.Length != levelSize)
+
             throw new EndOfStreamException("DDS file is truncated - could not read the base mip level.");
 
         return device.CreateTexture(new TextureDesc(width, height, format), data);
@@ -107,6 +119,7 @@ public static class DdsReader
         var blockSize = format == TextureFormat.Dxt1 ? 8 : 16;
         width = Math.Max(width, 1);
         height = Math.Max(height, 1);
+
         return ((width + 3) / 4) * ((height + 3) / 4) * blockSize;
     }
 }

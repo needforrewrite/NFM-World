@@ -30,7 +30,9 @@ public class FixFlare : IDisposable, IImmediateRenderElement
         _visual = visual;
         var min = new Vector3(float.PositiveInfinity);
         var max = new Vector3(float.NegativeInfinity);
+
         foreach (var poly in visual.Mesh.OriginalPolys)
+
         foreach (var point in poly.Points)
         {
             min = Vector3.Min(min, point);
@@ -74,7 +76,9 @@ public class FixFlare : IDisposable, IImmediateRenderElement
         _active = true;
         _min = _originalMin;
         _max = _originalMax;
+
         foreach (var poly in _visual.Mesh.Polys)
+
         foreach (var point in poly.Points)
         {
             _min = Vector3.Min(_min, point);
@@ -90,7 +94,9 @@ public class FixFlare : IDisposable, IImmediateRenderElement
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (!_active) return;
+        if (!_active)
+
+            return;
 
         var center = (_min + _max) * 0.5f;
         var halfSize = FixFlareGeometry.BallHalfSize((_max - _min) * 0.5f);
@@ -106,6 +112,7 @@ public class FixFlare : IDisposable, IImmediateRenderElement
             Math.Clamp((int)(239 + 239 * World.Snap[1] / 350f), 0, 255),
             Math.Clamp((int)(255 + 255 * World.Snap[2] / 350f), 0, 255)
         );
+
         for (var i = 0; i < ShellVertexCount; i++)
         {
             _verts[i] = new PositionColorVertex(center + (_shell[i] - center) * _outerJitter[i], outerColor);
@@ -129,6 +136,7 @@ public class FixFlare : IDisposable, IImmediateRenderElement
         var indices = new ushort[ShellIndexCount * 2];
         FixFlareGeometry.WriteShellIndices(indices, 0);
         FixFlareGeometry.WriteShellIndices(indices.AsSpan(ShellIndexCount), (ushort)ShellVertexCount);
+
         return indices;
     }
 

@@ -94,6 +94,7 @@ public class TimeTrialRecordingTests
         );
         for (var i = 0; i < ticks; i++)
             recording.DemoData.Ticks.Add(default);
+
         return recording;
     }
 }

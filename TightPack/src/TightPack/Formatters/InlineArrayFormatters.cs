@@ -14,6 +14,7 @@ public sealed class InlineArray2Formatter<T> : TightPackFormatter<InlineArray2<T
     {
         InlineArray2<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 2; j++)
         {
             T? item = copy[j];
@@ -24,6 +25,7 @@ public sealed class InlineArray2Formatter<T> : TightPackFormatter<InlineArray2<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray2<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 2; j++)
         {
             T? item = default;
@@ -45,6 +47,7 @@ public sealed class InlineArray3Formatter<T> : TightPackFormatter<InlineArray3<T
     {
         InlineArray3<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 3; j++)
         {
             T? item = copy[j];
@@ -55,6 +58,7 @@ public sealed class InlineArray3Formatter<T> : TightPackFormatter<InlineArray3<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray3<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 3; j++)
         {
             T? item = default;
@@ -76,6 +80,7 @@ public sealed class InlineArray4Formatter<T> : TightPackFormatter<InlineArray4<T
     {
         InlineArray4<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 4; j++)
         {
             T? item = copy[j];
@@ -86,6 +91,7 @@ public sealed class InlineArray4Formatter<T> : TightPackFormatter<InlineArray4<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray4<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 4; j++)
         {
             T? item = default;
@@ -107,6 +113,7 @@ public sealed class InlineArray5Formatter<T> : TightPackFormatter<InlineArray5<T
     {
         InlineArray5<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 5; j++)
         {
             T? item = copy[j];
@@ -117,6 +124,7 @@ public sealed class InlineArray5Formatter<T> : TightPackFormatter<InlineArray5<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray5<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 5; j++)
         {
             T? item = default;
@@ -138,6 +146,7 @@ public sealed class InlineArray6Formatter<T> : TightPackFormatter<InlineArray6<T
     {
         InlineArray6<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 6; j++)
         {
             T? item = copy[j];
@@ -148,6 +157,7 @@ public sealed class InlineArray6Formatter<T> : TightPackFormatter<InlineArray6<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray6<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 6; j++)
         {
             T? item = default;
@@ -169,6 +179,7 @@ public sealed class InlineArray7Formatter<T> : TightPackFormatter<InlineArray7<T
     {
         InlineArray7<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 7; j++)
         {
             T? item = copy[j];
@@ -179,6 +190,7 @@ public sealed class InlineArray7Formatter<T> : TightPackFormatter<InlineArray7<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray7<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 7; j++)
         {
             T? item = default;
@@ -200,6 +212,7 @@ public sealed class InlineArray8Formatter<T> : TightPackFormatter<InlineArray8<T
     {
         InlineArray8<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 8; j++)
         {
             T? item = copy[j];
@@ -210,6 +223,7 @@ public sealed class InlineArray8Formatter<T> : TightPackFormatter<InlineArray8<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray8<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 8; j++)
         {
             T? item = default;
@@ -231,6 +245,7 @@ public sealed class InlineArray9Formatter<T> : TightPackFormatter<InlineArray9<T
     {
         InlineArray9<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 9; j++)
         {
             T? item = copy[j];
@@ -241,6 +256,7 @@ public sealed class InlineArray9Formatter<T> : TightPackFormatter<InlineArray9<T
     public override void Deserialize(ref TightPackReader reader, ref InlineArray9<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 9; j++)
         {
             T? item = default;
@@ -262,6 +278,7 @@ public sealed class InlineArray10Formatter<T> : TightPackFormatter<InlineArray10
     {
         InlineArray10<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 10; j++)
         {
             T? item = copy[j];
@@ -272,6 +289,7 @@ public sealed class InlineArray10Formatter<T> : TightPackFormatter<InlineArray10
     public override void Deserialize(ref TightPackReader reader, ref InlineArray10<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 10; j++)
         {
             T? item = default;
@@ -293,6 +311,7 @@ public sealed class InlineArray11Formatter<T> : TightPackFormatter<InlineArray11
     {
         InlineArray11<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 11; j++)
         {
             T? item = copy[j];
@@ -303,6 +322,7 @@ public sealed class InlineArray11Formatter<T> : TightPackFormatter<InlineArray11
     public override void Deserialize(ref TightPackReader reader, ref InlineArray11<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 11; j++)
         {
             T? item = default;
@@ -324,6 +344,7 @@ public sealed class InlineArray12Formatter<T> : TightPackFormatter<InlineArray12
     {
         InlineArray12<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 12; j++)
         {
             T? item = copy[j];
@@ -334,6 +355,7 @@ public sealed class InlineArray12Formatter<T> : TightPackFormatter<InlineArray12
     public override void Deserialize(ref TightPackReader reader, ref InlineArray12<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 12; j++)
         {
             T? item = default;
@@ -355,6 +377,7 @@ public sealed class InlineArray13Formatter<T> : TightPackFormatter<InlineArray13
     {
         InlineArray13<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 13; j++)
         {
             T? item = copy[j];
@@ -365,6 +388,7 @@ public sealed class InlineArray13Formatter<T> : TightPackFormatter<InlineArray13
     public override void Deserialize(ref TightPackReader reader, ref InlineArray13<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 13; j++)
         {
             T? item = default;
@@ -386,6 +410,7 @@ public sealed class InlineArray14Formatter<T> : TightPackFormatter<InlineArray14
     {
         InlineArray14<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 14; j++)
         {
             T? item = copy[j];
@@ -396,6 +421,7 @@ public sealed class InlineArray14Formatter<T> : TightPackFormatter<InlineArray14
     public override void Deserialize(ref TightPackReader reader, ref InlineArray14<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 14; j++)
         {
             T? item = default;
@@ -417,6 +443,7 @@ public sealed class InlineArray15Formatter<T> : TightPackFormatter<InlineArray15
     {
         InlineArray15<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 15; j++)
         {
             T? item = copy[j];
@@ -427,6 +454,7 @@ public sealed class InlineArray15Formatter<T> : TightPackFormatter<InlineArray15
     public override void Deserialize(ref TightPackReader reader, ref InlineArray15<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 15; j++)
         {
             T? item = default;
@@ -448,6 +476,7 @@ public sealed class InlineArray16Formatter<T> : TightPackFormatter<InlineArray16
     {
         InlineArray16<T> copy = value;
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 16; j++)
         {
             T? item = copy[j];
@@ -458,6 +487,7 @@ public sealed class InlineArray16Formatter<T> : TightPackFormatter<InlineArray16
     public override void Deserialize(ref TightPackReader reader, ref InlineArray16<T> value)
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int j = 0; j < 16; j++)
         {
             T? item = default;

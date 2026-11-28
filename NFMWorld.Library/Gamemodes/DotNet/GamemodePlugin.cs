@@ -74,12 +74,15 @@ public sealed class GamemodePlugin
     public static GamemodePlugin? Load(string id, string path, string? packagePath = null)
     {
         var assembly = PluginAssembly.Load(id, path, packagePath);
+
         if (assembly is null)
+
             return null;
 
         if (assembly.Assembly.GetCustomAttribute<GamemodeAttribute>() is not { } attribute)
         {
             assembly.Unload();
+
             return null;
         }
 
@@ -118,6 +121,7 @@ public sealed class GamemodePlugin
     public void Unload()
     {
         if (_clientConstructor is null)
+
             return;
 
         // Drop the reflection handles last: they are the plugin object's own

@@ -125,9 +125,11 @@ public static partial class GarageView
     public static bool ClearSearch()
     {
         if (UiState.Garage.SearchQuery.Value.Length == 0)
+
             return false;
 
         UiState.Garage.SearchQuery.Value = "";
+
         return true;
     }
 
@@ -138,15 +140,19 @@ public static partial class GarageView
     )
     {
         query = query.Trim();
+
         if (query.Length == 0)
+
             return collections;
 
         var result = new List<CarCollectionViewModel>();
+
         foreach (var collection in collections)
         {
             var matched = collection.Cars
                 .Where(car => car.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
-                              || car.Tags?.Any(tag => tag.Contains(query, StringComparison.OrdinalIgnoreCase)) == true
+                              || car.Tags?.Any(tag => tag.Contains(query, StringComparison.OrdinalIgnoreCase))
+                              == true
                 )
                 .ToArray();
 
@@ -182,17 +188,22 @@ public static partial class GarageView
 
     /// <summary>True when a point is over a panel, so the orbit must not start there.</summary>
     internal static bool OverUi(int x, int y) => !_compactPreview && UiState.Garage.Page.Value == GaragePage.Cars
-                                                 || Inside(MenuPanelNode, x, y) || Inside(DetailPanelNode, x, y);
+                                                 || Inside(MenuPanelNode, x, y)
+                                                 || Inside(DetailPanelNode, x, y);
 
     private static bool Inside(View? panel, int x, int y)
     {
         if (panel is not { IsDisplayed: true } || panel.LayoutBorderSize.X <= 0)
+
             return false;
 
         var position = panel.LayoutBorderPosition;
         var size = panel.LayoutBorderSize;
-        return x >= position.X && x <= position.X + size.X
-               && y >= position.Y && y <= position.Y + size.Y;
+
+        return x >= position.X
+               && x <= position.X + size.X
+               && y >= position.Y
+               && y <= position.Y + size.Y;
     }
 
     // ── Left menu ─────────────────────────────────────────────────────
@@ -204,6 +215,7 @@ public static partial class GarageView
             {
                 var browsing = UiState.Garage.Page.Value == GaragePage.Cars;
                 var bounded = UiState.Garage.Page.Value != GaragePage.Home;
+
                 return Sx.Styles(
                     position: Position.Absolute,
                     left: PanelInset,
@@ -479,6 +491,7 @@ public static partial class GarageView
                 if (UiState.Garage.OnlineSource.Value)
                 {
                     actions.OnlineSearch(UiState.Garage.SearchQuery.Value);
+
                     return;
                 }
 
@@ -487,13 +500,15 @@ public static partial class GarageView
                 {
                     actions.CarSelected(first.Id, first.Cars[0].FileName);
                     UiState.Garage.SearchQuery.Value = "";
-                    if (releaseFocus) FocusManager.ClearFocus();
+                    if (releaseFocus)
+                        FocusManager.ClearFocus();
                 }
             }
         );
         input.Name = "Garage search";
         if (compact)
             input.TextStyles = Sx.TextStyles(fontSize: 13, foregroundColor: TextBlue).Resolved;
+
         return input;
     }
 
@@ -666,6 +681,7 @@ public static partial class GarageView
             style: () =>
             {
                 var style = isSelected() ? CarCardSelected : hovered.Value ? CarCardHover : CarCardIdle;
+
                 return fillWidth ? style.Over(Sx.Styles(width: 100.Percent(), flexGrow: 0)) : style;
             },
             onmousedown: _ =>
@@ -701,6 +717,7 @@ public static partial class GarageView
     private static Node CarThumbnail(string id)
     {
         var ready = CarThumbnails.ReadySignal(id);
+
         return Sx.Show(
             when: () => ready.Value,
             then: () => new NFMWorld.DriverInterface.UI.Image
@@ -716,6 +733,7 @@ public static partial class GarageView
             otherwise: () =>
             {
                 CarThumbnails.RequestKnown(id);
+
                 return new LoadingSpinner
                 {
                     Name = "Garage car placeholder " + id,
@@ -756,14 +774,14 @@ public static partial class GarageView
                     text: () => UiState.Garage.CurrentCar.Value?.Name ?? "No car selected"
                 ),
                 new GaragePaintList(
-                        Sx.View(
-                            style: () => Sx.Styles(
-                                width: 100.Percent(),
-                                flexShrink: 0,
-                                flexDirection: FlexDirection.Column,
-                                gapRow: 10
-                            ),
-                            children:
+                    Sx.View(
+                        style: () => Sx.Styles(
+                            width: 100.Percent(),
+                            flexShrink: 0,
+                            flexDirection: FlexDirection.Column,
+                            gapRow: 10
+                        ),
+                        children:
                             [
                                 Sx.Show(
                                     when: () => UiState.Garage.EditingWheels && UiState.Garage.HasCustomWheels.Value,
@@ -791,7 +809,7 @@ public static partial class GarageView
                                     )
                                 )
                             ]
-                        )
+                    )
                 ),
                 Sx.Show(
                     when: () => UiState.Garage.EditingSlots.Count > 0,
@@ -902,7 +920,8 @@ public static partial class GarageView
         Actions actions
     )
     {
-        var active = () => !UiState.Garage.CustomizeTabsFocused.Value && UiState.Garage.ActiveColorSlot.Value == slotIndex
+        var active = () => !UiState.Garage.CustomizeTabsFocused.Value
+                           && UiState.Garage.ActiveColorSlot.Value == slotIndex
                            && UiState.Garage.ActiveColorChannel.Value == channel;
 
         return Sx.View(
@@ -1083,6 +1102,7 @@ public static partial class GarageView
         var name = UiState.Garage.CurrentCar.Value?.Name ?? "";
         var width = TheGraphics.G.GetFontMetrics(new Font(FontFamily.Adventure, FontStyle.Bold, 22))
             .MeasureText(name).X;
+
         return width > contentWidth - 2 ? Math.Max(1, 22 * (contentWidth - 2) / width) : 22;
     }
 
@@ -1243,6 +1263,7 @@ public static partial class GarageView
             ),
             hoverStyle: Sx.Styles(backgroundColor: Theme.MenuHighlight)
         );
+
         return link(
             null,
             "Garage back link",

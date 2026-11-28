@@ -264,6 +264,7 @@ internal static class DefaultFormatters
         }
 
         // Safety net: a generated type works even if its registration never ran.
+
         if (Array.Exists(type.GetInterfaces(), i =>
                 i.IsGenericType
                 && i.GetGenericTypeDefinition() == typeof(ITightPackable<>)
@@ -279,6 +280,7 @@ internal static class DefaultFormatters
     internal static void EnsureBuiltinsRegistered()
     {
         // A plain read on every lookup; the interlocked path is only paid on the first one.
+
         if (Volatile.Read(ref s_builtinsState) == BuiltinsDone)
         {
             return;
@@ -288,6 +290,7 @@ internal static class DefaultFormatters
         {
             // Another thread is registering; wait for it rather than serve a half-filled table.
             SpinWait spin = default;
+
             while (Volatile.Read(ref s_builtinsState) != BuiltinsDone)
             {
                 spin.SpinOnce();

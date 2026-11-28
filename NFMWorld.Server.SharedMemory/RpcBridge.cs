@@ -55,6 +55,7 @@ public sealed class RpcBridge : IDisposable
             {
                 var request = TightPackSerializer.Deserialize<RpcMessage>(requestData);
                 var response = handler(request);
+
                 return TightPackSerializer.Serialize(response);
             },
             bufferCapacity,
@@ -92,6 +93,7 @@ public sealed class RpcBridge : IDisposable
         );
 
         if (!response.Success)
+
             throw new TimeoutException(
                 $"RPC request of type {message.Type} timed out after {timeoutMs}ms. "
                 + "The remote side may have crashed or be unresponsive."
@@ -120,6 +122,7 @@ public sealed class RpcBridge : IDisposable
         );
 
         if (!response.Success)
+
             throw new TimeoutException(
                 $"RPC request of type {message.Type} timed out after {timeoutMs}ms."
             );
@@ -132,7 +135,9 @@ public sealed class RpcBridge : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         _rpcBuffer.Dispose();
     }
@@ -140,6 +145,7 @@ public sealed class RpcBridge : IDisposable
     private void ThrowIfDisposed()
     {
         if (_disposed)
+
             throw new ObjectDisposedException(nameof(RpcBridge));
     }
 }

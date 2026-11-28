@@ -21,7 +21,9 @@ namespace NFMWorld.Archive.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "11.0.0-preview.3.26207.106");
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Asset", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Asset",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -78,7 +80,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.AuthAudit", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.AuthAudit",
+                b =>
                 {
                     b.Property<long>("Id")
                     .ValueGeneratedOnAdd()
@@ -108,7 +112,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Clan", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Clan",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -143,7 +149,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.ClanMember", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.ClanMember",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -169,7 +177,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.ExternalLogin", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.ExternalLogin",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -197,7 +207,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Match", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Match",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -242,7 +254,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.MatchParticipant", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.MatchParticipant",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -273,7 +287,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.OauthPending", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.OauthPending",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -299,7 +315,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Rating", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Rating",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -336,7 +354,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Session", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Session",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -378,7 +398,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.TimeTrial", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.TimeTrial",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -430,7 +452,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.User", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.User",
+                b =>
                 {
                     b.Property<int>("Id")
                     .ValueGeneratedOnAdd()
@@ -470,7 +494,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Asset", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Asset",
+                b =>
                 {
                     b.HasOne("NFMWorld.Archive.Data.User", "Owner")
                     .WithMany()
@@ -481,7 +507,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.ClanMember", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.ClanMember",
+                b =>
                 {
                     b.HasOne("NFMWorld.Archive.Data.Clan", "Clan")
                     .WithMany("Members")
@@ -501,7 +529,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.ExternalLogin", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.ExternalLogin",
+                b =>
                 {
                     b.HasOne("NFMWorld.Archive.Data.User", "User")
                     .WithMany("ExternalLogins")
@@ -513,7 +543,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.MatchParticipant", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.MatchParticipant",
+                b =>
                 {
                     b.HasOne("NFMWorld.Archive.Data.Match", "Match")
                     .WithMany("Participants")
@@ -532,7 +564,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Rating", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Rating",
+                b =>
                 {
                     b.HasOne("NFMWorld.Archive.Data.User", "User")
                     .WithMany("Ratings")
@@ -544,7 +578,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Session", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Session",
+                b =>
                 {
                     b.HasOne("NFMWorld.Archive.Data.User", "User")
                     .WithMany("Sessions")
@@ -556,7 +592,9 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.TimeTrial", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.TimeTrial",
+                b =>
                 {
                     b.HasOne("NFMWorld.Archive.Data.User", "User")
                     .WithMany("TimeTrials")
@@ -568,19 +606,25 @@ namespace NFMWorld.Archive.Migrations
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Clan", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Clan",
+                b =>
                 {
                     b.Navigation("Members");
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.Match", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.Match",
+                b =>
                 {
                     b.Navigation("Participants");
                 }
             );
 
-            modelBuilder.Entity("NFMWorld.Archive.Data.User", b =>
+            modelBuilder.Entity(
+                "NFMWorld.Archive.Data.User",
+                b =>
                 {
                     b.Navigation("ExternalLogins");
 

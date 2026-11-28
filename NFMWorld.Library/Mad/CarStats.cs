@@ -215,10 +215,13 @@ public partial record struct CarStats
         switch (InvalidStat)
         {
             case { } invalid:
+
                 return ValidateFail(invalid);
             case null when Name == "hogan rewish":
+
                 return ValidateFailName(fileName);
             default:
+
                 return null;
         }
     }
@@ -232,31 +235,77 @@ public partial record struct CarStats
     {
         get
         {
-            if (Swits[0] == int.MinValue) return nameof(Swits);
-            else if (Acelf.AsSpan()[0] == fix64.MinValue) return nameof(Acelf);
-            else if (Handb == int.MinValue) return nameof(Handb);
-            else if (Airs == fix64.MinValue) return nameof(Airs);
-            else if (Airc == int.MinValue) return nameof(Airc);
-            else if (Turn == fix64.MinValue) return nameof(Turn);
-            else if (Grip == fix64.MinValue) return nameof(Grip);
-            else if (Bounce == fix64.MinValue) return nameof(Bounce);
+            if (Swits[0] == int.MinValue)
+
+                return nameof(Swits);
+            else if (Acelf.AsSpan()[0] == fix64.MinValue)
+
+                return nameof(Acelf);
+            else if (Handb == int.MinValue)
+
+                return nameof(Handb);
+            else if (Airs == fix64.MinValue)
+
+                return nameof(Airs);
+            else if (Airc == int.MinValue)
+
+                return nameof(Airc);
+            else if (Turn == fix64.MinValue)
+
+                return nameof(Turn);
+            else if (Grip == fix64.MinValue)
+
+                return nameof(Grip);
+            else if (Bounce == fix64.MinValue)
+
+                return nameof(Bounce);
             //else if(Simag == fix64.MinValue) return nameof(Simag);
-            else if (Moment == fix64.MinValue) return nameof(Moment);
-            else if (Comprad == fix64.MinValue) return nameof(Comprad);
-            else if (Push == fix64.MinValue) return nameof(Push);
-            else if (Revpush == fix64.MinValue) return nameof(Revpush);
-            else if (Lift == int.MinValue) return nameof(Lift);
-            else if (Revlift == int.MinValue) return nameof(Revlift);
-            else if (Powerloss == int.MinValue) return nameof(Powerloss);
-            else if (Clrad == int.MinValue) return nameof(Clrad);
-            else if (Dammult == fix64.MinValue) return nameof(Dammult);
-            else if (Maxmag == int.MinValue) return nameof(Maxmag);
-            else if (Outdam == fix64.MinValue) return nameof(Outdam);
-            else if (TurnRadius == int.MinValue) return nameof(TurnRadius);
+            else if (Moment == fix64.MinValue)
+
+                return nameof(Moment);
+            else if (Comprad == fix64.MinValue)
+
+                return nameof(Comprad);
+            else if (Push == fix64.MinValue)
+
+                return nameof(Push);
+            else if (Revpush == fix64.MinValue)
+
+                return nameof(Revpush);
+            else if (Lift == int.MinValue)
+
+                return nameof(Lift);
+            else if (Revlift == int.MinValue)
+
+                return nameof(Revlift);
+            else if (Powerloss == int.MinValue)
+
+                return nameof(Powerloss);
+            else if (Clrad == int.MinValue)
+
+                return nameof(Clrad);
+            else if (Dammult == fix64.MinValue)
+
+                return nameof(Dammult);
+            else if (Maxmag == int.MinValue)
+
+                return nameof(Maxmag);
+            else if (Outdam == fix64.MinValue)
+
+                return nameof(Outdam);
+            else if (TurnRadius == int.MinValue)
+
+                return nameof(TurnRadius);
             // Divisors: a zero here throws DivideByZeroException on the first drive tick.
-            else if (Simag <= fix64.Zero) return nameof(Simag);
-            else if (Powerloss == 0) return nameof(Powerloss);
-            else if (Swits[2] == 0) return nameof(Swits);
+            else if (Simag <= fix64.Zero)
+
+                return nameof(Simag);
+            else if (Powerloss == 0)
+
+                return nameof(Powerloss);
+            else if (Swits[2] == 0)
+
+                return nameof(Swits);
 
             return null;
         }
@@ -266,6 +315,7 @@ public partial record struct CarStats
     {
         SentrySdk.CaptureMessage($"Car name for car '{fileName}' was invalid or undefined. Falling back to file name.");
         Logging.Error($"Car name for car '{fileName}' was invalid or undefined. Falling back to file name.");
+
         return nameof(Name);
     }
 
@@ -277,15 +327,18 @@ public partial record struct CarStats
         Logging.Error(
             $"Car stat {property} for car '{Name}' was invalid or undefined. Falling back to Tornado Shark stats for all stats."
         );
+
         return property;
     }
 
     public static CarStats ValidateStats(CarStats stats, string fileName)
     {
         string? invalidStat = stats.Validate(fileName);
+
         if (invalidStat != null)
         {
             stats = Default;
+
             if (invalidStat == nameof(Name) || string.IsNullOrEmpty(stats.Name))
             {
                 stats = stats with { Name = fileName };
@@ -445,15 +498,19 @@ public partial struct Int3 : IEquatable<Int3>
             {
                 case 0:
                     X = value;
+
                     return;
                 case 1:
                     Y = value;
+
                     return;
                 case 2:
                     Z = value;
+
                     return;
                 default:
                     ThrowArgumentOutOfRangeException();
+
                     return;
             }
         }

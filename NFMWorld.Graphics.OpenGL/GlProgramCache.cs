@@ -63,7 +63,9 @@ internal sealed class GlProgramCache
     {
         // Probed rather than assumed from the extension string: an advertised extension whose entry
         // points do not resolve is exactly the case TryGetExtension exists to catch.
+
         if (!gl.TryGetExtension(out OesGetProgramBinary ext))
+
             return new GlProgramCache(gl, null, directory, "disabled");
 
         // The driver identity is read once and folded into every key: the same GLSL compiled by a
@@ -78,6 +80,7 @@ internal sealed class GlProgramCache
         catch (Exception)
         {
             // A read-only or full data directory is a reason to be slower, not a reason not to boot.
+
             return new GlProgramCache(gl, null, directory, prefix);
         }
 
@@ -100,6 +103,7 @@ internal sealed class GlProgramCache
     private static unsafe string String(GL gl, StringName name)
     {
         var pointer = gl.GetString(name);
+
         return pointer is null ? "?" : Marshal.PtrToStringUTF8((nint)pointer) ?? "?";
     }
 
@@ -112,6 +116,7 @@ internal sealed class GlProgramCache
     private string? PathFor(ShaderStageSources vertex, ShaderStageSources pixel)
     {
         if (!IsEnabled)
+
             return null;
 
         var hash = SHA256.HashData(
@@ -134,9 +139,11 @@ internal sealed class GlProgramCache
     internal unsafe uint? TryLoad(ShaderStageSources vertex, ShaderStageSources pixel)
     {
         if (PathFor(vertex, pixel) is not { } path || _ext is null)
+
             return null;
 
         byte[] blob;
+
         try
         {
             blob = File.ReadAllBytes(path);
@@ -147,6 +154,7 @@ internal sealed class GlProgramCache
         }
 
         if (blob.Length == 0)
+
             return null;
 
         var program = _gl.CreateProgram();
@@ -158,12 +166,14 @@ internal sealed class GlProgramCache
 
         var status = 0;
         _gl.GetProgram(program, GLEnum.LinkStatus, &status);
+
         if (status == 0)
         {
             // The spec is explicit that the prior state is lost when a load fails, so this program is
             // discarded outright. The caller recompiles from source into a fresh one - retrying the
             // load, or linking this object, would fail the same way.
             _gl.DeleteProgram(program);
+
             return null;
         }
 
@@ -179,18 +189,23 @@ internal sealed class GlProgramCache
     internal unsafe void TrySave(uint program, ShaderStageSources vertex, ShaderStageSources pixel)
     {
         if (PathFor(vertex, pixel) is not { } path || _ext is null)
+
             return;
 
         var length = 0;
         _gl.GetProgram(program, (GLEnum)OES.ProgramBinaryLengthOes, &length);
+
         if (length <= 0)
+
             return;
 
         var blob = new byte[length];
         uint written = 0;
         var format = default(OES); // overwritten by the call
         _ext.GetProgramBinary(program, &written, &format, blob.AsSpan());
+
         if (written == 0)
+
             return;
 
         try

@@ -26,6 +26,7 @@ public sealed class UiScheduler : TimeProvider
     {
         var scheduler = new UiScheduler();
         Effect.DefaultScheduler = scheduler;
+
         return scheduler;
     }
 
@@ -35,6 +36,7 @@ public sealed class UiScheduler : TimeProvider
         // time, i.e. "run at the end of this flush". Anything else would be a periodic
         // timer, which nothing in the UI needs.
         _pending.Add((callback, state));
+
         return NoOpTimer.Instance;
     }
 
@@ -42,10 +44,12 @@ public sealed class UiScheduler : TimeProvider
     public void Flush()
     {
         if (_pending.Count == 0)
+
             return;
 
         // Effects can write signals of their own, which queues more callbacks; drain until
         // quiet so a frame never ends with work outstanding.
+
         for (var pass = 0; pass < 100 && _pending.Count > 0; pass++)
         {
             var batch = _pending.ToArray();

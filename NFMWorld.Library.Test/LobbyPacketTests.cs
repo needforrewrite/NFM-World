@@ -30,6 +30,7 @@ public class LobbyPacketTests
             ? MultiplayerUtils.TryDeserializeC2SPacket(opcode, writer.WrittenMemory)
             : MultiplayerUtils.TryDeserializeS2CPacket(opcode, writer.WrittenMemory);
         Assert.IsNotNull(deserialized, $"opcode {opcode} did not deserialize");
+
         return (T)deserialized;
     }
 

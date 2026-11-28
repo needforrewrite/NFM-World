@@ -16,7 +16,10 @@ public sealed class ResourceLease<T> : IDisposable
     public void Dispose()
     {
         var release = Interlocked.Exchange(ref _release, null);
-        if (release is null) return;
+
+        if (release is null)
+
+            return;
         _value = default!;
         release();
     }
@@ -48,7 +51,10 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
     )
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maxUnused);
-        if (idleTimeout < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(idleTimeout));
+
+        if (idleTimeout < TimeSpan.Zero)
+
+            throw new ArgumentOutOfRangeException(nameof(idleTimeout));
         _maxUnused = maxUnused;
         _idleTimeout = idleTimeout;
         _dispose = dispose;
@@ -63,26 +69,34 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
 
     public bool TryGetValue(TKey key, out TValue value)
     {
-        if (_dispose is not null) throw new InvalidOperationException("Disposable resources require a lease.");
+        if (_dispose is not null)
+
+            throw new InvalidOperationException("Disposable resources require a lease.");
+
         lock (_gate)
         {
             if (_entries.TryGetValue(key, out var entry))
             {
                 entry.Used = _clock.GetTimestamp();
                 value = entry.Value;
+
                 return true;
             }
         }
 
         value = default!;
+
         return false;
     }
 
     public TValue GetOrAdd(TKey key, Func<TKey, TValue> create)
     {
-        if (_dispose is not null) throw new InvalidOperationException("Disposable resources require a lease.");
+        if (_dispose is not null)
+
+            throw new InvalidOperationException("Disposable resources require a lease.");
         TValue value;
         bool trim;
+
         lock (_gate)
         {
             if (!_entries.TryGetValue(key, out var entry))
@@ -97,7 +111,9 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
             trim = _unused > _maxUnused;
         }
 
-        if (trim) Trim();
+        if (trim)
+            Trim();
+
         return value;
     }
 
@@ -110,7 +126,8 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
                 entry = new(create(key), _clock.GetTimestamp()) { Pins = 1 };
                 _entries.Add(key, entry);
             }
-            else Pin(entry);
+            else
+                Pin(entry);
 
             return Lease(entry);
         }
@@ -124,21 +141,26 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
             {
                 Pin(entry);
                 lease = Lease(entry);
+
                 return true;
             }
         }
 
         lease = null;
+
         return false;
     }
 
     private void Pin(Entry entry)
     {
-        if (entry.Pins++ == 0) _unused--;
+        if (entry.Pins++ == 0)
+            _unused--;
         entry.Used = _clock.GetTimestamp();
     }
 
-    private ResourceLease<TValue> Lease(Entry entry) => new(entry.Value, () =>
+    private ResourceLease<TValue> Lease(Entry entry) => new(
+        entry.Value,
+        () =>
         {
             lock (_gate)
             {
@@ -155,13 +177,17 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
     public void Trim(bool clearUnused = false)
     {
         var released = new List<TValue>();
+
         lock (_gate)
         {
             var now = _clock.GetTimestamp();
             var excess = Math.Max(0, _unused - _maxUnused);
+
             foreach (var pair in _entries.Where(pair => pair.Value.Pins == 0).OrderBy(pair => pair.Value.Used).ToArray())
             {
-                if (!clearUnused && excess <= 0 && _clock.GetElapsedTime(pair.Value.Used, now) < _idleTimeout) continue;
+                if (!clearUnused && excess <= 0 && _clock.GetElapsedTime(pair.Value.Used, now) < _idleTimeout)
+
+                    continue;
                 _entries.Remove(pair.Key);
                 _unused--;
                 excess--;
@@ -170,6 +196,7 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
         }
 
         List<Exception>? failures = null;
+
         foreach (var value in released)
         {
             try
@@ -182,6 +209,8 @@ public sealed class IdleResourceCache<TKey, TValue> where TKey : notnull
             }
         }
 
-        if (failures is not null) throw new AggregateException("Some cached resources could not be disposed.", failures);
+        if (failures is not null)
+
+            throw new AggregateException("Some cached resources could not be disposed.", failures);
     }
 }

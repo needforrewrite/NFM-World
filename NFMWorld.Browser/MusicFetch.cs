@@ -33,6 +33,7 @@ internal sealed class MusicFetch : IDisposable
     public static MusicFetch? Open(string url)
     {
         var reader = new RangeReadStream(url);
+
         try
         {
             return new MusicFetch(reader, new ZipArchive(reader, ZipArchiveMode.Read, leaveOpen: true));
@@ -41,6 +42,7 @@ internal sealed class MusicFetch : IDisposable
         {
             Console.WriteLine($"[nfmw] music archive unavailable: {e.Message}");
             reader.Dispose();
+
             return null;
         }
     }
@@ -54,12 +56,15 @@ internal sealed class MusicFetch : IDisposable
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         var name = path.Replace('\\', '/').TrimStart('/');
+
         if (!_entries.TryGetValue(name, out var entry))
+
             return null;
 
         var buffer = new byte[entry.Length];
         using var stream = entry.Open();
         stream.ReadExactly(buffer);
+
         return buffer;
     }
 
@@ -89,9 +94,12 @@ internal sealed class MusicFetch : IDisposable
                 if (_length < 0)
                 {
                     _length = BrowserHttp.ContentLength(url);
+
                     if (_length < 0)
+
                         throw new IOException($"'{url}' did not report a length; a ranged read cannot be served.");
                 }
+
                 return _length;
             }
         }
@@ -106,18 +114,27 @@ internal sealed class MusicFetch : IDisposable
 
         public override int Read(Span<byte> buffer)
         {
-            if (buffer.IsEmpty) return 0;
+            if (buffer.IsEmpty)
+
+                return 0;
 
             var remaining = Length - _position;
-            if (remaining <= 0) return 0;
+
+            if (remaining <= 0)
+
+                return 0;
 
             // The interop returns the bytes; a caller-supplied buffer would be copied in only.
             var count = (int)Math.Min(remaining, buffer.Length);
             var bytes = BrowserHttp.ReadRange(url, _position, count);
-            if (bytes.Length == 0) return 0;
+
+            if (bytes.Length == 0)
+
+                return 0;
 
             bytes.AsSpan(0, Math.Min(bytes.Length, buffer.Length)).CopyTo(buffer);
             _position += bytes.Length;
+
             return bytes.Length;
         }
 
@@ -130,10 +147,14 @@ internal sealed class MusicFetch : IDisposable
                 SeekOrigin.End => Length + offset,
                 _ => throw new ArgumentOutOfRangeException(nameof(origin)),
             };
+
             return _position;
         }
 
-        public override void Flush() { }
+        public override void Flush()
+        {
+        }
+
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }

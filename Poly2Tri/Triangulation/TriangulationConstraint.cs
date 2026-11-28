@@ -83,6 +83,7 @@ namespace Poly2Tri
             {
                 // Note:  intentionally use != instead of !Equals() because we
                 // WANT to compare pointer values here rather than VertexCode values
+
                 if (value != null && mP != value)
                 {
                     mP = value;
@@ -98,6 +99,7 @@ namespace Poly2Tri
             {
                 // Note:  intentionally use != instead of !Equals() because we
                 // WANT to compare pointer values here rather than VertexCode values
+
                 if (value != null && mQ != value)
                 {
                     mQ = value;
@@ -120,6 +122,7 @@ namespace Poly2Tri
         {
             mP = p1;
             mQ = p2;
+
             if (p1.Y > p2.Y)
             {
                 mQ = p1;

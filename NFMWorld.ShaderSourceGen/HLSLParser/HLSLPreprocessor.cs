@@ -57,6 +57,7 @@ public sealed class HLSLPreprocessor
         var sb = new StringBuilder(source.Length);
         var lines = SplitLines(source);
         ProcessLines(lines, 0, lines.Length, sb, fileName);
+
         return sb.ToString();
     }
 
@@ -65,6 +66,7 @@ public sealed class HLSLPreprocessor
     private void ProcessLines(string[] lines, int start, int end, StringBuilder sb, string? fileName)
     {
         int i = start;
+
         while (i < end)
         {
             var trimmed = lines[i].TrimStart();
@@ -78,6 +80,7 @@ public sealed class HLSLPreprocessor
                     case "define":
                         HandleDefine(directive.Rest);
                         i++;
+
                         break;
 
                     case "undef":
@@ -86,6 +89,7 @@ public sealed class HLSLPreprocessor
                         _defines.Remove(uname);
                         _functionMacros.Remove(uname);
                         i++;
+
                         break;
                     }
 
@@ -95,6 +99,7 @@ public sealed class HLSLPreprocessor
                         i = HandleConditionalBlock(lines, i, end, sb, fileName);
                         // Emit #line to resync after the skipped conditional block
                         EmitLine(sb, i, fileName);
+
                         break;
 
                     case "include":
@@ -102,12 +107,14 @@ public sealed class HLSLPreprocessor
                         i++;
                         // Emit #line to restore original file context after include
                         EmitLine(sb, i, fileName);
+
                         break;
 
                     default:
                         // Unknown directive — pass through as-is
                         sb.AppendLine(lines[i]);
                         i++;
+
                         break;
                 }
             }
@@ -121,7 +128,9 @@ public sealed class HLSLPreprocessor
 
     private void EmitLine(StringBuilder sb, int nextLineIndex, string? fileName)
     {
-        if (!_emitLineDirectives) return;
+        if (!_emitLineDirectives)
+
+            return;
         // #line uses 1-based line numbers; nextLineIndex is 0-based
         int lineNum = nextLineIndex + 1;
         if (fileName != null)
@@ -135,22 +144,31 @@ public sealed class HLSLPreprocessor
     private void HandleDefine(string rest)
     {
         rest = rest.Trim();
-        if (rest.Length == 0) return;
+
+        if (rest.Length == 0)
+
+            return;
 
         // Find end of macro name
         int nameEnd = 0;
-        while (nameEnd < rest.Length && IsIdentChar(rest[nameEnd])) nameEnd++;
+        while (nameEnd < rest.Length && IsIdentChar(rest[nameEnd]))
+            nameEnd++;
         var name = rest[..nameEnd];
 
         // Function-like macro: NAME( immediately after identifier (no space before paren)
+
         if (nameEnd < rest.Length && rest[nameEnd] == '(')
         {
             int parenStart = nameEnd + 1;
             int parenEnd = rest.IndexOf(')', parenStart);
-            if (parenEnd < 0) return; // malformed
+
+            if (parenEnd < 0)
+
+                return; // malformed
 
             var paramStr = rest.Substring(parenStart, parenEnd - parenStart).Trim();
             string[] parameters;
+
             if (paramStr.Length == 0)
                 parameters = [];
             else
@@ -163,11 +181,13 @@ public sealed class HLSLPreprocessor
 
             var body = (parenEnd + 1 < rest.Length) ? rest[(parenEnd + 1)..].Trim() : "";
             _functionMacros[name] = new FunctionMacro(parameters, body);
+
             return;
         }
 
         // Object-like macro
         int sep = IndexOfWhitespace(rest, nameEnd);
+
         if (sep < 0 || sep == rest.Length)
         {
             _defines[name] = "1";
@@ -191,6 +211,7 @@ public sealed class HLSLPreprocessor
             path = raw;
 
         var contents = _includeResolver?.Invoke(path);
+
         if (contents != null)
         {
             EmitLine(sb, 0, path);
@@ -221,18 +242,23 @@ public sealed class HLSLPreprocessor
         for (int i = start; i < end; i++)
         {
             var trimmed = lines[i].TrimStart();
-            if (!trimmed.StartsWith("#", StringComparison.Ordinal)) continue;
+
+            if (!trimmed.StartsWith("#", StringComparison.Ordinal))
+
+                continue;
             var dir = ParseDirective(trimmed);
 
             if (dir.Name is "if" or "ifdef" or "ifndef")
             {
-                if (i != start) depth++;
+                if (i != start)
+                    depth++;
             }
             else if (dir.Name == "endif")
             {
                 if (depth > 0)
                 {
                     depth--;
+
                     continue;
                 }
 
@@ -240,6 +266,7 @@ public sealed class HLSLPreprocessor
                 branches.Add((currentCond, branchStart, i));
                 // Pick the first true branch and emit it
                 EmitFirstTrueBranch(lines, branches, sb, fileName);
+
                 return i + 1;
             }
             else if (depth == 0 && dir.Name == "elif")
@@ -257,6 +284,7 @@ public sealed class HLSLPreprocessor
         }
 
         // Unterminated #if — just skip everything
+
         return end;
     }
 
@@ -273,6 +301,7 @@ public sealed class HLSLPreprocessor
             {
                 EmitLine(sb, bodyStart, fileName);
                 ProcessLines(lines, bodyStart, bodyEnd, sb, fileName);
+
                 return;
             }
         }
@@ -281,6 +310,7 @@ public sealed class HLSLPreprocessor
     private bool EvaluateConditionDirective(string directive, string rest)
     {
         rest = rest.Trim();
+
         return directive switch
         {
             "ifdef" => _defines.ContainsKey(rest),
@@ -296,6 +326,7 @@ public sealed class HLSLPreprocessor
     {
         int pos = 0;
         long result = ParseOr(expr, ref pos);
+
         return result != 0;
     }
 
@@ -303,6 +334,7 @@ public sealed class HLSLPreprocessor
     {
         long left = ParseAnd(s, ref pos);
         SkipSpaces(s, ref pos);
+
         while (pos + 1 < s.Length && s[pos] == '|' && s[pos + 1] == '|')
         {
             pos += 2;
@@ -318,6 +350,7 @@ public sealed class HLSLPreprocessor
     {
         long left = ParseUnary(s, ref pos);
         SkipSpaces(s, ref pos);
+
         while (pos + 1 < s.Length && s[pos] == '&' && s[pos + 1] == '&')
         {
             pos += 2;
@@ -332,10 +365,12 @@ public sealed class HLSLPreprocessor
     private long ParseUnary(string s, ref int pos)
     {
         SkipSpaces(s, ref pos);
+
         if (pos < s.Length && s[pos] == '!')
         {
             pos++;
             long val = ParseUnary(s, ref pos);
+
             return val == 0 ? 1 : 0;
         }
 
@@ -345,19 +380,26 @@ public sealed class HLSLPreprocessor
     private long ParsePrimary(string s, ref int pos)
     {
         SkipSpaces(s, ref pos);
-        if (pos >= s.Length) return 0;
+
+        if (pos >= s.Length)
+
+            return 0;
 
         // Parenthesized expression
+
         if (s[pos] == '(')
         {
             pos++;
             long val = ParseOr(s, ref pos);
             SkipSpaces(s, ref pos);
-            if (pos < s.Length && s[pos] == ')') pos++;
+            if (pos < s.Length && s[pos] == ')')
+                pos++;
+
             return val;
         }
 
         // Integer literal
+
         if (char.IsDigit(s[pos]))
         {
             int start = pos;
@@ -369,34 +411,45 @@ public sealed class HLSLPreprocessor
                        || (s[pos] >= 'A' && s[pos] <= 'F')))
                 pos++;
             var numStr = s.Substring(start, pos - start);
+
             if (numStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+
                 return Convert.ToInt64(numStr[2..], 16);
+
             return long.TryParse(numStr, out long n) ? n : 0;
         }
 
         // Identifier or defined(...)
+
         if (IsIdentStart(s[pos]))
         {
             int start = pos;
-            while (pos < s.Length && IsIdentChar(s[pos])) pos++;
+            while (pos < s.Length && IsIdentChar(s[pos]))
+                pos++;
             var ident = s.Substring(start, pos - start);
 
             if (ident == "defined")
             {
                 SkipSpaces(s, ref pos);
                 bool hasParen = pos < s.Length && s[pos] == '(';
-                if (hasParen) pos++;
+                if (hasParen)
+                    pos++;
                 SkipSpaces(s, ref pos);
                 int idStart = pos;
-                while (pos < s.Length && IsIdentChar(s[pos])) pos++;
+                while (pos < s.Length && IsIdentChar(s[pos]))
+                    pos++;
                 var macro = s.Substring(idStart, pos - idStart);
                 SkipSpaces(s, ref pos);
-                if (hasParen && pos < s.Length && s[pos] == ')') pos++;
+                if (hasParen && pos < s.Length && s[pos] == ')')
+                    pos++;
+
                 return _defines.ContainsKey(macro) ? 1 : 0;
             }
 
             // Look up macro value — undefined = 0
+
             if (_defines.TryGetValue(ident, out var val) && long.TryParse(val, out long v))
+
                 return v;
         }
 
@@ -407,34 +460,42 @@ public sealed class HLSLPreprocessor
 
     private string ExpandMacros(string line)
     {
-        if (_defines.Count == 0 && _functionMacros.Count == 0) return line;
+        if (_defines.Count == 0 && _functionMacros.Count == 0)
+
+            return line;
 
         var sb = new StringBuilder(line.Length);
         int i = 0;
+
         while (i < line.Length)
         {
             if (IsIdentStart(line[i]))
             {
                 int start = i;
-                while (i < line.Length && IsIdentChar(line[i])) i++;
+                while (i < line.Length && IsIdentChar(line[i]))
+                    i++;
                 var token = line.Substring(start, i - start);
 
                 // Function-like macro: NAME(...)
+
                 if (_functionMacros.TryGetValue(token, out var fm))
                 {
                     // Skip whitespace between name and '('
                     int peek = i;
-                    while (peek < line.Length && (line[peek] == ' ' || line[peek] == '\t')) peek++;
+                    while (peek < line.Length && (line[peek] == ' ' || line[peek] == '\t'))
+                        peek++;
 
                     if (peek < line.Length && line[peek] == '(')
                     {
                         var args = ParseMacroArguments(line, peek, out int afterClose);
+
                         if (args != null)
                         {
                             i = afterClose;
                             var expanded = SubstituteFunctionMacro(fm, args);
                             // Recursively expand the result (handles nested macros)
                             sb.Append(ExpandMacros(expanded));
+
                             continue;
                         }
                     }
@@ -464,7 +525,10 @@ public sealed class HLSLPreprocessor
     private static List<string>? ParseMacroArguments(string line, int openParen, out int afterClose)
     {
         afterClose = openParen;
-        if (openParen >= line.Length || line[openParen] != '(') return null;
+
+        if (openParen >= line.Length || line[openParen] != '(')
+
+            return null;
 
         var args = new List<string>();
         int depth = 1;
@@ -474,6 +538,7 @@ public sealed class HLSLPreprocessor
         while (pos < line.Length && depth > 0)
         {
             char c = line[pos];
+
             if (c == '(')
             {
                 depth++;
@@ -481,6 +546,7 @@ public sealed class HLSLPreprocessor
             else if (c == ')')
             {
                 depth--;
+
                 if (depth == 0)
                 {
                     args.Add(line.Substring(argStart, pos - argStart).Trim());
@@ -488,6 +554,7 @@ public sealed class HLSLPreprocessor
                     // If the only "argument" is empty, treat as zero args
                     if (args.Count == 1 && args[0].Length == 0)
                         args.Clear();
+
                     return args;
                 }
             }
@@ -506,17 +573,22 @@ public sealed class HLSLPreprocessor
     private static string SubstituteFunctionMacro(FunctionMacro macro, List<string> args)
     {
         var body = macro.Body;
-        if (macro.Parameters.Length == 0) return body;
+
+        if (macro.Parameters.Length == 0)
+
+            return body;
 
         // Token-level replacement of parameter names with arguments
         var sb = new StringBuilder(body.Length);
         int i = 0;
+
         while (i < body.Length)
         {
             if (IsIdentStart(body[i]))
             {
                 int start = i;
-                while (i < body.Length && IsIdentChar(body[i])) i++;
+                while (i < body.Length && IsIdentChar(body[i]))
+                    i++;
                 var token = body.Substring(start, i - start);
                 int paramIdx = Array.IndexOf(macro.Parameters, token);
                 if (paramIdx >= 0 && paramIdx < args.Count)
@@ -527,6 +599,7 @@ public sealed class HLSLPreprocessor
             else
             {
                 // Handle ## token pasting: trim whitespace and ## between tokens
+
                 if (i + 1 < body.Length && body[i] == '#' && body[i + 1] == '#')
                 {
                     // Remove trailing whitespace already in sb
@@ -534,7 +607,8 @@ public sealed class HLSLPreprocessor
                         sb.Remove(sb.Length - 1, 1);
                     i += 2;
                     // Skip leading whitespace after ##
-                    while (i < body.Length && (body[i] == ' ' || body[i] == '\t')) i++;
+                    while (i < body.Length && (body[i] == ' ' || body[i] == '\t'))
+                        i++;
                 }
                 else
                 {
@@ -559,16 +633,21 @@ public sealed class HLSLPreprocessor
     {
         // trimmedLine starts with '#'; skip '#' and optional whitespace
         int i = 1;
-        while (i < trimmedLine.Length && trimmedLine[i] == ' ') i++;
+        while (i < trimmedLine.Length && trimmedLine[i] == ' ')
+            i++;
         int nameStart = i;
-        while (i < trimmedLine.Length && char.IsLetter(trimmedLine[i])) i++;
+        while (i < trimmedLine.Length && char.IsLetter(trimmedLine[i]))
+            i++;
         var name = trimmedLine.Substring(nameStart, i - nameStart);
         // Skip whitespace between directive name and rest
-        while (i < trimmedLine.Length && trimmedLine[i] == ' ') i++;
+        while (i < trimmedLine.Length && trimmedLine[i] == ' ')
+            i++;
         // Strip trailing single-line comment
         var rest = i < trimmedLine.Length ? trimmedLine[i..] : "";
         int commentIdx = rest.IndexOf("//", StringComparison.Ordinal);
-        if (commentIdx >= 0) rest = rest[..commentIdx];
+        if (commentIdx >= 0)
+            rest = rest[..commentIdx];
+
         return new Directive(name, rest);
     }
 
@@ -580,14 +659,18 @@ public sealed class HLSLPreprocessor
     private static int IndexOfWhitespace(string s, int start = 0)
     {
         for (int i = start; i < s.Length; i++)
+
             if (s[i] == ' ' || s[i] == '\t')
+
                 return i;
+
         return -1;
     }
 
     private static void SkipSpaces(string s, ref int pos)
     {
-        while (pos < s.Length && (s[pos] == ' ' || s[pos] == '\t')) pos++;
+        while (pos < s.Length && (s[pos] == ' ' || s[pos] == '\t'))
+            pos++;
     }
 
     private static bool IsIdentStart(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';

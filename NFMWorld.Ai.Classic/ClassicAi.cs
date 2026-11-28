@@ -69,6 +69,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
     public override void RunAi()
     {
         if (Car is not { } car)
+
             return;
 
         var control = car.Control;
@@ -79,9 +80,11 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         control.Handb = false;
 
         if (car.Wasted)
+
             return;
 
         _originalTick = ++_tickCounter >= Physics.OriginalTicksPerNewTick;
+
         if (_originalTick)
         {
             _tickCounter = 0;
@@ -90,7 +93,9 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         }
 
         var path = Path;
+
         if (path.Count == 0)
+
             return;
 
         var mad = car.CarPhysics;
@@ -103,6 +108,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         // A checkpoint crossing ends a repair detour and releases the "drive back to the
         // gate" state. Comparing the node rather than the ordinal keeps it correct across a
         // lap boundary, where the ordinal wraps to zero.
+
         if (car.LastCheckpointNode != _lastCheckpointNode)
         {
             _lastCheckpointNode = car.LastCheckpointNode;
@@ -125,6 +131,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         {
             TrackStuck(car, mad, grounded: false);
             FlyStunts(car);
+
             return;
         }
 
@@ -136,6 +143,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
             if (_driver.UnstickTicks > 0)
             {
                 DriveUnstuck(car);
+
                 return;
             }
 
@@ -145,9 +153,11 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
                 _driver.TicksSinceRethink++;
 
             TrackStuck(car, mad, grounded: true);
+
             if (_driver.UnstickTicks > 0)
             {
                 DriveUnstuck(car);
+
                 return;
             }
         }
@@ -158,6 +168,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         _driver.TargetsFix = false;
 
         var point = _driver.Point;
+
         if (_driver.AttackTicks == 0)
         {
             point = ChoosePathPoint(car, point);
@@ -181,6 +192,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         get
         {
             var stage = CurrentStage;
+
             if (_path is null || !ReferenceEquals(_pathStage, stage))
             {
                 _path = new TrackPath(stage);
@@ -213,6 +225,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
     {
         var dx = (x1 - x2) / (fix64)10;
         var dz = (z1 - z2) / (fix64)10;
+
         return (dx * dx) + (dz * dz);
     }
 
@@ -225,6 +238,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         var heading = car.Rotation.Xz.Degrees;
         if (car.Control.Zyinv)
             heading += (fix64)180;
+
         return Normalize(heading);
     }
 
@@ -235,6 +249,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
             degrees += (fix64)360;
         while (degrees > (fix64)180)
             degrees -= (fix64)360;
+
         return degrees;
     }
 
@@ -255,7 +270,9 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         for (var i = 0; i < Players.Count; i++)
         {
             var candidate = Players[i];
+
             if (!candidate.Info.IsBot && !candidate.IsFake && candidate.Car is { } rivalCar)
+
                 return rivalCar;
         }
 
@@ -268,6 +285,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         for (var i = 0; i < Players.Count; i++)
         {
             if (Players[i].Car is { } candidate && candidate.CarPhysics.Im == im)
+
                 return candidate;
         }
 
@@ -277,6 +295,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
     private int RacersWithCars()
     {
         var count = 0;
+
         for (var i = 0; i < Players.Count; i++)
         {
             if (Players[i].Car is { })
@@ -331,6 +350,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         //
         // Once set, `Missed` stays set until the gate actually clears, which is what lets
         // the driver start turning before the tracked point catches up again.
+
         if (path.CheckpointCount > 0 && !_driver.Missed)
         {
             var checkpoint = path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount);
@@ -341,6 +361,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         }
 
         var nowInFix = _driver.Fixing != Fix.None && path.InFixBlock(_driver.PathIndex);
+
         if (_driver.WasInFixBlock && !nowInFix)
         {
             _driver.Fixing = Fix.None;
@@ -360,12 +381,15 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
     private int ClampToCheckpoint(BackendCar car, int point)
     {
         var path = Path;
+
         if (_driver.Missed || path.CheckpointCount == 0)
+
             return point;
 
         var checkpoint = path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount);
         var toPoint = path.ForwardDistance(_driver.PathIndex, point);
         var toCheckpoint = path.ForwardDistance(_driver.PathIndex, checkpoint);
+
         return toPoint > toCheckpoint ? checkpoint : point;
     }
 
@@ -373,7 +397,9 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
     private void AimAtPathPoint(BackendCar car, int point)
     {
         var path = Path;
+
         if (path.Count == 0)
+
             return;
 
         if (point < 0 || point >= path.Count)
@@ -408,10 +434,12 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
             _driver.StuckTicks = 0;
             _driver.LastSampleX = car.Position.X;
             _driver.LastSampleZ = car.Position.Z;
+
             return;
         }
 
         if (++_driver.SampleTicks < StuckSampleTicks)
+
             return;
 
         _driver.SampleTicks = 0;
@@ -432,6 +460,7 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
             // Only forget the attempts after a stretch of clean driving, so a car that
             // keeps returning to the same obstacle alternates its escape instead of
             // repeating the first one every time.
+
             if (++_driver.GoodSamples >= 8)
             {
                 _driver.GoodSamples = 0;
@@ -442,7 +471,9 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
         }
 
         _driver.GoodSamples = 0;
+
         if (++_driver.StuckTicks < StuckSamplesToUnstick)
+
             return;
 
         _driver.StuckTicks = 0;
@@ -489,7 +520,9 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
             _driver.SteerTolerance = fix64.Zero;
 
         var abs = FixedMath.Abs(off);
+
         if (_driver.SteerFreeze != 0 || abs < _driver.SteerTolerance)
+
             return;
 
         if (off < fix64.Zero)
@@ -512,9 +545,11 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
                     // angle makes the car turn on the spot and then drive wide.
                     if (abs > (fix64)80)
                         control.Down = true;
+
                     break;
                 case SharpTurn.Handbrake:
                     control.Handb = true;
+
                     break;
             }
 
@@ -527,16 +562,19 @@ public sealed partial class ClassicAi(ClientSidePlayer player, string aiId, Base
     private void BounceOffWalls(BackendCar car)
     {
         var control = car.Control;
+
         if (control.Wall == -1)
         {
             if (_driver.SteerFreeze != 0)
                 _driver.SteerFreeze--;
+
             return;
         }
 
         // Steer toward the aim rather than blindly away from the wall: if the nose is
         // already off-line, the normal direction is what leaves the obstacle behind.
         var off = Normalize(Heading(car) - _driver.AimHeading);
+
         if (FixedMath.Abs(off) > _driver.SteerTolerance)
         {
             if (off < fix64.Zero)

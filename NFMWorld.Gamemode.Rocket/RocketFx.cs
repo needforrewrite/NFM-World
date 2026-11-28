@@ -76,14 +76,17 @@ public sealed class RocketFx : IDisposable
         {
             var state = _states[i];
             var car = _cars[i];
+
             if (car.HasLeftRace)
             {
                 state.Boosting = false;
                 state.BoostSoundInstance?.Stop();
+
                 continue;
             }
 
             var wantBoost = i < boosting.Count && boosting[i];
+
             if (wantBoost && !state.Boosting)
             {
                 state.Boosting = true;
@@ -116,6 +119,7 @@ public sealed class RocketFx : IDisposable
     public void PlayJump(BackendCar car)
     {
         var state = FindState(car);
+
         if (state is not null)
         {
             state.BurstX = (float)car.Position.X;
@@ -126,7 +130,9 @@ public sealed class RocketFx : IDisposable
         }
 
         var instance = _jumpSound?.CreateSpatialInstance(followPosition: true);
+
         if (instance is null)
+
             return;
         instance.SetPosition(CarCenter(car));
         instance.Play();
@@ -136,8 +142,11 @@ public sealed class RocketFx : IDisposable
     private CarVisualState? FindState(BackendCar car)
     {
         for (var i = 0; i < _cars.Count; i++)
+
             if (ReferenceEquals(_cars[i], car))
+
                 return _states[i];
+
         return null;
     }
 
@@ -150,10 +159,12 @@ public sealed class RocketFx : IDisposable
     private static void EmitDust(BackendCar car, CarVisualState state, bool boosting)
     {
         if (!boosting || car.Wheels.Count < 4)
+
             return;
 
         // One puff per rear wheel per tick. The wheel's definition position is model space,
         // rotated to world by the engine's own transform so the puff sits under the tire.
+
         for (var w = 2; w < 4; w++)
         {
             var slot = state.DustCursor;
@@ -182,10 +193,12 @@ public sealed class RocketFx : IDisposable
         for (var d = 0; d < PuffCapacity; d++)
         {
             if (state.DustStage[d] == 0)
+
                 continue;
 
             // Smooth each radius against its neighbours so the fan is blobby, not spiky - the
             // original dust does the same average over its 8 magnitudes.
+
             for (var v = 0; v < PuffVertices; v++)
             {
                 var prev = v == 0 ? PuffVertices - 1 : v - 1;
@@ -227,6 +240,7 @@ public sealed class RocketFx : IDisposable
         // The warm palette from the earlier line particles: bright yellow fresh, orange as it
         // cools, dark ember when spent. The jump burst starts at the same bright tone.
         var mag = new float[PuffVertices];
+
         for (var c = 0; c < _states.Length; c++)
         {
             var state = _states[c];
@@ -234,6 +248,7 @@ public sealed class RocketFx : IDisposable
             for (var d = 0; d < PuffCapacity; d++)
             {
                 if (state.DustStage[d] == 0)
+
                     continue;
                 for (var v = 0; v < PuffVertices; v++)
                     mag[v] = state.DustMag[d, v];
@@ -275,9 +290,11 @@ public sealed class RocketFx : IDisposable
             );
 
         // One-shot jump sounds whose playback ended: dispose so the handle goes back.
+
         for (var i = _jumpInstances.Count - 1; i >= 0; i--)
         {
             if (_jumpInstances[i].IsActive)
+
                 continue;
             _jumpInstances[i].Dispose();
             _jumpInstances.RemoveAt(i);
@@ -291,6 +308,7 @@ public sealed class RocketFx : IDisposable
     private static Color DustColor(int stage)
     {
         var age = (stage - 1) / (float)PuffLifeStages;
+
         return age < 0.4f
             ? new Color(255, 220, 110)
             : age < 0.7f ? new Color(255, 140, 50)
@@ -328,7 +346,8 @@ public sealed class RocketFx : IDisposable
                 cx + mag[v] * System.MathF.Cos(angle),
                 cy,
                 cz + mag[v] * System.MathF.Sin(angle)
-            ));
+            )
+            );
             colors.Add(withAlpha);
         }
 

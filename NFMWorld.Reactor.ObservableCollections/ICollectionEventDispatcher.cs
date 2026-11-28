@@ -14,6 +14,7 @@ public class SynchronizationContextCollectionEventDispatcher(SynchronizationCont
     private static readonly Lazy<ICollectionEventDispatcher> _current = new(static () =>
         {
             var current = SynchronizationContext.Current;
+
             if (current == null)
             {
                 throw new InvalidOperationException("SynchronizationContext.Current is null");

@@ -44,6 +44,7 @@ namespace SoundTouch.Net.NAudioSupport
         public static bool AreClose(double value1, double value2)
         {
             // in case they are Infinities (then epsilon check does not work)
+
             if (value1 == value2)
             {
                 return true;
@@ -52,6 +53,7 @@ namespace SoundTouch.Net.NAudioSupport
             // This computes (|value1-value2| / (|value1| + |value2| + 10.0)) < DBL_EPSILON
             double eps = (Math.Abs(value1) + Math.Abs(value2) + 10.0) * DBL_EPSILON;
             double delta = value1 - value2;
+
             return -eps < delta && eps > delta;
         }
     }

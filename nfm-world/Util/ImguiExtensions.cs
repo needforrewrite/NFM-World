@@ -1290,10 +1290,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit3(byte* label, ref Color3 col, ImGuiColorEditFlags flags)
             {
                 Vector3 vec = col;
+
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit3(label, v1, flags);
                     col = (Color3)vec;
+
                     return result;
                 }
             }
@@ -1302,10 +1304,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit3(byte* label, ref Color3 col)
             {
                 Vector3 vec = col;
+
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit3(label, v1);
                     col = (Color3)vec;
+
                     return result;
                 }
             }
@@ -1315,10 +1319,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit3(string label, ref Color3 col, ImGuiColorEditFlags flags)
             {
                 Vector3 vec = col;
+
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit3(label, v1, flags);
                     col = (Color3)vec;
+
                     return result;
                 }
             }
@@ -1327,10 +1333,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit3(string label, ref Color3 col)
             {
                 Vector3 vec = col;
+
                 fixed (float* v1 = &Unsafe.As<Vector3, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit3(label, v1);
                     col = (Color3)vec;
+
                     return result;
                 }
             }
@@ -1339,10 +1347,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit4(byte* label, ref Color col, ImGuiColorEditFlags flags)
             {
                 Vector4 vec = col.ToVector4();
+
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit4(label, v1, flags);
                     col = new Color(vec);
+
                     return result;
                 }
             }
@@ -1351,10 +1361,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit4(byte* label, ref Color col)
             {
                 Vector4 vec = col.ToVector4();
+
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit4(label, v1);
                     col = new Color(vec);
+
                     return result;
                 }
             }
@@ -1364,10 +1376,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit4(string label, ref Color col, ImGuiColorEditFlags flags)
             {
                 Vector4 vec = col.ToVector4();
+
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit4(label, v1, flags);
                     col = new Color(vec);
+
                     return result;
                 }
             }
@@ -1376,10 +1390,12 @@ namespace NFMWorld.Util
             public static unsafe bool ColorEdit4(string label, ref Color col)
             {
                 Vector4 vec = col.ToVector4();
+
                 fixed (float* v1 = &Unsafe.As<Vector4, float>(ref vec))
                 {
                     var result = ImGui.ColorEdit4(label, v1);
                     col = new Color(vec);
+
                     return result;
                 }
             }

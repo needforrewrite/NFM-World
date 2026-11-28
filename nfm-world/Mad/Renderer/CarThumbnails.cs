@@ -51,16 +51,22 @@ internal static class CarThumbnails
     /// <summary>Flips when a card's image is (re)rendered. Cards bind to their own signal.</summary>
     public static Signal<bool> ReadySignal(string id)
     {
-        if (Ready.TryGetValue(id, out var reference) && reference.TryGetTarget(out var current)) return current;
+        if (Ready.TryGetValue(id, out var reference) && reference.TryGetTarget(out var current))
+
+            return current;
         var signal = new Signal<bool>(Cache.ContainsKey(id));
         Ready[id] = new(signal);
+
         return signal;
     }
 
     public static IImage? Get(string id)
     {
-        if (!Cache.TryGetValue(id, out var entry)) return null;
+        if (!Cache.TryGetValue(id, out var entry))
+
+            return null;
         entry.Used = Stopwatch.GetTimestamp();
+
         return entry.Image;
     }
 
@@ -69,7 +75,10 @@ internal static class CarThumbnails
     public static void EndUse(object owner)
     {
         Users.Remove(owner);
-        if (Users.Count != 0) return;
+
+        if (Users.Count != 0)
+
+            return;
         _generation++;
         LoadingModels.Clear();
         Pending.Clear();
@@ -80,6 +89,7 @@ internal static class CarThumbnails
     public static void Request(string id, Rad3d rad)
     {
         if (id.Length == 0 || Cache.ContainsKey(id) || !Queued.Add(id))
+
             return;
 
         var version = Versions[id] = ++_nextVersion;
@@ -88,8 +98,12 @@ internal static class CarThumbnails
 
     public static void RequestKnown(string id)
     {
-        if (Cache.ContainsKey(id) || Queued.Contains(id) || LoadingModels.Contains(id)) return;
-        if (BackendGameSparker.FindLoadedCar(id) is { } model) Request(id, model);
+        if (Cache.ContainsKey(id) || Queued.Contains(id) || LoadingModels.Contains(id))
+
+            return;
+
+        if (BackendGameSparker.FindLoadedCar(id) is { } model)
+            Request(id, model);
         else if (RadpackReader.IsArchiveId(id) && ContentCache.IsPrepared(id))
         {
             LoadingModels.Add(id);
@@ -100,11 +114,13 @@ internal static class CarThumbnails
     private static async Task LoadPreparedModelAsync(string id, int generation)
     {
         using var loading = LoadingWork.Begin("Loading car preview...");
+
         try
         {
             var model = await Task.Run(() => RadpackReader.TryReadModel(id, RadpackType.Car, out _));
             await LoadingWork.NextFrame;
-            if (generation == _generation && Users.Count > 0 && model is not null) Request(id, model);
+            if (generation == _generation && Users.Count > 0 && model is not null)
+                Request(id, model);
         }
         catch (Exception ex)
         {
@@ -113,7 +129,8 @@ internal static class CarThumbnails
         finally
         {
             await LoadingWork.NextFrame;
-            if (generation == _generation) LoadingModels.Remove(id);
+            if (generation == _generation)
+                LoadingModels.Remove(id);
         }
     }
 
@@ -122,14 +139,19 @@ internal static class CarThumbnails
     public static void RequestWheel(string id, Rad3d rad, bool original)
     {
         var key = WheelKey(id, original);
-        if (Cache.ContainsKey(key) || Queued.Contains(key) || rad.Wheels.Length == 0) return;
+
+        if (Cache.ContainsKey(key) || Queued.Contains(key) || rad.Wheels.Length == 0)
+
+            return;
         var style = CarWheels.Get(id);
         style.OriginalWheels = original;
         var source = CarPaint.CreateInstance(rad, wheels: style);
         var wheels = source.Wheels.Where(wheel => wheel.Height != 0 && (original || wheel.Polys is not null));
         var wheel = wheels.FirstOrDefault(wheel => wheel.Position.X >= 0);
-        if (wheel.Height == 0) wheel = wheels.FirstOrDefault();
-        if (wheel.Height == 0) wheel = source.Wheels[0];
+        if (wheel.Height == 0)
+            wheel = wheels.FirstOrDefault();
+        if (wheel.Height == 0)
+            wheel = source.Wheels[0];
         Request(key, new WheelMeshBuilder(wheel, source.Rims).BuildModel());
     }
 
@@ -160,13 +182,19 @@ internal static class CarThumbnails
         TrimUnused(visible);
         (string Id, Rad3d Rad, int Version, long ReadyAfterFrame) next = default;
         var found = false;
+
         for (var remaining = Pending.Count; remaining > 0; remaining--)
         {
             var pending = Pending.Dequeue();
-            if (pending.Version != Versions.GetValueOrDefault(pending.Id)) continue;
+
+            if (pending.Version != Versions.GetValueOrDefault(pending.Id))
+
+                continue;
+
             if (pending.ReadyAfterFrame > LoadingWork.FrameId)
             {
                 Pending.Enqueue(pending);
+
                 continue;
             }
 
@@ -174,16 +202,21 @@ internal static class CarThumbnails
             {
                 Queued.Remove(pending.Id);
                 Versions.Remove(pending.Id);
+
                 continue;
             }
 
             next = pending;
             found = true;
+
             break;
         }
 
-        if (!found) return;
+        if (!found)
+
+            return;
         var (id, rad, _, _) = next;
+
         try
         {
             Render(cb, id, rad);
@@ -202,27 +235,36 @@ internal static class CarThumbnails
 
     public static void TrimUnused(Func<string, bool>? visible = null, bool clear = false)
     {
-        if (!clear && visible is null && Users.Count > 0) return;
+        if (!clear && visible is null && Users.Count > 0)
+
+            return;
         var now = Stopwatch.GetTimestamp();
         if (visible is not null)
             foreach (var pair in Cache)
-                if (visible(pair.Key)) pair.Value.Used = now;
+                if (visible(pair.Key))
+                    pair.Value.Used = now;
         var unused = Cache.Where(pair => visible is null || !visible(pair.Key))
             .OrderBy(pair => pair.Value.Used).ToArray();
         var excess = Math.Max(0, unused.Length - 32);
+
         foreach (var pair in unused)
         {
-            if (!clear && excess <= 0 && Stopwatch.GetElapsedTime(pair.Value.Used, now) < TimeSpan.FromMinutes(2)) continue;
+            if (!clear && excess <= 0 && Stopwatch.GetElapsedTime(pair.Value.Used, now) < TimeSpan.FromMinutes(2))
+
+                continue;
             Invalidate(pair.Key);
             excess--;
         }
 
-        foreach (var pair in Ready.Where(pair => !pair.Value.TryGetTarget(out _)).ToArray()) Ready.Remove(pair.Key);
+        foreach (var pair in Ready.Where(pair => !pair.Value.TryGetTarget(out _)).ToArray())
+            Ready.Remove(pair.Key);
+
         if (clear || (visible is null && Users.Count == 0))
         {
             Pending.Clear();
             Queued.Clear();
             Versions.Clear();
+
             if (clear)
             {
                 _generation++;
@@ -231,7 +273,8 @@ internal static class CarThumbnails
             }
         }
 
-        if (clear) ReleaseRetired(force: true);
+        if (clear)
+            ReleaseRetired(force: true);
     }
 
     // Image nodes stop referencing retired textures when the UI scheduler flushes.
@@ -239,7 +282,9 @@ internal static class CarThumbnails
     {
         for (var index = Retired.Count - 1; index >= 0; index--)
         {
-            if (!force && Retired[index].AfterFrame > LoadingWork.FrameId) continue;
+            if (!force && Retired[index].AfterFrame > LoadingWork.FrameId)
+
+                continue;
             Retired[index].Target.Dispose();
             Retired.RemoveAt(index);
         }
@@ -250,6 +295,7 @@ internal static class CarThumbnails
         var square = id.StartsWith("$wheel/", StringComparison.Ordinal);
         var height = square ? Width : Height;
         var renderHeight = height * Supersampling;
+
         if (!square)
         {
             rad = CarPaint.CreateInstance(rad);
@@ -278,6 +324,7 @@ internal static class CarThumbnails
             var oldThickness = World.OutlineThickness;
             var oldPixels = World.PixelOutlines;
             var oldOutlineBehavior = World.DistantOutlineBehavior;
+
             try
             {
                 foreach (var wheel in rad.Wheels)
@@ -317,6 +364,7 @@ internal static class CarThumbnails
         catch
         {
             target.Dispose();
+
             throw;
         }
         finally
@@ -326,7 +374,8 @@ internal static class CarThumbnails
             GameSparker.Game.SetFullScreenScissor(cb);
         }
 
-        if (Cache.Remove(id, out var previous)) Retired.Add((previous.Target, LoadingWork.FrameId + 1));
+        if (Cache.Remove(id, out var previous))
+            Retired.Add((previous.Target, LoadingWork.FrameId + 1));
         Cache[id] = new(target, TheGraphics.G.WrapTexture(target.ColorTexture)!, rad);
         ReadySignal(id).Value = true;
     }
@@ -376,15 +425,20 @@ internal static class CarThumbnails
         var tanVertical = MathF.Tan(Fov * MathF.PI / 360);
         var tanHorizontal = tanVertical * Width / height;
         var distance = 50f;
+
         foreach (var point in points)
         {
             var relative = point - center;
             var depth = Vector3.Dot(relative, direction);
             distance = MathF.Max(distance, depth + NearPlane * 2);
-            distance = MathF.Max(distance, depth + 1.12f * MathF.Max(
-                MathF.Abs(Vector3.Dot(relative, right)) / tanHorizontal,
-                MathF.Abs(Vector3.Dot(relative, up)) / tanVertical
-            )
+            distance = MathF.Max(
+                distance,
+                depth
+                + 1.12f
+                * MathF.Max(
+                    MathF.Abs(Vector3.Dot(relative, right)) / tanHorizontal,
+                    MathF.Abs(Vector3.Dot(relative, up)) / tanVertical
+                )
             );
         }
 
@@ -396,6 +450,7 @@ internal static class CarThumbnails
             UpWithoutInterpolation = -Vector3.UnitY
         };
         camera.OnBeforeRender(1f);
+
         return camera;
     }
 
@@ -404,10 +459,14 @@ internal static class CarThumbnails
         public override void OnBeforeRender(float alpha)
         {
             base.OnBeforeRender(alpha);
-            if (points.Count == 0) return;
+
+            if (points.Count == 0)
+
+                return;
 
             var minimum = new Vector2(float.PositiveInfinity);
             var maximum = new Vector2(float.NegativeInfinity);
+
             foreach (var point in points)
             {
                 var clip = Vector4.Transform(new Vector4(point, 1f), ViewProjectionMatrix);

@@ -17,6 +17,7 @@ public class ArchiveMountTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             Requests.Add(request.RequestUri!);
+
             return Task.FromResult(new HttpResponseMessage(Status)
             {
                 Content = new ByteArrayContent("radpack-bytes"u8.ToArray())

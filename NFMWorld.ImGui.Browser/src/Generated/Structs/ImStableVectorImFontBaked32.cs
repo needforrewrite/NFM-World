@@ -16,39 +16,40 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImStableVectorImFontBaked32
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int Size;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImStableVectorImFontBaked32
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int Size;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int Capacity;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int Capacity;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<ImFontBakedPtr> Blocks;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImStableVectorImFontBaked32(int size = default, int capacity = default, ImVector<ImFontBakedPtr> blocks = default)
-		{
-			Size = size;
-			Capacity = capacity;
-			Blocks = blocks;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<ImFontBakedPtr> Blocks;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImStableVectorImFontBaked32(
+            int size = default,
+            int capacity = default,
+            ImVector<ImFontBakedPtr> blocks = default
+        )
+        {
+            Size = size;
+            Capacity = capacity;
+            Blocks = blocks;
+        }
+    }
 }

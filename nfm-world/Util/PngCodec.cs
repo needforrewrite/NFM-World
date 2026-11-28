@@ -36,7 +36,9 @@ public static class PngCodec
     {
         using var writer = new BinaryWriter(output);
         writer.Write([137, 80, 78, 71, 13, 10, 26, 10]);
+
         using (var ms = new MemoryStream())
+
         using (var chunkWriter = new BinaryWriter(ms))
         {
             chunkWriter.Write(ToBigEndian(width));
@@ -51,6 +53,7 @@ public static class PngCodec
 
         var stride = width * 4;
         using var raw = new MemoryStream();
+
         for (var y = 0; y < height; y++)
         {
             raw.WriteByte(0);
@@ -58,6 +61,7 @@ public static class PngCodec
         }
 
         using var compressed = new MemoryStream();
+
         using (var deflate = new ZLibStream(compressed, CompressionMode.Compress, true))
         {
             raw.Position = 0;
@@ -91,7 +95,9 @@ public static class PngCodec
     private static byte[] ToBigEndian(uint value)
     {
         var bytes = BitConverter.GetBytes(value);
-        if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(bytes);
+
         return bytes;
     }
 
@@ -100,6 +106,7 @@ public static class PngCodec
         var crc32 = new Crc32();
         crc32.Append(Encoding.ASCII.GetBytes(type));
         crc32.Append(data);
+
         return crc32.GetCurrentHashAsUInt32();
     }
 }

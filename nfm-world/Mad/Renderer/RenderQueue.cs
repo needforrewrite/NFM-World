@@ -55,6 +55,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
             if (drawCall.InstancedDraws is { } instancedDraws)
             {
                 _elementsToPrune.Clear();
+
                 foreach (var (element, group) in instancedDraws)
                 {
                     if (beginFrame && _frame - group.LastUsedFrame > 2)
@@ -90,16 +91,21 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
         if (bsphere is { } bsphereValue)
         {
             // Apply frustum culling
+
             if (!_camera.Frustum.Intersects(bsphereValue))
+
                 return;
 
             // Apply distance culling
+
             if (Vector3.DistanceSquared(_camera.Position, bsphereValue.Center)
                 > CameraSettings.RenderDistanceSqr + (bsphereValue.Radius * bsphereValue.Radius))
+
                 return;
         }
 
         ref var innerCache = ref CollectionsMarshal.GetValueRefOrAddDefault(_draws, key, out var exists);
+
         if (!exists)
         {
             innerCache = new DrawCallList();
@@ -108,6 +114,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
         var instancedDraws = innerCache!.InstancedDraws ??= [];
 
         ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(instancedDraws, element, out var exists1);
+
         if (!exists1)
         {
             entry = new CachedInstancedGroup([data]);
@@ -127,6 +134,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
     public void AddImmediate(SortKey sortKey, IImmediateRenderElement element)
     {
         ref var values = ref CollectionsMarshal.GetValueRefOrAddDefault(_draws, sortKey, out var exists);
+
         if (!exists)
         {
             values = new DrawCallList();
@@ -155,6 +163,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
             var draw = _draws[sortKey];
 
             // draw immediates
+
             if (draw.ImmediateDraws is { } immediateDraws)
             {
                 foreach (var element in immediateDraws)
@@ -164,12 +173,15 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
             }
 
             // draw instanced batches
+
             if (draw.InstancedDraws is { } instancedDraws)
             {
                 foreach (var (renderElement, cachedGroup) in instancedDraws)
                 {
                     var instances = cachedGroup.Instances;
+
                     if (instances.Count == 0)
+
                         continue;
 
                     // The hash is the change test, and one pass over the list is all an
@@ -180,7 +192,8 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
                     var currentHashCode = GetInstanceDataHashCode(CollectionsMarshal.AsSpan(instances));
                     var requiredBytes = checked(instances.Count * InstanceStrideBytes);
 
-                    if (cachedGroup.VertexBuffer == null || currentHashCode != cachedGroup.HashCode
+                    if (cachedGroup.VertexBuffer == null
+                        || currentHashCode != cachedGroup.HashCode
                         || cachedGroup.VertexBuffer.SizeInBytes < requiredBytes)
                     {
                         var instanceSpan = CollectionsMarshal.AsSpan(instances);
@@ -271,6 +284,7 @@ public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
     private static int GetInstanceDataHashCode<T>(ReadOnlySpan<T> data) where T : notnull
     {
         var hc = data.Length;
+
         foreach (ref readonly var val in data)
         {
             hc = unchecked(hc * 314159 + val.GetHashCode());

@@ -13,30 +13,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiTableBgTarget : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiTableBgTarget : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Set row background color 0 (generally used for background, automatically set when ImGuiTableFlags_RowBg is used)<br/>
-		/// </summary>
-		RowBg0 = unchecked(1),
+        /// <summary>
+        /// Set row background color 0 (generally used for background, automatically set when ImGuiTableFlags_RowBg is used)<br/>
+        /// </summary>
+        RowBg0 = unchecked(1),
 
-		/// <summary>
-		/// Set row background color 1 (generally used for selection marking)<br/>
-		/// </summary>
-		RowBg1 = unchecked(2),
+        /// <summary>
+        /// Set row background color 1 (generally used for selection marking)<br/>
+        /// </summary>
+        RowBg1 = unchecked(2),
 
-		/// <summary>
-		/// Set cell background color (top-most color)<br/>
-		/// </summary>
-		CellBg = unchecked(3),
-	}
+        /// <summary>
+        /// Set cell background color (top-most color)<br/>
+        /// </summary>
+        CellBg = unchecked(3),
+    }
 }

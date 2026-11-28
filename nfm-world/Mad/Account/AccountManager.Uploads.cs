@@ -20,12 +20,15 @@ public sealed partial class AccountManager
     )
     {
         if (ActiveAccount is not { } account)
+
             return new AssetUploadResult(false, "Sign in from the main menu to publish.", null);
 
         if (!AssetKinds.IsPublishable((byte)kind))
+
             return new AssetUploadResult(false, $"{AssetKinds.Name((byte)kind)} cannot be published.", null);
 
         if (radpack.Length > RadpackLimits.MaxCompressedBytes)
+
             return new AssetUploadResult(false, "The package is too large to publish.", null);
 
         async Task<HttpResponseMessage> SendUploadAsync(string route)
@@ -52,12 +55,16 @@ public sealed partial class AccountManager
         {
             using var publish = await SendUploadAsync("assets/publish");
             var routeUnavailable = IsPublicationRouteUnavailable(publish);
+
             if (routeUnavailable && !isPublic)
+
                 return new AssetUploadResult(false, "This Archive needs an update before it can publish hidden uploads.", null);
 
             using var legacy = routeUnavailable ? await SendUploadAsync("assets/upload") : null;
             var response = legacy ?? publish;
+
             if (!response.IsSuccessStatusCode)
+
                 return new AssetUploadResult(false, await ReadErrorAsync(response, assetRequest: true), null);
 
             var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
@@ -67,6 +74,7 @@ public sealed partial class AccountManager
                 : null;
 
             if (body.TryGetProperty("status", out var status) && status.GetString() == "already present")
+
                 return new AssetUploadResult(
                     false,
                     "These bytes are already in the Archive. Select your existing upload to update it.",
@@ -76,6 +84,7 @@ public sealed partial class AccountManager
             var message = IsAwaitingAssetVerification(asset)
                 ? $"Uploaded \"{name}\". Awaiting verification."
                 : $"Published \"{name}\".";
+
             return new AssetUploadResult(true, message, hash);
         }
         catch (Exception ex)
@@ -107,9 +116,11 @@ public sealed partial class AccountManager
     )
     {
         if (account is null)
+
             return new RequestResult("Sign in to submit a time trial.", false);
 
         if (recording.Length > RadpackLimits.MaxTimeTrialBytes)
+
             return new RequestResult("The recording is too large to submit.", false);
 
         try
@@ -130,7 +141,9 @@ public sealed partial class AccountManager
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.Token);
 
             using var response = await _http.SendAsync(request);
+
             if (!response.IsSuccessStatusCode)
+
                 return new RequestResult(await ReadErrorAsync(response), false);
 
             return new RequestResult("Submitted.", true);

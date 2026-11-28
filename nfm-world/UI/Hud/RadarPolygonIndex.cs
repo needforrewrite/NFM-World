@@ -14,8 +14,10 @@ internal sealed class RadarPolygonIndex
 
     private readonly record struct Bounds(float MinX, float MinZ, float MaxX, float MaxZ)
     {
-        public bool Intersects(Bounds other) => MaxX >= other.MinX && MinX <= other.MaxX
-                                                && MaxZ >= other.MinZ && MinZ <= other.MaxZ;
+        public bool Intersects(Bounds other) => MaxX >= other.MinX
+                                                && MinX <= other.MaxX
+                                                && MaxZ >= other.MinZ
+                                                && MinZ <= other.MaxZ;
 
         public Bounds Union(Bounds other) => new(
             MathF.Min(MinX, other.MinX),
@@ -32,6 +34,7 @@ internal sealed class RadarPolygonIndex
         _bounds = new Bounds[polygons.Count];
         _indices = new int[polygons.Count];
         _visible = new int[polygons.Count];
+
         for (var i = 0; i < polygons.Count; i++)
         {
             _indices[i] = i;
@@ -46,61 +49,79 @@ internal sealed class RadarPolygonIndex
             _bounds[i] = bounds;
         }
 
-        if (_indices.Length != 0) Build(0, _indices.Length);
+        if (_indices.Length != 0)
+            Build(0, _indices.Length);
     }
 
     private int Build(int start, int count)
     {
         var bounds = _bounds[_indices[start]];
-        for (var i = start + 1; i < start + count; i++) bounds = bounds.Union(_bounds[_indices[i]]);
+        for (var i = start + 1; i < start + count; i++)
+            bounds = bounds.Union(_bounds[_indices[i]]);
         var node = _nodes.Count;
         _nodes.Add(default);
+
         if (count <= LeafSize)
         {
             _nodes[node] = new Node(bounds, start, count, -1, -1);
+
             return node;
         }
 
         var byX = bounds.MaxX - bounds.MinX >= bounds.MaxZ - bounds.MinZ;
-        Array.Sort(_indices, start, count, Comparer<int>.Create((a, b) =>
-            {
-                var x = _bounds[a];
-                var y = _bounds[b];
-                return (byX ? x.MinX + x.MaxX : x.MinZ + x.MaxZ)
-                    .CompareTo(byX ? y.MinX + y.MaxX : y.MinZ + y.MaxZ);
-            }
-        )
+        Array.Sort(
+            _indices,
+            start,
+            count,
+            Comparer<int>.Create((a, b) =>
+                {
+                    var x = _bounds[a];
+                    var y = _bounds[b];
+
+                    return (byX ? x.MinX + x.MaxX : x.MinZ + x.MaxZ)
+                        .CompareTo(byX ? y.MinX + y.MaxX : y.MinZ + y.MaxZ);
+                }
+            )
         );
         var leftCount = count / 2;
         var left = Build(start, leftCount);
         var right = Build(start + leftCount, count - leftCount);
         _nodes[node] = new Node(bounds, start, count, left, right);
+
         return node;
     }
 
     public ReadOnlySpan<int> Query(float minX, float minZ, float maxX, float maxZ)
     {
         _visibleCount = 0;
-        if (_nodes.Count != 0) Query(0, new Bounds(minX, minZ, maxX, maxZ));
+        if (_nodes.Count != 0)
+            Query(0, new Bounds(minX, minZ, maxX, maxZ));
         Array.Sort(_visible, 0, _visibleCount);
+
         return _visible.AsSpan(0, _visibleCount);
     }
 
     private void Query(int index, Bounds area)
     {
         var node = _nodes[index];
-        if (!node.Bounds.Intersects(area)) return;
+
+        if (!node.Bounds.Intersects(area))
+
+            return;
+
         if (node.Left >= 0)
         {
             Query(node.Left, area);
             Query(node.Right, area);
+
             return;
         }
 
         for (var i = node.Start; i < node.Start + node.Count; i++)
         {
             var polygon = _indices[i];
-            if (_bounds[polygon].Intersects(area)) _visible[_visibleCount++] = polygon;
+            if (_bounds[polygon].Intersects(area))
+                _visible[_visibleCount++] = polygon;
         }
     }
 }

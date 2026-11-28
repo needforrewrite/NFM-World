@@ -33,6 +33,7 @@ public class GaragePhase : BaseStageRenderingPhase
         {
             source.TakeStageFrom(this);
             source.CurrentStage!.FadeFromOverride = 9999999;
+
             throw;
         }
     }
@@ -70,6 +71,7 @@ public class GaragePhase : BaseStageRenderingPhase
         base.Enter();
         _garage.Enter();
         PositionPreviewCar();
+
         if (_garage.CurrentCar is { } car && !_cameraInitialized)
         {
             _cameraDirector.ShowCar(
@@ -111,7 +113,9 @@ public class GaragePhase : BaseStageRenderingPhase
 
     private void PositionPreviewCar()
     {
-        if (!_quickSelect || _garage.CurrentCar is not { } car || CurrentStage is null) return;
+        if (!_quickSelect || _garage.CurrentCar is not { } car || CurrentStage is null)
+
+            return;
         var start = CurrentStage.Backend.GetStartTransform(0, 1);
         car.Position = new(start.Position.X, car.Position.Y, start.Position.Z);
         car.Rotation = start.Rotation;
@@ -159,7 +163,8 @@ public class GaragePhase : BaseStageRenderingPhase
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         _garageCamera.Release(button);
-        if (button == MouseButton.Primary) _garage.FinishPaintInteraction();
+        if (button == MouseButton.Primary)
+            _garage.FinishPaintInteraction();
     }
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)

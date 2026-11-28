@@ -42,6 +42,7 @@ public class PvpStandingsTests
         var stage = new BackendStage("standings-test", new StageLoader { nlaps = laps });
         for (var i = 0; i < checkpoints; i++)
             stage.Checkpoints.Add(CreateCheckpoint(100_000 + i * 20_000));
+
         return stage;
     }
 
@@ -87,6 +88,7 @@ public class PvpStandingsTests
         )!;
         server.Begin();
         server.StartRace();
+
         return (factory, server, context);
     }
 
@@ -122,6 +124,7 @@ public class PvpStandingsTests
     {
         var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
             .Single(t => t.Name == name);
+
         return TightPackSerializer.SerializeUntyped(type.BaseType!, Activator.CreateInstance(type, args));
     }
 
@@ -140,6 +143,7 @@ public class PvpStandingsTests
     {
         // The event carries the checkpoint being headed for next, which wraps to 0 when a lap
         // completes, plus the lap just completed - the same convention the client sends.
+
         for (var total = 0; total < laps * checkpoints; total++)
         {
             var crossed = total % checkpoints;
@@ -173,10 +177,12 @@ public class PvpStandingsTests
     public void OneCarStartingTheRaceMustCompleteTheLapsToWin(string constraint)
     {
         var (factory, server, context) = CreateRace(constraint, Alice);
+
         try
         {
             StartRacing(server);
-            for (var tick = 0; tick < 300; tick++) server.GameTick();
+            for (var tick = 0; tick < 300; tick++)
+                server.GameTick();
             Assert.IsNull(server.GetStateSnapshot(), "starting alone is not a survival win");
             Finish(factory, server, context, Alice);
             Assert.AreEqual(Alice, Standings(server)[0].PlayerId);
@@ -197,6 +203,7 @@ public class PvpStandingsTests
     public void SurvivalTypes_EndWhenOneCarIsLeftAndThatCarWins(string constraint)
     {
         var (factory, server, context) = CreateRace(constraint, Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -219,6 +226,7 @@ public class PvpStandingsTests
     public void RacingContinuesWhileWastedCarsWaitToRespawn()
     {
         var (factory, server, context) = CreateRace("racing", Alice, Bob);
+
         try
         {
             StartRacing(server);
@@ -239,6 +247,7 @@ public class PvpStandingsTests
     public void AllCarsWastedOnTheSameTick_EndWithoutAFinisher()
     {
         var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -259,6 +268,7 @@ public class PvpStandingsTests
     public void RepairAfterSurvivalResultReopensTheRace(string constraint)
     {
         var (factory, server, context) = CreateRace(constraint, Alice, Bob);
+
         try
         {
             StartRacing(server);
@@ -281,6 +291,7 @@ public class PvpStandingsTests
     public void ConfirmationChecksForARepairBeforeFinalizing(bool repaired)
     {
         var (factory, server, context) = CreateRace(Alice, Bob);
+
         try
         {
             StartRacing(server);
@@ -290,8 +301,10 @@ public class PvpStandingsTests
             object? outcome = null;
             TightPackSerializer.DeserializeUntyped(type.BaseType!, server.CaptureState()!.Value.Span, ref outcome);
             var revision = (int)type.GetProperty("Revision")!.GetValue(outcome)!;
-            if (repaired) context.Wasted[Bob] = false;
+            if (repaired)
+                context.Wasted[Bob] = false;
             server.OnClientEvent(Alice, SerializeEvent(factory, "ConfirmFinishEvent", revision).Span);
+
             if (repaired)
                 Assert.IsNull(server.GetStateSnapshot());
             else
@@ -311,6 +324,7 @@ public class PvpStandingsTests
     public void LapVictoryCannotBeReopenedByARepair()
     {
         var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -336,6 +350,7 @@ public class PvpStandingsTests
     public void WastingConstraint_ACarRevivedAfterItsDeathWasSeenKeepsTheRaceAlive()
     {
         var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol, Dave);
+
         try
         {
             StartRacing(server);
@@ -363,6 +378,7 @@ public class PvpStandingsTests
     public void WastingConstraint_ReadsTheCurrentStateNotAnEarlierDeath()
     {
         var (factory, server, context) = CreateRace("wasting", Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -390,6 +406,7 @@ public class PvpStandingsTests
     public void DisconnectingTheOnlyPlayerEndsTheRace()
     {
         var (factory, server, context) = CreateRace(Alice);
+
         try
         {
             StartRacing(server);
@@ -410,6 +427,7 @@ public class PvpStandingsTests
     public void DisconnectingOneOfSeveralPlayersKeepsTheRaceGoing()
     {
         var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -427,6 +445,7 @@ public class PvpStandingsTests
     public void WastedPlayersSortBehindTheRunning()
     {
         var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -453,6 +472,7 @@ public class PvpStandingsTests
     public void RunningCarsAreRankedByProgressBehindTheWinner()
     {
         var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -478,6 +498,7 @@ public class PvpStandingsTests
     public void TheActualFinisherRanksAheadOfCarsWithTheSameReportedPosition()
     {
         var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -494,6 +515,7 @@ public class PvpStandingsTests
     public void LastPlayerAfterDisconnectsWinsWithoutAWastingClaim()
     {
         var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);
@@ -547,6 +569,7 @@ public class PvpStandingsTests
     public void RevivedCarIsNoLongerADnf()
     {
         var (factory, server, context) = CreateRace(Alice, Bob, Carol);
+
         try
         {
             StartRacing(server);

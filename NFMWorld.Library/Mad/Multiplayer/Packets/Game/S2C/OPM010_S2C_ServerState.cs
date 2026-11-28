@@ -29,7 +29,9 @@ public partial struct S2C_ServerState : IPacketServerToClient<S2C_ServerState>, 
 
     public void Dispose()
     {
-        if (!_usePool) return;
+        if (!_usePool)
+
+            return;
 
         Return(Payload);
         Payload = default;

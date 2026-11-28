@@ -22,6 +22,7 @@ internal sealed class CodeWriter
         }
 
         _builder.Append('\n');
+
         return this;
     }
 
@@ -29,6 +30,7 @@ internal sealed class CodeWriter
     public CodeWriter Open(string text)
     {
         Line(text + " {");
+
         return Indent();
     }
 
@@ -36,6 +38,7 @@ internal sealed class CodeWriter
     public CodeWriter Label(string text)
     {
         Line(text);
+
         return Indent();
     }
 
@@ -43,24 +46,28 @@ internal sealed class CodeWriter
     public CodeWriter Close(string text = "}")
     {
         Dedent();
+
         return Line(text);
     }
 
     public CodeWriter Indent()
     {
         _indent++;
+
         return this;
     }
 
     public CodeWriter Dedent()
     {
         _indent--;
+
         return this;
     }
 
     public CodeWriter Blank()
     {
         _builder.Append('\n');
+
         return this;
     }
 

@@ -19,9 +19,11 @@ public sealed class RenderScope : IDisposable
     public T Own<T>(T resource) where T : IDisposable
     {
         if (_disposed)
+
             throw new ObjectDisposedException(nameof(RenderScope));
 
         _resources.Add(resource);
+
         return resource;
     }
 
@@ -32,15 +34,18 @@ public sealed class RenderScope : IDisposable
     public void Adopt(RenderScope scope)
     {
         if (ReferenceEquals(scope, this))
+
             return;
 
         if (_disposed)
         {
             scope.Dispose();
+
             return;
         }
 
         if (scope._disposed || ReferenceEquals(scope._owner, this))
+
             return;
 
         scope.Detach();
@@ -65,11 +70,14 @@ public sealed class RenderScope : IDisposable
         var current = default(T)!;
 
         using var _ = Signal.UntrackedScope();
+
         return Own(
             new Effect(() =>
                 {
                     var next = compute();
+
                     if (hasValue && EqualityComparer<T>.Default.Equals(next, current))
+
                         return;
 
                     hasValue = true;
@@ -83,11 +91,13 @@ public sealed class RenderScope : IDisposable
     public void Dispose()
     {
         if (_disposed)
+
             return;
 
         _disposed = true;
 
         // Remove each resource before disposal: child scopes or callbacks may detach others.
+
         while (_resources.Count > 0)
         {
             var index = _resources.Count - 1;
@@ -102,6 +112,7 @@ public sealed class RenderScope : IDisposable
     private void Detach()
     {
         if (_owner is not { } owner)
+
             return;
 
         _owner = null;

@@ -44,7 +44,9 @@ public partial class BackendCar : BackendGameObject
 
     public void MarkDeparted(PlayerDepartureReason reason, bool announce = true)
     {
-        if (HasLeftRace) return;
+        if (HasLeftRace)
+
+            return;
         AnnounceDeparture = announce;
         _fixing = false;
         _fixTick = _fixTimer = 0;
@@ -131,28 +133,39 @@ public partial class BackendCar : BackendGameObject
 
     private static Rad3dWheelDef[] SelectCollisionWheels(Rad3dWheelDef[] wheels)
     {
-        if (wheels.Length <= 4) return wheels;
+        if (wheels.Length <= 4)
+
+            return wheels;
 
         // Keep the four physics slots in their authored order. Extra wheels compete at the nearest slot.
         var contacts = wheels[..4];
+
         foreach (var wheel in wheels.AsSpan(4))
         {
-            if (wheel.Height == 0) continue;
+            if (wheel.Height == 0)
+
+                continue;
             var slot = 0;
             var closest = double.PositiveInfinity;
+
             for (var i = 0; i < contacts.Length; i++)
             {
                 var dx = (double)wheel.Position.X - (double)wheels[i].Position.X;
                 var dz = (double)wheel.Position.Z - (double)wheels[i].Position.Z;
                 var distance = dx * dx + dz * dz;
-                if (distance >= closest) continue;
+
+                if (distance >= closest)
+
+                    continue;
                 closest = distance;
                 slot = i;
             }
 
             var current = contacts[slot];
-            if (current.Height == 0 || wheel.Ground > current.Ground
-                || wheel.Ground == current.Ground &&
+            if (current.Height == 0
+                || wheel.Ground > current.Ground
+                || wheel.Ground == current.Ground
+                &&
                 fix64.Abs(wheel.Position.X) + fix64.Abs(wheel.Width) * (fix64)0.4
                 > fix64.Abs(current.Position.X) + fix64.Abs(current.Width) * (fix64)0.4)
                 contacts[slot] = wheel;
@@ -175,7 +188,10 @@ public partial class BackendCar : BackendGameObject
 
     private void IterateFix()
     {
-        if (HasLeftRace) return;
+        if (HasLeftRace)
+
+            return;
+
         if (_fixing)
         {
             if (++_fixTick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
@@ -207,7 +223,9 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible]
     public void ResetPosition()
     {
-        if (HasLeftRace) return;
+        if (HasLeftRace)
+
+            return;
         CarPhysics.Reseto(CarPhysics.Im, this);
         Position = new f64Vector3(fix64.Zero, World.Ground - GroundAt, fix64.Zero);
         Rotation = f64Euler.Identity;
@@ -216,7 +234,9 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible]
     public void Fix()
     {
-        if (HasLeftRace) return;
+        if (HasLeftRace)
+
+            return;
         _fixing = true;
         Fixed?.Invoke();
     }
@@ -224,7 +244,9 @@ public partial class BackendCar : BackendGameObject
     [PluginVisible]
     public void RespawnInPlace()
     {
-        if (!Wasted || HasLeftRace) return;
+        if (!Wasted || HasLeftRace)
+
+            return;
         CarPhysics.Reseto(CarPhysics.Im, this);
         CarPhysics.FinishedFix();
         Position = new f64Vector3(Position.X, fix64.Min(Position.Y, World.Ground - GroundAt), Position.Z);
@@ -323,15 +345,15 @@ public delegate void RoofDamageFunc(CarStats stat, int wheelnum, fix64 amount, b
 
 public delegate void
     SparkFunc(
-    float wheelx,
-    float wheely,
-    float wheelz,
-    float scx,
-    float scy,
-    float scz,
-    int type,
-    int wheelGround
-);
+        float wheelx,
+        float wheely,
+        float wheelz,
+        float scx,
+        float scy,
+        float scz,
+        int type,
+        int wheelGround
+    );
 
 public delegate void DustFunc(
     int wheelidx,

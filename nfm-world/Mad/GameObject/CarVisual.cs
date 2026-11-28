@@ -141,6 +141,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
 
         // Damage keeps re-emitting Distruct until the fix finishes (FinishedFix zeroes
         // DamagePoints), so a car fixed mid-animation would restart the animation it cancelled.
+
         if (Car.CarPhysics.Wasted)
         {
             if (!_fixing)
@@ -203,7 +204,9 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     {
         if (_fixing)
         {
-            if (_fixTimer == 0 && _fixTick == 0) Sfx?.PlayFixSound();
+            if (_fixTimer == 0 && _fixTick == 0)
+                Sfx?.PlayFixSound();
+
             if (++_fixTick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
             {
                 _fixTick = 0;
@@ -251,6 +254,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
         // Wheels — parent/rotation already set in GameTick
+
         foreach (var wheel in _wheels)
         {
             wheel.SubmitDraws(queue, camera, lighting, pass);
@@ -260,6 +264,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
         base.SubmitDraws(queue, camera, lighting, pass);
 
         // Effects — only during main pass
+
         if (!pass.IsShadow)
         {
             queue.AddImmediate(SortKey.Create(RenderBucket.Flames), Flames);
@@ -316,6 +321,7 @@ public class CarVisual : MeshedGameObject, IDisposable, IClientCarCallbacks
     private void Dispose(bool disposing)
     {
         ReleaseUnmanagedResources();
+
         if (disposing)
         {
             Sfx?.Dispose();

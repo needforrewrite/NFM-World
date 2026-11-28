@@ -16,7 +16,9 @@ public static class FocusManager
             // changes. Without this guard, clicking an already-focused element would
             // re-fire Unfocused→Focused, which e.g. made a dropdown that closes on blur
             // also close on a re-click of its own (still-focused) trigger.
+
             if (ReferenceEquals(field, value))
+
                 return;
             if (field is Component cmp)
                 cmp.Unfocused?.Invoke();
@@ -32,7 +34,10 @@ public static class FocusManager
     public static bool FocusNext(Node root)
     {
         var all = GetFocusableDescendants(root).ToArray();
-        if (all.Length == 0) return false;
+
+        if (all.Length == 0)
+
+            return false;
 
         var idx = FocusedNode is not null
             ? all.IndexOf(FocusedNode)
@@ -40,6 +45,7 @@ public static class FocusManager
 
         var next = (idx + 1) % all.Length;
         FocusedNode = all[next];
+
         return true;
     }
 
@@ -47,7 +53,10 @@ public static class FocusManager
     public static bool FocusPrev(Node root)
     {
         var all = GetFocusableDescendants(root).ToArray();
-        if (all.Length == 0) return false;
+
+        if (all.Length == 0)
+
+            return false;
 
         var idx = FocusedNode is not null
             ? all.IndexOf(FocusedNode)
@@ -55,6 +64,7 @@ public static class FocusManager
 
         var prev = (idx - 1 + all.Length) % all.Length;
         FocusedNode = all[prev];
+
         return true;
     }
 
@@ -67,12 +77,15 @@ public static class FocusManager
         foreach (var child in root.VisualChildren)
         {
             if (child is not Component { IsDisplayed: true } element)
+
                 continue;
 
             if (element.IsFocusable)
+
                 yield return element;
 
             foreach (var descendant in GetFocusableDescendants(element))
+
                 yield return descendant;
         }
     }
@@ -85,28 +98,37 @@ public static class FocusManager
     public static Node? HitTest(Component root, Vector2 screenPos)
     {
         var zCache = new Dictionary<Component, int>();
+
         return HitTestRecursive(root, screenPos, zCache);
     }
 
     private static Component? HitTestRecursive(Component node, Vector2 pos, Dictionary<Component, int> zCache)
     {
         if (node.Styles.PointerEvents is false)
+
             return null;
 
         // Skip nodes (and their descendants) clipped out by an overflow ancestor.
+
         if (node.ClipRect is { } clip && !clip.Contains(pos.X, pos.Y))
+
             return null;
 
         // Walk children topmost-first for z-index aware occlusion: a high-z subtree
         // (e.g. a dropdown popup) is hit-tested before lower-z siblings of an ancestor,
         // even if it appears earlier in the tree.
+
         foreach (var visual in Topmost(node, zCache))
         {
             if (!visual.IsDisplayed)
+
                 continue;
 
             var result = HitTestRecursive(visual, pos, zCache);
-            if (result is not null) return result;
+
+            if (result is not null)
+
+                return result;
         }
 
         // Check self
@@ -118,6 +140,7 @@ public static class FocusManager
         );
 
         if (bounds.Contains(pos.X, pos.Y))
+
             return node;
 
         return null;
@@ -133,6 +156,7 @@ public static class FocusManager
         var chain = new List<Component>();
         var zCache = new Dictionary<Component, int>();
         HitTestChainRecursive(root, screenPos, chain, zCache);
+
         return chain;
     }
 
@@ -173,17 +197,23 @@ public static class FocusManager
     {
         // Fast path: no positive z-index under this node → plain reverse (later-first),
         // no per-node list allocation (common case — the Lua UI mostly uses z=0).
+
         if (Component.EscapeZ(node, zCache) <= 0)
         {
             var children = node.VisualChildren;
+
             for (int i = children.Count - 1; i >= 0; i--)
+
                 if (children[i] is Component c)
+
                     yield return c;
+
             yield break;
         }
 
         var list = new List<(int idx, Component c)>();
         int n = 0;
+
         foreach (var visual in node.VisualChildren)
         {
             if (visual is Component c)
@@ -197,12 +227,17 @@ public static class FocusManager
             {
                 int zx = Component.EscapeZ(x.c, zCache);
                 int zy = Component.EscapeZ(y.c, zCache);
-                if (zx != zy) return zy.CompareTo(zx); // higher z first
+
+                if (zx != zy)
+
+                    return zy.CompareTo(zx); // higher z first
+
                 return y.idx.CompareTo(x.idx); // later sibling first on tie
             }
         );
 
         foreach (var (_, c) in list)
+
             yield return c;
     }
 
@@ -214,10 +249,13 @@ public static class FocusManager
     )
     {
         if (node.Styles.PointerEvents is false)
+
             return false;
 
         // Skip nodes (and their descendants) clipped out by an overflow ancestor.
+
         if (node.ClipRect is { } clip && !clip.Contains(pos.X, pos.Y))
+
             return false;
 
         var bounds = new RectangleF(
@@ -230,11 +268,13 @@ public static class FocusManager
         // A Contents node contributes no box, so it can never be "under" the cursor and
         // must not absorb the hit: flow hosts (Show/For/Switch) would otherwise swallow
         // presses meant for their own children.
+
         if (node.Styles.Display == Display.Contents)
         {
             foreach (var visual in Topmost(node, zCache))
             {
                 if (visual.IsDisplayed && HitTestChainRecursive(visual, pos, chain, zCache))
+
                     return true;
             }
 
@@ -248,14 +288,19 @@ public static class FocusManager
         foreach (var visual in Topmost(node, zCache))
         {
             if (!visual.IsDisplayed)
+
                 continue;
 
             if (HitTestChainRecursive(visual, pos, chain, zCache))
+
                 return true; // deepest child hit — stop
         }
 
-        if (selfHit) return true;
+        if (selfHit)
+
+            return true;
         chain.RemoveAt(ancestorIndex);
+
         return false;
     }
 
@@ -302,13 +347,16 @@ public static class FocusManager
                 if (_sorted is not null)
                 {
                     _inner ??= _sorted.GetEnumerator();
+
                     if (_inner.MoveNext())
                     {
                         Current = _inner.Current;
+
                         return true;
                     }
 
                     Dispose();
+
                     return false;
                 }
 
@@ -317,6 +365,7 @@ public static class FocusManager
                     if (_children![--_index] is Component c)
                     {
                         Current = c;
+
                         return true;
                     }
                 }
@@ -361,6 +410,7 @@ public static class FocusManager
         var prevChain = new List<Component>(_hoveredChain);
 
         // MouseLeft — nodes that were hovered but no longer are (leaf→root).
+
         for (int i = prevChain.Count - 1; i >= 0; i--)
         {
             var node = prevChain[i];
@@ -369,6 +419,7 @@ public static class FocusManager
         }
 
         // MouseEntered — nodes under the cursor that weren't before (root→leaf).
+
         for (int i = 0; i < newChain.Count; i++)
         {
             var node = newChain[i];
@@ -401,12 +452,14 @@ public static class FocusManager
         var chain = HitTestChain(root, @event.Position);
 
         // Chain is root→leaf; the deepest focusable element under the cursor wins.
+
         for (int i = chain.Count - 1; i >= 0; i--)
         {
             if (chain[i].IsFocusable)
             {
                 ActiveNode = chain[i];
                 FocusedNode = chain[i];
+
                 return;
             }
         }
@@ -432,7 +485,9 @@ public static class FocusManager
     /// </summary>
     public static void ClearHover()
     {
-        if (_hoveredChain.Count == 0) return;
+        if (_hoveredChain.Count == 0)
+
+            return;
 
         for (int i = _hoveredChain.Count - 1; i >= 0; i--)
             _hoveredChain[i].IsHovered = false;
@@ -454,11 +509,14 @@ public static class FocusManager
     /// </summary>
     public static void ResetHover()
     {
-        if (_hoveredChain.Count == 0) return;
+        if (_hoveredChain.Count == 0)
+
+            return;
 
         // Drop stale (disposed) references silently; keep surviving hovered nodes so the
         // next DispatchMouseMove diffs against them instead of re-firing MouseEntered on
         // everything under the cursor.
+
         for (int i = _hoveredChain.Count - 1; i >= 0; i--)
         {
             if (_hoveredChain[i].IsDisposed)

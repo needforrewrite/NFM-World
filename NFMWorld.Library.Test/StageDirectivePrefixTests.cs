@@ -18,6 +18,7 @@ public class StageDirectivePrefixTests
         Directory.CreateDirectory(dir);
         File.WriteAllText(Path.Combine(dir, name + ".txt"), body);
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(root);
+
         return new StageLoader(name);
     }
 

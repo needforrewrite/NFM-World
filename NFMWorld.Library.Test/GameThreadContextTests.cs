@@ -16,6 +16,7 @@ public class GameThreadContextTests
     public void EnsureInstalled_AfterTheContextIsDropped_ReinstallsTheSameInstance()
     {
         var previous = SynchronizationContext.Current;
+
         try
         {
             SynchronizationContext.SetSynchronizationContext(null);

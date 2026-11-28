@@ -21,6 +21,7 @@ public sealed class TypeFormatter : TightPackFormatter<Type>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -31,6 +32,7 @@ public sealed class TypeFormatter : TightPackFormatter<Type>
         if (fullName is null || assembly is null)
         {
             TightPackSerializationException.ThrowMessage($"Cannot name {value} for serialization.");
+
             return;
         }
 
@@ -40,16 +42,20 @@ public sealed class TypeFormatter : TightPackFormatter<Type>
     public override void Deserialize(ref TightPackReader reader, ref Type? value)
     {
         string? name = reader.ReadString();
+
         if (name is null)
         {
             value = null;
+
             return;
         }
 
         Type? resolved = Type.GetType(name, throwOnError: false);
+
         if (resolved is null)
         {
             TightPackSerializationException.ThrowMessage($"Cannot resolve the serialized type '{name}'.");
+
             return;
         }
 

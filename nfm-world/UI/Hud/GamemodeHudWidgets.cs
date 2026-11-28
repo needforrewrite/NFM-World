@@ -25,6 +25,7 @@ public static class GamemodeHudWidgets
         then: () =>
         {
             var widgets = Declared(race, anchor) ?? [];
+
             return Sx.View(
                 style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 8),
                 children: [.. widgets.Select(w => BuildWidget(w, race))]
@@ -38,13 +39,16 @@ public static class GamemodeHudWidgets
         // what lets Sx.Show mount widgets the gamemode declared after the HUD was built.
         _ = (race as UiState.RaceState)?.PresentationRevision.Value;
         var widgets = (race as UiState.RaceState)?.GamemodeWidgets;
+
         if (widgets is null || widgets.Count == 0)
+
             return null;
 
         List<GamemodeHudWidget> declared = [];
         foreach (var widget in widgets)
             if (string.Equals(widget.Anchor, anchor, StringComparison.Ordinal))
                 declared.Add(widget);
+
         return declared;
     }
 
@@ -58,11 +62,13 @@ public static class GamemodeHudWidgets
             () =>
             {
                 _ = (race as UiState.RaceState)?.PresentationRevision.Value;
+
                 return Math.Clamp((double)widget.Value(), 0, 1);
             },
             Theme.Accent,
             8
         );
+
         return Sx.View(
             style: () => Sx.Styles(width: 190, flexShrink: 0),
             children: [fill]

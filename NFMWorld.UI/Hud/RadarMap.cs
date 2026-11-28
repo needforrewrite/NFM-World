@@ -65,6 +65,7 @@ public static class RadarMap
         // The image's own axes are +X for u and -Z for v (StageMinimap.Bounds), and the radar
         // screen is the car's frame: right is (cos, sin) and forward is (-sin, cos), drawn upward
         // because screen Y grows downward. Same rotation as ToRadar, so the map turns with the blips.
+
         return new RadarMapPlacement(
             origin,
             new Vector2(step * cos, step * sin),
@@ -106,6 +107,7 @@ public static class RadarMap
         // direction itself catches it.
         var dx = (x - clientX) / radarRange * (size / 2);
         var dz = (z - clientZ) / radarRange * (size / 2);
+
         return new Vector2(centerX + dx * cos + dz * sin, centerY + dx * sin - dz * cos);
     }
 }

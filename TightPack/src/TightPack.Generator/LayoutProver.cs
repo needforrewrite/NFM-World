@@ -53,12 +53,14 @@ internal static class LayoutProver
     public static bool TryProve(INamedTypeSymbol type, Compilation compilation, CancellationToken cancellationToken, out int size)
     {
         size = 0;
+
         if (!type.IsValueType || type.SpecialType == SpecialType.System_Void || type.IsRefLikeType)
         {
             return false;
         }
 
         var visited = new HashSet<string>();
+
         if (!TryLayout(type, 4, compilation, cancellationToken, visited, 0, out int narrowSize, out _)
             || !TryLayout(type, 8, compilation, cancellationToken, visited, 0, out int wideSize, out _))
         {
@@ -71,6 +73,7 @@ internal static class LayoutProver
         }
 
         size = narrowSize;
+
         return true;
     }
 
@@ -108,6 +111,7 @@ internal static class LayoutProver
         {
             size = primitive.Size;
             align = System.Math.Min(primitive.Align, hostAlign);
+
             return true;
         }
 
@@ -118,12 +122,14 @@ internal static class LayoutProver
 
         // Nullable<T> has a bool flag plus an aligned value; even when it happens to fit it is not a
         // type we want a raw image of, and the generator never needs one.
+
         if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
         {
             return false;
         }
 
         // [InlineArray(n)] is n copies of its single field, whatever that field is called.
+
         if (TryGetInlineArrayLength(named, out int length))
         {
             if (named.TypeArguments.Length != 1
@@ -143,6 +149,7 @@ internal static class LayoutProver
 
             size = elementSize * length;
             align = elementAlign;
+
             return true;
         }
 
@@ -152,6 +159,7 @@ internal static class LayoutProver
         }
 
         List<IFieldSymbol> fields = CollectFields(named);
+
         if (fields.Count == 0 || !visited.Add(type.ToDisplayString()))
         {
             return false;
@@ -216,12 +224,14 @@ internal static class LayoutProver
             align = System.Math.Min(align, maxAlign);
 
             // A field that does not start where the previous one ended is padded.
+
             if (offset % align != 0)
             {
                 return false;
             }
 
             offset += size;
+
             if (align > structAlign)
             {
                 structAlign = align;
@@ -229,18 +239,21 @@ internal static class LayoutProver
         }
 
         // A tail that is not a whole number of alignments is padded too.
+
         if (offset % structAlign != 0)
         {
             return false;
         }
 
         total = offset;
+
         return true;
     }
 
     private static List<IFieldSymbol> CollectFields(INamedTypeSymbol type)
     {
         var fields = new List<IFieldSymbol>();
+
         for (ITypeSymbol? current = type; current is not null; current = current.BaseType)
         {
             foreach (IFieldSymbol field in current.GetMembers().OfType<IFieldSymbol>())
@@ -262,6 +275,7 @@ internal static class LayoutProver
     private static bool TryGetPack(INamedTypeSymbol type, out int pack)
     {
         pack = 0;
+
         foreach (AttributeData attribute in type.GetAttributes())
         {
             if (attribute.AttributeClass?.ToDisplayString() != "System.Runtime.InteropServices.StructLayoutAttribute")
@@ -279,6 +293,7 @@ internal static class LayoutProver
             foreach (var named in attribute.NamedArguments)
             {
                 // An explicit Size overrides the computed layout, which pads the tail.
+
                 if (named.Key == "Size" && named.Value.Value is int size && size > 0)
                 {
                     return false;
@@ -297,6 +312,7 @@ internal static class LayoutProver
     private static bool TryGetInlineArrayLength(INamedTypeSymbol type, out int length)
     {
         length = 0;
+
         foreach (AttributeData attribute in type.OriginalDefinition.GetAttributes())
         {
             if (attribute.AttributeClass?.ToDisplayString() == "System.Runtime.CompilerServices.InlineArrayAttribute"
@@ -305,6 +321,7 @@ internal static class LayoutProver
                 && value > 0)
             {
                 length = value;
+
                 return true;
             }
         }

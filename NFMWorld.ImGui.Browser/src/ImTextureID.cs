@@ -20,22 +20,34 @@ namespace Hexa.NET.ImGui
     /// </summary>
 #if NET5_0_OR_GREATER
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public readonly partial struct ImTextureID : IEquatable<ImTextureID>
-	{
-		public ImTextureID(ulong handle) { Handle = handle; }
+#endif
+    public readonly partial struct ImTextureID : IEquatable<ImTextureID>
+    {
+        public ImTextureID(ulong handle)
+        {
+            Handle = handle;
+        }
 
-        public ImTextureID(nint handle) { Handle = (ulong)handle; }
+        public ImTextureID(nint handle)
+        {
+            Handle = (ulong)handle;
+        }
 
-        public ImTextureID(nuint handle) { Handle = (ulong)handle; }
+        public ImTextureID(nuint handle)
+        {
+            Handle = (ulong)handle;
+        }
 
-        public unsafe ImTextureID(void* handle) { Handle = (ulong)handle; }
+        public unsafe ImTextureID(void* handle)
+        {
+            Handle = (ulong)handle;
+        }
 
         public ulong Handle { get; }
 
-		public bool IsNull => Handle == 0;
+        public bool IsNull => Handle == 0;
 
-		public static ImTextureID Null => new ImTextureID(0UL);
+        public static ImTextureID Null => new ImTextureID(0UL);
 
         public static implicit operator ImTextureID(ulong handle) => new ImTextureID(handle);
 
@@ -55,7 +67,7 @@ namespace Hexa.NET.ImGui
 
         public static bool operator ==(ImTextureID left, ImTextureID right) => left.Handle == right.Handle;
 
-		public static bool operator !=(ImTextureID left, ImTextureID right) => left.Handle != right.Handle;
+        public static bool operator !=(ImTextureID left, ImTextureID right) => left.Handle != right.Handle;
 
         public static bool operator ==(ImTextureID left, ulong right) => left.Handle == right;
 
@@ -63,7 +75,7 @@ namespace Hexa.NET.ImGui
 
         public static bool operator ==(ImTextureID left, nint right) => left.Handle == (ulong)right;
 
-		public static bool operator !=(ImTextureID left, nint right) => left.Handle != (ulong)right;
+        public static bool operator !=(ImTextureID left, nint right) => left.Handle != (ulong)right;
 
         public static bool operator ==(ImTextureID left, nuint right) => left.Handle == right;
 
@@ -75,14 +87,14 @@ namespace Hexa.NET.ImGui
 
         public bool Equals(ImTextureID other) => Handle == other.Handle;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImTextureID handle && Equals(handle);
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImTextureID handle && Equals(handle);
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => Handle.GetHashCode();
+        /// <inheritdoc/>
+        public override int GetHashCode() => Handle.GetHashCode();
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImTextureID [0x{0}]", Handle.ToString("X"));
-		#endif
-	}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImTextureID [0x{0}]", Handle.ToString("X"));
+#endif
+    }
 }

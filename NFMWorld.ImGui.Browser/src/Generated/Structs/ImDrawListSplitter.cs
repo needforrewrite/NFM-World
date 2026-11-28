@@ -16,284 +16,291 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// SplitMerge functions are used to split the draw list into different layers which can be drawn into out of order.<br/>
-	/// This is used by the ColumnsTables API, so items of each column can be batched together in a same draw call.<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImDrawListSplitter
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int Current;
+    /// <summary>
+    /// SplitMerge functions are used to split the draw list into different layers which can be drawn into out of order.<br/>
+    /// This is used by the ColumnsTables API, so items of each column can be batched together in a same draw call.<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImDrawListSplitter
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int Current;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int Count;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int Count;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<ImDrawChannel> Channels;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImDrawListSplitter(int current = default, int count = default, ImVector<ImDrawChannel> channels = default)
-		{
-			Current = current;
-			Count = count;
-			Channels = channels;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<ImDrawChannel> Channels;
 
 
-		/// <summary>
-		/// Do not clear Channels[] so our allocations are reused next frame<br/>
-		/// </summary>
-		public unsafe void Clear()
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				ImGui.ClearNative(@this);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImDrawListSplitter(int current = default, int count = default, ImVector<ImDrawChannel> channels = default)
+        {
+            Current = current;
+            Count = count;
+            Channels = channels;
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void ClearFreeMemory()
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				ImGui.ClearFreeMemoryNative(@this);
-			}
-		}
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				ImGui.DestroyNative(@this);
-			}
-		}
+        /// <summary>
+        /// Do not clear Channels[] so our allocations are reused next frame<br/>
+        /// </summary>
+        public unsafe void Clear()
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                ImGui.ClearNative(@this);
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Merge(ImDrawListPtr drawList)
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				ImGui.MergeNative(@this, drawList);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void ClearFreeMemory()
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                ImGui.ClearFreeMemoryNative(@this);
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Merge(ref ImDrawList drawList)
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				fixed (ImDrawList* pdrawList = &drawList)
-				{
-					ImGui.MergeNative(@this, (ImDrawList*)pdrawList);
-				}
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                ImGui.DestroyNative(@this);
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void SetCurrentChannel(ImDrawListPtr drawList, int channelIdx)
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				ImGui.SetCurrentChannelNative(@this, drawList, channelIdx);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Merge(ImDrawListPtr drawList)
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                ImGui.MergeNative(@this, drawList);
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void SetCurrentChannel(ref ImDrawList drawList, int channelIdx)
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				fixed (ImDrawList* pdrawList = &drawList)
-				{
-					ImGui.SetCurrentChannelNative(@this, (ImDrawList*)pdrawList, channelIdx);
-				}
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Merge(ref ImDrawList drawList)
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                fixed (ImDrawList* pdrawList = &drawList)
+                {
+                    ImGui.MergeNative(@this, (ImDrawList*)pdrawList);
+                }
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Split(ImDrawListPtr drawList, int count)
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				ImGui.SplitNative(@this, drawList, count);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void SetCurrentChannel(ImDrawListPtr drawList, int channelIdx)
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                ImGui.SetCurrentChannelNative(@this, drawList, channelIdx);
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Split(ref ImDrawList drawList, int count)
-		{
-			fixed (ImDrawListSplitter* @this = &this)
-			{
-				fixed (ImDrawList* pdrawList = &drawList)
-				{
-					ImGui.SplitNative(@this, (ImDrawList*)pdrawList, count);
-				}
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void SetCurrentChannel(ref ImDrawList drawList, int channelIdx)
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                fixed (ImDrawList* pdrawList = &drawList)
+                {
+                    ImGui.SetCurrentChannelNative(@this, (ImDrawList*)pdrawList, channelIdx);
+                }
+            }
+        }
 
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Split(ImDrawListPtr drawList, int count)
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                ImGui.SplitNative(@this, drawList, count);
+            }
+        }
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImDrawListSplitterPtr : IEquatable<ImDrawListSplitterPtr>
-	{
-		public ImDrawListSplitterPtr(ImDrawListSplitter* handle) { Handle = handle; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Split(ref ImDrawList drawList, int count)
+        {
+            fixed (ImDrawListSplitter* @this = &this)
+            {
+                fixed (ImDrawList* pdrawList = &drawList)
+                {
+                    ImGui.SplitNative(@this, (ImDrawList*)pdrawList, count);
+                }
+            }
+        }
+    }
 
-		public ImDrawListSplitter* Handle;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImDrawListSplitterPtr : IEquatable<ImDrawListSplitterPtr>
+    {
+        public ImDrawListSplitterPtr(ImDrawListSplitter* handle)
+        {
+            Handle = handle;
+        }
 
-		public bool IsNull => Handle == null;
+        public ImDrawListSplitter* Handle;
 
-		public static ImDrawListSplitterPtr Null => new ImDrawListSplitterPtr(null);
+        public bool IsNull => Handle == null;
 
-		public ImDrawListSplitter this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public static ImDrawListSplitterPtr Null => new ImDrawListSplitterPtr(null);
 
-		public static implicit operator ImDrawListSplitterPtr(ImDrawListSplitter* handle) => new ImDrawListSplitterPtr(handle);
+        public ImDrawListSplitter this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static implicit operator ImDrawListSplitter*(ImDrawListSplitterPtr handle) => handle.Handle;
+        public static implicit operator ImDrawListSplitterPtr(ImDrawListSplitter* handle) => new ImDrawListSplitterPtr(handle);
 
-		public static bool operator ==(ImDrawListSplitterPtr left, ImDrawListSplitterPtr right) => left.Handle == right.Handle;
+        public static implicit operator ImDrawListSplitter*(ImDrawListSplitterPtr handle) => handle.Handle;
 
-		public static bool operator !=(ImDrawListSplitterPtr left, ImDrawListSplitterPtr right) => left.Handle != right.Handle;
+        public static bool operator ==(ImDrawListSplitterPtr left, ImDrawListSplitterPtr right) => left.Handle == right.Handle;
 
-		public static bool operator ==(ImDrawListSplitterPtr left, ImDrawListSplitter* right) => left.Handle == right;
+        public static bool operator !=(ImDrawListSplitterPtr left, ImDrawListSplitterPtr right) => left.Handle != right.Handle;
 
-		public static bool operator !=(ImDrawListSplitterPtr left, ImDrawListSplitter* right) => left.Handle != right;
+        public static bool operator ==(ImDrawListSplitterPtr left, ImDrawListSplitter* right) => left.Handle == right;
 
-		public bool Equals(ImDrawListSplitterPtr other) => Handle == other.Handle;
+        public static bool operator !=(ImDrawListSplitterPtr left, ImDrawListSplitter* right) => left.Handle != right;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImDrawListSplitterPtr handle && Equals(handle);
+        public bool Equals(ImDrawListSplitterPtr other) => Handle == other.Handle;
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImDrawListSplitterPtr handle && Equals(handle);
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImDrawListSplitterPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref int Current => ref Unsafe.AsRef<int>(&Handle->Current);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref int Count => ref Unsafe.AsRef<int>(&Handle->Count);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<ImDrawChannel> Channels => ref Unsafe.AsRef<ImVector<ImDrawChannel>>(&Handle->Channels);
-		/// <summary>
-		/// Do not clear Channels[] so our allocations are reused next frame<br/>
-		/// </summary>
-		public unsafe void Clear()
-		{
-			ImGui.ClearNative(Handle);
-		}
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void ClearFreeMemory()
-		{
-			ImGui.ClearFreeMemoryNative(Handle);
-		}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImDrawListSplitterPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref int Current => ref Unsafe.AsRef<int>(&Handle->Current);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			ImGui.DestroyNative(Handle);
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref int Count => ref Unsafe.AsRef<int>(&Handle->Count);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Merge(ImDrawListPtr drawList)
-		{
-			ImGui.MergeNative(Handle, drawList);
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<ImDrawChannel> Channels => ref Unsafe.AsRef<ImVector<ImDrawChannel>>(&Handle->Channels);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Merge(ref ImDrawList drawList)
-		{
-			fixed (ImDrawList* pdrawList = &drawList)
-			{
-				ImGui.MergeNative(Handle, (ImDrawList*)pdrawList);
-			}
-		}
+        /// <summary>
+        /// Do not clear Channels[] so our allocations are reused next frame<br/>
+        /// </summary>
+        public unsafe void Clear()
+        {
+            ImGui.ClearNative(Handle);
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void SetCurrentChannel(ImDrawListPtr drawList, int channelIdx)
-		{
-			ImGui.SetCurrentChannelNative(Handle, drawList, channelIdx);
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void ClearFreeMemory()
+        {
+            ImGui.ClearFreeMemoryNative(Handle);
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void SetCurrentChannel(ref ImDrawList drawList, int channelIdx)
-		{
-			fixed (ImDrawList* pdrawList = &drawList)
-			{
-				ImGui.SetCurrentChannelNative(Handle, (ImDrawList*)pdrawList, channelIdx);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            ImGui.DestroyNative(Handle);
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Split(ImDrawListPtr drawList, int count)
-		{
-			ImGui.SplitNative(Handle, drawList, count);
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Merge(ImDrawListPtr drawList)
+        {
+            ImGui.MergeNative(Handle, drawList);
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Split(ref ImDrawList drawList, int count)
-		{
-			fixed (ImDrawList* pdrawList = &drawList)
-			{
-				ImGui.SplitNative(Handle, (ImDrawList*)pdrawList, count);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Merge(ref ImDrawList drawList)
+        {
+            fixed (ImDrawList* pdrawList = &drawList)
+            {
+                ImGui.MergeNative(Handle, (ImDrawList*)pdrawList);
+            }
+        }
 
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void SetCurrentChannel(ImDrawListPtr drawList, int channelIdx)
+        {
+            ImGui.SetCurrentChannelNative(Handle, drawList, channelIdx);
+        }
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void SetCurrentChannel(ref ImDrawList drawList, int channelIdx)
+        {
+            fixed (ImDrawList* pdrawList = &drawList)
+            {
+                ImGui.SetCurrentChannelNative(Handle, (ImDrawList*)pdrawList, channelIdx);
+            }
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Split(ImDrawListPtr drawList, int count)
+        {
+            ImGui.SplitNative(Handle, drawList, count);
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Split(ref ImDrawList drawList, int count)
+        {
+            fixed (ImDrawList* pdrawList = &drawList)
+            {
+                ImGui.SplitNative(Handle, (ImDrawList*)pdrawList, count);
+            }
+        }
+    }
 }

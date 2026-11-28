@@ -75,10 +75,12 @@ public readonly record struct SinCosFloat :
         if (float.TryParse(s, provider, out float value))
         {
             result = value;
+
             return true;
         }
 
         result = default;
+
         return false;
     }
 
@@ -94,10 +96,12 @@ public readonly record struct SinCosFloat :
         if (float.TryParse(s, provider, out float value))
         {
             result = value;
+
             return true;
         }
 
         result = default;
+
         return false;
     }
 
@@ -345,53 +349,62 @@ public readonly record struct SinCosFloat :
         {
             double actualValue = (double)(object)value;
             result = (float)actualValue;
+
             return true;
         }
         else if (typeof(TOther) == typeof(Half))
         {
             Half actualValue = (Half)(object)value;
             result = (float)actualValue;
+
             return true;
         }
         else if (typeof(TOther) == typeof(short))
         {
             short actualValue = (short)(object)value;
             result = actualValue;
+
             return true;
         }
         else if (typeof(TOther) == typeof(int))
         {
             int actualValue = (int)(object)value;
             result = actualValue;
+
             return true;
         }
         else if (typeof(TOther) == typeof(long))
         {
             long actualValue = (long)(object)value;
             result = actualValue;
+
             return true;
         }
         else if (typeof(TOther) == typeof(Int128))
         {
             Int128 actualValue = (Int128)(object)value;
             result = (float)actualValue;
+
             return true;
         }
         else if (typeof(TOther) == typeof(nint))
         {
             nint actualValue = (nint)(object)value;
             result = actualValue;
+
             return true;
         }
         else if (typeof(TOther) == typeof(sbyte))
         {
             sbyte actualValue = (sbyte)(object)value;
             result = actualValue;
+
             return true;
         }
         else
         {
             result = default;
+
             return false;
         }
     }
@@ -402,10 +415,12 @@ public readonly record struct SinCosFloat :
         if (TryConvertFrom(value, out float floatResult))
         {
             result = floatResult;
+
             return true;
         }
 
         result = default;
+
         return false;
     }
 
@@ -415,10 +430,12 @@ public readonly record struct SinCosFloat :
         if (TryConvertFrom(value, out float floatResult))
         {
             result = floatResult;
+
             return true;
         }
 
         result = default;
+
         return false;
     }
 
@@ -428,10 +445,12 @@ public readonly record struct SinCosFloat :
         if (TryConvertFrom(value, out float floatResult))
         {
             result = floatResult;
+
             return true;
         }
 
         result = default;
+
         return false;
     }
 
@@ -443,53 +462,62 @@ public readonly record struct SinCosFloat :
         {
             byte actualResult = checked((byte)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(char))
         {
             char actualResult = checked((char)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(decimal))
         {
             decimal actualResult = checked((decimal)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(ushort))
         {
             ushort actualResult = checked((ushort)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(uint))
         {
             uint actualResult = checked((uint)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(ulong))
         {
             ulong actualResult = checked((ulong)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(UInt128))
         {
             UInt128 actualResult = checked((UInt128)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(nuint))
         {
             nuint actualResult = checked((nuint)(float)value);
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else
         {
             result = default;
+
             return false;
         }
     }
@@ -512,6 +540,7 @@ public readonly record struct SinCosFloat :
             var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
                 (value <= byte.MinValue) ? byte.MinValue : (byte)value;
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(char))
@@ -519,6 +548,7 @@ public readonly record struct SinCosFloat :
             char actualResult = (value >= char.MaxValue) ? char.MaxValue :
                 (value <= char.MinValue) ? char.MinValue : (char)value;
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(decimal))
@@ -527,6 +557,7 @@ public readonly record struct SinCosFloat :
                 (value <= -79228162514264337593543950336.0f) ? decimal.MinValue :
                 IsNaN(value) ? 0.0m : (decimal)value;
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(ushort))
@@ -534,6 +565,7 @@ public readonly record struct SinCosFloat :
             ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
                 (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(uint))
@@ -545,6 +577,7 @@ public readonly record struct SinCosFloat :
             uint actualResult = (uint)value;
 #endif
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(ulong))
@@ -557,12 +590,14 @@ public readonly record struct SinCosFloat :
             ulong actualResult = (ulong)value;
 #endif
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(UInt128))
         {
             UInt128 actualResult = (UInt128)value;
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else if (typeof(TOther) == typeof(nuint))
@@ -579,11 +614,13 @@ public readonly record struct SinCosFloat :
             nuint actualResult = (nuint)value;
 #endif
             result = (TOther)(object)actualResult;
+
             return true;
         }
         else
         {
             result = default;
+
             return false;
         }
     }
@@ -608,10 +645,12 @@ public readonly record struct SinCosFloat :
         if (float.TryParse(s, style, provider, out float value))
         {
             result = value;
+
             return true;
         }
 
         result = default;
+
         return false;
     }
 
@@ -626,10 +665,12 @@ public readonly record struct SinCosFloat :
         if (float.TryParse(s, style, provider, out float value))
         {
             result = value;
+
             return true;
         }
 
         result = default;
+
         return false;
     }
 
@@ -736,6 +777,7 @@ public readonly record struct SinCosFloat :
         get
         {
             uint bits = BitConverter.SingleToUInt32Bits(Value);
+
             return ExtractBiasedExponentFromBits(bits);
         }
     }
@@ -757,6 +799,7 @@ public readonly record struct SinCosFloat :
         get
         {
             uint bits = BitConverter.SingleToUInt32Bits(Value);
+
             return ExtractTrailingSignificandFromBits(bits);
         }
     }
@@ -785,10 +828,12 @@ public readonly record struct SinCosFloat :
         {
             destination[0] = (byte)Exponent;
             bytesWritten = sizeof(sbyte);
+
             return true;
         }
 
         bytesWritten = 0;
+
         return false;
     }
 
@@ -799,10 +844,12 @@ public readonly record struct SinCosFloat :
         {
             destination[0] = (byte)Exponent;
             bytesWritten = sizeof(sbyte);
+
             return true;
         }
 
         bytesWritten = 0;
+
         return false;
     }
 
@@ -812,10 +859,12 @@ public readonly record struct SinCosFloat :
         if (BinaryPrimitives.TryWriteUInt32BigEndian(destination, Significand))
         {
             bytesWritten = sizeof(uint);
+
             return true;
         }
 
         bytesWritten = 0;
+
         return false;
     }
 
@@ -825,10 +874,12 @@ public readonly record struct SinCosFloat :
         if (BinaryPrimitives.TryWriteUInt32LittleEndian(destination, Significand))
         {
             bytesWritten = sizeof(uint);
+
             return true;
         }
 
         bytesWritten = 0;
+
         return false;
     }
 
@@ -974,6 +1025,7 @@ public readonly record struct SinCosFloat :
     public static (SinCosFloat Sin, SinCosFloat Cos) SinCos(SinCosFloat x)
     {
         var (sin, cos) = MathF.SinCos(x.Value);
+
         return (sin, cos);
     }
 
@@ -981,6 +1033,7 @@ public readonly record struct SinCosFloat :
     public static (SinCosFloat SinPi, SinCosFloat CosPi) SinCosPi(SinCosFloat x)
     {
         var (sinPi, cosPi) = float.SinCosPi(x.Value);
+
         return (sinPi, cosPi);
     }
 

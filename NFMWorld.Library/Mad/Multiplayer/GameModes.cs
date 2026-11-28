@@ -63,6 +63,7 @@ public static class GamemodeFactory
     public static BaseGamemodeFactory Create(string gamemodeId, IReadOnlyDictionary<string, object> config)
     {
         var plugin = LoadPlugin(gamemodeId);
+
         return plugin is not null
             ? new NativeGamemodeFactory(plugin, new Dictionary<string, object>(config))
             : throw new InvalidOperationException("Could not load gamemode plugin for " + gamemodeId);
@@ -78,6 +79,7 @@ public static class GamemodeFactory
         var boxed = new Dictionary<string, object>(config.Count);
         foreach (var (key, value) in config)
             boxed[key] = value;
+
         return Create(gamemodeId, boxed);
     }
 
@@ -85,6 +87,7 @@ public static class GamemodeFactory
     public static BaseGamemodeFactory Create(string gamemodeId)
     {
         var plugin = LoadPlugin(gamemodeId);
+
         return plugin is not null
             ? new NativeGamemodeFactory(plugin)
             : throw new InvalidOperationException("Could not load gamemode plugin for " + gamemodeId);

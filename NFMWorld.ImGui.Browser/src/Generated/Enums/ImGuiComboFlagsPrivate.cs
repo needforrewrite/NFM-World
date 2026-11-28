@@ -13,15 +13,15 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiComboFlagsPrivate : int
-	{
-		/// <summary>
-		/// enable BeginComboPreview()<br/>
-		/// </summary>
-		CustomPreview = unchecked(1048576),
-	}
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiComboFlagsPrivate : int
+    {
+        /// <summary>
+        /// enable BeginComboPreview()<br/>
+        /// </summary>
+        CustomPreview = unchecked(1048576),
+    }
 }

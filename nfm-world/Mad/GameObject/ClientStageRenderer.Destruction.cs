@@ -40,7 +40,8 @@ public partial class ClientStageRenderer
         if (_restoreDestructibles)
         {
             _restoreDestructibles = false;
-            foreach (var debris in _debris) debris.Dispose();
+            foreach (var debris in _debris)
+                debris.Dispose();
             _debris.Clear();
             ClearObjectSounds();
             DetectChanges();
@@ -60,8 +61,11 @@ public partial class ClientStageRenderer
                 visual.Dispose();
             }
 
-            if (!broken.Shatter) continue;
+            if (!broken.Shatter)
+
+                continue;
             PlayStageSound(SfxLibrary.objectBreak[broken.Object.DestructionId % SfxLibrary.objectBreak.Length], broken.Object);
+
             if (_debris.Count >= 8)
             {
                 _debris[0].Dispose();
@@ -74,15 +78,21 @@ public partial class ClientStageRenderer
         for (var i = _debris.Count - 1; i >= 0; i--)
         {
             _debris[i].GameTick(stage);
-            if (!_debris[i].Expired) continue;
+
+            if (!_debris[i].Expired)
+
+                continue;
             _debris[i].Dispose();
             _debris.RemoveAt(i);
         }
 
         base.GameTick(stage);
+
         for (var i = _objectSounds.Count - 1; i >= 0; i--)
         {
-            if (_objectSounds[i].IsActive) continue;
+            if (_objectSounds[i].IsActive)
+
+                continue;
             _objectSounds[i].Dispose();
             _objectSounds.RemoveAt(i);
         }
@@ -91,7 +101,8 @@ public partial class ClientStageRenderer
     public override void OnBeforeRender(float alpha)
     {
         base.OnBeforeRender(alpha);
-        foreach (var debris in _debris) debris.OnBeforeRender(alpha);
+        foreach (var debris in _debris)
+            debris.OnBeforeRender(alpha);
     }
 
     private void DisposeDestructionRendering()
@@ -101,14 +112,17 @@ public partial class ClientStageRenderer
         backendStage.DestructionReset -= OnDestructionReset;
         _pendingBreaks.Clear();
         _pendingDamage.Clear();
-        foreach (var debris in _debris) debris.Dispose();
+        foreach (var debris in _debris)
+            debris.Dispose();
         _debris.Clear();
         ClearObjectSounds();
     }
 
     internal void PlayStageSound(ISoundClip? sample, StageObject obj)
     {
-        if (sample is null) return;
+        if (sample is null)
+
+            return;
         var sound = sample.CreateSpatialInstance();
         _objectSounds.Add(sound);
         sound.SetPosition((Vector3)obj.Position);
@@ -117,7 +131,8 @@ public partial class ClientStageRenderer
 
     private void ClearObjectSounds()
     {
-        foreach (var sound in _objectSounds) sound.Dispose();
+        foreach (var sound in _objectSounds)
+            sound.Dispose();
         _objectSounds.Clear();
     }
 }

@@ -17,6 +17,7 @@ public sealed class TightPackWriterState
         if (_ids is null)
         {
             id = 0;
+
             return false;
         }
 
@@ -30,6 +31,7 @@ public sealed class TightPackWriterState
         uint id = (uint)_objects.Count;
         _objects.Add(value);
         _ids[value] = id;
+
         return id;
     }
 
@@ -38,10 +40,12 @@ public sealed class TightPackWriterState
         if (_objects is null || id >= _objects.Count)
         {
             value = null;
+
             return false;
         }
 
         value = _objects[(int)id];
+
         return true;
     }
 }
@@ -63,10 +67,12 @@ public sealed class TightPackReaderState
         if (_objects is null || id >= _objects.Count)
         {
             value = null;
+
             return false;
         }
 
         value = _objects[(int)id];
+
         return true;
     }
 }

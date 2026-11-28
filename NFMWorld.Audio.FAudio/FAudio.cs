@@ -70,6 +70,7 @@ public static class FAudio
     {
         int bufferSize = (str.Length * 4) + 1;
         byte* buffer = (byte*)Marshal.AllocHGlobal(bufferSize);
+
         fixed (char* strPtr = str)
         {
             Encoding.UTF8.GetBytes(strPtr, str.Length + 1, buffer, bufferSize);
@@ -769,11 +770,12 @@ public static class FAudio
     );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void OnVoiceErrorFunc(
-        IntPtr voiceCallback, /* FAudioVoiceCallback* */
-        IntPtr pBufferContext, /* void* */
-        uint Error
-    );
+    public delegate void
+        OnVoiceErrorFunc(
+            IntPtr voiceCallback, /* FAudioVoiceCallback* */
+            IntPtr pBufferContext, /* void* */
+            uint Error
+        );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void OnVoiceProcessingPassEndFunc(
@@ -934,12 +936,13 @@ public static class FAudio
     );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate uint IsInputFormatSupportedFunc(
-        IntPtr fapo,
-        IntPtr pOutputFormat,
-        IntPtr pRequestedInputFormat,
-        IntPtr ppSupportedInputFormat
-    );
+    public delegate uint
+        IsInputFormatSupportedFunc(
+            IntPtr fapo,
+            IntPtr pOutputFormat,
+            IntPtr pRequestedInputFormat,
+            IntPtr ppSupportedInputFormat
+        );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate uint IsOutputFormatSupportedFunc(
@@ -1155,12 +1158,13 @@ public static class FAudio
     /* Delegates */
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    public delegate int FACTReadFileCallback(
-        IntPtr hFile,
-        IntPtr buffer,
-        uint nNumberOfBytesToRead,
-        IntPtr lpOverlapped /* FACTOverlapped* */
-    );
+    public delegate int
+        FACTReadFileCallback(
+            IntPtr hFile,
+            IntPtr buffer,
+            uint nNumberOfBytesToRead,
+            IntPtr lpOverlapped /* FACTOverlapped* */
+        );
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate int FACTGetOverlappedResultCallback(
@@ -1660,6 +1664,7 @@ public static class FAudio
             out ppWave
         );
         Marshal.FreeHGlobal((IntPtr)utf8WavePath);
+
         return result;
     }
 
@@ -1714,6 +1719,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(szFriendlyName);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return FACTAudioEngine_GetCategory(
             pEngine,
             Utf8Encode(szFriendlyName, utf8Buf, utf8BufSize)
@@ -1754,6 +1760,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(szFriendlyName);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return FACTAudioEngine_GetGlobalVariableIndex(
             pEngine,
             Utf8Encode(szFriendlyName, utf8Buf, utf8BufSize)
@@ -1789,6 +1796,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(szFriendlyName);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return FACTSoundBank_GetCueIndex(
             pSoundBank,
             Utf8Encode(szFriendlyName, utf8Buf, utf8BufSize)
@@ -1895,6 +1903,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(szFriendlyName);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return FACTWaveBank_GetWaveIndex(
             pWaveBank,
             Utf8Encode(szFriendlyName, utf8Buf, utf8BufSize)
@@ -2036,6 +2045,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(szFriendlyName);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return FACTCue_GetVariableIndex(
             pCue,
             Utf8Encode(szFriendlyName, utf8Buf, utf8BufSize)
@@ -2179,6 +2189,7 @@ public static class FAudio
 
     /* FIXME: Everything about this type blows */
     public const int F3DAUDIO_HANDLE_BYTESIZE = 20;
+
     // Alloc a byte[] of size F3DAUDIO_HANDLE_BYTESIZE!
 
     /* Structures */
@@ -2401,6 +2412,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(name);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return XNA_PlaySong(Utf8Encode(name, utf8Buf, utf8BufSize));
     }
 
@@ -2440,12 +2452,13 @@ public static class FAudio
 
     /* IntPtr refers to a size_t */
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate IntPtr FAudio_readfunc(
-        IntPtr data, /* void* */
-        IntPtr dst, /* void* */
-        IntPtr size, /* size_t */
-        IntPtr count /* size_t */
-    );
+    public delegate IntPtr
+        FAudio_readfunc(
+            IntPtr data, /* void* */
+            IntPtr dst, /* void* */
+            IntPtr size, /* size_t */
+            IntPtr count /* size_t */
+        );
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate long FAudio_seekfunc(
@@ -2479,6 +2492,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(path);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return FAudio_fopen(Utf8Encode(path, utf8Buf, utf8BufSize));
     }
 
@@ -2570,6 +2584,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(filename);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return stb_vorbis_open_filename(
             Utf8Encode(filename, utf8Buf, utf8BufSize),
             out error,
@@ -2667,6 +2682,7 @@ public static class FAudio
     {
         int utf8BufSize = Utf8Size(filename);
         byte* utf8Buf = stackalloc byte[utf8BufSize];
+
         return qoa_open_from_filename(
             Utf8Encode(filename, utf8Buf, utf8BufSize)
         );

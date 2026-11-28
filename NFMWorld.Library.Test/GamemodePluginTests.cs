@@ -24,6 +24,7 @@ public class GamemodePluginTests
     private static GamemodePlugin? Load(string id)
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(OutputRoot);
+
         return GamemodePlugin.Load(id, $"data/gamemodes/{id}/gamemode.dll");
     }
 

@@ -43,14 +43,18 @@ public class UiRenderer : IDisposable
     /// </summary>
     public bool WantsMouse(int x, int y)
     {
-        if (GameSparker.MessageWindow.IsOpen) return true;
+        if (GameSparker.MessageWindow.IsOpen)
+
+            return true;
         if (ActiveRoot is not { } root)
+
             return false;
 
         var chain = FocusManager.HitTestChain(root, new Vector2(x, y));
 
         // The root is the full-window host so its absolutely positioned panels can
         // resolve against it; a hit on the root alone is empty viewport, not UI.
+
         return chain.Any(node => !ReferenceEquals(node, root) && !ReferenceEquals(node, _phaseRoot));
     }
 
@@ -67,12 +71,14 @@ public class UiRenderer : IDisposable
     public void ShowPhase(object phase)
     {
         if (ReferenceEquals(_owner, phase) && _mounted is not null)
+
             return;
 
         Unmount();
         _owner = phase;
 
         if (phase is not BasePhase basePhase)
+
             return;
 
         // Build INSIDE Mount: BuildUi creates the whole tree, and every effect it makes
@@ -83,14 +89,17 @@ public class UiRenderer : IDisposable
         _mounted = NFMWorld.Reactor.Sx.Renderer.Mount(() =>
             {
                 _phaseRoot = basePhase.BuildUi() ?? new View();
+
                 return Sx.View(
-                style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
-                children:
+                    style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
+                    children:
                 [
-                    Sx.View(style: () => Sx.Styles(
-                        display: Display.Contents,
-                        pointerEvents: !GameSparker.MessageWindow.IsOpen
-                    ), children: _phaseRoot
+                    Sx.View(
+                        style: () => Sx.Styles(
+                            display: Display.Contents,
+                            pointerEvents: !GameSparker.MessageWindow.IsOpen
+                        ),
+                        children: _phaseRoot
                     ),
                     GameSparker.MessageWindow.BuildUi(),
                     NFMWorld.UI.Components.LoadingOverlay.Build(
@@ -98,7 +107,7 @@ public class UiRenderer : IDisposable
                     ),
                     Notifications.BuildUi()
                 ]
-            );
+                );
             }
         );
         ActiveRoot = (View)_mounted.Root;
@@ -108,6 +117,7 @@ public class UiRenderer : IDisposable
     public void HidePhase(object phase)
     {
         if (!ReferenceEquals(_owner, phase))
+
             return;
 
         Unmount();
@@ -177,13 +187,17 @@ public class UiRenderer : IDisposable
 
     public void HandleKeyTyped(char character)
     {
-        if (_owner is RacePhase race && race.ConsumeChatOpeningText()) return;
+        if (_owner is RacePhase race && race.ConsumeChatOpeningText())
+
+            return;
         ActiveRoot?.DispatchKeyTyped(new KeyboardTypingEvent(character));
     }
 
     public void HandleMouseMoved(int x, int y, MouseButtons buttons, bool ctrlKey, bool shiftKey, bool altKey)
     {
-        if (ActiveRoot is not { } root) return;
+        if (ActiveRoot is not { } root)
+
+            return;
         FocusManager.DispatchMouseMove(
             root,
             new BaseMouseMoveEvent(new Vector2(x, y), buttons, ctrlKey, altKey, shiftKey)
@@ -202,7 +216,9 @@ public class UiRenderer : IDisposable
         bool altKey
     )
     {
-        if (_consumedMouseButtons.Contains(button) || ActiveRoot is not { } root) return;
+        if (_consumedMouseButtons.Contains(button) || ActiveRoot is not { } root)
+
+            return;
         root.DispatchMouseDragged(
             new BaseMouseDragEvent(
                 new Vector2(dragStartX, dragStartY),
@@ -227,18 +243,26 @@ public class UiRenderer : IDisposable
     )
     {
         _consumedMouseButtons.Remove(button);
-        if (ActiveRoot == null) return false;
+
+        if (ActiveRoot == null)
+
+            return false;
         UiScheduler.Instance.Flush();
         NFMWorld.UI.Components.Controls.DismissDropdowns(ActiveRoot, new Vector2(x, y));
         UiScheduler.Instance.Flush();
-        if (ActiveRoot is not { } root) return false;
+
+        if (ActiveRoot is not { } root)
+
+            return false;
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
         // Focus handling lives in FocusManager: it focuses the focusable element
         // under the cursor, or clears focus when the clicked tree has none.
         FocusManager.HandleMousePressed(root, @event);
         var consumed = root.DispatchMousePressed(@event);
-        if (consumed) _consumedMouseButtons.Add(button);
+        if (consumed)
+            _consumedMouseButtons.Add(button);
         UiScheduler.Instance.Flush();
+
         return consumed;
     }
 
@@ -256,13 +280,17 @@ public class UiRenderer : IDisposable
         if (_consumedMouseButtons.Remove(button))
         {
             FocusManager.HandleMouseReleased();
+
             return true;
         }
 
-        if (!dispatchToUi || ActiveRoot is not { } root) return false;
+        if (!dispatchToUi || ActiveRoot is not { } root)
+
+            return false;
         var @event = new BaseMouseEvent(new Vector2(x, y), button, buttons, ctrlKey, altKey, shiftKey);
         FocusManager.HandleMouseReleased();
         root.DispatchMouseReleased(@event);
+
         return false;
     }
 

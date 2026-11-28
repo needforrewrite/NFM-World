@@ -70,6 +70,7 @@ namespace Poly2Tri
         {
             StringBuilder sb = new StringBuilder();
             AdvancingFrontNode node = Head;
+
             while (node != Tail)
             {
                 sb.Append(node.Point.X).Append("->");
@@ -77,6 +78,7 @@ namespace Poly2Tri
             }
 
             sb.Append(Tail.Point.X);
+
             return sb.ToString();
         }
 
@@ -100,6 +102,7 @@ namespace Poly2Tri
         private AdvancingFrontNode LocateNode(double x)
         {
             AdvancingFrontNode node = FindSearchNode(x);
+
             if (x < node.Value)
             {
                 while ((node = node.Prev) != null)
@@ -107,6 +110,7 @@ namespace Poly2Tri
                     if (x >= node.Value)
                     {
                         Search = node;
+
                         return node;
                     }
                 }
@@ -118,6 +122,7 @@ namespace Poly2Tri
                     if (x < node.Value)
                     {
                         Search = node.Prev;
+
                         return node.Prev;
                     }
                 }
@@ -141,6 +146,7 @@ namespace Poly2Tri
                 if (point != node.Point)
                 {
                     // We might have two nodes with same x value for a short time
+
                     if (point == node.Prev.Point)
                     {
                         node = node.Prev;

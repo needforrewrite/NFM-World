@@ -27,6 +27,7 @@ public class SxRendererTests
                     text: () =>
                     {
                         commits++;
+
                         return name.Value;
                     }
                 );
@@ -61,6 +62,7 @@ public class SxRendererTests
         var mounted = Renderer.Mount(() => Sx.View(() =>
             {
                 writes++;
+
                 return Sx.Styles(borderColor: active.Value ? new Maxine.Extensions.Mathematics.Color(79, 195, 247) : null);
             }
         )
@@ -82,10 +84,11 @@ public class SxRendererTests
         var built = new List<string>();
 
         var mounted = Renderer.Mount(() => Sx.For(
-                () => items.Value,
-                (item, _) =>
+            () => items.Value,
+            (item, _) =>
             {
                 built.Add(item);
+
                 return Sx.Text(text: () => item);
             }
         )
@@ -125,9 +128,9 @@ public class SxRendererTests
             : ["single", "multi", "back"];
 
         var mounted = Renderer.Mount(() => Sx.For(
-                each: Items,
-                row: (item, _) => Sx.Text(text: () => item)
-            )
+            each: Items,
+            row: (item, _) => Sx.Text(text: () => item)
+        )
         );
 
         var host = (View)mounted.Root;
@@ -161,10 +164,12 @@ public class SxRendererTests
             each: () =>
             {
                 reads++;
+
                 return items.Value;
             },
             row: (item, _) => Sx.Text(text: () => item)
-        ));
+        )
+        );
         Renderer.Flush();
         var before = reads;
 
@@ -191,10 +196,12 @@ public class SxRendererTests
             row: (item, _) => Sx.Text(text: () =>
                 {
                     runs++;
+
                     return $"{item}{probe.Value}";
                 }
             )
-        ));
+        )
+        );
         Renderer.Flush();
 
         items.Value = ["b"];
@@ -419,14 +426,15 @@ public class SxRendererTests
         var mounts = 0;
 
         var mounted = Renderer.Mount(() => Sx.Show(
-                () => visible.Value,
-                () =>
+            () => visible.Value,
+            () =>
             {
                 mounts++;
+
                 return Sx.Text(text: () => "on");
             },
-                () => Sx.Text(text: () => "off")
-            )
+            () => Sx.Text(text: () => "off")
+        )
         );
 
         Assert.AreEqual(1, mounts);
@@ -454,15 +462,16 @@ public class SxRendererTests
         var runs = 0;
 
         var mounted = Renderer.Mount(() => Sx.Show(
-                () => visible.Value,
-                () => Sx.Text(
-                    text: () =>
-                    {
-                        runs++;
-                        return probe.Value.ToString();
-                    }
-                )
+            () => visible.Value,
+            () => Sx.Text(
+                text: () =>
+                {
+                    runs++;
+
+                    return probe.Value.ToString();
+                }
             )
+        )
         );
 
         Renderer.Flush();
@@ -500,13 +509,14 @@ public class SxRendererTests
         var runs = 0;
 
         var mounted = Renderer.Mount(() => Sx.Switch(
-                tab,
-                new Dictionary<string, Func<Node>>
+            tab,
+            new Dictionary<string, Func<Node>>
                 {
                     ["a"] = () => Sx.Text(
                         text: () =>
                         {
                             runs++;
+
                             return $"a{probe.Value}";
                         }
                     ),
@@ -514,11 +524,12 @@ public class SxRendererTests
                         text: () =>
                         {
                             runs++;
+
                             return $"b{probe.Value}";
                         }
                     ),
                 }
-            )
+        )
         );
 
         Renderer.Flush();
@@ -551,7 +562,7 @@ public class SxRendererTests
     public void CollectionsOfChildren_AreFlattened()
     {
         var mounted = Renderer.Mount(() => Sx.View(
-                children:
+            children:
                 [
                     new List<Node>
                     {
@@ -559,7 +570,7 @@ public class SxRendererTests
                         Sx.Text(text: () => "two"),
                     }
                 ]
-            )
+        )
         );
 
         var texts = ((View)mounted.Root).VisualChildren.OfType<Text>()
@@ -625,9 +636,11 @@ public class SxRendererTests
                 control = Sx.Text(text: () =>
                     {
                         effectRuns++;
+
                         return probe.Value.ToString();
                     }
                 );
+
                 return [control];
             }
         )
@@ -739,6 +752,7 @@ public class SxRendererTests
         View Action(string label)
         {
             var hovered = new Signal<bool>(false);
+
             return Sx.View(
                 name: () => label,
                 style: () => Sx.Styles(
@@ -759,6 +773,7 @@ public class SxRendererTests
                 row: (page, _) =>
                 {
                     builds++;
+
                     return rows = Sx.View(
                         style: () => Sx.Styles(width: 100, flexDirection: FlexDirection.Column),
                         children: page == "File"
@@ -773,13 +788,15 @@ public class SxRendererTests
 
         void Move(float x, float y)
         {
-            FocusManager.DispatchMouseMove(root, new NFMWorld.ClayDom.Events.BaseMouseMoveEvent(
-                new System.Numerics.Vector2(x, y),
-                default,
-                false,
-                false,
-                false
-            )
+            FocusManager.DispatchMouseMove(
+                root,
+                new NFMWorld.ClayDom.Events.BaseMouseMoveEvent(
+                    new System.Numerics.Vector2(x, y),
+                    default,
+                    false,
+                    false,
+                    false
+                )
             );
             Renderer.Flush();
             root.LayoutAndRender(new System.Numerics.Vector2(200, 200));
@@ -867,6 +884,7 @@ public class SxRendererTests
                 (Func<object?>)(() =>
                 {
                     builds++;
+
                     return row = Sx.View(
                         name: () => "option",
                         style: () => Sx.Styles(
@@ -879,20 +897,24 @@ public class SxRendererTests
                     );
                 })
             ]
-        ));
+        )
+        );
 
         var root = (View)mounted.Root;
         var size = new System.Numerics.Vector2(200, 200);
 
         void Move(float x, float y)
         {
-            FocusManager.DispatchMouseMove(root, new NFMWorld.ClayDom.Events.BaseMouseMoveEvent(
-                new System.Numerics.Vector2(x, y),
-                default,
-                false,
-                false,
-                false
-            ));
+            FocusManager.DispatchMouseMove(
+                root,
+                new NFMWorld.ClayDom.Events.BaseMouseMoveEvent(
+                    new System.Numerics.Vector2(x, y),
+                    default,
+                    false,
+                    false,
+                    false
+                )
+            );
             Renderer.Flush();
             root.LayoutAndRender(size);
         }
@@ -935,9 +957,11 @@ public class SxRendererTests
             {
                 var version = revision.Value;
                 builds++;
+
                 return Sx.Text(text: () =>
                     {
                         runs++;
+
                         return $"{version}:{probe.Value}";
                     }
                 );
@@ -974,14 +998,14 @@ public class SxRendererTests
             : [];
 
         using var mounted = Renderer.Mount(() => Sx.Show(
-                () => open.Value,
-                () => Sx.View(
-                    children:
+            () => open.Value,
+            () => Sx.View(
+                children:
                     [
                         (Func<object?>)(() => controls = Sx.View(children: [.. Options()]))
                     ]
-                )
             )
+        )
         );
 
         open.Value = true;
@@ -1010,18 +1034,19 @@ public class SxRendererTests
         var runs = 0;
 
         var mounted = Renderer.Mount(() => Sx.Show(
-                () => shown.Value,
-                () => Sx.For(
-                    each: () => (IReadOnlyList<string>)["a", "b"],
-                    row: (item, _) => Sx.Text(
-                        text: () =>
-                        {
-                            runs++;
-                            return $"{item}{probe.Value}";
-                        }
-                    )
+            () => shown.Value,
+            () => Sx.For(
+                each: () => (IReadOnlyList<string>)["a", "b"],
+                row: (item, _) => Sx.Text(
+                    text: () =>
+                    {
+                        runs++;
+
+                        return $"{item}{probe.Value}";
+                    }
                 )
             )
+        )
         );
 
         Renderer.Flush();

@@ -100,7 +100,9 @@ public sealed class SdlImGuiRenderer : IDisposable
 
         window.TextInput += c =>
         {
-            if (c == '\t') return;
+            if (c == '\t')
+
+                return;
             ImGui.GetIO().AddInputCharacter(c);
         };
 
@@ -117,6 +119,7 @@ public sealed class SdlImGuiRenderer : IDisposable
     {
         var texId = new IntPtr(_nextTexId++);
         _textures[(ImTextureID)texId] = new TextureInfo { Texture = texture, IsManaged = false };
+
         return new ImTextureRef(null, texId);
     }
 
@@ -124,7 +127,8 @@ public sealed class SdlImGuiRenderer : IDisposable
     {
         if (_textures.TryGetValue(textureRef.TexID, out var info))
         {
-            if (info.IsManaged) info.Texture?.Dispose();
+            if (info.IsManaged)
+                info.Texture?.Dispose();
             _textures.Remove(textureRef.TexID);
         }
     }
@@ -157,6 +161,7 @@ public sealed class SdlImGuiRenderer : IDisposable
         io.AddMouseButtonEvent(4, buttons.HasFlag(MouseButtons.XButton2));
 
         var keys = SdlWindow.GetKeyboardState();
+
         foreach (var key in AllKeys)
         {
             if (TryMapKey(key, out var imguiKey))
@@ -172,6 +177,7 @@ public sealed class SdlImGuiRenderer : IDisposable
         if (key == Key.None)
         {
             imguiKey = ImGuiKey.None;
+
             return true;
         }
 
@@ -227,7 +233,9 @@ public sealed class SdlImGuiRenderer : IDisposable
 
     private unsafe void ProcessTextureUpdates(ICommandBuffer cb, ImDrawDataPtr drawData)
     {
-        if (drawData.Textures.Data == null) return;
+        if (drawData.Textures.Data == null)
+
+            return;
         for (var i = 0; i < drawData.Textures.Size; i++)
             UpdateTexture(cb, drawData.Textures.Data[i]);
     }
@@ -258,7 +266,10 @@ public sealed class SdlImGuiRenderer : IDisposable
     private unsafe void UpdateTextureData(ICommandBuffer cb, ImTextureDataPtr textureData)
     {
         var texId = textureData.GetTexID();
-        if (!_textures.TryGetValue(texId, out var info) || info.Texture == null) return;
+
+        if (!_textures.TryGetValue(texId, out var info) || info.Texture == null)
+
+            return;
 
         var format = textureData.Format == ImTextureFormat.Rgba32 ? TextureFormat.Rgba8 : TextureFormat.R8;
         var bytesPerPixel = textureData.Format == ImTextureFormat.Rgba32 ? 4 : 1;
@@ -286,9 +297,11 @@ public sealed class SdlImGuiRenderer : IDisposable
     private void DestroyTexture(ImTextureDataPtr textureData)
     {
         var texId = textureData.GetTexID();
+
         if (_textures.TryGetValue(texId, out var info))
         {
-            if (info.IsManaged) info.Texture?.Dispose();
+            if (info.IsManaged)
+                info.Texture?.Dispose();
             _textures.Remove(texId);
         }
     }
@@ -305,7 +318,9 @@ public sealed class SdlImGuiRenderer : IDisposable
 
     private unsafe void UpdateBuffers(ICommandBuffer cb, ImDrawDataPtr drawData)
     {
-        if (drawData.TotalVtxCount == 0) return;
+        if (drawData.TotalVtxCount == 0)
+
+            return;
 
         if (drawData.TotalVtxCount > _vertexBufferSize)
         {
@@ -328,10 +343,13 @@ public sealed class SdlImGuiRenderer : IDisposable
         }
 
         int vtxOffset = 0, idxOffset = 0;
+
         for (var n = 0; n < drawData.CmdLists.Size; n++)
         {
             var cmdList = drawData.CmdLists[n];
+
             fixed (void* vtxDst = &_vertexData![vtxOffset * VertexStride])
+
             fixed (void* idxDst = &_indexData![idxOffset * sizeof(ushort)])
             {
                 Buffer.MemoryCopy(
@@ -351,12 +369,16 @@ public sealed class SdlImGuiRenderer : IDisposable
             // A backend with no base-vertex draw (WebGL2) gets the offsets folded into the indices
             // instead. Both the list's position in the concatenated buffer and each draw command's
             // own VtxOffset are part of what the draw would have added.
+
             if (!_graphicsDevice.SupportsBaseVertexDraw)
             {
                 for (var cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++)
                 {
                     var drawCmd = cmdList.CmdBuffer[cmdi];
-                    if (drawCmd.ElemCount == 0) continue;
+
+                    if (drawCmd.ElemCount == 0)
+
+                        continue;
 
                     var start = idxOffset + (int)drawCmd.IdxOffset;
                     var indices = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ushort>(
@@ -378,7 +400,9 @@ public sealed class SdlImGuiRenderer : IDisposable
 
     private void RenderCommandLists(ICommandBuffer cb, ImDrawDataPtr drawData)
     {
-        if (drawData.TotalVtxCount == 0) return;
+        if (drawData.TotalVtxCount == 0)
+
+            return;
 
         cb.SetPipeline(_pipeline);
         cb.SetVertexBuffer(0, _vertexBuffer!, VertexStride);
@@ -389,16 +413,23 @@ public sealed class SdlImGuiRenderer : IDisposable
         _parameters.Projection.SetValue(cb, projection);
 
         int vtxOffset = 0, idxOffset = 0;
+
         for (var n = 0; n < drawData.CmdLists.Size; n++)
         {
             var cmdList = drawData.CmdLists[n];
+
             for (var cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++)
             {
                 var drawCmd = cmdList.CmdBuffer[cmdi];
-                if (drawCmd.ElemCount == 0) continue;
+
+                if (drawCmd.ElemCount == 0)
+
+                    continue;
 
                 var texId = drawCmd.TexRef.TexID;
+
                 if (!_textures.TryGetValue(texId, out var info) || info.Texture == null)
+
                     continue;
 
                 cb.SetScissorRect(
@@ -431,9 +462,11 @@ public sealed class SdlImGuiRenderer : IDisposable
         _sampler.Dispose();
         _vertexBuffer?.Dispose();
         _indexBuffer?.Dispose();
+
         foreach (var t in _textures.Values)
         {
-            if (t.IsManaged) t.Texture?.Dispose();
+            if (t.IsManaged)
+                t.Texture?.Dispose();
         }
 
         _textures.Clear();

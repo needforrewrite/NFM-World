@@ -57,6 +57,7 @@ public class PvpFinishTests
     private static BackendStage CreateStage(ushort laps, int checkpoints, bool withWalls = false)
     {
         var loader = new StageLoader { nlaps = laps };
+
         if (withWalls)
         {
             loader.wallDefs.Add(new StageWall(WallDirection.Right, 1, 20000, 0));
@@ -68,12 +69,14 @@ public class PvpFinishTests
         var stage = new BackendStage("pvp-test", loader);
         for (var i = 0; i < checkpoints; i++)
             stage.Checkpoints.Add(CreateCheckpoint(100_000 + i * 20_000));
+
         return stage;
     }
 
     private static BaseGamemodeFactory CreateFactory(Dictionary<string, object>? config = null)
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+
         return GamemodeFactory.Create("nfmm/pvp", config ?? new Dictionary<string, object> { ["constraint"] = "racing" });
     }
 
@@ -81,6 +84,7 @@ public class PvpFinishTests
     {
         var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
             .Single(t => t.Name == name);
+
         return TightPackSerializer.SerializeUntyped(type.BaseType!, Activator.CreateInstance(type, args));
     }
 
@@ -156,7 +160,9 @@ public class PvpFinishTests
         )!;
         server.Begin();
         server.StartRace();
-        for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++) server.GameTick();
+        for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++)
+            server.GameTick();
+
         return (factory, server, context);
     }
 
@@ -164,12 +170,15 @@ public class PvpFinishTests
     public void WallCountdownBroadcastsEachWarningOnce()
     {
         var (factory, server, context) = CreateRace(3, 2, new() { ["walls"] = "1" }, withWalls: true);
+
         try
         {
-            for (var tick = 0; tick < 61 * GamemodeUtils.ServerTps; tick++) server.GameTick();
+            for (var tick = 0; tick < 61 * GamemodeUtils.ServerTps; tick++)
+                server.GameTick();
             var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
                 .Single(t => t.Name == "WallWarningEvent");
             var warnings = new List<int>();
+
             foreach (var payload in context.Events)
             {
                 object? received = null;
@@ -190,6 +199,7 @@ public class PvpFinishTests
     public void FinalLapCheckpoint_FinishesTheRace()
     {
         var (factory, server, context) = CreateRace(laps: 2, checkpoints: 2);
+
         try
         {
             ReportCrossing(factory, server, context, crossed: 0, checkpointCount: 2, lap: 0);
@@ -214,6 +224,7 @@ public class PvpFinishTests
     public void LapRuleOverridesTheStageDefault()
     {
         var (factory, server, context) = CreateRace(3, 2, new() { ["constraint"] = "racing", ["laps"] = "1" });
+
         try
         {
             Assert.AreEqual((ushort)1, context.CurrentStage.Nlaps);
@@ -231,6 +242,7 @@ public class PvpFinishTests
     public void WastingDoesNotCountCheckpointsEvenWithALapOverride()
     {
         var (factory, server, context) = CreateRace(3, 2, new() { ["constraint"] = "wasting", ["laps"] = "1" });
+
         try
         {
             Assert.AreEqual((ushort)0, context.CurrentStage.Nlaps);
@@ -258,8 +270,10 @@ public class PvpFinishTests
     {
         var hoop = CreateCheckpoint(1000);
         var rules = new Dictionary<string, object> { ["fixing"] = "limited" };
-        if (limit is not null) rules["fix_limit"] = limit;
+        if (limit is not null)
+            rules["fix_limit"] = limit;
         var (factory, server, context) = CreateRace(3, 2, rules, hoop);
+
         try
         {
             var request = SerializeEvent(factory, "UseFixHoopEvent", 0, 0);
@@ -267,13 +281,16 @@ public class PvpFinishTests
                 .Single(t => t.Name == "FixHoopUsedEvent");
             context.Position = hoop.Position;
             context.Events.Clear();
+
             for (var use = 0; use <= expectedUses; use++)
             {
                 server.OnClientEvent(PlayerId, request.Span);
-                for (var tick = 0; tick < GamemodeUtils.ServerTps; tick++) server.GameTick();
+                for (var tick = 0; tick < GamemodeUtils.ServerTps; tick++)
+                    server.GameTick();
             }
 
             Assert.HasCount(expectedUses, context.Events);
+
             for (var i = 0; i < context.Events.Count; i++)
             {
                 object? used = null;
@@ -291,6 +308,7 @@ public class PvpFinishTests
     public void CheckpointClaimFarFromTheCheckpoint_IsRejected()
     {
         var (factory, server, context) = CreateRace(laps: 1, checkpoints: 2);
+
         try
         {
             context.Position = new f64Vector3(900_000, World.Ground, 900_000);
@@ -315,6 +333,7 @@ public class PvpFinishTests
         var secondChaser = Guid.NewGuid();
         var departed = Guid.NewGuid();
         var factory = CreateFactory();
+
         try
         {
             var players = new List<ServerSidePlayerInfo>();
@@ -328,7 +347,8 @@ public class PvpFinishTests
             )!;
             server.Begin();
             server.StartRace();
-            for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++) server.GameTick();
+            for (var i = 0; i < GamemodeUtils.ServerCountdownInterval * 3; i++)
+                server.GameTick();
 
             CrossFirstCheckpoint(leading, 0);
             CrossFirstCheckpoint(firstChaser, 1);
@@ -372,6 +392,7 @@ public class PvpFinishTests
     public void OnePlayerForfeiting_LeavesTheRaceRunning()
     {
         var factory = CreateFactory();
+
         try
         {
             var server = factory.CreateServerGamemode(
@@ -405,6 +426,7 @@ public class PvpFinishTests
     public void EveryoneForfeiting_EndsTheRace()
     {
         var factory = CreateFactory();
+
         try
         {
             var server = factory.CreateServerGamemode(
@@ -477,6 +499,7 @@ public class PvpFinishTests
         var factory = CreateFactory(wastedBeforeFinish ? new() { ["constraint"] = "racing", ["fixing"] = "none" } : null);
         var carName = $"pvp-test/{Guid.NewGuid():N}";
         BaseClientGamemode? client = null;
+
         try
         {
             BackendGameSparker.dynamic_models.Add(
@@ -511,6 +534,7 @@ public class PvpFinishTests
             Assert.AreEqual<ushort?>((ushort)0, context.FinishSoundCheckpoint);
 
             var car = client.ClientPlayer!.Car!;
+
             if (wastedBeforeFinish)
             {
                 Assert.IsTrue(stage.Pieces.Contains(hoop));
@@ -519,7 +543,8 @@ public class PvpFinishTests
                 car.CurrentLap = 1;
                 car.CarPhysics.Wasted = true;
                 var respawnTick = (int)Math.Ceiling(3 * Physics.TargetTps);
-                for (var tick = 1; tick < respawnTick; tick++) client.GameTick();
+                for (var tick = 1; tick < respawnTick; tick++)
+                    client.GameTick();
                 Assert.IsTrue(car.Wasted, "the car stays wasted for three seconds");
 
                 client.GameTick();
@@ -555,6 +580,7 @@ public class PvpFinishTests
     {
         var factory = CreateFactory();
         IServerGamemode? server = null;
+
         try
         {
             server = factory.CreateServerGamemode(
@@ -591,6 +617,7 @@ public class PvpFinishTests
         var factory = CreateFactory();
         var carName = $"pvp-test/{Guid.NewGuid():N}";
         BaseClientGamemode? client = null;
+
         try
         {
             BackendGameSparker.dynamic_models.Add(
@@ -637,6 +664,7 @@ public class PvpFinishTests
         var factory = CreateFactory();
         var carName = $"pvp-test/{Guid.NewGuid():N}";
         BaseClientGamemode? client = null;
+
         try
         {
             BackendGameSparker.dynamic_models.Add(
@@ -696,6 +724,7 @@ public class PvpFinishTests
         var factory = CreateFactory();
         var carName = $"pvp-test/{Guid.NewGuid():N}";
         BaseClientGamemode? client = null;
+
         try
         {
             BackendGameSparker.dynamic_models.Add(
@@ -744,6 +773,7 @@ public class PvpFinishTests
         var factory = CreateFactory();
         var carName = $"pvp-test/{Guid.NewGuid():N}";
         BaseClientGamemode? client = null;
+
         try
         {
             BackendGameSparker.dynamic_models.Add(

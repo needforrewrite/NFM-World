@@ -14,13 +14,17 @@ using NFMWorld.ShaderCompiler;
 
 // The WGSL translator's own process, started by WgslCompiler on the build's behalf. It has no
 // other job and writes to stdout in binary, so nothing here may print.
+
 if (args.Contains(WgslTranslatorServer.Argument))
+
     return WgslTranslatorServer.Run();
 
 var shaderPath = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
+
 if (shaderPath is null)
 {
     Console.Error.WriteLine("usage: NFMWorld.ShaderCompiler <shader.fx|directory> [output-dir]");
+
     return 1;
 }
 
@@ -57,6 +61,7 @@ try
 catch (Exception e) when (e is InvalidOperationException or IOException)
 {
     Console.Error.WriteLine(e.Message);
+
     return 1;
 }
 

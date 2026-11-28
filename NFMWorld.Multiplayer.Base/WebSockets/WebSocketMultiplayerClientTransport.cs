@@ -43,6 +43,7 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
         catch
         {
             client.Dispose();
+
             throw;
         }
 
@@ -59,6 +60,7 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
         previousClient?.Dispose();
 
         _ = ReceiveLoop(client, _receiveCts.Token);
+
         return true;
     }
 
@@ -79,19 +81,23 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
             while (client.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 var result = await client.ReceiveAsync(buffer, ct);
+
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
                     // A policy violation is the server refusing this connection for good - an
                     // account that signed in elsewhere. Reconnecting would take the seat back
                     // and evict the connection that holds it now, so the two would ping-pong.
                     evicted = result.CloseStatus == WebSocketCloseStatus.PolicyViolation;
+
                     break;
                 }
 
                 ms.Write(buffer, 0, result.Count);
+
                 if (ms.Length > MaxMessageBytes)
                 {
                     Logging.Warning($"Server sent a message over {MaxMessageBytes} bytes; disconnecting");
+
                     break;
                 }
 
@@ -115,7 +121,9 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
 
         // Only the live socket may change the state: an older loop finishing after a
         // reconnect must not report the new connection as dropped.
+
         if (!ReferenceEquals(client, _client))
+
             return;
 
         client.Dispose();
@@ -148,20 +156,24 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
     protected override void SendRawPacketToServer(ReadOnlySpan<byte> span, bool reliable)
     {
         var client = _client;
+
         if (client is not { State: WebSocketState.Open })
         {
             Logging.Warning("Dropped a packet for the lobby: the connection is not open");
+
             return;
         }
 
         if (Volatile.Read(ref _queuedSends) >= MaxQueuedSends)
         {
             Logging.Warning("Dropped a packet for the lobby: the send queue is backed up");
+
             return;
         }
 
         var data = span.ToArray();
         Interlocked.Increment(ref _queuedSends);
+
         lock (_sendLock)
         {
             _pendingSend = _pendingSend
@@ -169,6 +181,7 @@ public class WebSocketMultiplayerClientTransport : BaseMultiplayerClientTranspor
                     _ =>
                     {
                         Interlocked.Decrement(ref _queuedSends);
+
                         return SendCoreAsync(client, data);
                     },
                     CancellationToken.None,

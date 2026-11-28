@@ -184,14 +184,17 @@ public partial class WorldGame : IDisposable, IGameHost
         foreach (var arg in args)
         {
             if (!arg.StartsWith(RendererArgumentPrefix, StringComparison.OrdinalIgnoreCase))
+
                 continue;
 
             var value = arg[RendererArgumentPrefix.Length..];
+
             if (value.Equals("d3d11", StringComparison.OrdinalIgnoreCase))
             {
                 // Named on every platform but only usable on one, and the message says which rather
                 // than letting device creation produce a PlatformNotSupportedException several
                 // hundred lines later, after SDL has already brought a window up.
+
                 if (!OperatingSystem.IsWindows())
                 {
                     throw new ArgumentException(
@@ -205,11 +208,14 @@ public partial class WorldGame : IDisposable, IGameHost
 
             // Named but not built in: the message has to say so, because the generic "unknown"
             // below would send someone looking for a typo in a name that is spelled correctly.
+
             if (value.Equals("angle", StringComparison.OrdinalIgnoreCase))
             {
 #if ANGLE
+
                 return Renderer.Angle;
 #else
+
                 throw new ArgumentException(
                     $"{RendererArgumentPrefix}angle needs this build to include the ANGLE backend, "
                     + "which is behind the NfmWorldAngle property - rebuild with "
@@ -219,6 +225,7 @@ public partial class WorldGame : IDisposable, IGameHost
             }
 
             if (value.Equals("desktopgl", StringComparison.OrdinalIgnoreCase))
+
                 return Renderer.DesktopGl;
 
             if (value.Equals("webgpu", StringComparison.OrdinalIgnoreCase))
@@ -228,7 +235,10 @@ public partial class WorldGame : IDisposable, IGameHost
                 // page's canvas by selector on the browser's own emdawnwebgpu path. Reported here
                 // rather than at device creation so the window is never brought up for a run that
                 // cannot present.
-                if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux()
+
+                if (!OperatingSystem.IsWindows()
+                    && !OperatingSystem.IsMacOS()
+                    && !OperatingSystem.IsLinux()
                     && !OperatingSystem.IsBrowser())
                 {
                     throw new ArgumentException(
@@ -308,7 +318,9 @@ public partial class WorldGame : IDisposable, IGameHost
         // eglGetPlatformDisplay returns, and freeing a pointer the GC also owns would corrupt the
         // heap. The allocation is therefore transferred rather than leaked - see _eglPlatformAttribs.
         _eglPlatformAttribs = SDL.SDL_malloc((UIntPtr)(attributes.Length * sizeof(nint)));
+
         if (_eglPlatformAttribs == IntPtr.Zero)
+
             throw new OutOfMemoryException("SDL_malloc failed for the EGL platform attribute list.");
 
         var target = (nint*)_eglPlatformAttribs;
@@ -340,9 +352,11 @@ public partial class WorldGame : IDisposable, IGameHost
     private static int ReadGrantedMultiSampleCount()
     {
         if (SDL.SDL_GL_GetAttribute(SDL.SDL_GLAttr.SDL_GL_MULTISAMPLESAMPLES, out var granted))
+
             return granted;
 
         Logging.Warning($"Could not read the granted multisample count back from SDL: {SDL.SDL_GetError()}");
+
         return 0;
     }
 
@@ -392,6 +406,7 @@ public partial class WorldGame : IDisposable, IGameHost
     private static void ReportMissingVulkanLoader()
     {
         if (!AngleVulkanLoader.MayBeMissing(_angleSelection) || AngleVulkanLoader.IsPresent)
+
             return;
 
         Logging.Warning(
@@ -411,12 +426,14 @@ public partial class WorldGame : IDisposable, IGameHost
         const int glVersion = 0x1F02;
 
         var getString = SDL.SDL_GL_GetProcAddress("glGetString");
+
         if (getString == IntPtr.Zero)
         {
             // Modern core profiles make glGetString unusable for anything but a handful of names, so
             // this is a real case rather than a defensive one. Nothing else here depends on the
             // strings, so it is reported and skipped.
             Logging.Warning("glGetString is unavailable, so the GL renderer could not be reported.");
+
             return;
         }
 
@@ -425,8 +442,10 @@ public partial class WorldGame : IDisposable, IGameHost
         string Read(int name)
         {
             var value = function(name);
+
             // GL's strings are only valid until the next GL call on the context, so they are
             // marshalled here rather than handed out as pointers.
+
             return value is null ? "(null)" : Marshal.PtrToStringUTF8((nint)value) ?? "(unreadable)";
         }
 
@@ -562,11 +581,14 @@ public partial class WorldGame : IDisposable, IGameHost
         // not been initialized"), and SdlWindow.Create is what brings the subsystem up - so it has
         // to run first, here, explicitly. Its result is checked rather than ignored: it was the
         // ignored failure that made the original ordering look harmless.
+
         if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
         // Which device this process runs on. Three arms, and what they actually differ in is who
         // creates the GL context - SDL for both GL paths, nobody for D3D11.
+
         switch (_renderer)
         {
             case Renderer.Angle when _browserContext is not null:
@@ -587,6 +609,7 @@ public partial class WorldGame : IDisposable, IGameHost
                     browserPresent,
                     resizeDrawable: browserResizeDrawable
                 );
+
                 break;
             }
 
@@ -607,12 +630,12 @@ public partial class WorldGame : IDisposable, IGameHost
                     ReportMissingVulkanLoader();
 
                     var (angleContext, angleWindow) = CreateGlContext(
-                    profileMask: EsProfile,
-                    major: 3,
-                    minor: 0,
+                        profileMask: EsProfile,
+                        major: 3,
+                        minor: 0,
                     // Forces SDL down its EGL path rather than WGL, so the context is ANGLE's.
-                    hint: (SDL.SDL_HINT_OPENGL_ES_DRIVER, "1")
-                );
+                        hint: (SDL.SDL_HINT_OPENGL_ES_DRIVER, "1")
+                    );
 
                     _glContext = angleContext;
                     Window = angleWindow;
@@ -628,16 +651,18 @@ public partial class WorldGame : IDisposable, IGameHost
                     _setSwapInterval = interval => SDL.SDL_GL_SetSwapInterval(interval);
 
                     _device = GlGraphicsDevice.Create(
-                    SDL.SDL_GL_GetProcAddress,
-                    angleWindow.Width,
-                    angleWindow.Height,
-                    () => SDL.SDL_GL_SwapWindow(angleWindow.Handle),
-                    _glGrantedMultiSampleCount
-                );
+                        SDL.SDL_GL_GetProcAddress,
+                        angleWindow.Width,
+                        angleWindow.Height,
+                        () => SDL.SDL_GL_SwapWindow(angleWindow.Handle),
+                        _glGrantedMultiSampleCount
+                    );
                     ReportGlRenderer(_angleSelection);
+
                     break;
                 }
 #else
+
                 throw new NotSupportedException(
                     "The ANGLE renderer needs a build with the ANGLE backend enabled - rebuild with "
                     + "-p:DefineConstants=ANGLE."
@@ -669,6 +694,7 @@ public partial class WorldGame : IDisposable, IGameHost
                     )
                 );
                 _device = d3d11Device;
+
                 break;
             }
 
@@ -690,6 +716,7 @@ public partial class WorldGame : IDisposable, IGameHost
                     browserHeight,
                     SettingsMenu.RequestedMultiSampleCount
                 );
+
                 break;
             }
 
@@ -709,6 +736,7 @@ public partial class WorldGame : IDisposable, IGameHost
                         MultiSampleCount: SettingsMenu.RequestedMultiSampleCount
                     )
                 );
+
                 break;
             }
 
@@ -738,14 +766,17 @@ public partial class WorldGame : IDisposable, IGameHost
                     _glGrantedMultiSampleCount
                 );
                 _device = desktopDevice;
+
                 break;
             }
 
             default:
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+
                     goto case Renderer.D3d11;
                 else
+
                     goto case Renderer.Angle;
             }
         }
@@ -758,21 +789,28 @@ public partial class WorldGame : IDisposable, IGameHost
         // presented with the wrong interval.
         SyncBackendVSync();
 
-        if (_graphicsRecoveryMode) return;
+        if (_graphicsRecoveryMode)
+
+            return;
         Window.Resized += OnWindowResized;
         Window.MouseButtonDown += (button, x, y) => _mouseButtonEvents.Enqueue((button, true, x, y));
         Window.MouseButtonUp += (button, x, y) => _mouseButtonEvents.Enqueue((button, false, x, y));
         Window.KeyChanged += (key, down, repeat) =>
         {
-            if (!down || !repeat) return;
+            if (!down || !repeat)
+
+                return;
             var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
             GameSparker.KeyRepeated(key, SdlWindow.GetKeyboardState(), imguiWantsKeyboard);
         };
 
         Window.TextInput += character =>
         {
-            if (GameSparker.devConsole.IsOpen() || GameSparker.MessageWindow.IsOpen) return;
+            if (GameSparker.devConsole.IsOpen() || GameSparker.MessageWindow.IsOpen)
+
+                return;
             var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
+
             if (!imguiWantsKeyboard)
             {
                 GameSparker.UiRenderer?.HandleKeyTyped(character);
@@ -867,6 +905,7 @@ public partial class WorldGame : IDisposable, IGameHost
         // default 8x request matches nothing there and the window fails with SDL's "Could not create
         // GLES window surface" - its own message, overwriting the "Couldn't find matching EGL config"
         // that named the cause.
+
         if (RequestedMultiSampleCount() is var samples and > 1)
         {
             if (profileMask == EsProfile && OperatingSystem.IsMacOS())
@@ -881,6 +920,7 @@ public partial class WorldGame : IDisposable, IGameHost
         // Spotlight, a wrapper) that fails as "Could not initialize OpenGL / GLES library" even
         // though both dylibs sit beside the binary. The hints make the loads absolute. The desktop
         // arm clears them again: there the same hint names the system OpenGL library.
+
         if (OperatingSystem.IsMacOS())
         {
             if (profileMask == EsProfile)
@@ -901,6 +941,7 @@ public partial class WorldGame : IDisposable, IGameHost
         }
 
         if (!SDL.SDL_GL_LoadLibrary(null))
+
             throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
 
         var window = SdlWindow.Create(
@@ -911,7 +952,9 @@ public partial class WorldGame : IDisposable, IGameHost
         );
 
         var context = SDL.SDL_GL_CreateContext(window.Handle);
+
         if (context == IntPtr.Zero)
+
             throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
 
         return (context, window);
@@ -933,6 +976,7 @@ public partial class WorldGame : IDisposable, IGameHost
         }
 
         var timesToTick = _tickTimeStep.Update(gameTime);
+
         if (timesToTick > 0)
         {
             LastTickTime = 0;
@@ -1011,7 +1055,9 @@ public partial class WorldGame : IDisposable, IGameHost
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
 
         // Dispose all phases before tearing down CEF and graphics.
@@ -1023,6 +1069,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         _uiRenderer?.Dispose();
         ShadowMapDebugView.Dispose();
+
         foreach (var shadowRenderTarget in GameSparker.ShadowRenderTargets)
         {
             shadowRenderTarget?.Dispose();
@@ -1112,7 +1159,8 @@ public partial class WorldGame : IDisposable, IGameHost
                 if (key == Key.F9 && !GameSparker.devConsole.IsOpen() && !imguiWantsKeyboard)
                 {
                     _yogaDebugPage++;
-                    if (_yogaDebugPage > YogaDebugger.MaxPages) _yogaDebugPage = -1;
+                    if (_yogaDebugPage > YogaDebugger.MaxPages)
+                        _yogaDebugPage = -1;
                 }
             }
             else if (!keys[key] && _oldKeyState[key])
@@ -1143,7 +1191,9 @@ public partial class WorldGame : IDisposable, IGameHost
             lockDuringGameplay: SettingsMenu.LockMouseInGame
         );
         Window.SetRelativeMouseMode(_mouseCursor.Locked);
-        if (!visible) _mouseDragging = false;
+        if (!visible)
+            _mouseDragging = false;
+
         if (warpTo is { } position)
         {
             Window.WarpMouse(position.X, position.Y);
@@ -1166,7 +1216,8 @@ public partial class WorldGame : IDisposable, IGameHost
         var altKey = _oldKeyState[Key.Alt];
         var wantCaptureMouse = GameSparker.devConsole.IsOpen()
                                || (ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse);
-        if (GameSparker.devConsole.IsOpen()) _mouseDragging = false;
+        if (GameSparker.devConsole.IsOpen())
+            _mouseDragging = false;
 
         void DispatchButton(MouseButtons button, bool down, int x, int y, MouseButtons state)
         {
@@ -1184,6 +1235,7 @@ public partial class WorldGame : IDisposable, IGameHost
             if (down)
             {
                 GameSparker.MousePressed(x, y, wantCaptureMouse, nfmButton, state, ctrlKey, shiftKey, altKey);
+
                 if (!wantCaptureMouse && nfmButton == MouseButton.Primary)
                 {
                     _mouseDragging = true;
@@ -1218,6 +1270,7 @@ public partial class WorldGame : IDisposable, IGameHost
         if (mousePosition.X != _oldMousePosition.X || mousePosition.Y != _oldMousePosition.Y)
         {
             GameSparker.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+
             if (!wantCaptureMouse && _mouseDragging)
             {
                 GameSparker.MouseDragged(
@@ -1316,6 +1369,7 @@ public partial class WorldGame : IDisposable, IGameHost
         // the request is recoverable from the shim, because Resize only ever writes back what it was
         // asked for - so a mismatch means the setting changed, or the window did, and one rebuild is
         // enough. Note a request the backend cannot honour does not loop; it simply takes effect as 0.
+
         if (Window.Width != swapchain.Width
             || Window.Height != swapchain.Height
             || multiSampleCount != _appliedMultiSampleRequest)
@@ -1348,6 +1402,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         var cb = _device.AcquireCommandBuffer();
         var submitted = false;
+
         try
         {
             cb.Clear(
@@ -1371,7 +1426,8 @@ public partial class WorldGame : IDisposable, IGameHost
             GameSparker.Render3DOverlays(cb);
 
             _uiRenderer?.Render();
-            if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
+            if (_yogaDebugPage >= 0)
+                YogaDebugger.Render(_yogaDebugPage);
 
             if (BaseStageRenderingPhase.DebugDisplay)
             {
@@ -1392,6 +1448,7 @@ public partial class WorldGame : IDisposable, IGameHost
             _nvg.Render();
 
             ImguiRenderer?.BeginLayout(gameTime);
+
             if (ImguiRenderer is not null)
             {
                 GameSparker.RenderImgui();
@@ -1457,14 +1514,19 @@ public partial class WorldGame : IDisposable, IGameHost
     private void DrawBootMessage(string message)
     {
         // Nothing to draw the message with when there is no ImGui.
+
         if (ImguiRenderer is null)
+
             return;
 
         var vertices = 0;
+
         for (var attempt = 0; attempt < BootMessageFrameLimit; attempt++)
         {
             vertices = DrawBootFrame(message);
+
             if (vertices > 0)
+
                 return;
         }
 
@@ -1486,6 +1548,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         var cb = _device.AcquireCommandBuffer();
         var submitted = false;
+
         try
         {
             cb.Clear(
@@ -1496,15 +1559,16 @@ public partial class WorldGame : IDisposable, IGameHost
             SetFullScreenScissor(cb);
 
             ImguiRenderer!.BeginLayout(new GameTime(TimeSpan.Zero, TimeSpan.Zero));
+
             if (ImGui.Begin(
-                    "##boot",
-                    ImGuiWindowFlags.NoTitleBar
-                    | ImGuiWindowFlags.NoResize
-                    | ImGuiWindowFlags.NoMove
-                    | ImGuiWindowFlags.NoSavedSettings
-                    | ImGuiWindowFlags.NoInputs
-                    | ImGuiWindowFlags.AlwaysAutoResize
-                ))
+                "##boot",
+                ImGuiWindowFlags.NoTitleBar
+                | ImGuiWindowFlags.NoResize
+                | ImGuiWindowFlags.NoMove
+                | ImGuiWindowFlags.NoSavedSettings
+                | ImGuiWindowFlags.NoInputs
+                | ImGuiWindowFlags.AlwaysAutoResize
+            ))
             {
                 ImGui.TextUnformatted(message);
             }
@@ -1550,12 +1614,14 @@ public partial class WorldGame : IDisposable, IGameHost
         var timeAdvanced = TimeSpan.FromTicks(currentTicks - previousTicks);
         accumulatedElapsedTime += timeAdvanced;
         previousTicks = currentTicks;
+
         return timeAdvanced;
     }
 
     private static void UpdateEstimatedSleepPrecision(TimeSpan timeSpentSleeping)
     {
         var upperTimeBound = TimeSpan.FromMilliseconds(4);
+
         if (timeSpentSleeping > upperTimeBound)
         {
             timeSpentSleeping = upperTimeBound;
@@ -1568,9 +1634,11 @@ public partial class WorldGame : IDisposable, IGameHost
         else if (previousSleepTimes[sleepTimeIndex] == worstCaseSleepPrecision)
         {
             var maxSleepTime = TimeSpan.MinValue;
+
             foreach (var t in previousSleepTimes)
             {
-                if (t > maxSleepTime) maxSleepTime = t;
+                if (t > maxSleepTime)
+                    maxSleepTime = t;
             }
 
             worstCaseSleepPrecision = maxSleepTime;
@@ -1615,6 +1683,7 @@ public partial class WorldGame : IDisposable, IGameHost
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
         _renderer = renderer;
+
         return new WorldGame(getProcAddress, width, height, present, setSwapInterval, resizeDrawable, webGpuDevice);
     }
 
@@ -1642,6 +1711,7 @@ public partial class WorldGame : IDisposable, IGameHost
         AdvanceElapsedTime(stopwatch);
 
         TimeSpan frameElapsed;
+
         if (IsFixedTimeStep)
         {
             // Single fixed step per loop iteration (matches this loop's existing one-Update-
@@ -1705,6 +1775,7 @@ public partial class WorldGame : IDisposable, IGameHost
         if (args.Any(arg => arg.StartsWith("--sx-harness=", StringComparison.Ordinal)))
         {
             RunSxHarness(args);
+
             return;
         }
 
@@ -1712,7 +1783,10 @@ public partial class WorldGame : IDisposable, IGameHost
         var blockStartup = false;
         AcquireUpdateLease(ref updateLease, ref blockStartup);
         using var heldUpdateLease = updateLease;
-        if (blockStartup) return;
+
+        if (blockStartup)
+
+            return;
 
         var serverEnvironmentArgument = args.LastOrDefault(arg =>
             arg.StartsWith(ServerEnvironmentArgumentPrefix, StringComparison.Ordinal));
@@ -1720,6 +1794,7 @@ public partial class WorldGame : IDisposable, IGameHost
         BackendGameSparker.Load(isHeadless: false);
 
         // todo
+
         if (SettingsMenu.TrySelectRenderer(ref _renderer, ref _angleSelection))
         {
             Logging.Info($"Overriden renderer: {_renderer} (ANGLE: {_angleSelection})");
@@ -1739,11 +1814,13 @@ public partial class WorldGame : IDisposable, IGameHost
         if (args.Contains(GraphicsRecoveryArgument) || !string.IsNullOrEmpty(ReadStartupStatus()))
         {
             RunGraphicsRecovery(args);
+
             return;
         }
 
         WriteStartupStatus($"Starting {SettingsMenu.SelectedRendererName}. The previous launch did not finish initializing.");
         WorldGame? program = null;
+
         try
         {
             program = new WorldGame();
@@ -1755,24 +1832,30 @@ public partial class WorldGame : IDisposable, IGameHost
         catch (Exception ex)
         {
             RecoverFailedStartup(program, args, ex);
+
             return;
         }
 
-        if (program is null) return;
+        if (program is null)
+
+            return;
         var firstFrame = true;
 
         // Manual game loop replacing XNA's Game.Run() - timing algorithm ported from FNA's own
         // Game.Tick() (see AdvanceElapsedTime/UpdateEstimatedSleepPrecision above) so a fixed-cap
         // target (e.g. 63fps) holds precisely instead of drifting.
         var stopwatch = Stopwatch.StartNew();
+
         while (!program.Window.ShouldQuit)
         {
             // Pacing only: the browser head has no sleep or spin available on the main thread,
             // and requestAnimationFrame already paces it, so it drives Tick directly instead.
+
             if (program.IsFixedTimeStep)
             {
                 // Coarse-sleep down to the estimated OS sleep precision, then spin-wait the rest -
                 // avoids oversleeping past the target on platforms where Sleep(1) isn't accurate.
+
                 while (accumulatedElapsedTime + worstCaseSleepPrecision < program.TargetElapsedTime)
                 {
                     Thread.Sleep(1);
@@ -1793,6 +1876,7 @@ public partial class WorldGame : IDisposable, IGameHost
             catch (Exception ex) when (firstFrame)
             {
                 RecoverFailedStartup(program, args, ex);
+
                 return;
             }
 
@@ -1805,6 +1889,7 @@ public partial class WorldGame : IDisposable, IGameHost
 
         var updaterOwnsRestart = false;
         var cleanShutdown = false;
+
         try
         {
             program.Dispose();
@@ -1860,6 +1945,7 @@ public partial class WorldGame : IDisposable, IGameHost
             }
 
             // What is this platform??
+
             return "unknown";
         }
 
@@ -1978,6 +2064,7 @@ public partial class WorldGame : IDisposable, IGameHost
         // dlopen treats a slash-containing name as a path relative to the CWD (ignoring
         // LD_LIBRARY_PATH), so a relative "libs/..." only resolves when launched from the
         // output folder. AppContext.BaseDirectory is always the output folder.
+
         return NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, "libs", dir, newLibraryName));
     }
 }

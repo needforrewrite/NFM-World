@@ -120,6 +120,7 @@ namespace Poly2Tri
         public override bool Equals(Object obj)
         {
             Rect2D r = obj as Rect2D;
+
             if (r != null)
             {
                 return Equals(r);
@@ -249,17 +250,23 @@ namespace Poly2Tri
 
         public bool ContainsInclusive(Rect2D r, double epsilon)
         {
-            return ((Left - epsilon) <= r.Left) && ((Right + epsilon) >= r.Right) && ((Top - epsilon) <= r.Top) && ((Bottom
-                                                                                                                     + epsilon)
-                                                                                                                    >= r.Bottom);
+            return ((Left - epsilon) <= r.Left)
+                   && ((Right + epsilon) >= r.Right)
+                   && ((Top - epsilon) <= r.Top)
+                   && ((Bottom
+                        + epsilon)
+                       >= r.Bottom);
         }
 
 
         public bool Intersects(Rect2D r)
         {
-            return (Right > r.Left) &&
-                    (Left < r.Right) &&
-                    (Bottom < r.Top) &&
+            return (Right > r.Left)
+                   &&
+                    (Left < r.Right)
+                   &&
+                    (Bottom < r.Top)
+                   &&
                     (Top > r.Bottom);
         }
 
@@ -267,6 +274,7 @@ namespace Poly2Tri
         public Point2D GetCenter()
         {
             Point2D p = new Point2D((Left + Right) / 2, (Bottom + Top) / 2);
+
             return p;
         }
 
@@ -350,6 +358,7 @@ namespace Poly2Tri
             if (!TriangulationUtil.RectsIntersect(r1, r2))
             {
                 Left = Right = Top = Bottom = 0.0;
+
                 return false;
             }
 

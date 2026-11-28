@@ -15,13 +15,17 @@ internal static class ContentCacheMaintenance
     public static IDisposable TrackPending(IDisposable resource)
     {
         Pending.Add(resource);
+
         return new Registration(resource);
     }
 
     public static void Update()
     {
         var now = System.Environment.TickCount64;
-        if (now - _lastTrim < 1000) return;
+
+        if (now - _lastTrim < 1000)
+
+            return;
         _lastTrim = now;
         Clean(() => StageMeshCache.Trim());
         Clean(() => CarThumbnails.TrimUnused());
@@ -30,7 +34,8 @@ internal static class ContentCacheMaintenance
 
     public static void Shutdown()
     {
-        foreach (var resource in Pending.ToArray()) Clean(resource.Dispose);
+        foreach (var resource in Pending.ToArray())
+            Clean(resource.Dispose);
         Pending.Clear();
         Clean(() => StageMeshCache.Trim(clearUnused: true));
         Clean(() => CarThumbnails.TrimUnused(clear: true));

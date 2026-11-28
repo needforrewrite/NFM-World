@@ -48,6 +48,7 @@ public static class HlslBoolUniforms
     {
         var names = new HashSet<string>(StringComparer.Ordinal);
         Collect(source, resolveInclude, names, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
         return names;
     }
 
@@ -62,6 +63,7 @@ public static class HlslBoolUniforms
     public static StageReflection Mark(StageReflection reflection, IReadOnlySet<string> boolNames)
     {
         if (boolNames.Count == 0)
+
             return reflection;
 
         return reflection with
@@ -87,13 +89,16 @@ public static class HlslBoolUniforms
     )
     {
         var depth = 0;
+
         foreach (var line in text.Split('\n'))
         {
             // Only global scope declares a uniform, so anything nested is not a candidate - which
             // is also why the include scan belongs on this side of the check.
+
             if (depth == 0)
             {
                 var include = IncludeDirective.Match(line);
+
                 if (include.Success && resolveInclude is not null)
                 {
                     var target = include.Groups[1].Value;

@@ -15,7 +15,9 @@ internal static class GadgetRadar
 
     public static void Draw(GadgetHud hud, IHudData race, Vector2 center, float screenSize)
     {
-        if (race.ClientPosition is not { } client) return;
+        if (race.ClientPosition is not { } client)
+
+            return;
         var sin = MathF.Sin(race.ClientHeading);
         var cos = MathF.Cos(race.ClientHeading);
 
@@ -28,7 +30,7 @@ internal static class GadgetRadar
             client.Z,
             sin,
             cos,
-                center.X,
+            center.X,
             center.Y,
             screenSize,
             Range
@@ -36,6 +38,7 @@ internal static class GadgetRadar
         {
             var line = GadgetHud.Snap(190, 220, 245, 180);
             var checkpoints = race.Checkpoints;
+
             for (var i = 0; i < checkpoints.Count; i++)
             {
                 var a = ToRadar(checkpoints[i].X, checkpoints[i].Z);
@@ -52,7 +55,9 @@ internal static class GadgetRadar
 
         foreach (var marker in race.Markers)
         {
-            if (marker.Wasted || marker.IsClient) continue;
+            if (marker.Wasted || marker.IsClient)
+
+                continue;
             var p = ToRadar(marker.X, marker.Z);
             hud.ScreenIcon(p, GadgetHud.Snap(159, 80, 0), GadgetHud.Snap(50, 50, 50));
         }

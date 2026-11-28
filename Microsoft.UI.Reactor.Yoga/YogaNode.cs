@@ -30,8 +30,12 @@ internal struct YogaSize
 /// Measure function delegate. Called by Yoga to determine the intrinsic size of leaf nodes.
 /// </summary>
 internal delegate YogaSize YogaMeasureFunc(
-    YogaNode node, float availableWidth, YogaMeasureMode widthMode,
-    float availableHeight, YogaMeasureMode heightMode);
+    YogaNode node,
+    float availableWidth,
+    YogaMeasureMode widthMode,
+    float availableHeight,
+    YogaMeasureMode heightMode
+);
 
 /// <summary>
 /// Baseline function delegate. Returns the baseline offset from the top of the node.
@@ -71,11 +75,14 @@ internal sealed class YogaNode
     /// <summary>User-defined context object.</summary>
     public object? Context { get; set; }
 
-    public YogaNode() : this(YogaConfig.Default) { }
+    public YogaNode() : this(YogaConfig.Default)
+    {
+    }
 
     public YogaNode(YogaConfig config)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
+
         if (config.UseWebDefaults)
         {
             _style.FlexDirection = FlexDirection.Row;
@@ -96,11 +103,17 @@ internal sealed class YogaNode
         // SECURITY (TASK-082): reject self-cycles and parent-aliasing. Without
         // these checks, the layout walker recurses forever and dirty
         // propagation reads stale state.
+
         if (ReferenceEquals(child, this))
+
             throw new InvalidOperationException("InsertChild: cannot insert a node into itself.");
         if (child._owner is not null && !ReferenceEquals(child._owner, this))
-            throw new InvalidOperationException("InsertChild: child already has a different parent. Remove from prior parent first.");
+
+            throw new InvalidOperationException(
+                "InsertChild: child already has a different parent. Remove from prior parent first."
+            );
         if (_measureFunc != null)
+
             throw new InvalidOperationException("Cannot add children to a node with a measure function.");
         _children.Insert(index, child);
         child._owner = this;
@@ -113,8 +126,10 @@ internal sealed class YogaNode
         {
             child._owner = null;
             MarkDirtyAndPropagate();
+
             return true;
         }
+
         return false;
     }
 
@@ -153,10 +168,12 @@ internal sealed class YogaNode
         child._owner = this;
         MarkDirtyAndPropagate();
     }
+
     internal void ReplaceChild(YogaNode oldChild, YogaNode newChild)
     {
         int idx = _children.IndexOf(oldChild);
-        if (idx >= 0) ReplaceChild(newChild, idx);
+        if (idx >= 0)
+            ReplaceChild(newChild, idx);
     }
 
     /// <summary>
@@ -183,6 +200,7 @@ internal sealed class YogaNode
             if (child._style.Display == YogaDisplay.Contents)
             {
                 foreach (var grandchild in child.EnumerateLayoutChildrenContents())
+
                     yield return grandchild;
             }
             else
@@ -230,13 +248,16 @@ internal sealed class YogaNode
             public bool MoveNext()
             {
                 // Drain an in-progress Display.Contents subtree first.
+
                 if (_inner != null)
                 {
                     if (_inner.MoveNext())
                     {
                         _current = _inner.Current;
+
                         return true;
                     }
+
                     _inner.Dispose();
                     _inner = null;
                 }
@@ -244,21 +265,29 @@ internal sealed class YogaNode
                 while (_index < _children.Count)
                 {
                     var child = _children[_index++];
+
                     if (child._style.Display == YogaDisplay.Contents)
                     {
                         _inner = child.EnumerateLayoutChildrenContents().GetEnumerator();
+
                         if (_inner.MoveNext())
                         {
                             _current = _inner.Current;
+
                             return true;
                         }
+
                         _inner.Dispose();
                         _inner = null;
+
                         continue;
                     }
+
                     _current = child;
+
                     return true;
                 }
+
                 return false;
             }
 
@@ -293,6 +322,7 @@ internal sealed class YogaNode
     internal int GetLayoutChildCount()
     {
         int count = 0;
+
         foreach (var child in _children)
         {
             if (child._style.Display == YogaDisplay.Contents)
@@ -300,6 +330,7 @@ internal sealed class YogaNode
             else
                 count++;
         }
+
         return count;
     }
 
@@ -321,36 +352,188 @@ internal sealed class YogaNode
     // Reverted to unconditional dirty = main behavior. See PR #740; the full
     // #138-harmful-on-dynamic-trees finding (and the static-tree-gating idea) is
     // tracked in issue #742.
-    public FlexDirection FlexDirection { get => _style.FlexDirection; set { _style.FlexDirection = value; MarkDirtyAndPropagate(); } }
-    public FlexJustify JustifyContent { get => _style.JustifyContent; set { _style.JustifyContent = value; MarkDirtyAndPropagate(); } }
-    public FlexAlign AlignItems { get => _style.AlignItems; set { _style.AlignItems = value; MarkDirtyAndPropagate(); } }
-    public FlexAlign AlignSelf { get => _style.AlignSelf; set { _style.AlignSelf = value; MarkDirtyAndPropagate(); } }
-    public FlexAlign AlignContent { get => _style.AlignContent; set { _style.AlignContent = value; MarkDirtyAndPropagate(); } }
-    public FlexWrap FlexWrap { get => _style.FlexWrap; set { _style.FlexWrap = value; MarkDirtyAndPropagate(); } }
-    public FlexPositionType PositionType { get => _style.PositionType; set { _style.PositionType = value; MarkDirtyAndPropagate(); } }
+    public FlexDirection FlexDirection
+    {
+        get => _style.FlexDirection;
+        set
+        {
+            _style.FlexDirection = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public FlexJustify JustifyContent
+    {
+        get => _style.JustifyContent;
+        set
+        {
+            _style.JustifyContent = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public FlexAlign AlignItems
+    {
+        get => _style.AlignItems;
+        set
+        {
+            _style.AlignItems = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public FlexAlign AlignSelf
+    {
+        get => _style.AlignSelf;
+        set
+        {
+            _style.AlignSelf = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public FlexAlign AlignContent
+    {
+        get => _style.AlignContent;
+        set
+        {
+            _style.AlignContent = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public FlexWrap FlexWrap
+    {
+        get => _style.FlexWrap;
+        set
+        {
+            _style.FlexWrap = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public FlexPositionType PositionType
+    {
+        get => _style.PositionType;
+        set
+        {
+            _style.PositionType = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
     public YogaDisplay Display
     {
         get => _style.Display;
         set
         {
             if (value == YogaDisplay.Grid)
+
                 throw new NotImplementedException("Grid layout is not yet implemented in this C# port of Yoga.");
             _style.Display = value;
             MarkDirtyAndPropagate();
         }
     }
-    public YogaOverflow Overflow { get => _style.Overflow; set { _style.Overflow = value; MarkDirtyAndPropagate(); } }
 
-    public float FlexGrow { get => _style.FlexGrow; set { _style.FlexGrow = value; MarkDirtyAndPropagate(); } }
-    public float FlexShrink { get => _style.FlexShrink; set { _style.FlexShrink = value; MarkDirtyAndPropagate(); } }
-    public YogaValue FlexBasis { get => _style.FlexBasis; set { _style.FlexBasis = value; MarkDirtyAndPropagate(); } }
+    public YogaOverflow Overflow
+    {
+        get => _style.Overflow;
+        set
+        {
+            _style.Overflow = value;
+            MarkDirtyAndPropagate();
+        }
+    }
 
-    public YogaValue Width { get => _style.Dimensions[(int)YogaDimension.Width]; set { _style.Dimensions[(int)YogaDimension.Width] = value; MarkDirtyAndPropagate(); } }
-    public YogaValue Height { get => _style.Dimensions[(int)YogaDimension.Height]; set { _style.Dimensions[(int)YogaDimension.Height] = value; MarkDirtyAndPropagate(); } }
-    public YogaValue MinWidth { get => _style.MinDimensions[(int)YogaDimension.Width]; set { _style.MinDimensions[(int)YogaDimension.Width] = value; MarkDirtyAndPropagate(); } }
-    public YogaValue MinHeight { get => _style.MinDimensions[(int)YogaDimension.Height]; set { _style.MinDimensions[(int)YogaDimension.Height] = value; MarkDirtyAndPropagate(); } }
-    public YogaValue MaxWidth { get => _style.MaxDimensions[(int)YogaDimension.Width]; set { _style.MaxDimensions[(int)YogaDimension.Width] = value; MarkDirtyAndPropagate(); } }
-    public YogaValue MaxHeight { get => _style.MaxDimensions[(int)YogaDimension.Height]; set { _style.MaxDimensions[(int)YogaDimension.Height] = value; MarkDirtyAndPropagate(); } }
+    public float FlexGrow
+    {
+        get => _style.FlexGrow;
+        set
+        {
+            _style.FlexGrow = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public float FlexShrink
+    {
+        get => _style.FlexShrink;
+        set
+        {
+            _style.FlexShrink = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public YogaValue FlexBasis
+    {
+        get => _style.FlexBasis;
+        set
+        {
+            _style.FlexBasis = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public YogaValue Width
+    {
+        get => _style.Dimensions[(int)YogaDimension.Width];
+        set
+        {
+            _style.Dimensions[(int)YogaDimension.Width] = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public YogaValue Height
+    {
+        get => _style.Dimensions[(int)YogaDimension.Height];
+        set
+        {
+            _style.Dimensions[(int)YogaDimension.Height] = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public YogaValue MinWidth
+    {
+        get => _style.MinDimensions[(int)YogaDimension.Width];
+        set
+        {
+            _style.MinDimensions[(int)YogaDimension.Width] = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public YogaValue MinHeight
+    {
+        get => _style.MinDimensions[(int)YogaDimension.Height];
+        set
+        {
+            _style.MinDimensions[(int)YogaDimension.Height] = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public YogaValue MaxWidth
+    {
+        get => _style.MaxDimensions[(int)YogaDimension.Width];
+        set
+        {
+            _style.MaxDimensions[(int)YogaDimension.Width] = value;
+            MarkDirtyAndPropagate();
+        }
+    }
+
+    public YogaValue MaxHeight
+    {
+        get => _style.MaxDimensions[(int)YogaDimension.Height];
+        set
+        {
+            _style.MaxDimensions[(int)YogaDimension.Height] = value;
+            MarkDirtyAndPropagate();
+        }
+    }
 
     public float AspectRatio
     {
@@ -364,12 +547,43 @@ internal sealed class YogaNode
         }
     }
 
-    public void SetMargin(YogaEdge edge, YogaValue value) { _style.Margin[(int)edge] = value; MarkDirtyAndPropagate(); }
-    public void SetPadding(YogaEdge edge, YogaValue value) { _style.Padding[(int)edge] = value; MarkDirtyAndPropagate(); }
-    public void SetBorder(YogaEdge edge, float value) { var v = YogaValue.Point(value); _style.Border[(int)edge] = v; MarkDirtyAndPropagate(); }
-    public void SetPosition(YogaEdge edge, YogaValue value) { _style.Position[(int)edge] = value; MarkDirtyAndPropagate(); }
-    public void SetGap(YogaGutter gutter, float value) { var v = YogaValue.Point(value); _style.Gap[(int)gutter] = v; MarkDirtyAndPropagate(); }
-    public void SetGap(YogaGutter gutter, YogaValue value) { _style.Gap[(int)gutter] = value; MarkDirtyAndPropagate(); }
+    public void SetMargin(YogaEdge edge, YogaValue value)
+    {
+        _style.Margin[(int)edge] = value;
+        MarkDirtyAndPropagate();
+    }
+
+    public void SetPadding(YogaEdge edge, YogaValue value)
+    {
+        _style.Padding[(int)edge] = value;
+        MarkDirtyAndPropagate();
+    }
+
+    public void SetBorder(YogaEdge edge, float value)
+    {
+        var v = YogaValue.Point(value);
+        _style.Border[(int)edge] = v;
+        MarkDirtyAndPropagate();
+    }
+
+    public void SetPosition(YogaEdge edge, YogaValue value)
+    {
+        _style.Position[(int)edge] = value;
+        MarkDirtyAndPropagate();
+    }
+
+    public void SetGap(YogaGutter gutter, float value)
+    {
+        var v = YogaValue.Point(value);
+        _style.Gap[(int)gutter] = v;
+        MarkDirtyAndPropagate();
+    }
+
+    public void SetGap(YogaGutter gutter, YogaValue value)
+    {
+        _style.Gap[(int)gutter] = value;
+        MarkDirtyAndPropagate();
+    }
 
     // ── Measure/baseline callbacks ──
 
@@ -379,6 +593,7 @@ internal sealed class YogaNode
         set
         {
             if (value != null && _children.Count > 0)
+
                 throw new InvalidOperationException("Cannot set measure function on a node with children.");
             _measureFunc = value;
             _nodeType = value != null ? YogaNodeType.Text : YogaNodeType.Default;
@@ -403,6 +618,7 @@ internal sealed class YogaNode
             size.Width = YogaFloat.MaxOrDefined(0, size.Width);
         if (YogaFloat.IsUndefined(size.Height) || size.Height < 0)
             size.Height = YogaFloat.MaxOrDefined(0, size.Height);
+
         return size;
     }
 
@@ -430,7 +646,11 @@ internal sealed class YogaNode
     public float LayoutBorderRight => Layout.GetBorder(YogaPhysicalEdge.Right);
     public float LayoutBorderBottom => Layout.GetBorder(YogaPhysicalEdge.Bottom);
 
-    public bool HasNewLayout { get => _hasNewLayout; set => _hasNewLayout = value; }
+    public bool HasNewLayout
+    {
+        get => _hasNewLayout;
+        set => _hasNewLayout = value;
+    }
 
     // ── Config ──
 
@@ -447,6 +667,7 @@ internal sealed class YogaNode
         {
             Layout.ConfigVersion = config.Version;
         }
+
         _config = config;
     }
 
@@ -456,9 +677,12 @@ internal sealed class YogaNode
 
     internal void SetDirty(bool isDirty)
     {
-        if (_isDirty == isDirty) return;
+        if (_isDirty == isDirty)
+
+            return;
         _isDirty = isDirty;
-        if (isDirty) _dirtiedFunc?.Invoke(this);
+        if (isDirty)
+            _dirtiedFunc?.Invoke(this);
     }
 
     internal void MarkDirtyAndPropagate()
@@ -475,16 +699,36 @@ internal sealed class YogaNode
     public void MarkDirty()
     {
         if (_measureFunc == null)
+
             throw new InvalidOperationException("Only leaf nodes with measure functions can be marked dirty.");
         MarkDirtyAndPropagate();
     }
 
     // ── Internal state ──
 
-    internal bool AlwaysFormsContainingBlock { get => _alwaysFormsContainingBlock; set => _alwaysFormsContainingBlock = value; }
-    internal YogaNodeType NodeType { get => _nodeType; set => _nodeType = value; }
-    internal bool IsReferenceBaseline { get => _isReferenceBaseline; set => _isReferenceBaseline = value; }
-    internal YogaDirtiedFunc? DirtiedFunc { get => _dirtiedFunc; set => _dirtiedFunc = value; }
+    internal bool AlwaysFormsContainingBlock
+    {
+        get => _alwaysFormsContainingBlock;
+        set => _alwaysFormsContainingBlock = value;
+    }
+
+    internal YogaNodeType NodeType
+    {
+        get => _nodeType;
+        set => _nodeType = value;
+    }
+
+    internal bool IsReferenceBaseline
+    {
+        get => _isReferenceBaseline;
+        set => _isReferenceBaseline = value;
+    }
+
+    internal YogaDirtiedFunc? DirtiedFunc
+    {
+        get => _dirtiedFunc;
+        set => _dirtiedFunc = value;
+    }
 
     internal bool HasErrata(YogaErrata errata) => _config.HasErrata(errata);
 
@@ -497,45 +741,67 @@ internal sealed class YogaNode
     internal bool IsLayoutDimensionDefined(FlexDirection axis)
     {
         float value = Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis));
+
         return YogaFloat.IsDefined(value) && value >= 0;
     }
 
     internal bool HasDefiniteLength(YogaDimension dimension, float ownerSize)
     {
         float usedValue = ProcessedDimensions[(int)dimension].Resolve(ownerSize);
+
         return YogaFloat.IsDefined(usedValue) && usedValue >= 0;
     }
 
-    internal float GetResolvedDimension(FlexLayoutDirection direction, YogaDimension dimension, float referenceLength, float ownerWidth)
+    internal float GetResolvedDimension(
+        FlexLayoutDirection direction,
+        YogaDimension dimension,
+        float referenceLength,
+        float ownerWidth
+    )
     {
         float value = ProcessedDimensions[(int)dimension].Resolve(referenceLength);
+
         if (_style.BoxSizing == YogaBoxSizing.BorderBox)
+
             return value;
 
         float paddingAndBorder = _style.ComputePaddingAndBorderForDimension(direction, dimension, ownerWidth);
         float pb = YogaFloat.IsDefined(paddingAndBorder) ? paddingAndBorder : 0;
+
         return YogaFloat.IsDefined(value) ? value + pb : value;
     }
 
     internal YogaValue ProcessFlexBasis()
     {
         var flexBasis = _style.FlexBasis;
+
         if (!flexBasis.IsAuto && !flexBasis.IsUndefined)
+
             return flexBasis;
         if (YogaFloat.IsDefined(_style.Flex) && _style.Flex > 0)
+
             return _config.UseWebDefaults ? YogaValue.Auto : YogaValue.Zero;
+
         return YogaValue.Auto;
     }
 
-    internal float ResolveFlexBasis(FlexLayoutDirection direction, FlexDirection flexDirection, float referenceLength, float ownerWidth)
+    internal float ResolveFlexBasis(
+        FlexLayoutDirection direction,
+        FlexDirection flexDirection,
+        float referenceLength,
+        float ownerWidth
+    )
     {
         float value = ProcessFlexBasis().Resolve(referenceLength);
+
         if (_style.BoxSizing == YogaBoxSizing.BorderBox)
+
             return value;
 
         var dim = FlexDirectionHelper.Dimension(flexDirection);
         float paddingAndBorder = _style.ComputePaddingAndBorderForDimension(direction, dim, ownerWidth);
         float pb = YogaFloat.IsDefined(paddingAndBorder) ? paddingAndBorder : 0;
+
         return YogaFloat.IsDefined(value) ? value + pb : value;
     }
 
@@ -546,6 +812,7 @@ internal sealed class YogaNode
             var dim = (YogaDimension)d;
             var maxDim = _style.MaxDimensions[(int)dim];
             var minDim = _style.MinDimensions[(int)dim];
+
             if (maxDim.IsDefined && YogaFloat.InexactEquals(maxDim.Value, minDim.Value) && maxDim.Unit == minDim.Unit)
             {
                 ProcessedDimensions[(int)dim] = maxDim;
@@ -560,27 +827,39 @@ internal sealed class YogaNode
     internal FlexLayoutDirection ResolveDirection(FlexLayoutDirection ownerDirection)
     {
         if (_style.Direction == FlexLayoutDirection.Inherit)
+
             return ownerDirection != FlexLayoutDirection.Inherit ? ownerDirection : FlexLayoutDirection.LTR;
+
         return _style.Direction;
     }
 
     internal float ResolveFlexGrow()
     {
-        if (_owner == null) return 0;
+        if (_owner == null)
+
+            return 0;
         if (YogaFloat.IsDefined(_style.FlexGrow))
+
             return _style.FlexGrow;
         if (YogaFloat.IsDefined(_style.Flex) && _style.Flex > 0)
+
             return _style.Flex;
+
         return YogaStyle.DefaultFlexGrow;
     }
 
     internal float ResolveFlexShrink()
     {
-        if (_owner == null) return 0;
+        if (_owner == null)
+
+            return 0;
         if (YogaFloat.IsDefined(_style.FlexShrink))
+
             return _style.FlexShrink;
         if (!_config.UseWebDefaults && YogaFloat.IsDefined(_style.Flex) && _style.Flex < 0)
+
             return -_style.Flex;
+
         return _config.UseWebDefaults ? YogaStyle.WebDefaultFlexShrink : YogaStyle.DefaultFlexShrink;
     }
 
@@ -591,12 +870,16 @@ internal sealed class YogaNode
     internal float RelativePosition(FlexDirection axis, FlexLayoutDirection direction, float axisSize)
     {
         if (_style.PositionType == FlexPositionType.Static)
+
             return 0;
-        if (_style.IsInlineStartPositionDefined(axis, direction) &&
+
+        if (_style.IsInlineStartPositionDefined(axis, direction)
+            &&
             !_style.IsInlineStartPositionAuto(axis, direction))
         {
             return _style.ComputeInlineStartPosition(axis, direction, axisSize);
         }
+
         return -1 * _style.ComputeInlineEndPosition(axis, direction, axisSize);
     }
 
@@ -606,24 +889,38 @@ internal sealed class YogaNode
         var mainAxis = FlexDirectionHelper.ResolveDirection(_style.FlexDirection, directionRespectingRoot);
         var crossAxis = FlexDirectionHelper.ResolveCrossDirection(mainAxis, directionRespectingRoot);
 
-        float relativePositionMain = RelativePosition(mainAxis, directionRespectingRoot,
-            FlexDirectionHelper.IsRow(mainAxis) ? ownerWidth : ownerHeight);
-        float relativePositionCross = RelativePosition(crossAxis, directionRespectingRoot,
-            FlexDirectionHelper.IsRow(mainAxis) ? ownerHeight : ownerWidth);
+        float relativePositionMain = RelativePosition(
+            mainAxis,
+            directionRespectingRoot,
+            FlexDirectionHelper.IsRow(mainAxis) ? ownerWidth : ownerHeight
+        );
+        float relativePositionCross = RelativePosition(
+            crossAxis,
+            directionRespectingRoot,
+            FlexDirectionHelper.IsRow(mainAxis) ? ownerHeight : ownerWidth
+        );
 
         var mainAxisLeadingEdge = FlexDirectionHelper.InlineStartEdge(mainAxis, direction);
         var mainAxisTrailingEdge = FlexDirectionHelper.InlineEndEdge(mainAxis, direction);
         var crossAxisLeadingEdge = FlexDirectionHelper.InlineStartEdge(crossAxis, direction);
         var crossAxisTrailingEdge = FlexDirectionHelper.InlineEndEdge(crossAxis, direction);
 
-        Layout.SetPosition(mainAxisLeadingEdge,
-            _style.ComputeInlineStartMargin(mainAxis, direction, ownerWidth) + relativePositionMain);
-        Layout.SetPosition(mainAxisTrailingEdge,
-            _style.ComputeInlineEndMargin(mainAxis, direction, ownerWidth) + relativePositionMain);
-        Layout.SetPosition(crossAxisLeadingEdge,
-            _style.ComputeInlineStartMargin(crossAxis, direction, ownerWidth) + relativePositionCross);
-        Layout.SetPosition(crossAxisTrailingEdge,
-            _style.ComputeInlineEndMargin(crossAxis, direction, ownerWidth) + relativePositionCross);
+        Layout.SetPosition(
+            mainAxisLeadingEdge,
+            _style.ComputeInlineStartMargin(mainAxis, direction, ownerWidth) + relativePositionMain
+        );
+        Layout.SetPosition(
+            mainAxisTrailingEdge,
+            _style.ComputeInlineEndMargin(mainAxis, direction, ownerWidth) + relativePositionMain
+        );
+        Layout.SetPosition(
+            crossAxisLeadingEdge,
+            _style.ComputeInlineStartMargin(crossAxis, direction, ownerWidth) + relativePositionCross
+        );
+        Layout.SetPosition(
+            crossAxisTrailingEdge,
+            _style.ComputeInlineEndMargin(crossAxis, direction, ownerWidth) + relativePositionCross
+        );
     }
 
     // ── Layout result setters (used by algorithm) ──
@@ -633,7 +930,9 @@ internal sealed class YogaNode
     internal void SetLayoutBorder(float border, YogaPhysicalEdge edge) => Layout.SetBorder(edge, border);
     internal void SetLayoutPadding(float padding, YogaPhysicalEdge edge) => Layout.SetPadding(edge, padding);
     internal void SetLayoutPosition(float position, YogaPhysicalEdge edge) => Layout.SetPosition(edge, position);
-    internal void SetLayoutMeasuredDimension(float measuredDimension, YogaDimension dimension) => Layout.SetMeasuredDimension(dimension, measuredDimension);
+    internal void SetLayoutMeasuredDimension(float measuredDimension, YogaDimension dimension) => Layout
+        .SetMeasuredDimension(dimension, measuredDimension);
+
     internal void SetLayoutHadOverflow(bool hadOverflow) => Layout.HadOverflow = hadOverflow;
     internal void SetLayoutLastOwnerDirection(FlexLayoutDirection direction) => Layout.LastOwnerDirection = direction;
     internal void SetLayoutComputedFlexBasis(float value) => Layout.ComputedFlexBasis = value;
@@ -650,7 +949,11 @@ internal sealed class YogaNode
     /// <summary>
     /// Calculate the layout for this node and all its children.
     /// </summary>
-    public void CalculateLayout(float availableWidth = float.NaN, float availableHeight = float.NaN, FlexLayoutDirection direction = FlexLayoutDirection.LTR)
+    public void CalculateLayout(
+        float availableWidth = float.NaN,
+        float availableHeight = float.NaN,
+        FlexLayoutDirection direction = FlexLayoutDirection.LTR
+    )
     {
         YogaAlgorithm.CalculateLayout(this, availableWidth, availableHeight, direction);
     }

@@ -26,26 +26,37 @@ public static partial class SvgStyles
         );
         var document = XDocument.Load(reader, LoadOptions.PreserveWhitespace);
         Inline(document);
+
         return document.ToString(SaveOptions.DisableFormatting);
     }
 
     public static void Inline(XDocument document)
     {
         var stylesheets = document.Descendants().Where(e => e.Name.LocalName == "style").ToArray();
-        if (stylesheets.Length == 0) return;
+
+        if (stylesheets.Length == 0)
+
+            return;
         var rules = new List<Rule>();
+
         foreach (var stylesheet in stylesheets)
         {
             var css = Comments().Replace(stylesheet.Value, "");
+
             foreach (Match block in Rules().Matches(css))
             {
                 var declarations = ParseDeclarations(block.Groups[2].Value);
+
                 foreach (var selector in block.Groups[1].Value.Split(','))
                 {
                     var trimmed = selector.Trim();
-                    if (trimmed.Length == 0 || !Selector().IsMatch(trimmed)) continue;
+
+                    if (trimmed.Length == 0 || !Selector().IsMatch(trimmed))
+
+                        continue;
                     var specificity = trimmed.Count(c => c == '#') * 100 + trimmed.Count(c => c == '.') * 10;
-                    if (trimmed[0] is not ('.' or '#' or '*')) specificity++;
+                    if (trimmed[0] is not ('.' or '#' or '*'))
+                        specificity++;
                     rules.Add(new Rule(trimmed, specificity, declarations));
                 }
             }
@@ -53,15 +64,21 @@ public static partial class SvgStyles
 
         foreach (var element in document.Descendants())
         {
-            if (element.Name.LocalName == "style") continue;
+            if (element.Name.LocalName == "style")
+
+                continue;
             var values = new Dictionary<string, Value>(StringComparer.OrdinalIgnoreCase);
 
             void Apply(Declaration declaration, int specificity)
             {
                 if (values.TryGetValue(declaration.Name, out var previous))
                 {
-                    if (previous.Important && !declaration.Important) return;
-                    if (previous.Important == declaration.Important && previous.Specificity > specificity) return;
+                    if (previous.Important && !declaration.Important)
+
+                        return;
+                    if (previous.Important == declaration.Important && previous.Specificity > specificity)
+
+                        return;
                 }
 
                 values[declaration.Name] = new Value(declaration.Value, declaration.Important, specificity);
@@ -83,14 +100,19 @@ public static partial class SvgStyles
     private static Declaration[] ParseDeclarations(string text)
     {
         var result = new List<Declaration>();
+
         foreach (var entry in text.Split(';'))
         {
             var separator = entry.IndexOf(':');
-            if (separator <= 0) continue;
+
+            if (separator <= 0)
+
+                continue;
             var name = entry[..separator].Trim().ToLowerInvariant();
             var value = entry[(separator + 1)..].Trim();
             var important = Important().IsMatch(value);
-            if (important) value = Important().Replace(value, "").TrimEnd();
+            if (important)
+                value = Important().Replace(value, "").TrimEnd();
             if (name.Length > 0 && value.Length > 0)
                 result.Add(new Declaration(name, value, important));
         }
@@ -101,18 +123,28 @@ public static partial class SvgStyles
     private static bool Matches(XElement element, string selector)
     {
         var tagLength = selector.IndexOfAny(['.', '#']);
-        if (tagLength < 0) tagLength = selector.Length;
+        if (tagLength < 0)
+            tagLength = selector.Length;
         var tag = selector[..tagLength];
-        if (tag.Length > 0 && tag != "*" && tag != element.Name.LocalName) return false;
+
+        if (tag.Length > 0 && tag != "*" && tag != element.Name.LocalName)
+
+            return false;
         var classes = ((string?)element.Attribute("class") ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
         foreach (Match token in SelectorParts().Matches(selector[tagLength..]))
         {
             var name = token.Groups[2].Value;
+
             if (token.Groups[1].Value == "#")
             {
-                if ((string?)element.Attribute("id") != name) return false;
+                if ((string?)element.Attribute("id") != name)
+
+                    return false;
             }
-            else if (!classes.Contains(name, StringComparer.Ordinal)) return false;
+            else if (!classes.Contains(name, StringComparer.Ordinal))
+
+                return false;
         }
 
         return true;

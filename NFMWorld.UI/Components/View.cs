@@ -35,6 +35,7 @@ public partial class View : Component
         sb.Append(
             $"View(Name={Name}, LayoutX={LayoutX}, LayoutY={LayoutY}, LayoutWidth={LayoutWidth}, LayoutHeight={LayoutHeight})"
         );
+
         foreach (var child in Children)
         {
             sb.AppendLine();

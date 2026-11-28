@@ -143,6 +143,7 @@ public class CarPaintTests
         CarPaint.Set(CarId, 0, chosen, _fs);
         var hadPrevious = BackendGameSparker.dynamic_models.TryGetValue(CarId, out var previous);
         BackendGameSparker.dynamic_models[CarId] = (0, source);
+
         try
         {
             var playerInfo = new ClientSidePlayerInfo("local", CarId, default, false, true)
@@ -170,8 +171,10 @@ public class CarPaintTests
         }
         finally
         {
-            if (hadPrevious) BackendGameSparker.dynamic_models[CarId] = previous;
-            else BackendGameSparker.dynamic_models.Remove(CarId);
+            if (hadPrevious)
+                BackendGameSparker.dynamic_models[CarId] = previous;
+            else
+                BackendGameSparker.dynamic_models.Remove(CarId);
         }
     }
 

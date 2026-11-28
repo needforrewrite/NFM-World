@@ -143,6 +143,7 @@ public static class AccountView
                                     text: () => deletionNotice()
                                 );
                                 notice.Name = "Account deletion notice";
+
                                 return notice;
                             }
                         ),
@@ -227,12 +228,14 @@ public static class AccountView
     private static void Submit(Actions actions)
     {
         if (Busy.Value)
+
             return;
 
         if (string.IsNullOrWhiteSpace(Username.Value) || string.IsNullOrWhiteSpace(Password.Value))
         {
             SetStatus("!Enter a username and password.", isError: true);
             Busy.Value = false;
+
             return;
         }
 
@@ -333,8 +336,11 @@ public static class AccountView
             button,
             key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 onPress();
+
                 return true;
             },
             isFocused => focused.Value = isFocused
@@ -353,6 +359,7 @@ public static class AccountView
         {
             var changed = base.OnPostLayout();
             navigation.UpdateFocus(this);
+
             return changed;
         }
     }
@@ -360,21 +367,37 @@ public static class AccountView
     /// <summary>Focus movement and button activation for the open dialog; false lets a key travel on.</summary>
     public static bool HandleKeyPressed(Node? node, Key key)
     {
-        if (node is null || node is Component { IsDisplayed: false }) return false;
-        if (node is KeyboardScope scope) return scope.HandleKey(key);
+        if (node is null || node is Component { IsDisplayed: false })
+
+            return false;
+        if (node is KeyboardScope scope)
+
+            return scope.HandleKey(key);
+
         foreach (var child in node.VisualChildren)
+
             if (HandleKeyPressed(child, key))
+
                 return true;
+
         return false;
     }
 
     public static bool HandleKeyRepeated(Node? node, Key key)
     {
-        if (node is null || node is Component { IsDisplayed: false }) return false;
-        if (node is KeyboardScope scope) return scope.HandleKey(key);
+        if (node is null || node is Component { IsDisplayed: false })
+
+            return false;
+        if (node is KeyboardScope scope)
+
+            return scope.HandleKey(key);
+
         foreach (var child in node.VisualChildren)
+
             if (HandleKeyRepeated(child, key))
+
                 return true;
+
         return false;
     }
 }

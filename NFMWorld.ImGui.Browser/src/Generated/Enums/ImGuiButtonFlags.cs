@@ -13,40 +13,40 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiButtonFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiButtonFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// React on left mouse button (default)<br/>
-		/// </summary>
-		MouseButtonLeft = unchecked(1),
+        /// <summary>
+        /// React on left mouse button (default)<br/>
+        /// </summary>
+        MouseButtonLeft = unchecked(1),
 
-		/// <summary>
-		/// React on right mouse button<br/>
-		/// </summary>
-		MouseButtonRight = unchecked(2),
+        /// <summary>
+        /// React on right mouse button<br/>
+        /// </summary>
+        MouseButtonRight = unchecked(2),
 
-		/// <summary>
-		/// React on center mouse button<br/>
-		/// </summary>
-		MouseButtonMiddle = unchecked(4),
+        /// <summary>
+        /// React on center mouse button<br/>
+        /// </summary>
+        MouseButtonMiddle = unchecked(4),
 
-		/// <summary>
-		/// [Internal]<br/>
-		/// </summary>
-		MouseButtonMask = unchecked(7),
+        /// <summary>
+        /// [Internal]<br/>
+        /// </summary>
+        MouseButtonMask = unchecked(7),
 
-		/// <summary>
-		/// InvisibleButton(): do not disable navigationtabbing. Otherwise disabled by default.<br/>
-		/// </summary>
-		EnableNav = unchecked(8),
-	}
+        /// <summary>
+        /// InvisibleButton(): do not disable navigationtabbing. Otherwise disabled by default.<br/>
+        /// </summary>
+        EnableNav = unchecked(8),
+    }
 }

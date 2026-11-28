@@ -26,10 +26,14 @@ public sealed class PcmWavReader : IWaveProvider
         _stream = stream;
 
         using var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: true);
+
         if (new string(reader.ReadChars(4)) != "RIFF")
+
             throw new InvalidDataException("Not a RIFF file.");
         reader.ReadInt32();
+
         if (new string(reader.ReadChars(4)) != "WAVE")
+
             throw new InvalidDataException("Not a WAVE file.");
 
         ushort channels = 0, bitsPerSample = 0, formatTag = 0;
@@ -37,6 +41,7 @@ public sealed class PcmWavReader : IWaveProvider
 
         // Chunks may appear in any order and several are irrelevant; walk them until both fmt and
         // data have been seen.
+
         while (true)
         {
             var id = new string(reader.ReadChars(4));
@@ -52,12 +57,16 @@ public sealed class PcmWavReader : IWaveProvider
                     reader.ReadInt32(); // byte rate
                     reader.ReadUInt16(); // block align
                     bitsPerSample = reader.ReadUInt16();
+
                     break;
 
                 case "data":
+
                     if (formatTag != 1)
+
                         throw new InvalidDataException($"Unsupported WAVE encoding {formatTag}; only PCM is handled.");
                     if (bitsPerSample != 8 && bitsPerSample != 16)
+
                         throw new InvalidDataException(
                             $"Unsupported WAVE sample size {bitsPerSample}; only 8 and 16 bit are handled."
                         );
@@ -67,10 +76,12 @@ public sealed class PcmWavReader : IWaveProvider
                     _format = new WaveFormat(sampleRate, bitsPerSample, channels);
 
                     // The stream stays where the data begins: reads serve the data chunk directly.
+
                     return;
             }
 
             if (next > stream.Length)
+
                 throw new InvalidDataException("WAVE file has no data chunk.");
             stream.Position = next;
         }
@@ -85,7 +96,10 @@ public sealed class PcmWavReader : IWaveProvider
     private int ReadCore(Span<byte> buffer)
     {
         var remaining = _dataLength - _position;
-        if (remaining <= 0) return 0;
+
+        if (remaining <= 0)
+
+            return 0;
 
         var toRead = (int)Math.Min(remaining, buffer.Length);
         _stream.Position = _dataStart + _position;
@@ -94,6 +108,7 @@ public sealed class PcmWavReader : IWaveProvider
 
         // Do not convert 8-bit to signed here: NAudio's Pcm8BitToSampleProvider already subtracts
         // 128, and doing it twice turns quiet samples into full-scale square-wave noise.
+
         return read;
     }
 }

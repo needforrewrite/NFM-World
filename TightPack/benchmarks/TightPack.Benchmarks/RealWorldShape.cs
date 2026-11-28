@@ -113,6 +113,7 @@ public static class RealWorldShape
     private static double Measure<T>(Func<T> action, int iterations)
     {
         var sink = new object?[1];
+
         for (int i = 0; i < Math.Max(2000, iterations / 10); i++)
         {
             sink[0] = action();
@@ -120,9 +121,11 @@ public static class RealWorldShape
 
         GC.Collect();
         var samples = new double[5];
+
         for (int s = 0; s < samples.Length; s++)
         {
             long start = Stopwatch.GetTimestamp();
+
             for (int i = 0; i < iterations; i++)
             {
                 sink[0] = action();
@@ -134,6 +137,7 @@ public static class RealWorldShape
 
         GC.KeepAlive(sink);
         Array.Sort(samples);
+
         return samples[samples.Length / 2];
     }
 }

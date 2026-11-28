@@ -120,6 +120,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     )
     {
         ArgumentNullException.ThrowIfNull(getProcAddress);
+
         return new GlGraphicsDevice(
             GL.GetApi(getProcAddress),
             backBufferWidth,
@@ -143,6 +144,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         // a fresh one each frame leaked a GL name per frame.
         var commandBuffer = _commandBuffer ??= new GlCommandBuffer(_gl, this, DeleteDeferred);
         _activeCommandBuffer = commandBuffer;
+
         return commandBuffer;
     }
 
@@ -200,6 +202,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     public IBuffer CreateBuffer(BufferDesc desc, ReadOnlySpan<byte> initialData = default)
     {
         if (desc.SizeInBytes <= 0)
+
             throw new ArgumentOutOfRangeException(nameof(desc), $"A buffer of {desc.SizeInBytes} bytes cannot be allocated.");
 
         if (initialData.Length > desc.SizeInBytes)
@@ -216,15 +219,18 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     public ITexture CreateTexture(TextureDesc desc, ReadOnlySpan<byte> initialData = default)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
+
             throw new ArgumentOutOfRangeException(nameof(desc), $"A {desc.Width}x{desc.Height} texture cannot be allocated.");
 
         // ToInternalFormat throws for the compressed formats the core profile lacks, before any GL call.
+
         return new GlTexture(_gl, _deletions, desc, initialData);
     }
 
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
+
             throw new ArgumentOutOfRangeException(
                 nameof(desc),
                 $"A {desc.Width}x{desc.Height} render target cannot be allocated."
@@ -244,6 +250,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         // created without mips - and a point-sampled-flat field draws hard-edged text with no
         // antialiasing at all. Desktop GL tolerates the incompleteness, which is why this only ever
         // showed in the browser, but asking for a level no texture here provides is wrong either way.
+
         return new GlSampler(_gl, _deletions, desc, mipMapped: false);
     }
 
@@ -260,6 +267,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         // pass the same module for both (see LoadProgram), because the reflection describes the
         // linked program rather than a single stage; two different modules would mean the pipeline
         // was built against one program's bindings while the command buffer read the other's.
+
         if (!ReferenceEquals(vertex, pixel))
         {
             throw new ArgumentException(
@@ -281,6 +289,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
             // The pipeline is the program's owner (see GlPipelineState.Dispose), so a failure before
             // it exists has to clean the program up here or the linked program leaks.
             program.Dispose();
+
             throw;
         }
     }
@@ -363,6 +372,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         ArgumentNullException.ThrowIfNull(texture);
 
         if (texture is not GlTexture glTexture)
+
             throw new ArgumentException($"{nameof(ReadTexture)} needs a texture this backend created.", nameof(texture));
 
         if (glTexture.Format.IsDepthFormat())
@@ -374,6 +384,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
         }
 
         if (level < 0 || level >= (glTexture.MipMapped ? MipLevels(glTexture.Width, glTexture.Height) : 1))
+
             throw new ArgumentOutOfRangeException(nameof(level), level, "Level is outside the texture's mip chain.");
 
         if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > glTexture.Width || y + height > glTexture.Height)
@@ -386,6 +397,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
 
         var bytesPerPixel = glTexture.Format.BytesPerPixel();
         var required = width * height * bytesPerPixel;
+
         if (destination.Length < required)
         {
             throw new ArgumentException(
@@ -447,6 +459,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
             _gl.ReadBuffer(ReadBufferMode.ColorAttachment0);
 
             var status = _gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+
             if (status != GLEnum.FramebufferComplete)
             {
                 throw new InvalidOperationException(
@@ -489,6 +502,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     private static int MipLevels(int width, int height)
     {
         var levels = 1;
+
         while (width > 1 || height > 1)
         {
             width = Math.Max(1, width >> 1);
@@ -505,6 +519,7 @@ public sealed class GlGraphicsDevice : IGraphicsDevice, IDisposable
     public void Dispose()
     {
         if (_disposed)
+
             return;
 
         _disposed = true;

@@ -16,40 +16,37 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// FIXME: Structures in the union below need to be declared as anonymous unions appears to be an extension?<br/>
-	/// Using ImVec2() would fail on Clang 'union member 'MousePos' has a non-trivial default constructor'<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEventMousePos
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float PosX;
+    /// <summary>
+    /// FIXME: Structures in the union below need to be declared as anonymous unions appears to be an extension?<br/>
+    /// Using ImVec2() would fail on Clang 'union member 'MousePos' has a non-trivial default constructor'<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEventMousePos
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float PosX;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float PosY;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float PosY;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiMouseSource MouseSource;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEventMousePos(float posX = default, float posY = default, ImGuiMouseSource mouseSource = default)
-		{
-			PosX = posX;
-			PosY = posY;
-			MouseSource = mouseSource;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiMouseSource MouseSource;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEventMousePos(float posX = default, float posY = default, ImGuiMouseSource mouseSource = default)
+        {
+            PosX = posX;
+            PosY = posY;
+            MouseSource = mouseSource;
+        }
+    }
 }

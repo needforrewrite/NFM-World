@@ -47,6 +47,7 @@ public ref struct TightPackReader
 
         ReadOnlySpan<byte> span = _buffer.Slice(_position, sizeHint);
         _position += sizeHint;
+
         return span;
     }
 
@@ -71,6 +72,7 @@ public ref struct TightPackReader
     public bool TryReadObjectHeader(out byte memberCount)
     {
         memberCount = GetSpan(1)[0];
+
         return memberCount != NullObject;
     }
 
@@ -78,19 +80,23 @@ public ref struct TightPackReader
     public bool TryReadUnionHeader(out ushort tag)
     {
         byte first = GetSpan(1)[0];
+
         if (first < WideTag)
         {
             tag = first;
+
             return true;
         }
 
         if (first == WideTag)
         {
             tag = BinaryPrimitives.ReadUInt16LittleEndian(GetSpan(2));
+
             return true;
         }
 
         tag = 0;
+
         return false;
     }
 
@@ -103,6 +109,7 @@ public ref struct TightPackReader
     public bool TryReadPackedCollectionHeader(out int length)
     {
         length = BinaryPrimitives.ReadInt32LittleEndian(GetSpan(4));
+
         if (length == NullCollection)
         {
             return false;
@@ -120,6 +127,7 @@ public ref struct TightPackReader
     public bool TryReadCollectionHeader(out int length)
     {
         length = BinaryPrimitives.ReadInt32LittleEndian(GetSpan(4));
+
         if (length == NullCollection)
         {
             return false;
@@ -132,6 +140,7 @@ public ref struct TightPackReader
 
         // Each element costs at least one byte, so a length larger than the remaining buffer is
         // corrupt data and must not be used to size an allocation.
+
         if (length > Remaining)
         {
             TightPackSerializationException.ThrowInvalidCollection(length, Remaining);
@@ -186,6 +195,7 @@ public ref struct TightPackReader
         ReadOnlySpan<byte> span = GetSpan(16);
         ulong low = BinaryPrimitives.ReadUInt64LittleEndian(span);
         ulong high = BinaryPrimitives.ReadUInt64LittleEndian(span[8..]);
+
         return new Int128(high, low);
     }
 
@@ -195,6 +205,7 @@ public ref struct TightPackReader
         ReadOnlySpan<byte> span = GetSpan(16);
         ulong low = BinaryPrimitives.ReadUInt64LittleEndian(span);
         ulong high = BinaryPrimitives.ReadUInt64LittleEndian(span[8..]);
+
         return new UInt128(high, low);
     }
 
@@ -205,6 +216,7 @@ public ref struct TightPackReader
         int mid = BinaryPrimitives.ReadInt32LittleEndian(span[4..]);
         int hi = BinaryPrimitives.ReadInt32LittleEndian(span[8..]);
         int flags = BinaryPrimitives.ReadInt32LittleEndian(span[12..]);
+
         return new decimal(lo, mid, hi, (flags & unchecked((int)0x80000000)) != 0, (byte)((flags >> 16) & 0xFF));
     }
 
@@ -218,6 +230,7 @@ public ref struct TightPackReader
     {
         long utcTicks = ReadInt64();
         int offsetMinutes = ReadInt32();
+
         if (offsetMinutes is < -14 * 60 or > 14 * 60)
         {
             TightPackSerializationException.ThrowMessage($"DateTimeOffset offset {offsetMinutes} minutes is out of range.");
@@ -250,30 +263,36 @@ public ref struct TightPackReader
         where TEnum : struct, Enum
     {
         TEnum value = default;
+
         switch (Unsafe.SizeOf<TEnum>())
         {
             case 1:
             {
                 byte raw = ReadByte();
+
                 return Unsafe.As<byte, TEnum>(ref raw);
             }
             case 2:
             {
                 ushort raw = ReadUInt16();
+
                 return Unsafe.As<ushort, TEnum>(ref raw);
             }
             case 4:
             {
                 uint raw = ReadUInt32();
+
                 return Unsafe.As<uint, TEnum>(ref raw);
             }
             case 8:
             {
                 ulong raw = ReadUInt64();
+
                 return Unsafe.As<ulong, TEnum>(ref raw);
             }
             default:
                 TightPackSerializationException.ThrowMessage($"Unsupported enum size for {typeof(TEnum).Name}.");
+
                 return value;
         }
     }
@@ -293,6 +312,7 @@ public ref struct TightPackReader
         }
 
         ReadOnlySpan<byte> utf8 = GetSpan(byteLength);
+
         return Encoding.UTF8.GetString(utf8);
     }
 
@@ -320,6 +340,7 @@ public ref struct TightPackReader
         }
 
         ReadOnlySpan<byte> bytes = GetSpan(byteLength);
+
         return new string(MemoryMarshal.Cast<byte, char>(bytes));
     }
 
@@ -383,6 +404,7 @@ public ref struct TightPackReader
     {
         int size = TightPackBlit.SizeOf<T>();
         ReadOnlySpan<byte> span = GetSpan(size);
+
         return MemoryMarshal.Read<T>(span);
     }
 
@@ -403,6 +425,7 @@ public ref struct TightPackReader
         ReadOnlySpan<byte> source = GetSpan(byteCount);
         var values = new T[length];
         source.CopyTo(TightPackSpan.AsBytes(values.AsSpan()));
+
         return values;
     }
 
@@ -412,6 +435,7 @@ public ref struct TightPackReader
         where T : unmanaged
     {
         ReadOnlySpan<byte> span = GetSpan(size);
+
         return MemoryMarshal.Read<T>(span);
     }
 
@@ -469,12 +493,14 @@ public ref struct TightPackReader
 
         var values = new T?[length];
         EnsureDepth(typeof(T));
+
         for (int i = 0; i < length; i++)
         {
             T.Deserialize(ref this, ref values[i]!);
         }
 
         _depth--;
+
         return values;
     }
 
@@ -488,6 +514,7 @@ public ref struct TightPackReader
 
         var values = new List<T>(length);
         EnsureDepth(typeof(T));
+
         for (int i = 0; i < length; i++)
         {
             T value = default!;
@@ -496,6 +523,7 @@ public ref struct TightPackReader
         }
 
         _depth--;
+
         return values;
     }
 
@@ -514,6 +542,7 @@ public ref struct TightPackReader
     {
         uint result = 0;
         int shift = 0;
+
         while (true)
         {
             if (shift == 35)
@@ -523,6 +552,7 @@ public ref struct TightPackReader
 
             byte b = GetSpan(1)[0];
             result |= (uint)(b & 0x7F) << shift;
+
             if ((b & 0x80) == 0)
             {
                 return result;
@@ -554,6 +584,7 @@ public ref struct TightPackReader
         if (header == ReferenceId)
         {
             uint id = ReadVarUInt32();
+
             if (_state is null || !_state.TryGetObject(id, out existing))
             {
                 TightPackSerializationException.ThrowMessage(
@@ -562,6 +593,7 @@ public ref struct TightPackReader
             }
 
             isReference = true;
+
             return true;
         }
 
@@ -569,6 +601,7 @@ public ref struct TightPackReader
         // registration order here, so the value is consumed and discarded.
         ReadVarUInt32();
         memberCount = header;
+
         return true;
     }
 }

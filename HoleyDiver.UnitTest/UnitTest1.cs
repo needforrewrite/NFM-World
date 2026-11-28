@@ -2502,6 +2502,7 @@ public class Tests
 
             // Convert result triangles (indices) to array of triangle arrays (Vector3)
             var actualTriangles = new List<Vector3[]>();
+
             for (int i = 0; i < result.Triangles.Length; i += 3)
             {
                 actualTriangles.Add([
@@ -2541,6 +2542,7 @@ public class Tests
             }
 
             // Check that each expected triangle exists in actual triangles
+
             foreach (var expectedTriangle in expectedOutput)
             {
                 var found = actualTriangles.Any(actualTriangle => TrianglesEqual(expectedTriangle, actualTriangle));
@@ -2552,6 +2554,7 @@ public class Tests
             }
 
             // Check that each actual triangle exists in expected triangles (no extras)
+
             foreach (var actualTriangle in actualTriangles)
             {
                 var found = expectedOutput.Any(expectedTriangle => TrianglesEqual(expectedTriangle, actualTriangle));
@@ -2572,13 +2575,17 @@ public class Tests
     private static bool TrianglesEqual(Vector3[] triangle1, Vector3[] triangle2)
     {
         if (triangle1.Length != 3 || triangle2.Length != 3)
+
             return false;
 
         // Check all cyclic permutations of triangle1 against triangle2
+
         for (int offset = 0; offset < 3; offset++)
         {
-            if (triangle1[offset] == triangle2[0] &&
-                triangle1[(offset + 1) % 3] == triangle2[1] &&
+            if (triangle1[offset] == triangle2[0]
+                &&
+                triangle1[(offset + 1) % 3] == triangle2[1]
+                &&
                 triangle1[(offset + 2) % 3] == triangle2[2])
             {
                 return true;
@@ -2586,10 +2593,13 @@ public class Tests
         }
 
         // Also check reversed order (in case winding order is reversed)
+
         for (int offset = 0; offset < 3; offset++)
         {
-            if (triangle1[offset] == triangle2[0] &&
-                triangle1[(offset + 2) % 3] == triangle2[1] &&
+            if (triangle1[offset] == triangle2[0]
+                &&
+                triangle1[(offset + 2) % 3] == triangle2[1]
+                &&
                 triangle1[(offset + 1) % 3] == triangle2[2])
             {
                 return true;
@@ -2639,12 +2649,14 @@ public class Tests
         Assert.That(result.Triangles.Length % 3, Is.EqualTo(0), "Triangle array length must be divisible by 3.");
 
         // All triangle indices must be valid
+
         foreach (var idx in result.Triangles)
         {
             Assert.That(idx, Is.LessThan((uint)vertices.Length), $"Triangle index {idx} out of range.");
         }
 
         // Verify no degenerate triangles (all 3 vertices distinct)
+
         for (int i = 0; i < result.Triangles.Length; i += 3)
         {
             var a = vertices[result.Triangles[i]];

@@ -42,18 +42,22 @@ public static partial class GarageView
             ),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(
-                    fontSize: 18,
-                    fontFamily: FontFamily.Adventure,
-                    foregroundColor: MenuBlue
-                ), text: () => "CHOOSE YOUR CAR"
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 18,
+                        fontFamily: FontFamily.Adventure,
+                        foregroundColor: MenuBlue
+                    ),
+                    text: () => "CHOOSE YOUR CAR"
                 ),
                 SelectedCarHeading(QuickSidebarWidth - 28),
-                Sx.View(style: () => Sx.Styles(
-                    height: 28,
-                    flexShrink: 0,
-                    flexDirection: FlexDirection.Column
-                ), children: PaintSwatches()
+                Sx.View(
+                    style: () => Sx.Styles(
+                        height: 28,
+                        flexShrink: 0,
+                        flexDirection: FlexDirection.Column
+                    ),
+                    children: PaintSwatches()
                 ),
                 StatsPanel(),
                 Button.Create(
@@ -95,10 +99,12 @@ public static partial class GarageView
                         Styles = Sx.Styles(width: 154, flexShrink: 0, flexDirection: FlexDirection.Column)
                     };
                     tile.AddChild(CarCard(car, car.Collection, actions, fillWidth: true));
+
                     return tile;
                 }
             )
-        ));
+        )
+        );
         var categoryPicker = (View)Controls.Dropdown(
             options: () => UiState.Garage.Categories.Value,
             value: () => UiState.Garage.Categories.Value.ToList().IndexOf(UiState.Garage.Category.Value),
@@ -130,13 +136,15 @@ public static partial class GarageView
             ),
             children:
             [
-                Sx.View(style: () => Sx.Styles(
-                    flexDirection: FlexDirection.Row,
-                    alignItems: Align.Center,
-                    justifyContent: Justify.FlexEnd,
-                    gapColumn: 10,
-                    flexShrink: 0
-                ), children:
+                Sx.View(
+                    style: () => Sx.Styles(
+                        flexDirection: FlexDirection.Row,
+                        alignItems: Align.Center,
+                        justifyContent: Justify.FlexEnd,
+                        gapColumn: 10,
+                        flexShrink: 0
+                    ),
+                    children:
                 [
                     Sx.Text(
                         style: () => Sx.TextStyles(fontSize: 10, foregroundColor: TextBlue),
@@ -145,13 +153,15 @@ public static partial class GarageView
                     ),
                     categoryPicker,
                     SearchBox(actions, releaseFocus: true, compact: true)
-                ]),
+                ]
+                ),
                 strip,
                 StatusLine()
             ]
         );
         MenuPanelNode = sidebar;
         DetailPanelNode = dock;
+
         return Sx.View(
             name: () => "Quick car select",
             style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
@@ -174,12 +184,15 @@ public static partial class GarageView
                 justifyContent: Justify.Center,
                 pointerEvents: false
             ),
-            children: [Sx.View(style: () => Sx.Styles(width: 70.Percent()), children: [
+            children: [Sx.View(
+                style: () => Sx.Styles(width: 70.Percent()),
+                children: [
                 Sx.For(
                     () => UiState.Garage.CurrentCar.Value is { } car ? new[] { car.FileName } : [],
                     (identity, _) => CarThumbnail(identity)
                 )
-            ])]
+            ]
+            )]
         );
 
     private sealed class QuickCarTile(string identity) : View
@@ -189,8 +202,10 @@ public static partial class GarageView
         protected override bool OnPostLayout()
         {
             var selected = UiState.Garage.CurrentCar.Value?.FileName == identity;
-            if (selected && !_selected) ScrollIntoView();
+            if (selected && !_selected)
+                ScrollIntoView();
             _selected = selected;
+
             return base.OnPostLayout();
         }
     }

@@ -89,6 +89,7 @@ public class Submesh : IInstancedRenderElement, IDisposable
             shadow.View.SetValue(cb, lightCamera.ViewMatrix);
             shadow.Projection.SetValue(cb, lightCamera.ProjectionMatrix);
             cb.DrawIndexedInstanced(baseVertex: 0, startIndex: 0, primitiveCount: _triangleCount, instanceCount: instanceCount);
+
             return;
         }
 
@@ -126,14 +127,20 @@ public class Submesh : IInstancedRenderElement, IDisposable
             const float hsb1 = 0.8F;
             var color = Color3.FromHSB(hsb0, hsb1, hsb2);
             var r = (short)(color.R + color.R * (World.Snap[0] / 100.0F));
-            if (r > 255) r = 255;
-            if (r < 0) r = 0;
+            if (r > 255)
+                r = 255;
+            if (r < 0)
+                r = 0;
             var g = (short)(color.G + color.G * (World.Snap[1] / 100.0F));
-            if (g > 255) g = 255;
-            if (g < 0) g = 0;
+            if (g > 255)
+                g = 255;
+            if (g < 0)
+                g = 0;
             var b = (short)(color.B + color.B * (World.Snap[2] / 100.0F));
-            if (b > 255) b = 255;
-            if (b < 0) b = 0;
+            if (b > 255)
+                b = 255;
+            if (b < 0)
+                b = 0;
             p.UseBaseColor.SetValue(cb, true);
             p.BaseColor.SetValue(cb, new Color3(r, g, b));
         }

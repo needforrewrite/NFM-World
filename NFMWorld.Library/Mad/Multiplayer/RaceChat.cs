@@ -7,10 +7,13 @@ public static class RaceChat
 
     public static string Normalize(string? message)
     {
-        if (string.IsNullOrWhiteSpace(message)) return "";
+        if (string.IsNullOrWhiteSpace(message))
+
+            return "";
         var text = new string(message.Trim().Take(MaxMessageLength)
             .Select(c => char.IsControl(c) ? ' ' : c).ToArray()
         ).Trim();
+
         return text.Length > 0 && char.IsHighSurrogate(text[^1]) ? text[..^1] : text;
     }
 }

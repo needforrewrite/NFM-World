@@ -94,12 +94,15 @@ public sealed class PluginAssembly
         {
             // Downloaded executable content is only ever run inside the sandbox. Where the
             // runtime cannot instrument it, say so instead of running it unsandboxed.
+
             if (!PluginPolicy.Supported)
+
                 throw new NotSupportedException(
                     $"Plugin package '{id}' cannot be loaded: the plugin sandbox is unavailable on this platform."
                 );
 
             if (RadpackReader.Read(packagePath, RadpackType.GamemodePackage) is not RadpackGamemode gamemodePackage)
+
                 throw new InvalidDataException($"'{packagePath}' is not a gamemode package.");
 
             assemblyBytes = gamemodePackage.Assembly;
@@ -133,7 +136,8 @@ public sealed class PluginAssembly
                 loaded = (loadContext.LoadFromStream(buffer), loadContext.Unload);
             }
 
-            if (cacheable) Resident[id] = loaded;
+            if (cacheable)
+                Resident[id] = loaded;
         }
 
         return new PluginAssembly(id, path, loaded.Assembly, loaded.Unload);
@@ -169,6 +173,7 @@ public sealed class PluginAssembly
             .ToArray();
 
         if (types.Length == 0)
+
             return null;
 
         if (types.Length > 1)
@@ -180,11 +185,11 @@ public sealed class PluginAssembly
         }
 
         return types[0].GetConstructor(
-                   BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly,
-                   null,
-                   parameters,
-                   null
-               )
+            BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly,
+            null,
+            parameters,
+            null
+        )
                ?? throw new InvalidOperationException(
                    $"Plugin '{Id}': {types[0].FullName} does not have the expected constructor."
                );
@@ -208,13 +213,16 @@ public sealed class PluginAssembly
     public void Unload()
     {
         if (_unloaded)
+
             return;
 
         _unloaded = true;
 
         // Without a collectible context nothing is released, and the cached assembly is what
         // the next run loads again - so its formatters and type handles have to stay too.
+
         if (!PluginLoadContext.IsCollectibleSupported)
+
             return;
 
         var dropped = TightPackFormatterRegistry.DropFormatters(Assembly);

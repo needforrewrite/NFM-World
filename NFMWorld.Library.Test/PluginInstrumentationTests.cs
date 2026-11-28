@@ -31,6 +31,7 @@ public class PluginInstrumentationTests
         public AssemblyDefinition? Resolve(AssemblyNameReference name)
         {
             Requested.Add(name.FullName);
+
             throw new AssemblyResolutionException(name);
         }
 

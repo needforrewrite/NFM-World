@@ -101,6 +101,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
     internal WebGpuPipelineVariant GetVariant(in WebGpuPipelineKey key)
     {
         if (_lastKey == key && _lastVariant is not null)
+
             return _lastVariant;
 
         if (!_byKey.TryGetValue(key, out var variant))
@@ -112,6 +113,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
 
         _lastKey = key;
         _lastVariant = variant;
+
         return variant;
     }
 
@@ -125,9 +127,11 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
         foreach (var input in Reflection.VertexInputs)
         {
             if (!string.Equals(input.Semantic, semantic, StringComparison.OrdinalIgnoreCase))
+
                 continue;
 
             if (index >= input.SemanticIndex && index < input.SemanticIndex + input.Registers)
+
                 return input.Location + (index - input.SemanticIndex);
         }
 
@@ -138,6 +142,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
     {
         var layout = BuildBindGroupLayout(key);
         var pipeline = BuildPipeline(key, layout);
+
         return new WebGpuPipelineVariant(this, key, layout, pipeline);
     }
 
@@ -168,6 +173,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
         // Fixed by the shader compiler's own assignment (ShaderBuild.BindingsFor): the block is 0,
         // textures start at 1 whether or not there is a block, then samplers.
         const int textureBase = 1;
+
         for (var i = 0; i < Reflection.Textures.Count; i++)
         {
             entries[count++] = new Wg.BindGroupLayoutEntry
@@ -186,6 +192,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
         }
 
         var samplerBase = textureBase + Reflection.Textures.Count;
+
         for (var i = 0; i < Reflection.Samplers.Count; i++)
         {
             entries[count++] = new Wg.BindGroupLayoutEntry
@@ -204,6 +211,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
         var descriptor = new Wg.BindGroupLayoutDescriptor { EntryCount = (nuint)count, Entries = entries };
         var layout = _device.Api.DeviceCreateBindGroupLayout(_device.Device, &descriptor);
         _device.CheckCreated(layout is not null, "bind group layout");
+
         return layout;
     }
 
@@ -233,7 +241,9 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
             foreach (var attribute in layout.Attributes)
             {
                 var location = LocationOf(attribute.Semantic, attribute.Slot);
+
                 if (location < 0)
+
                     continue;
 
                 attributes[attributeIndex++] = new Wg.VertexAttribute
@@ -314,6 +324,7 @@ internal sealed unsafe class WebGpuPipelineState : IPipelineState
 
         // The pipeline keeps its own reference to the layout it was created from.
         _device.Api.PipelineLayoutRelease(pipelineLayout);
+
         return pipeline;
     }
 
@@ -421,6 +432,7 @@ internal sealed unsafe class WebGpuPipelineVariant : IDisposable
     internal Wg.BindGroup* GetBindGroup(ReadOnlySpan<nint> textures, ReadOnlySpan<nint> samplers)
     {
         var generation = _device.Uniforms.Generation;
+
         if (_cachedBindGroup is not null
             && _cachedGeneration == generation
             && _cachedTextureCount == textures.Length
@@ -448,6 +460,7 @@ internal sealed unsafe class WebGpuPipelineVariant : IDisposable
         }
 
         const int textureBase = 1;
+
         for (var i = 0; i < _state.Reflection.Textures.Count; i++)
         {
             var view = i < textures.Length && textures[i] != 0 ? textures[i] : (nint)_device.DummyTexture.View;
@@ -459,6 +472,7 @@ internal sealed unsafe class WebGpuPipelineVariant : IDisposable
         }
 
         var samplerBase = textureBase + _state.Reflection.Textures.Count;
+
         for (var i = 0; i < _state.Reflection.Samplers.Count; i++)
         {
             var sampler = i < samplers.Length && samplers[i] != 0 ? samplers[i] : (nint)_device.DummySampler.Handle;
@@ -487,6 +501,7 @@ internal sealed unsafe class WebGpuPipelineVariant : IDisposable
         _cachedSamplerCount = samplers.Length;
         _cachedGeneration = generation;
         _cachedBindGroup = group;
+
         return group;
     }
 
@@ -496,6 +511,7 @@ internal sealed unsafe class WebGpuPipelineVariant : IDisposable
     private void ReleaseCachedBindGroup()
     {
         if (_cachedBindGroup is null)
+
             return;
 
         // Deferred: a render pass stores the group's id and resolves it when the pass ends, so

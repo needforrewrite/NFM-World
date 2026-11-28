@@ -77,7 +77,9 @@ namespace Poly2Tri
             double adxbdy = adx * bdy;
             double bdxady = bdx * ady;
             double oabd = adxbdy - bdxady;
+
             //        oabd = orient2d(pa,pb,pd);
+
             if (oabd <= 0)
             {
                 return false;
@@ -89,7 +91,9 @@ namespace Poly2Tri
             double cdxady = cdx * ady;
             double adxcdy = adx * cdy;
             double ocad = cdxady - adxcdy;
+
             //      ocad = orient2d(pc,pa,pd);
+
             if (ocad <= 0)
             {
                 return false;
@@ -120,7 +124,9 @@ namespace Poly2Tri
             double adxbdy = adx * bdy;
             double bdxady = bdx * ady;
             double oabd = adxbdy - bdxady;
+
             //        oabd = orient2d(pa,pb,pd);
+
             if (oabd <= 0)
             {
                 return false;
@@ -132,7 +138,9 @@ namespace Poly2Tri
             double cdxady = cdx * ady;
             double adxcdy = adx * cdy;
             double ocad = cdxady - adxcdy;
+
             //      ocad = orient2d(pc,pa,pd);
+
             if (ocad <= 0)
             {
                 return false;
@@ -153,6 +161,7 @@ namespace Poly2Tri
             double detleft = (pa.X - pc.X) * (pb.Y - pc.Y);
             double detright = (pa.Y - pc.Y) * (pb.X - pc.X);
             double val = detleft - detright;
+
             if (val > -MathUtil.EPSILON && val < MathUtil.EPSILON)
             {
                 return Orientation.Collinear;
@@ -220,11 +229,13 @@ namespace Poly2Tri
         public static bool PointOnLineSegment2D(double x1, double y1, double x2, double y2, double x, double y, double epsilon)
         {
             // First checking if (x, z) is in the range of the line segment's end points.
+
             if (MathUtil.IsValueBetween(x, x1, x2, epsilon) && MathUtil.IsValueBetween(y, y1, y2, epsilon))
             {
                 if (MathUtil.AreValuesEqual(x2 - x1, 0.0f, epsilon))
                 {
                     // Vertical line.
+
                     return true;
                 }
 
@@ -243,9 +254,12 @@ namespace Poly2Tri
 
         public static bool RectsIntersect(Rect2D r1, Rect2D r2)
         {
-            return (r1.Right > r2.Left) &&
-                    (r1.Left < r2.Right) &&
-                    (r1.Bottom > r2.Top) &&
+            return (r1.Right > r2.Left)
+                   &&
+                    (r1.Left < r2.Right)
+                   &&
+                    (r1.Bottom > r2.Top)
+                   &&
                     (r1.Top < r2.Bottom);
         }
 
@@ -278,19 +292,21 @@ namespace Poly2Tri
         public static bool LinesIntersect2D(
             Point2D ptStart0,
             Point2D ptEnd0,
-                                                Point2D ptStart1,
+            Point2D ptStart1,
             Point2D ptEnd1,
-                                                bool firstIsSegment,
+            bool firstIsSegment,
             bool secondIsSegment,
             bool coincidentEndPointCollisions,
-                                                ref Point2D pIntersectionPt,
-                                                double epsilon
+            ref Point2D pIntersectionPt,
+            double epsilon
         )
         {
             double d = (ptEnd0.X - ptStart0.X) * (ptStart1.Y - ptEnd1.Y) - (ptStart1.X - ptEnd1.X) * (ptEnd0.Y - ptStart0.Y);
+
             if (Math.Abs(d) < epsilon)
             {
                 //The lines are parallel.
+
                 return false;
             }
 
@@ -300,13 +316,17 @@ namespace Poly2Tri
             double t0 = d0 * kOneOverD;
             double t1 = d1 * kOneOverD;
 
-            if ((!firstIsSegment || ((t0 >= 0.0) && (t0 <= 1.0))) &&
-                (!secondIsSegment || ((t1 >= 0.0) && (t1 <= 1.0))) &&
-                (coincidentEndPointCollisions || (!MathUtil.AreValuesEqual(0.0, t0, epsilon) && !MathUtil.AreValuesEqual(
-                    0.0,
-                    t1,
-                    epsilon
-                ))))
+            if ((!firstIsSegment || ((t0 >= 0.0) && (t0 <= 1.0)))
+                &&
+                (!secondIsSegment || ((t1 >= 0.0) && (t1 <= 1.0)))
+                &&
+                (coincidentEndPointCollisions
+                 || (!MathUtil.AreValuesEqual(0.0, t0, epsilon)
+                     && !MathUtil.AreValuesEqual(
+                         0.0,
+                         t1,
+                         epsilon
+                     ))))
             {
                 if (pIntersectionPt != null)
                 {
@@ -324,10 +344,10 @@ namespace Poly2Tri
         public static bool LinesIntersect2D(
             Point2D ptStart0,
             Point2D ptEnd0,
-                                                Point2D ptStart1,
+            Point2D ptStart1,
             Point2D ptEnd1,
-                                                ref Point2D pIntersectionPt,
-                                                double epsilon
+            ref Point2D pIntersectionPt,
+            double epsilon
         )
         {
             return TriangulationUtil.LinesIntersect2D(
@@ -373,9 +393,9 @@ namespace Poly2Tri
         public static bool RaysIntersect2D(
             Point2D ptRayOrigin0,
             Point2D ptRayVector0,
-                                            Point2D ptRayOrigin1,
+            Point2D ptRayOrigin1,
             Point2D ptRayVector1,
-                                            ref Point2D ptIntersection
+            ref Point2D ptIntersection
         )
         {
             double kEpsilon = 0.01;
@@ -401,15 +421,18 @@ namespace Poly2Tri
                 double s = fDot2 / fDot1;
                 ptIntersection.X = ptRayOrigin0.X + ptRayVector0.X * s;
                 ptIntersection.Y = ptRayOrigin0.Y + ptRayVector0.Y * s;
+
                 return true;
             }
 
             //Else the user just wants to know if there is an intersection...
             //In this case we need only compare the slopes of the lines.
             double delta = ptRayVector1.X - ptRayVector0.X;
+
             if (Math.Abs(delta) > kEpsilon)
             {
                 delta = ptRayVector1.Y - ptRayVector0.Y;
+
                 if (Math.Abs(delta) > kEpsilon)
                 {
                     return true; //The lines are not parallel.

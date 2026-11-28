@@ -55,6 +55,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         catch
         {
             Dispose();
+
             throw;
         }
     }
@@ -73,12 +74,17 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
     {
         get
         {
-            if (_obj.IsFixHoopActive) return Mesh;
-            if (_disabledMesh is { } lease && ReferenceEquals(lease.Value.ClonedMesh, Mesh)) return lease.Value;
+            if (_obj.IsFixHoopActive)
+
+                return Mesh;
+            if (_disabledMesh is { } lease && ReferenceEquals(lease.Value.ClonedMesh, Mesh))
+
+                return lease.Value;
 
             var replacement = StageMeshCache.AcquireDisabledFixHoop(Mesh);
             _disabledMesh?.Dispose();
             _disabledMesh = replacement;
+
             return replacement.Value;
         }
     }
@@ -110,6 +116,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         Span<int> x = stackalloc int[8];
         Span<int> y = stackalloc int[8];
         Span<int> z = stackalloc int[8];
+
         if (_elc[idx] == 0)
         {
             _edl[idx] = (int)(380.0F - URandom.Single() * 760.0F);
@@ -121,6 +128,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         var yr = (int)(_edr[idx] + (190.0F - URandom.Single() * 380.0F));
         var x2nd = (int)(URandom.Single() * 126.0F);
         var x1st = (int)(URandom.Single() * 126.0F);
+
         for (var i = 0; i < 8; i++)
         {
             z[i] = 0;
@@ -144,6 +152,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         y[7] = -_edl[idx] + 5 + URandom.Int(0, 5);
 
         var r = (int)(160.0F + 160.0F * (World.Snap[0] / 500.0F));
+
         if (r > 255)
         {
             r = 255;
@@ -155,6 +164,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         }
 
         var g = (int)(238.0F + 238.0F * (World.Snap[1] / 500.0F));
+
         if (g > 255)
         {
             g = 255;
@@ -166,6 +176,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         }
 
         var b = (int)(255.0F + 255.0F * (World.Snap[2] / 500.0F));
+
         if (b > 255)
         {
             b = 255;
@@ -242,6 +253,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         base.GameTick(stage);
 
         _rotAccumulator += 11 * Physics.PHYSICS_MULTIPLIER_F64;
+
         if (_rotAccumulator > 360)
         {
             _rotAccumulator -= 360;

@@ -34,8 +34,11 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         {
             if (index < 0)
                 ThrowArgumentOutOfRange(index);
+
             if (index < _size)
+
                 return _items[index];
+
             return default!;
 
             static void ThrowArgumentOutOfRange(int i)
@@ -48,6 +51,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         {
             if (index < 0)
                 ThrowArgumentOutOfRange(index);
+
             if (index >= _items.Length)
             {
                 Grow(index + 1);
@@ -87,6 +91,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         public bool MoveNext()
         {
             _index++;
+
             return _index < array._size;
         }
 
@@ -175,6 +180,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
     {
         var array = _items;
         var size = _size;
+
         if ((uint)size < (uint)array.Length)
         {
             _size = size + 1;
@@ -208,6 +214,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         var newCapacity = GetNewCapacity(requiredCapacity);
 
         var newItems = new T[newCapacity];
+
         if (indexToInsert != 0)
         {
             Array.Copy(_items, newItems, length: indexToInsert);
@@ -228,11 +235,13 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
+        if ((uint)newCapacity > Array.MaxLength)
+            newCapacity = Array.MaxLength;
 
         // If the computed capacity is still less than specified, set to the original argument.
         // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
-        if (newCapacity < capacity) newCapacity = capacity;
+        if (newCapacity < capacity)
+            newCapacity = capacity;
 
         return newCapacity;
     }
@@ -243,6 +252,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         {
             var size = _size;
             _size = 0;
+
             if (size > 0)
             {
                 Array.Clear(_items, 0, size); // Clear the elements so that the gc can reclaim the references.
@@ -267,9 +277,11 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
     public virtual bool Remove(T item)
     {
         var index = IndexOf(item);
+
         if (index >= 0)
         {
             RemoveAt(index);
+
             return true;
         }
 
@@ -282,6 +294,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
     public virtual void Insert(int index, T item)
     {
         // Note that insertions at the end are legal.
+
         if ((uint)index > (uint)_size)
         {
             throw new ArgumentOutOfRangeException(
@@ -312,6 +325,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
         }
 
         _size--;
+
         if (index < _size)
         {
             Array.Copy(_items, index + 1, _items, index, _size - index);

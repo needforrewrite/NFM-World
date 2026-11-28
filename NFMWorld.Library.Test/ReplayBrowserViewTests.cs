@@ -215,17 +215,24 @@ public class ReplayBrowserViewTests
     private static IEnumerable<Component> Descendants(Node root)
     {
         if (root is Component component)
+
             yield return component;
+
         foreach (var child in root.VisualChildren)
+
         foreach (var descendant in Descendants(child))
+
             yield return descendant;
     }
 
     private static IEnumerable<Node> Nodes(Node root)
     {
         yield return root;
+
         foreach (var child in root.VisualChildren)
+
         foreach (var descendant in Nodes(child))
+
             yield return descendant;
     }
 }

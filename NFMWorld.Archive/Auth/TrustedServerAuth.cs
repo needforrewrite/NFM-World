@@ -20,14 +20,19 @@ public sealed class TrustedServerAuth(ArchiveOptions options, NonceCache nonces)
     public string? Verify(string method, string path, ReadOnlySpan<byte> body, string? authHeader, out string? keyId)
     {
         keyId = null;
+
         if (_keys.Count == 0)
+
             return "No trusted server keys are configured.";
 
         var error = HmacAuth.Verify(method, path, body, authHeader, _keys, out keyId, out var nonce);
+
         if (error is not null)
+
             return error;
 
         if (!nonces.TryUse(keyId!, nonce))
+
             return "Nonce is missing or was already used.";
 
         return null;
@@ -39,9 +44,11 @@ public sealed class TrustedServerAuth(ArchiveOptions options, NonceCache nonces)
         using var buffer = new MemoryStream();
         var chunk = new byte[81920];
         int read;
+
         while ((read = await request.Body.ReadAsync(chunk, ct)) > 0)
         {
             if (buffer.Length + read > maxBytes)
+
                 throw new InvalidDataException($"Body exceeds {maxBytes} bytes");
             buffer.Write(chunk, 0, read);
         }

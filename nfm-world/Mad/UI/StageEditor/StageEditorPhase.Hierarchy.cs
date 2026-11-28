@@ -12,18 +12,28 @@ public partial class StageEditorPhase
     /// </summary>
     private void ReorderPieces(IReadOnlyList<int> draggedIds, int targetId, bool after)
     {
-        if (ActiveTab is not { } tab || draggedIds.Count == 0) return;
-        if (draggedIds.Contains(targetId)) return;
-        if (tab.ScenePieces.GetValueOrDefault(targetId) is not { } target) return;
+        if (ActiveTab is not { } tab || draggedIds.Count == 0)
+
+            return;
+        if (draggedIds.Contains(targetId))
+
+            return;
+        if (tab.ScenePieces.GetValueOrDefault(targetId) is not { } target)
+
+            return;
 
         var block = OrderedPieces(tab, draggedIds);
-        if (block.Count == 0) return;
+
+        if (block.Count == 0)
+
+            return;
 
         foreach (var piece in block)
             tab.ScenePieces.RemoveAt(tab.ScenePieces.FindIndex(p => p.Id == piece.Id));
 
         var targetIndex = tab.ScenePieces.FindIndex(p => p.Id == target.Id);
-        if (targetIndex < 0) targetIndex = tab.ScenePieces.Count - 1;
+        if (targetIndex < 0)
+            targetIndex = tab.ScenePieces.Count - 1;
 
         var insertAt = Math.Clamp(after ? targetIndex + 1 : targetIndex, 0, tab.ScenePieces.Count);
         for (var i = 0; i < block.Count; i++)
@@ -32,6 +42,7 @@ public partial class StageEditorPhase
         // Keep group membership in the same order. The destination is the target's group (or
         // ungrouped); a drop inside one group is the same operation.
         var destination = tab.HierarchyGroups.FirstOrDefault(g => g.PieceIds.Contains(target.Id));
+
         foreach (var piece in block)
         {
             foreach (var group in tab.HierarchyGroups)
@@ -55,18 +66,27 @@ public partial class StageEditorPhase
     /// <summary>Moves a block of pieces into a group (null = ungrouped), keeping their order.</summary>
     private void MovePiecesToGroup(IReadOnlyList<int> ids, int groupId)
     {
-        if (ActiveTab is not { } tab || ids.Count == 0) return;
+        if (ActiveTab is not { } tab || ids.Count == 0)
+
+            return;
 
         var target = groupId >= 0 ? tab.HierarchyGroups.GetValueOrDefault(groupId) : null;
         var block = OrderedPieces(tab, ids);
-        if (block.Count == 0) return;
+
+        if (block.Count == 0)
+
+            return;
 
         var changed = target is null
             ? block.Any(piece => tab.HierarchyGroups.Any(group => group.PieceIds.Contains(piece.Id)))
             : block.Any(piece => !target.PieceIds.Contains(piece.Id));
-        if (!changed) return;
+
+        if (!changed)
+
+            return;
 
         PushUndoSnapshot();
+
         foreach (var group in tab.HierarchyGroups)
         {
             foreach (var piece in block)
@@ -92,7 +112,9 @@ public partial class StageEditorPhase
 
     private static void SyncStagePieceOrder(StageEditorTab tab)
     {
-        if (tab.Stage is null) return;
+        if (tab.Stage is null)
+
+            return;
 
         // Only non-wall pieces live in Stage.pieces.
         tab.Stage.Pieces.Clear();
@@ -105,7 +127,9 @@ public partial class StageEditorPhase
     // Call after any group reorder so the save file reflects the visual hierarchy.
     private void ReorderScenePiecesForGroupOrder()
     {
-        if (ActiveTab == null) return;
+        if (ActiveTab == null)
+
+            return;
         var walls = ActiveTab.ScenePieces
             .Where(p => p.PiecePlacement.IsWall)
             .ToList();
@@ -114,11 +138,14 @@ public partial class StageEditorPhase
             .ToList();
         var allGroupedIds = new HashSet<int>(ActiveTab.HierarchyGroups.SelectMany(g => g.PieceIds));
         var grouped = new List<StagePieceInstance>();
+
         foreach (var group in ActiveTab.HierarchyGroups)
+
         foreach (var id in group.PieceIds)
         {
             var piece = nonWalls.Find(p => p.Id == id);
-            if (piece != null) grouped.Add(piece);
+            if (piece != null)
+                grouped.Add(piece);
         }
 
         var ungroupedPieces = nonWalls.Where(p => !allGroupedIds.Contains(p.Id)).ToList();

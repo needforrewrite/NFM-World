@@ -16,39 +16,36 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// [Internal] For use by ImDrawList<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImDrawCmdHeader
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector4 ClipRect;
+    /// <summary>
+    /// [Internal] For use by ImDrawList<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImDrawCmdHeader
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector4 ClipRect;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImTextureRef TexRef;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImTextureRef TexRef;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint VtxOffset;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImDrawCmdHeader(Vector4 clipRect = default, ImTextureRef texRef = default, uint vtxOffset = default)
-		{
-			ClipRect = clipRect;
-			TexRef = texRef;
-			VtxOffset = vtxOffset;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint VtxOffset;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImDrawCmdHeader(Vector4 clipRect = default, ImTextureRef texRef = default, uint vtxOffset = default)
+        {
+            ClipRect = clipRect;
+            TexRef = texRef;
+            VtxOffset = vtxOffset;
+        }
+    }
 }

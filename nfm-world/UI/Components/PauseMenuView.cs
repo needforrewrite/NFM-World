@@ -30,11 +30,19 @@ public static class PauseMenuView
 
     public static bool HandleKeyPressed(Node? node, Key key)
     {
-        if (node is null || node is Component { IsDisplayed: false }) return false;
-        if (node is InputView menu) return menu.HandleKey(key);
+        if (node is null || node is Component { IsDisplayed: false })
+
+            return false;
+        if (node is InputView menu)
+
+            return menu.HandleKey(key);
+
         foreach (var child in node.VisualChildren)
+
             if (HandleKeyPressed(child, key))
+
                 return true;
+
         return false;
     }
 
@@ -46,7 +54,8 @@ public static class PauseMenuView
 
         // RESTART only exists when this client owns the race. Online the Game Master does, and
         // resetting the local gamemode would just desync it.
-        var items = new List<(string Label, string Description, Action Activate)>
+        var items = new List<(string Label, string Description, Action Activate)
+                    >
         {
             ("RESUME", "Get back to the action.", actions.Resume)
         };
@@ -75,8 +84,11 @@ public static class PauseMenuView
 
         bool HandleKey(Key key)
         {
-            if (page.Value == Page.Settings) return true;
+            if (page.Value == Page.Settings)
+
+                return true;
             var count = page.Value == Page.Menu ? items.Count : 2;
+
             if (key is Key.Up or Key.Down or Key.Left or Key.Right)
             {
                 var direction = key is Key.Up or Key.Left ? -1 : 1;
@@ -86,8 +98,10 @@ public static class PauseMenuView
                 Activate();
             else if (key == Key.Escape)
             {
-                if (page.Value == Page.Menu) actions.Resume();
-                else Open(Page.Menu);
+                if (page.Value == Page.Menu)
+                    actions.Resume();
+                else
+                    Open(Page.Menu);
             }
 
             return true;
@@ -164,6 +178,7 @@ public static class PauseMenuView
                 }
             )
         );
+
         return root;
     }
 
@@ -289,7 +304,10 @@ public static class PauseMenuView
         onmousedown: e =>
         {
             e.StopPropagation();
-            if (e.Button != MouseButton.Primary) return;
+
+            if (e.Button != MouseButton.Primary)
+
+                return;
             selected.Value = index;
             activate();
         },

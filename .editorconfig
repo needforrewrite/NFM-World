@@ -12,6 +12,13 @@ indent_size = 4
 ##############################
 csharp_new_line_before_open_brace = all
 resharper_csharp_brace_style = next_line
+csharp_preserve_single_line_statements = false
+resharper_csharp_place_simple_embedded_statement_on_same_line = never
+resharper_csharp_keep_existing_embedded_arrangement = false
+
+resharper_csharp_blank_lines_before_block_statements = 1
+resharper_csharp_blank_lines_after_block_statements = 1
+resharper_csharp_blank_lines_before_control_transfer_statements = 1
 
 ##############################
 # Line breaks: grow downwards

@@ -45,12 +45,14 @@ public sealed class SessionService(ArchiveDbContext db, ArchiveOptions options)
             .FirstOrDefaultAsync(s => s.TokenHash == $"{selector}.{verifierHash}", ct);
 
         if (session is null)
+
             return null;
 
         if (session.ExpiresAt <= now || session.SecurityStamp != session.User.SecurityStamp)
         {
             db.Sessions.Remove(session);
             await db.SaveChangesAsync(ct);
+
             return null;
         }
 

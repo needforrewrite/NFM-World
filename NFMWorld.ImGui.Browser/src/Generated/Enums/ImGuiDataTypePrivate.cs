@@ -13,20 +13,20 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiDataTypePrivate : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Pointer = unchecked((int)ImGuiDataType.Count),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiDataTypePrivate : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Pointer = unchecked((int)ImGuiDataType.Count),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Id = unchecked(13),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Id = unchecked(13),
+    }
 }

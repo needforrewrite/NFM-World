@@ -78,6 +78,7 @@ public static class AssetKinds
     public static bool IsUploadExtensionAllowed(byte assetType, string extension)
     {
         if (!IsPublishable(assetType))
+
             return false;
 
         return !extension.Equals(".rad", StringComparison.OrdinalIgnoreCase)
@@ -102,7 +103,9 @@ public static class AssetKinds
     public static bool TryParseName(string? text, out byte assetType)
     {
         assetType = 0;
+
         if (string.IsNullOrWhiteSpace(text))
+
             return false;
 
         switch (text.Trim().ToLowerInvariant())

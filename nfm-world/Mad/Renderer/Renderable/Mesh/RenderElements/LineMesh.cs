@@ -29,7 +29,8 @@ public class LineMesh : IInstancedRenderElement, IDisposable
     internal sealed record Prepared(List<LineMeshVertexAttribute> Vertices, List<int> Indices);
 
     internal static Prepared Prepare(
-        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines
+        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid,
+            Vector3 Normal)>> lines
     )
     {
         var data = new List<LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * lines.Count);
@@ -99,6 +100,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
     public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting, IBuffer instanceBuffer, int instanceCount)
     {
         if (World.DistantOutlineBehavior == DistantOutlineBehavior.HideOutlines)
+
             return;
 
         // The editor's translucent line overlays select the depth-read variant; line meshes are
@@ -166,11 +168,15 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         {
             const short r = 0;
             short g = (short)(223F + 223F * (World.Snap[1] / 100F));
-            if (g > 255) g = 255;
-            if (g < 0) g = 0;
+            if (g > 255)
+                g = 255;
+            if (g < 0)
+                g = 0;
             short b = (short)(255F + 255F * (World.Snap[2] / 100F));
-            if (b > 255) b = 255;
-            if (b < 0) b = 0;
+            if (b > 255)
+                b = 255;
+            if (b < 0)
+                b = 0;
 
             p.UseBaseColor.SetValue(cb, true);
             p.BaseColor.SetValue(cb, new Color3(r, g, b));
@@ -180,11 +186,15 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         {
             const short r = 0;
             short g = (short)(255.0F + 255.0F * (World.Snap[1] / 100.0F));
-            if (g > 255) g = 255;
-            if (g < 0) g = 0;
+            if (g > 255)
+                g = 255;
+            if (g < 0)
+                g = 0;
             short b = (short)(223.0F + 223.0F * (World.Snap[2] / 100.0F));
-            if (b > 255) b = 255;
-            if (b < 0) b = 0;
+            if (b > 255)
+                b = 255;
+            if (b < 0)
+                b = 0;
 
             p.UseBaseColor.SetValue(cb, true);
             p.BaseColor.SetValue(cb, new Color3(r, g, b));

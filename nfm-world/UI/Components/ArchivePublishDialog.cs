@@ -41,7 +41,9 @@ internal sealed class ArchivePublishDialog
         Func<string, string?>? export = null
     )
     {
-        if (IsOpen) return;
+        if (IsOpen)
+
+            return;
         var document = new Document(kind, name, GameSparker.AccountManager.ActiveAccount, publish, export);
         _uploads.Value = [];
         _search.Value = "";
@@ -124,10 +126,13 @@ internal sealed class ArchivePublishDialog
                         ..(document.Export is null ? Array.Empty<Node>() :
                             [Button.Create(() => "EXPORT PACK", () => Export(document), size: ButtonSize.Sm)]),
                         Sx.Show(
-                            () => !_busy.Value && !_loading.Value && document.Account is not null
-                                  && (_targetId.Value is null || _uploads.Value.Any(
-                                      asset => asset.Id == _targetId.Value && !asset.IsTakedown
-                                  )),
+                            () => !_busy.Value
+                                  && !_loading.Value
+                                  && document.Account is not null
+                                  && (_targetId.Value is null
+                                      || _uploads.Value.Any(
+                                          asset => asset.Id == _targetId.Value && !asset.IsTakedown
+                                      )),
                             () => Button.Create(
                                 () => _targetId.Value is null ? "PUBLISH NEW" : "UPDATE UPLOAD",
                                 () => _ = SubmitAsync(document),
@@ -189,7 +194,8 @@ internal sealed class ArchivePublishDialog
 
     private bool MatchesSearch(OwnedAsset asset)
         => asset.Name.Contains(_search.Value.Trim(), StringComparison.OrdinalIgnoreCase)
-           || asset.Tags?.Any(tag => tag.Contains(_search.Value.Trim(), StringComparison.OrdinalIgnoreCase)) == true;
+           || asset.Tags?.Any(tag => tag.Contains(_search.Value.Trim(), StringComparison.OrdinalIgnoreCase))
+           == true;
 
     private Node UploadRow(Document document, OwnedAsset asset)
     {
@@ -197,6 +203,7 @@ internal sealed class ArchivePublishDialog
         var visibility = asset.IsTakedown ? "Taken down" : asset.IsPublic ? "Public" : "Hidden";
         if (!asset.IsTakedown && asset.ReviewStatus is "Pending" or "Rejected")
             visibility = asset.ReviewLabel!;
+
         return Sx.View(
             style: () => Sx.Styles(
                 width: 100.Percent(),
@@ -274,7 +281,9 @@ internal sealed class ArchivePublishDialog
 
     private void Select(Document document, OwnedAsset? asset)
     {
-        if (_busy.Value) return;
+        if (_busy.Value)
+
+            return;
         _targetId.Value = asset?.Id;
         _name.Value = asset?.Name ?? document.Name;
         _description.Value = asset?.Description ?? "";
@@ -284,12 +293,17 @@ internal sealed class ArchivePublishDialog
 
     private async Task RefreshAsync(Document document)
     {
-        if (document.Account is null || _loading.Value || _busy.Value
-            || document.Account.Token != GameSparker.AccountManager.ActiveAccount?.Token) return;
+        if (document.Account is null
+            || _loading.Value
+            || _busy.Value
+            || document.Account.Token != GameSparker.AccountManager.ActiveAccount?.Token)
+
+            return;
         _loading.Value = true;
         _listError.Value = "";
         IReadOnlyList<OwnedAsset>? uploads = null;
         string? error = null;
+
         try
         {
             uploads = await GameSparker.AccountManager.ListOwnedAssetsAsync(AssetKinds.Name((byte)document.Kind));
@@ -300,10 +314,14 @@ internal sealed class ArchivePublishDialog
         }
 
         await LoadingWork.NextFrame;
-        if (!ReferenceEquals(_document.Value, document)) return;
+
+        if (!ReferenceEquals(_document.Value, document))
+
+            return;
         _loading.Value = false;
         _listError.Value = error ?? "";
-        if (uploads is not null) _uploads.Value = uploads;
+        if (uploads is not null)
+            _uploads.Value = uploads;
     }
 
     private async Task RefreshUploadLimitAsync(Document document)
@@ -311,7 +329,10 @@ internal sealed class ArchivePublishDialog
         var request = ++_uploadLimitRequest;
         var limit = await GameSparker.AccountManager.GetAssetUploadLimitAsync();
         await LoadingWork.NextFrame;
-        if (request != _uploadLimitRequest || !ReferenceEquals(_document.Value, document)) return;
+
+        if (request != _uploadLimitRequest || !ReferenceEquals(_document.Value, document))
+
+            return;
 
         _uploadLimit.Value = limit is { } bytes
             ? $"Maximum Archive upload size: {bytes / (1024d * 1024):0.##} MiB."
@@ -320,23 +341,30 @@ internal sealed class ArchivePublishDialog
 
     private async Task SubmitAsync(Document document)
     {
-        if (_busy.Value || _loading.Value || document.Account is null) return;
+        if (_busy.Value || _loading.Value || document.Account is null)
+
+            return;
+
         if (document.Account.Token != GameSparker.AccountManager.ActiveAccount?.Token)
         {
             _status.Value = "Your account changed. Reopen publishing to continue.";
+
             return;
         }
 
         var name = _name.Value.Trim();
+
         if (name.Length == 0)
         {
             _status.Value = "Enter a name for the upload.";
+
             return;
         }
 
         if (_targetId.Value is { } id && !_uploads.Value.Any(asset => asset.Id == id && !asset.IsTakedown))
         {
             _status.Value = "Choose an available upload to update.";
+
             return;
         }
 
@@ -344,6 +372,7 @@ internal sealed class ArchivePublishDialog
         _busy.Value = true;
         _status.Value = publication.AssetId is null ? "Publishing…" : "Updating upload…";
         AssetUploadResult result;
+
         try
         {
             result = await document.Publish(publication);
@@ -357,11 +386,18 @@ internal sealed class ArchivePublishDialog
         _busy.Value = false;
         _status.Value = result.Message;
         _ = RefreshUploadLimitAsync(document);
-        if (!result.Success) return;
+
+        if (!result.Success)
+
+            return;
 
         await RefreshAsync(document);
-        if (ReferenceEquals(_document.Value, document) && publication.AssetId is null && _targetId.Value is null
-            && result.ContentHash is { } hash && _uploads.Value.FirstOrDefault(asset => asset.ContentHash == hash) is { } saved)
+
+        if (ReferenceEquals(_document.Value, document)
+            && publication.AssetId is null
+            && _targetId.Value is null
+            && result.ContentHash is { } hash
+            && _uploads.Value.FirstOrDefault(asset => asset.ContentHash == hash) is { } saved)
         {
             Select(document, saved);
             _status.Value = result.Message;
@@ -370,7 +406,9 @@ internal sealed class ArchivePublishDialog
 
     private void Export(Document document)
     {
-        if (_busy.Value || document.Export is null) return;
+        if (_busy.Value || document.Export is null)
+
+            return;
         var name = _name.Value.Trim();
         var path = document.Export(name.Length > 0 ? name : document.Name);
         _status.Value = path is null ? "The pack could not be exported." : $"Exported to {path}.";

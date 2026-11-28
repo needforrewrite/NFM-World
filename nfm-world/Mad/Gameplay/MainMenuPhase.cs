@@ -53,7 +53,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private (string Host, ushort Port, bool Insecure)? _lobbyAfterSignIn;
     private bool _warnedDeletion;
 
-    public override bool EnableUiInput => CurrentStage is not null && _menuVisible
+    public override bool EnableUiInput => CurrentStage is not null
+                                          && _menuVisible
                                           && (_transitionTime < 0 || (_transitionToMenu && _transitionSwitched));
 
     private static string ResolveMenuStage(string lastPlayed)
@@ -189,7 +190,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
             MainMenuView.Reset();
 
         ApplyMenuPreferences(checkHistory: true);
-        if (CurrentStage is not null) CurrentStage.CarSoundsEnabled = false;
+        if (CurrentStage is not null)
+            CurrentStage.CarSoundsEnabled = false;
+
         if (_menuVisible)
         {
             SetupMenuCar();
@@ -197,7 +200,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 _cameraDirector.ShowCar(Camera, _menuCar, _menuTime, true);
         }
 
-        if (CurrentStage is not null) UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
+        if (CurrentStage is not null)
+            UiState.MainMenu.StageName.Value = CurrentStage.Backend.Name;
 
         _ = GameSparker.AccountManager.RefreshAsync();
         WarnIfDeletionPending();
@@ -210,6 +214,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             || race.CurrentStage is not { } stage
             || stage.Backend.Path != MenuHistory.Stage
             || stage.Backend.Path != race.StageName)
+
             return false;
 
         var takeMusic = MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) is null;
@@ -217,6 +222,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
         OnStageReplacing();
         UnloadStage();
+
         if (takeMusic)
         {
             UnloadStageMusic();
@@ -228,12 +234,14 @@ public class MainMenuPhase : BaseStageRenderingPhase
         OnStageLoaded();
         ApplyMenuPreferences();
         LoadStageMusic();
+
         return true;
     }
 
     private void SetupMenuCar()
     {
         var car = MenuHistory.Car;
+
         if (car is not null && !BackendCar.IsDrivable(car))
         {
             // A remembered user model can be an unfinished editor export; the physics
@@ -244,7 +252,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 car = BackendGameSparker.cars.Values.SelectMany(cars => cars).FirstOrDefault(BackendCar.IsDrivable);
         }
 
-        if (car is not { } chosen) return;
+        if (car is not { } chosen)
+
+            return;
         CarsInRace.Clear();
         _menuCar = new BackendCar(chosen, 0, 0, 0, true);
         CarsInRace.Add(_menuCar);
@@ -257,7 +267,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void ApplyMenuPreferences(bool checkHistory = false)
     {
-        if (CurrentStage is null && IsStageLoading) return;
+        if (CurrentStage is null && IsStageLoading)
+
+            return;
         var selection = SettingsMenu.MenuStage == MenuPreferences.LastPlayedStage
             ? MenuHistory.Stage : SettingsMenu.MenuStage;
         var stageChanged = _appliedMenuStage != SettingsMenu.MenuStage;
@@ -266,7 +278,11 @@ public class MainMenuPhase : BaseStageRenderingPhase
                                && MenuPreferences.ResolveMusic(TheVFS.VFS, SettingsMenu.MenuMusic) == null);
         _appliedRemasteredMusic = GameSparker.UseRemasteredMusic;
         var stageName = RadpackReader.IsArchiveId(selection) ? selection : ResolveMenuStage(MenuHistory.Stage);
-        if (!stageChanged && !musicChanged && !checkHistory && StageName == stageName) return;
+
+        if (!stageChanged && !musicChanged && !checkHistory && StageName == stageName)
+
+            return;
+
         if (StageName != stageName)
         {
             LoadStage(stageName, reloadIfLoaded: true);
@@ -287,6 +303,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         _cameraDirector.Reset(Camera, CurrentStage.Backend);
         CurrentStage.FadeFromOverride = _cameraDirector.ViewDistance;
         _attractShot = -1;
+
         if (_menuVisible && _menuCar != null)
         {
             CurrentStage.GetCarVisual(_menuCar);
@@ -321,10 +338,13 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void WarnIfDeletionPending()
     {
         if (_warnedDeletion)
+
             return;
 
         var account = GameSparker.AccountManager.ActiveAccount;
+
         if (account?.DeletionPendingUntil is not { } until)
+
             return;
 
         _warnedDeletion = true;
@@ -346,6 +366,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnFreePlayClicked()
     {
         StageSelectPhase ssp;
+
         try
         {
             ssp = new StageSelectPhase();
@@ -354,6 +375,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             Logging.Error(ex.Message);
             GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
+
             return;
         }
 
@@ -369,7 +391,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OpenReplays()
     {
-        if (_replays is not null) return;
+        if (_replays is not null)
+
+            return;
         _replays = new ReplayBrowserController(CloseReplays);
         _replaysOpen.Value = true;
     }
@@ -383,7 +407,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OpenMyContent()
     {
-        if (_myContent is not null) return;
+        if (_myContent is not null)
+
+            return;
         _myContent = new MyContentController(CloseMyContent);
         _myContentOpen.Value = true;
     }
@@ -397,12 +423,16 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnGarageClicked()
     {
-        if (_garage != null) return;
+        if (_garage != null)
+
+            return;
         if (_menuCar == null)
             SetupMenuCar();
+
         if (_menuCar == null)
         {
             GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
+
             return;
         }
 
@@ -435,6 +465,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnTTClicked()
     {
         StageSelectPhase ssp;
+
         try
         {
             ssp = new StageSelectPhase();
@@ -443,6 +474,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             Logging.Error(ex.Message);
             GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
+
             return;
         }
 
@@ -454,6 +486,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     "Time trial unavailable",
                     "This stage has no checkpoints. Choose a stage with checkpoints to start a time trial."
                 );
+
                 return;
             }
 
@@ -467,6 +500,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnRocketClicked()
     {
         StageSelectPhase ssp;
+
         try
         {
             ssp = new StageSelectPhase();
@@ -475,6 +509,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             Logging.Error(ex.Message);
             GameSparker.MessageWindow.ShowMessage("Stages unavailable", ex.Message);
+
             return;
         }
 
@@ -492,6 +527,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         if (MenuHistory.Car is not { } car || !BackendCar.IsDrivable(car))
         {
             GameSparker.MessageWindow.ShowMessage("Cars unavailable", "No playable cars are installed.");
+
             return;
         }
 
@@ -517,6 +553,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 }]
                 : FreePlayRoster.Create(identity, rocket: rocket);
             LocalRaceHost host;
+
             try
             {
                 host = LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = players });
@@ -524,6 +561,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             catch
             {
                 factory.End();
+
                 throw;
             }
 
@@ -541,16 +579,28 @@ public class MainMenuPhase : BaseStageRenderingPhase
             _lobbyAfterSignIn = null;
             if (!LobbyConnection.TryOpen(lobby.Host, lobby.Port, lobby.Insecure, out var error))
                 GameSparker.MessageWindow.ShowMessage("Multiplayer unavailable", error);
+
             return;
         }
 
         const float seconds = 1f / Physics.TargetTps;
         _settingsCamera.RestoreNormal(Camera);
         ApplyMenuPreferences();
-        if (CurrentStage is null) return;
-        if (ReferenceEquals(GameSparker.CurrentPhase, this) && EnableUiInput && _transitionTime < 0 && _garage is null &&
-            !_replaysOpen.Value && !_myContentOpen.Value && !AccountView.IsOpen && !MainMenuView.HasBlockingOverlay)
+
+        if (CurrentStage is null)
+
+            return;
+        if (ReferenceEquals(GameSparker.CurrentPhase, this)
+            && EnableUiInput
+            && _transitionTime < 0
+            && _garage is null
+            &&
+            !_replaysOpen.Value
+            && !_myContentOpen.Value
+            && !AccountView.IsOpen
+            && !MainMenuView.HasBlockingOverlay)
             GameSparker.PumpDesktopUpdates?.Invoke();
+
         if (_menuVisible)
         {
             _menuTime += seconds;
@@ -558,6 +608,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 _garageCamera.Tick(seconds);
             _garageBlend = Math.Clamp(_garageBlend + (_garage != null ? seconds : -seconds) / 1.1f, 0, 1);
             _menuCar = _garage?.CurrentCar ?? _menuCar;
+
             if (_menuCar != null)
             {
                 _cameraDirector.ShowCar(
@@ -570,6 +621,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     garageFraming: MenuCameraDirector.GarageFraming
                 );
                 _settingsCamera.Update(Camera, _menuCar, NFMWorld.UI.Components.SettingsView.CameraPreviewActive);
+
                 if (NFMWorld.UI.Components.SettingsView.MenuHudPreviewData is { } preview)
                 {
                     preview.Power.Value = (float)_menuCar.CarPhysics.Power / 100f;
@@ -594,6 +646,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             _settingsCamera.Reset();
             _introTime += seconds;
             _cameraDirector.Tick(Camera, CurrentStage!.Backend, seconds);
+
             if (_attractShot != _cameraDirector.ShotId)
             {
                 _attractShot = _cameraDirector.ShotId;
@@ -608,11 +661,13 @@ public class MainMenuPhase : BaseStageRenderingPhase
         if (_transitionTime >= 0)
         {
             _transitionTime += seconds;
+
             if (_transitionTime >= 0.8f && !_transitionSwitched)
             {
                 _transitionSwitched = true;
                 StopAttractDrive();
                 _menuVisible = _transitionToMenu;
+
                 if (_menuVisible)
                 {
                     _menuTime = 0;
@@ -680,7 +735,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void BeginTransition(bool toMenu)
     {
-        if (_transitionTime >= 0) return;
+        if (_transitionTime >= 0)
+
+            return;
         UiState.MainMenu.SceneryOnly.Value = false;
         _transitionToMenu = toMenu;
         _transitionSwitched = false;
@@ -690,6 +747,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private static float Smooth(float value)
     {
         value = Math.Clamp(value, 0, 1);
+
         return value * value * (3 - 2 * value);
     }
 
@@ -722,15 +780,18 @@ public class MainMenuPhase : BaseStageRenderingPhase
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
+
         if (_replays is not null)
         {
             _replays.KeyPressed(key);
+
             return;
         }
 
         if (_myContent is not null)
         {
             _myContent.KeyPressed(key);
+
             return;
         }
 
@@ -738,12 +799,14 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             if (!imguiWantsKeyboard && key == Key.Escape)
                 CloseAccount();
+
             return;
         }
 
         if (_garage != null)
         {
             _garage.KeyPressed(key, imguiWantsKeyboard, keys);
+
             return;
         }
 
@@ -753,6 +816,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             BeginTransition(true);
             _transitionTime = TransitionDuration;
+
             return;
         }
 
@@ -760,19 +824,24 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             if (!MainMenuView.NavigateBack())
                 BeginTransition(false);
+
             return;
         }
 
         if (!imguiWantsKeyboard && EnableUiInput)
             MainMenuView.KeyPressed(key);
+
         if (imguiWantsKeyboard || _menuVisible || _transitionTime >= 0 || _introTime < IntroFadeStart)
+
             return;
 
         // Escape stays the scenery-only toggle for the whole intro; every other key skips straight
         // in, which is what "PRESS ANY BUTTON" promises.
+
         if (key == Key.Escape)
         {
             UiState.MainMenu.SceneryOnly.Value = !UiState.MainMenu.SceneryOnly.Value;
+
             return;
         }
 
@@ -793,7 +862,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         if (_garage != null && EnableUiInput)
             _garageCamera.Press(x, y, imguiWantsMouse, button);
+
         if (imguiWantsMouse || _menuVisible || _transitionTime >= 0 || _introTime < IntroFadeStart)
+
             return;
 
         BeginTransition(true);
@@ -827,6 +898,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
         _garageCamera.Release(button);
-        if (button == MouseButton.Primary) _garage?.FinishPaintInteraction();
+        if (button == MouseButton.Primary)
+            _garage?.FinishPaintInteraction();
     }
 }

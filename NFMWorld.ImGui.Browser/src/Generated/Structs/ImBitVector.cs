@@ -16,75 +16,79 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// Helper: ImBitVector<br/>
-	/// Store 1-bit per value.<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImBitVector
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<uint> Storage;
+    /// <summary>
+    /// Helper: ImBitVector<br/>
+    /// Store 1-bit per value.<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImBitVector
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<uint> Storage;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImBitVector(ImVector<uint> storage = default)
-		{
-			Storage = storage;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImBitVector(ImVector<uint> storage = default)
+        {
+            Storage = storage;
+        }
+    }
 
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImBitVectorPtr : IEquatable<ImBitVectorPtr>
+    {
+        public ImBitVectorPtr(ImBitVector* handle)
+        {
+            Handle = handle;
+        }
 
-	}
+        public ImBitVector* Handle;
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImBitVectorPtr : IEquatable<ImBitVectorPtr>
-	{
-		public ImBitVectorPtr(ImBitVector* handle) { Handle = handle; }
+        public bool IsNull => Handle == null;
 
-		public ImBitVector* Handle;
+        public static ImBitVectorPtr Null => new ImBitVectorPtr(null);
 
-		public bool IsNull => Handle == null;
+        public ImBitVector this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static ImBitVectorPtr Null => new ImBitVectorPtr(null);
+        public static implicit operator ImBitVectorPtr(ImBitVector* handle) => new ImBitVectorPtr(handle);
 
-		public ImBitVector this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public static implicit operator ImBitVector*(ImBitVectorPtr handle) => handle.Handle;
 
-		public static implicit operator ImBitVectorPtr(ImBitVector* handle) => new ImBitVectorPtr(handle);
+        public static bool operator ==(ImBitVectorPtr left, ImBitVectorPtr right) => left.Handle == right.Handle;
 
-		public static implicit operator ImBitVector*(ImBitVectorPtr handle) => handle.Handle;
+        public static bool operator !=(ImBitVectorPtr left, ImBitVectorPtr right) => left.Handle != right.Handle;
 
-		public static bool operator ==(ImBitVectorPtr left, ImBitVectorPtr right) => left.Handle == right.Handle;
+        public static bool operator ==(ImBitVectorPtr left, ImBitVector* right) => left.Handle == right;
 
-		public static bool operator !=(ImBitVectorPtr left, ImBitVectorPtr right) => left.Handle != right.Handle;
+        public static bool operator !=(ImBitVectorPtr left, ImBitVector* right) => left.Handle != right;
 
-		public static bool operator ==(ImBitVectorPtr left, ImBitVector* right) => left.Handle == right;
+        public bool Equals(ImBitVectorPtr other) => Handle == other.Handle;
 
-		public static bool operator !=(ImBitVectorPtr left, ImBitVector* right) => left.Handle != right;
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImBitVectorPtr handle && Equals(handle);
 
-		public bool Equals(ImBitVectorPtr other) => Handle == other.Handle;
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImBitVectorPtr handle && Equals(handle);
-
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
-
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImBitVectorPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<uint> Storage => ref Unsafe.AsRef<ImVector<uint>>(&Handle->Storage);
-	}
-
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImBitVectorPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<uint> Storage => ref Unsafe.AsRef<ImVector<uint>>(&Handle->Storage);
+    }
 }

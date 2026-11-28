@@ -24,6 +24,7 @@ public static class TightPackBlit
         where T : unmanaged
     {
         int actual = SizeOf<T>();
+
         if (actual != expected)
         {
             TightPackSerializationException.ThrowInvalidLayout(typeof(T), expected, actual);

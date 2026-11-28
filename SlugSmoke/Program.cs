@@ -6,6 +6,7 @@
 // the band sort's shuffled list, still compiles and still draws - just through a mangled letter -
 // and a field with the sign flipped, or read a texel off, draws a plausible-looking blur. So the
 // numbers are checked here instead.
+
 using System;
 using System.IO;
 using System.Numerics;
@@ -18,7 +19,8 @@ internal static class Program
     private static void Check(bool ok, string what)
     {
         Console.WriteLine((ok ? "  ok   " : "  FAIL ") + what);
-        if (!ok) _failures++;
+        if (!ok)
+            _failures++;
     }
 
     private static int Main(string[] args)
@@ -36,8 +38,10 @@ internal static class Program
             Check(o.Contour.Length > 0, $"o retains a contour ({o.Contour.Length} curves)");
             Check(o.ContourStarts.Length == 2, $"o has two contours (got {o.ContourStarts.Length})");
             Check(o.ContourStarts[0] == 0, $"the first starts at 0 (got {o.ContourStarts[0]})");
-            Check(o.ContourStarts[1] > 0 && o.ContourStarts[1] < o.Contour.Length,
-                  $"the second starts inside the list (got {o.ContourStarts[1]} of {o.Contour.Length})");
+            Check(
+                o.ContourStarts[1] > 0 && o.ContourStarts[1] < o.Contour.Length,
+                $"the second starts inside the list (got {o.ContourStarts[1]} of {o.Contour.Length})"
+            );
 
             // The whole point of retaining the contour separately: the band sorts shuffle the
             // list the shader reads, so the retained copy must not be that list.
@@ -52,6 +56,7 @@ internal static class Program
             // pins the units down: design units would be a thousand times too large and land
             // far outside it, and a normalized [0,1] frame would collapse into a corner.
             float minX = float.MaxValue, minY = float.MaxValue, maxX = float.MinValue, maxY = float.MinValue;
+
             foreach (GlyphCurve c in o.Contour)
             {
                 minX = MathF.Min(minX, MathF.Min(c.P1.X, MathF.Min(c.P2.X, c.P3.X)));
@@ -59,33 +64,43 @@ internal static class Program
                 minY = MathF.Min(minY, MathF.Min(c.P1.Y, MathF.Min(c.P2.Y, c.P3.Y)));
                 maxY = MathF.Max(maxY, MathF.Max(c.P1.Y, MathF.Max(c.P2.Y, c.P3.Y)));
             }
+
             // Control points may bulge past the box a little, which is why this is a loose
             // tolerance rather than an exact containment.
             const float slack = 0.25f;
-            Check(minX >= o.Min.X - slack && maxX <= o.Max.X + slack,
-                  $"x within the box [{o.Min.X:0.####}, {o.Max.X:0.####}] (contour {minX:0.####} to {maxX:0.####})");
-            Check(minY >= o.Min.Y - slack && maxY <= o.Max.Y + slack,
-                  $"y within the box [{o.Min.Y:0.####}, {o.Max.Y:0.####}] (contour {minY:0.####} to {maxY:0.####})");
+            Check(
+                minX >= o.Min.X - slack && maxX <= o.Max.X + slack,
+                $"x within the box [{o.Min.X:0.####}, {o.Max.X:0.####}] (contour {minX:0.####} to {maxX:0.####})"
+            );
+            Check(
+                minY >= o.Min.Y - slack && maxY <= o.Max.Y + slack,
+                $"y within the box [{o.Min.Y:0.####}, {o.Max.Y:0.####}] (contour {minY:0.####} to {maxY:0.####})"
+            );
 
             // An 'o' is wider than it is tall in a typical font, and never a hairline: if the
             // units were off by the units-per-em the box would be ~1000x this.
             float w = maxX - minX, h = maxY - minY;
-            Check(w > 0.05f && w < 2f && h > 0.05f && h < 2f,
-                  $"the contour spans a sane number of ems ({w:0.###} x {h:0.###})");
+            Check(
+                w > 0.05f && w < 2f && h > 0.05f && h < 2f,
+                $"the contour spans a sane number of ems ({w:0.###} x {h:0.###})"
+            );
         }
 
         Console.WriteLine();
         Console.WriteLine("== the contour is closed: every contour's last point meets its first ==");
         {
             BakedGlyph o = font.Font.Lookup('o');
+
             for (int s = 0; s < o.ContourStarts.Length; s++)
             {
                 int start = o.ContourStarts[s];
                 int next = s + 1 < o.ContourStarts.Length ? o.ContourStarts[s + 1] : o.Contour.Length;
                 Vector2 first = o.Contour[start].P1;
                 Vector2 last = o.Contour[next - 1].P3;
-                Check(Vector2.Distance(first, last) < 1e-4f,
-                      $"contour {s} closes ({first} -> {last})");
+                Check(
+                    Vector2.Distance(first, last) < 1e-4f,
+                    $"contour {s} closes ({first} -> {last})"
+                );
             }
         }
 
@@ -122,15 +137,25 @@ internal static class Program
             double sumMedian = 0, sumAlpha = 0;
             int n = 0, wrongSign = 0, saturated = 0;
             float range = o.RangeTexels;
-            for (int ty = 0; ty < o.Height; ty++) {
-                for (int tx = 0; tx < o.Width; tx++) {
+
+            for (int ty = 0; ty < o.Height; ty++)
+            {
+                for (int tx = 0; tx < o.Width; tx++)
+                {
                     // The texel's own em coordinate, from the padded box. A glyph is sampled at
                     // texel centres, which is what the half texel msdfgen adds is for.
                     var p = new Vector2(
                         o.PaddedMin.X + (tx + 0.5f) / o.EmPx,
-                        o.PaddedMin.Y + (ty + 0.5f) / o.EmPx);
+                        o.PaddedMin.Y + (ty + 0.5f) / o.EmPx
+                    );
                     float truth = TrueDistance(font.Font.Lookup('o'), p, out bool inside);
-                    if (MathF.Abs(truth) * o.EmPx > range * 0.5f) { saturated++; continue; }
+
+                    if (MathF.Abs(truth) * o.EmPx > range * 0.5f)
+                    {
+                        saturated++;
+
+                        continue;
+                    }
 
                     int at = (ty * o.Width + tx) * 4;
                     float median = Median(o.Rgba[at] / 255f, o.Rgba[at + 1] / 255f, o.Rgba[at + 2] / 255f);
@@ -140,12 +165,14 @@ internal static class Program
                     float wm = (0.5f - median) * range;
                     float wa = (0.5f - alpha) * range;
                     float want = (inside ? -1f : 1f) * truth * o.EmPx;
-                    if (MathF.Sign(wm) != MathF.Sign(want) && MathF.Abs(want) > 0.5f) wrongSign++;
+                    if (MathF.Sign(wm) != MathF.Sign(want) && MathF.Abs(want) > 0.5f)
+                        wrongSign++;
                     sumMedian += MathF.Abs(wm - want);
                     sumAlpha += MathF.Abs(wa - want);
                     n++;
                 }
             }
+
             Check(n > 0, $"measured {n} texels");
             // The median is exact to the byte; a whole texel of error would mean the
             // reconstruction is reading the wrong texel, and the sign is what a winding bug
@@ -163,14 +190,29 @@ internal static class Program
             // a hash set or an uninitialised value would hand back a field that differs between
             // runs, which no single-image check could see.
             MsdfGlyph again = MsdfBake.Bake(
-                o.Glyph, o.Advance, o.Bearing, o.Min, o.Max,
-                font.Font.Lookup('o').Contour, font.Font.Lookup('o').ContourStarts);
+                o.Glyph,
+                o.Advance,
+                o.Bearing,
+                o.Min,
+                o.Max,
+                font.Font.Lookup('o').Contour,
+                font.Font.Lookup('o').ContourStarts
+            );
             bool same = again.Width == o.Width && again.Height == o.Height;
-            if (same) {
-                for (int i = 0; i < o.Rgba.Length; i++) {
-                    if (o.Rgba[i] != again.Rgba[i]) { same = false; break; }
+
+            if (same)
+            {
+                for (int i = 0; i < o.Rgba.Length; i++)
+                {
+                    if (o.Rgba[i] != again.Rgba[i])
+                    {
+                        same = false;
+
+                        break;
+                    }
                 }
             }
+
             Check(same, "the bake is deterministic");
         }
 
@@ -193,10 +235,14 @@ internal static class Program
             Check(fresh.PrewarmedFieldCount == baked, $"the whole cache loads ({fresh.PrewarmedFieldCount} of {baked})");
             MsdfGlyph loadedO = fresh.Font.Field(fresh.Font.Lookup('o').Glyph);
             MsdfGlyph bakedO = font.Font.Field(font.Font.Lookup('o').Glyph);
-            Check(loadedO.Width == bakedO.Width && loadedO.Height == bakedO.Height,
-                  $"a loaded field keeps its size ({loadedO.Width}x{loadedO.Height})");
-            Check(loadedO.PaddedMin == bakedO.PaddedMin && loadedO.PaddedMax == bakedO.PaddedMax,
-                  "a loaded field keeps its placement");
+            Check(
+                loadedO.Width == bakedO.Width && loadedO.Height == bakedO.Height,
+                $"a loaded field keeps its size ({loadedO.Width}x{loadedO.Height})"
+            );
+            Check(
+                loadedO.PaddedMin == bakedO.PaddedMin && loadedO.PaddedMax == bakedO.PaddedMax,
+                "a loaded field keeps its placement"
+            );
             Check(loadedO.Rgba.AsSpan().SequenceEqual(bakedO.Rgba), "a loaded field keeps its bytes");
 
             // A cache that was baked from other font bytes has to be ignored whole. One flipped
@@ -237,27 +283,41 @@ internal static class Program
             // texels per em; a texel at least a texel further out than that must read outside it.
             const float reach = 1.75f * 48f / 16f;
             int badMedian = 0, badAlpha = 0, measured = 0;
+
             foreach (char ch in "Fps:ElaedtimTckGCrm(PU)Lub,-zw0123456789.")
             {
                 BakedGlyph bg = font.Font.Lookup(ch);
-                if (!bg.HasOutline) continue;
+
+                if (!bg.HasOutline)
+
+                    continue;
                 MsdfGlyph f = font.Font.Field(bg.Glyph);
+
                 for (int ty = 0; ty < f.Height; ty++)
                 {
                     for (int tx = 0; tx < f.Width; tx++)
                     {
                         var p = new Vector2(f.PaddedMin.X + (tx + 0.5f) / f.EmPx, f.PaddedMin.Y + (ty + 0.5f) / f.EmPx);
                         float truth = TrueDistance(bg, p, out bool inside) * f.EmPx;
-                        if (inside || truth < reach + 1f) continue;
+
+                        if (inside || truth < reach + 1f)
+
+                            continue;
                         measured++;
                         int at = (ty * f.Width + tx) * 4;
-                        if ((0.5f - Median(f.Rgba[at] / 255f, f.Rgba[at + 1] / 255f, f.Rgba[at + 2] / 255f)) * f.RangeTexels < reach) badMedian++;
-                        if ((0.5f - f.Rgba[at + 3] / 255f) * f.RangeTexels < reach) badAlpha++;
+                        if ((0.5f - Median(f.Rgba[at] / 255f, f.Rgba[at + 1] / 255f, f.Rgba[at + 2] / 255f)) * f.RangeTexels
+                            < reach)
+                            badMedian++;
+                        if ((0.5f - f.Rgba[at + 3] / 255f) * f.RangeTexels < reach)
+                            badAlpha++;
                     }
                 }
             }
-            Check(measured > 0 && badAlpha == 0,
-                  $"alpha reads no texel beyond the outline as inside it ({badAlpha} of {measured}; the median reads {badMedian})");
+
+            Check(
+                measured > 0 && badAlpha == 0,
+                $"alpha reads no texel beyond the outline as inside it ({badAlpha} of {measured}; the median reads {badMedian})"
+            );
         }
 
         Console.WriteLine();
@@ -280,18 +340,24 @@ internal static class Program
             int inFromEdge = (int)MathF.Ceiling(0.5f * L.RangeTexels + 1f) + 2;
             float nearRow0 = Ink(L, inFromEdge);
             float nearLast = Ink(L, L.Height - 1 - inFromEdge);
-            Check(nearRow0 > nearLast,
-                  $"row 0 is the glyph's bottom, so the foot is the heavy end ({nearRow0:F0} ink at row 0's end, {nearLast:F0} at the other)");
+            Check(
+                nearRow0 > nearLast,
+                $"row 0 is the glyph's bottom, so the foot is the heavy end ({nearRow0:F0} ink at row 0's end, {nearLast:F0} at the other)"
+            );
 
             // One texel of the field has to be one texel of the quad: the em box the quad covers,
             // over the bake resolution, is the rect's own texel count. A quad padded beyond the
             // field stretches the glyph by the ratio of the two.
             float texelsAcross = emWidth * o.EmPx;
             float texelsDown = emHeight * o.EmPx;
-            Check(MathF.Abs(texelsAcross - (o.Width - 1)) < 0.05f,
-                  $"the em box spans the rect's texels across ({texelsAcross:F2} vs {o.Width - 1})");
-            Check(MathF.Abs(texelsDown - (o.Height - 1)) < 0.05f,
-                  $"the em box spans the rect's texels down ({texelsDown:F2} vs {o.Height - 1})");
+            Check(
+                MathF.Abs(texelsAcross - (o.Width - 1)) < 0.05f,
+                $"the em box spans the rect's texels across ({texelsAcross:F2} vs {o.Width - 1})"
+            );
+            Check(
+                MathF.Abs(texelsDown - (o.Height - 1)) < 0.05f,
+                $"the em box spans the rect's texels down ({texelsDown:F2} vs {o.Height - 1})"
+            );
         }
 
         Console.WriteLine();
@@ -307,16 +373,24 @@ internal static class Program
             // Checked here rather than on drawn pixels because the headless ANGLE context these
             // suites run on hands ddx/ddy back as zero, which collapses the band to a hard step
             // for glyphs and shapes alike. A rendered check cannot see this at all on that context.
-            Check(Apos.Shapes.ShapeBatch.GlyphAa(1.5f) == -1.5f,
-                  $"a positive width comes back negated ({Apos.Shapes.ShapeBatch.GlyphAa(1.5f)})");
-            Check(Apos.Shapes.ShapeBatch.GlyphAa(-1.5f) == -1.5f,
-                  $"a negative width stays negative ({Apos.Shapes.ShapeBatch.GlyphAa(-1.5f)})");
-            Check(Apos.Shapes.ShapeBatch.GlyphAa(0f) == 0f,
-                  $"a zero width stays zero ({Apos.Shapes.ShapeBatch.GlyphAa(0f)})");
+            Check(
+                Apos.Shapes.ShapeBatch.GlyphAa(1.5f) == -1.5f,
+                $"a positive width comes back negated ({Apos.Shapes.ShapeBatch.GlyphAa(1.5f)})"
+            );
+            Check(
+                Apos.Shapes.ShapeBatch.GlyphAa(-1.5f) == -1.5f,
+                $"a negative width stays negative ({Apos.Shapes.ShapeBatch.GlyphAa(-1.5f)})"
+            );
+            Check(
+                Apos.Shapes.ShapeBatch.GlyphAa(0f) == 0f,
+                $"a zero width stays zero ({Apos.Shapes.ShapeBatch.GlyphAa(0f)})"
+            );
             // The magnitude is the caller's and only the sign is overridden, so the band is as
             // wide as the draw asked for rather than pinned to some default.
-            Check(Apos.Shapes.ShapeBatch.GlyphAa(6f) == -6f,
-                  $"the width itself is untouched ({Apos.Shapes.ShapeBatch.GlyphAa(6f)})");
+            Check(
+                Apos.Shapes.ShapeBatch.GlyphAa(6f) == -6f,
+                $"the width itself is untouched ({Apos.Shapes.ShapeBatch.GlyphAa(6f)})"
+            );
         }
 
         Console.WriteLine();
@@ -334,13 +408,17 @@ internal static class Program
             // and about 190 rows; one shelf per height, which is what a packer that only ever
             // looks at the newest shelf does, runs past the 256 rows and starts refusing.
             var heights = new List<int>();
-            for (int h = 40; h <= 52; h++) heights.Add(h);
+            for (int h = 40; h <= 52; h++)
+                heights.Add(h);
+
             foreach (int h in heights)
             {
                 (int X, int Y) at = shelf.Allocate(40, h);
                 Check(at.X >= 0, $"a 40x{h} rectangle found room");
-                if (at.X >= 0) placed.Add((at.X, at.Y, 40, h));
+                if (at.X >= 0)
+                    placed.Add((at.X, at.Y, 40, h));
             }
+
             Check(placed.Count == heights.Count, $"every rectangle was placed ({placed.Count} of {heights.Count})");
             int rowsUsed = placed.Count == 0 ? 0 : placed.Max(p => p.Y + p.H);
             Check(rowsUsed <= 192, $"the shelves were shared rather than stacked ({rowsUsed} rows used)");
@@ -348,17 +426,22 @@ internal static class Program
             // Two rectangles on one shelf must not overlap, which is the failure the width scan
             // would introduce if it handed out a column already taken.
             bool overlaps = false;
+
             for (int i = 0; i < placed.Count; i++)
-                for (int j = i + 1; j < placed.Count; j++)
-                {
-                    (int X, int Y, int W, int H) a = placed[i], b = placed[j];
-                    if (a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H) overlaps = true;
-                }
+
+            for (int j = i + 1; j < placed.Count; j++)
+            {
+                (int X, int Y, int W, int H) a = placed[i], b = placed[j];
+                if (a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H)
+                    overlaps = true;
+            }
+
             Check(!overlaps, "no two rectangles overlap");
         }
 
         Console.WriteLine();
         Console.WriteLine(_failures == 0 ? "SLUG SMOKE: pass" : $"SLUG SMOKE: FAILED ({_failures})");
+
         return _failures == 0 ? 0 : 1;
     }
 
@@ -375,12 +458,14 @@ internal static class Program
     private static float Ink(MsdfGlyph g, int row)
     {
         float sum = 0;
+
         for (int tx = 0; tx < g.Width; tx++)
         {
             int at = (row * g.Width + tx) * 4;
             float median = Median(g.Rgba[at] / 255f, g.Rgba[at + 1] / 255f, g.Rgba[at + 2] / 255f);
             sum += MathF.Max(0f, median - 0.5f);
         }
+
         return sum * g.RangeTexels;
     }
 
@@ -392,19 +477,23 @@ internal static class Program
     {
         float best = float.MaxValue;
         const int steps = 512;
+
         for (int c = 0; c < g.ContourStarts.Length; c++)
         {
             int start = g.ContourStarts[c];
             int end = c + 1 < g.ContourStarts.Length ? g.ContourStarts[c + 1] : g.Contour.Length;
+
             for (int i = start; i < end; i++)
             {
                 GlyphCurve q = g.Contour[i];
+
                 for (int s = 0; s <= steps; s++)
                 {
                     float t = s / (float)steps, u = 1f - t;
                     var pt = new Vector2(
                         u * u * q.P1.X + 2f * u * t * q.P2.X + t * t * q.P3.X,
-                        u * u * q.P1.Y + 2f * u * t * q.P2.Y + t * t * q.P3.Y);
+                        u * u * q.P1.Y + 2f * u * t * q.P2.Y + t * t * q.P3.Y
+                    );
                     best = MathF.Min(best, Vector2.Distance(pt, p));
                 }
             }
@@ -413,30 +502,39 @@ internal static class Program
         // An even-odd ray cast to the right, so the sign owes nothing to the winding the baker
         // chose. A contour closes back to its first point, so each loop's last curve ends on it.
         int crossings = 0;
+
         for (int c = 0; c < g.ContourStarts.Length; c++)
         {
             int start = g.ContourStarts[c];
             int end = c + 1 < g.ContourStarts.Length ? g.ContourStarts[c + 1] : g.Contour.Length;
+
             for (int i = start; i < end; i++)
             {
                 GlyphCurve q = g.Contour[i];
                 Vector2 prev = q.P1;
+
                 for (int s = 1; s <= 32; s++)
                 {
                     float t = s / 32f, u = 1f - t;
                     var cur = new Vector2(
                         u * u * q.P1.X + 2f * u * t * q.P2.X + t * t * q.P3.X,
-                        u * u * q.P1.Y + 2f * u * t * q.P2.Y + t * t * q.P3.Y);
+                        u * u * q.P1.Y + 2f * u * t * q.P2.Y + t * t * q.P3.Y
+                    );
+
                     if ((prev.Y <= p.Y) != (cur.Y <= p.Y))
                     {
                         float xc = prev.X + (p.Y - prev.Y) / (cur.Y - prev.Y) * (cur.X - prev.X);
-                        if (xc > p.X) crossings++;
+                        if (xc > p.X)
+                            crossings++;
                     }
+
                     prev = cur;
                 }
             }
         }
+
         inside = (crossings & 1) == 1;
+
         return best;
     }
 
@@ -448,10 +546,14 @@ internal static class Program
             "../Apos.Shapes/Example/Content/source-code-pro-medium.ttf",
             "Apos.Shapes/Example/Platforms/NFMW/bin/Debug/net11.0/source-code-pro-medium.ttf",
         };
+
         foreach (string c in candidates)
         {
-            if (File.Exists(c)) return c;
+            if (File.Exists(c))
+
+                return c;
         }
+
         throw new FileNotFoundException("Pass a .ttf path as the first argument.");
     }
 }

@@ -28,16 +28,20 @@ public static class ArchivePublisher
     )
     {
         if (kind is not (AssetKind.Car or AssetKind.StagePiece or AssetKind.Wheel))
+
             return new AssetUploadResult(false, $"{AssetKinds.Name((byte)kind)} cannot be published.", null);
 
         // A car goes into other players' races, so it is checked here before it is packaged and
         // again by the archive before it is stored. The garage already refuses to offer a model
         // that has no four-wheel contact set; publishing is the point where the rest of the
         // values have to hold up too.
+
         if (kind == AssetKind.Car && CarModelValidator.Validate(rad) is { } invalid)
+
             return new AssetUploadResult(false, $"This car cannot be published: {invalid}", null);
 
         byte[] bytes;
+
         try
         {
             // The packaged FileName is the model's identity in a stage file. Parsing from a tab
@@ -65,12 +69,15 @@ public static class ArchivePublisher
             var music = StockCatalog.ReadStageMusic(stage);
             var original = music.ToDictionary(pair => pair.Key, pair => new StageMusic(pair.Key, pair.Value));
             var bytes = StockCatalog.PackageStage(publication.Name, stage, original);
+
             if (bytes.Length <= limit)
+
                 return await UploadAsync(bytes, AssetKind.Stage, publication);
 
             foreach (var bitrate in new[] { 64_000, 32_000 })
             {
                 var converted = new Dictionary<string, StageMusic>();
+
                 foreach (var (path, data) in music)
                 {
                     try
@@ -100,7 +107,9 @@ public static class ArchivePublisher
                 }
 
                 bytes = StockCatalog.PackageStage(publication.Name, stage, converted);
+
                 if (bytes.Length <= limit)
+
                     return await UploadAsync(bytes, AssetKind.Stage, publication);
             }
 
@@ -120,10 +129,13 @@ public static class ArchivePublisher
     public static string? ExportLocalModel(Rad3d rad, AssetKind kind, string name)
     {
         if (!AssetKinds.IsPublishable((byte)kind))
+
             return null;
 
         if (GetExportPath(name) is not { } path)
+
             return null;
+
         try
         {
             rad.FileName = name;
@@ -132,6 +144,7 @@ public static class ArchivePublisher
         catch (Exception ex)
         {
             Logging.Warning($"Could not export the model: {ex.Message}");
+
             return null;
         }
 
@@ -141,7 +154,9 @@ public static class ArchivePublisher
     public static string? ExportLocalStage(StageLoader stage, string name)
     {
         if (GetExportPath(name) is not { } path)
+
             return null;
+
         try
         {
             var bytes = StockCatalog.PackageStage(name, stage, includeMusic: true);
@@ -150,6 +165,7 @@ public static class ArchivePublisher
         catch (Exception ex)
         {
             Logging.Warning($"Could not export the stage: {ex.Message}");
+
             return null;
         }
 
@@ -159,6 +175,7 @@ public static class ArchivePublisher
     private static string? GetExportPath(string name)
     {
         var fileName = Path.GetFileName(name.Replace('\\', '/'));
+
         return string.IsNullOrWhiteSpace(fileName) || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
             ? null
             : $"data/radpacks/{fileName}.radpack";

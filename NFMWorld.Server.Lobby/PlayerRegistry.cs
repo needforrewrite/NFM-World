@@ -17,6 +17,7 @@ public class PlayerRegistry
         lock (_lock)
         {
             _clientsById.TryGetValue(id, out var client);
+
             return client;
         }
     }
@@ -46,6 +47,7 @@ public class PlayerRegistry
         lock (_lock)
         {
             _clients.TryGetValue(clientIndex, out var client);
+
             return client;
         }
     }
@@ -57,6 +59,7 @@ public class PlayerRegistry
             if (_clients.Remove(clientIndex, out client))
             {
                 _clientsById.Remove(client.Id);
+
                 return true;
             }
 

@@ -29,9 +29,12 @@ public static partial class GameSparker
     public static IGraphicsDevice GraphicsDevice = null!;
     public static readonly string version = GetVersionString();
     public const string ApplicationVersion = "v0.6.7";
-    public static readonly string ExeVersion = ApplicationVersion + "." +
+    public static readonly string ExeVersion = ApplicationVersion
+                                               + "."
+                                               +
         (BuildInformation.Read(Assembly.GetEntryAssembly() ?? typeof(GameSparker).Assembly)
-            .BuildNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");
+            .BuildNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture)
+         ?? "unknown");
 
     private static AccountManager? _accountManager;
 
@@ -76,17 +79,21 @@ public static partial class GameSparker
     {
         var assembly = Assembly.GetExecutingAssembly();
         var attributes = assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false);
+
         if (attributes.Length > 0 && attributes[0] is AssemblyInformationalVersionAttribute infoVersion)
         {
             var version = infoVersion.InformationalVersion;
             // clip the commit hash
             var parts = version.Split('-');
+
             if (parts.Length >= 3)
             {
                 var hash = parts[^1];
+
                 if (hash.Length > 8)
                 {
                     parts[^1] = hash.Substring(0, 8);
+
                     return string.Join("-", parts);
                 }
             }
@@ -203,29 +210,37 @@ public static partial class GameSparker
         {
             if (key == SettingsMenu.Bindings.ToggleDevConsole || key == Key.Escape)
                 devConsole.Toggle();
+
             return;
         }
 
         if (MessageWindow.IsOpen && key == SettingsMenu.Bindings.ToggleDevConsole)
         {
             devConsole.Toggle();
+
             return;
         }
 
-        if (!imguiWantsKeyboard && MessageWindow.HandleKey(key)) return;
+        if (!imguiWantsKeyboard && MessageWindow.HandleKey(key))
+
+            return;
 
         if (!imguiWantsKeyboard && NFMWorld.UI.Components.SettingsView.HandleKeyPressed(UiRenderer?.ActiveRoot, key))
+
             return;
 
         if (!imguiWantsKeyboard && NFMWorld.UI.Routes.AccountView.HandleKeyPressed(UiRenderer?.ActiveRoot, key))
+
             return;
 
         var bindings = SettingsMenu.Bindings;
 
-        if (!imguiWantsKeyboard && CurrentPhase is RacePhase race
+        if (!imguiWantsKeyboard
+            && CurrentPhase is RacePhase race
             && (race.HandleChatKey(key) || race.HandleRaceFinishKey(key)))
         {
             PhaseKeys.Add(key);
+
             return;
         }
 
@@ -241,6 +256,7 @@ public static partial class GameSparker
             var phase = CurrentPhase;
             var heldKeys = PhaseKeys.ToArray();
             PhaseKeys.Clear();
+
             foreach (var heldKey in heldKeys)
             {
                 DebugKeyStates[heldKey] = false;
@@ -261,18 +277,28 @@ public static partial class GameSparker
 
     public static void KeyRepeated(Key key, Keys keys, bool imguiWantsKeyboard)
     {
-        if (imguiWantsKeyboard || devConsole.IsOpen()) return;
+        if (imguiWantsKeyboard || devConsole.IsOpen())
+
+            return;
+
         if (MessageWindow.IsOpen)
         {
-            if (key is Key.Up or Key.Down or Key.Left or Key.Right) MessageWindow.HandleKey(key);
+            if (key is Key.Up or Key.Down or Key.Left or Key.Right)
+                MessageWindow.HandleKey(key);
+
             return;
         }
 
         if (key is Key.Up or Key.Down or Key.Left or Key.Right)
         {
-            if (NFMWorld.UI.Components.SettingsView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key, keys)) return;
-            if (NFMWorld.UI.Routes.AccountView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key)) return;
-            if (CurrentPhase is MainMenuPhase menu) menu.NavigationKeyRepeated(key);
+            if (NFMWorld.UI.Components.SettingsView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key, keys))
+
+                return;
+            if (NFMWorld.UI.Routes.AccountView.HandleKeyRepeated(UiRenderer?.ActiveRoot, key))
+
+                return;
+            if (CurrentPhase is MainMenuPhase menu)
+                menu.NavigationKeyRepeated(key);
             CurrentPhase.KeyRepeated(key, false, keys);
         }
 
@@ -285,7 +311,10 @@ public static partial class GameSparker
     public static void KeyReleased(Key key, Keys keys, bool imguiWantsKeyboard)
     {
         DebugKeyStates[key] = false;
-        if (!PhaseKeys.Remove(key) || devConsole.IsOpen()) return;
+
+        if (!PhaseKeys.Remove(key) || devConsole.IsOpen())
+
+            return;
 
         if (!imguiWantsKeyboard)
         {
@@ -414,10 +443,14 @@ public static partial class GameSparker
         bool altKey
     )
     {
-        if (devConsole.IsOpen()) return;
+        if (devConsole.IsOpen())
+
+            return;
         var messageOpen = MessageWindow.IsOpen;
+
         if (!wantCaptureMouse && UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey)
             == true)
+
             return;
 
         if (!messageOpen)
@@ -435,7 +468,9 @@ public static partial class GameSparker
         bool altKey
     )
     {
-        if (devConsole.IsOpen()) return;
+        if (devConsole.IsOpen())
+
+            return;
         if (UiRenderer?.HandleMouseReleased(
             mouseX,
             mouseY,
@@ -444,8 +479,10 @@ public static partial class GameSparker
             ctrlKey,
             shiftKey,
             altKey,
-                dispatchToUi: !wantCaptureMouse
-        ) == true)
+            dispatchToUi: !wantCaptureMouse
+        )
+            == true)
+
             return;
 
         if (!MessageWindow.IsOpen)
@@ -462,7 +499,10 @@ public static partial class GameSparker
         bool altKey
     )
     {
-        if (devConsole.IsOpen()) return;
+        if (devConsole.IsOpen())
+
+            return;
+
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMouseMoved(mouseX, mouseY, buttons, ctrlKey, shiftKey, altKey);
@@ -491,7 +531,9 @@ public static partial class GameSparker
         bool altKey
     )
     {
-        if (devConsole.IsOpen()) return;
+        if (devConsole.IsOpen())
+
+            return;
         UiRenderer?.HandleMouseDragged(
             mouseX,
             mouseY,
@@ -516,7 +558,10 @@ public static partial class GameSparker
         bool altKey
     )
     {
-        if (devConsole.IsOpen()) return;
+        if (devConsole.IsOpen())
+
+            return;
+
         if (!wantCaptureMouse)
         {
             UiRenderer?.HandleMouseScrolled(mouseX, mouseY, delta, buttons, ctrlKey, shiftKey, altKey);

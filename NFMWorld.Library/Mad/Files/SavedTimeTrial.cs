@@ -60,6 +60,7 @@ public partial class SavedTimeTrial
         foreach (var file in VFS.EnumerateFiles("data/tts", "*.timetrial", SearchOption.AllDirectories))
         {
             var tt = Load(file);
+
             if (tt != null)
             {
                 yield return (tt.StageName, tt.CarName, file);
@@ -111,6 +112,7 @@ public partial class SavedTimeTrial
                 using var sequence = stream.AsPooledReadOnlySequence();
                 // A recording is untrusted input too: cap what it can expand to before parsing.
                 var data = Deflate.Decompress(sequence.Sequence, RadpackLimits.MaxDecompressedBytes);
+
                 return TightPackSerializer.Deserialize<SavedTimeTrial>(data);
             }
             else
@@ -134,6 +136,7 @@ public partial class SavedTimeTrial
     public static SavedTimeTrial? Load(ReadOnlyMemory<byte> data)
     {
         var decompData = Deflate.Decompress(data.Span, RadpackLimits.MaxDecompressedBytes);
+
         return TightPackSerializer.Deserialize<SavedTimeTrial>(decompData);
     }
 
@@ -145,6 +148,7 @@ public partial class SavedTimeTrial
     public byte[] ToBytes()
     {
         var body = TightPackSerializer.Serialize(this);
+
         return Deflate.Compress(body);
     }
 
@@ -163,6 +167,7 @@ public partial class SavedTimeTrial
     public bool IsFasterThan(SavedTimeTrial other)
     {
         var ticks = DemoData.Ticks.Count;
+
         return ticks > 0 && (other.DemoData.Ticks.Count == 0 || ticks < other.DemoData.Ticks.Count);
     }
 
@@ -176,8 +181,11 @@ public partial class SavedTimeTrial
     [PluginVisible]
     public (bool Up, bool Down, bool Left, bool Right, bool Handb)? GetTick(int tick)
     {
-        if (tick >= DemoData.Ticks.Count) return null;
+        if (tick >= DemoData.Ticks.Count)
+
+            return null;
         var tickData = DemoData.GetEntry(tick);
+
         return (tickData.TheBitFlags.Up, tickData.TheBitFlags.Down, tickData.TheBitFlags.Left, tickData.TheBitFlags.Right,
             tickData.TheBitFlags.Handb);
     }
@@ -197,11 +205,15 @@ public partial class SavedTimeTrial
     [PluginVisible]
     public long GetLapTime(int checkpointsInLap, int lap)
     {
-        if (checkpointsInLap <= 0) return 0;
+        if (checkpointsInLap <= 0)
+
+            return 0;
         int startIndex = lap * checkpointsInLap;
         int endIndex = startIndex + checkpointsInLap;
 
-        if (startIndex >= Splits.SplitTimes.Count) return 0;
+        if (startIndex >= Splits.SplitTimes.Count)
+
+            return 0;
 
         long startTime = startIndex == 0 ? 0 : Splits.SplitTimes[startIndex - 1];
         long endTime = endIndex - 1 < Splits.SplitTimes.Count ? Splits.SplitTimes[endIndex - 1] : Splits.SplitTimes[^1];

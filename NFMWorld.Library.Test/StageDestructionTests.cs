@@ -76,6 +76,7 @@ public class StageDestructionTests
         var damageEffects = 0;
         target.ObjectBroken += (_, _, shatter) => { if (shatter) effects++; };
         target.ObjectDamaged += (_, playSound) => { if (playSound) damageEffects++; };
+
         foreach (var state in source.CaptureDestruction())
         {
             target.ApplyPieceState(state, shatter: false);
@@ -218,6 +219,7 @@ public class StageDestructionTests
         var loader = new StageLoader();
         foreach (var model in models)
             loader.pieces.Add(new PiecePlacement(PiecePlacementType.CollisionObject, model, default, default));
+
         return new BackendStage("destruction-test", loader, throwOnError: true);
     }
 

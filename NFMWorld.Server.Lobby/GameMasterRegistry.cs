@@ -61,6 +61,7 @@ public class GameMasterRegistry : IDisposable
             ResolveAndAdd(domain.Trim());
 
         if (_masters.Count == 0)
+
             throw new InvalidOperationException(
                 "No Game Masters could be resolved. Check GAME_MASTER_DOMAINS configuration."
             );
@@ -107,17 +108,22 @@ public class GameMasterRegistry : IDisposable
         foreach (var entry in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var split = entry.IndexOf('=');
+
             if (split <= 0)
+
                 continue;
 
             var from = entry[..split].Trim();
             var to = entry[(split + 1)..].Trim();
+
             if (from.Length == 0 || to.Length == 0)
+
                 continue;
 
             // Only split a port off when the tail is numeric, so an IPv6 literal survives.
             ushort? port = null;
             var colon = to.LastIndexOf(':');
+
             if (colon > 0 && ushort.TryParse(to[(colon + 1)..], out var parsedPort))
             {
                 port = parsedPort;
@@ -136,10 +142,13 @@ public class GameMasterRegistry : IDisposable
         lock (_lock)
         {
             var healthy = _masters.Where(m => m.IsHealthy).ToList();
+
             if (healthy.Count == 0)
+
                 throw new InvalidOperationException("No healthy Game Masters available.");
 
             _roundRobinIndex = (_roundRobinIndex + 1) % healthy.Count;
+
             return healthy[_roundRobinIndex];
         }
     }
@@ -168,6 +177,7 @@ public class GameMasterRegistry : IDisposable
     private void ResolveAndAdd(string domain)
     {
         var gm = ResolveDomain(domain);
+
         if (gm is not null)
         {
             lock (_lock)
@@ -183,6 +193,7 @@ public class GameMasterRegistry : IDisposable
         // otherwise block every SelectGameMaster caller for its duration), then apply.
         string[] domains;
         bool anyUnhealthy;
+
         lock (_lock)
         {
             domains = _masters.Select(m => m.Domain).ToArray();
@@ -190,6 +201,7 @@ public class GameMasterRegistry : IDisposable
         }
 
         var resolved = new List<(string Domain, ResolvedGameMaster Gm)>(domains.Length);
+
         foreach (var domain in domains)
         {
             if (ResolveDomain(domain) is { } updated)
@@ -203,12 +215,14 @@ public class GameMasterRegistry : IDisposable
                 for (var i = 0; i < _masters.Count; i++)
                 {
                     if (!string.Equals(_masters[i].Domain, domain, StringComparison.Ordinal))
+
                         continue;
 
                     // Preserve health state
                     updated.IsHealthy = _masters[i].IsHealthy;
                     updated.ConsecutiveFailures = _masters[i].ConsecutiveFailures;
                     _masters[i] = updated;
+
                     break;
                 }
             }
@@ -237,7 +251,9 @@ public class GameMasterRegistry : IDisposable
             {
                 using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
                 using var response = await http.GetAsync(new Uri(master.HttpEndpoint, "/health"));
+
                 if (!response.IsSuccessStatusCode)
+
                     continue;
 
                 lock (_lock)
@@ -259,12 +275,14 @@ public class GameMasterRegistry : IDisposable
     {
         // Dev mode: host:udpPort+httpPort (e.g. localhost:7000+7002)
         var plusIdx = domain.IndexOf('+');
+
         if (plusIdx > 0)
         {
             return ResolveDevEntry(domain, plusIdx);
         }
 
         // Production: SRV lookup via _nfmw-game._udp.{domain}
+
         return ResolveSrvDomain(domain);
     }
 
@@ -284,6 +302,7 @@ public class GameMasterRegistry : IDisposable
             // private network - so players are given the public name resolved here instead.
             var publicHost = host;
             var publicPort = udpPort;
+
             if (_publicAddresses is not null && _publicAddresses.TryGetValue(host, out var mapped))
             {
                 publicHost = mapped.Host;
@@ -291,7 +310,10 @@ public class GameMasterRegistry : IDisposable
             }
 
             var addresses = HostName(publicHost);
-            if (addresses.Length == 0) return null;
+
+            if (addresses.Length == 0)
+
+                return null;
             var ip = addresses[0];
 
             Console.WriteLine(
@@ -313,6 +335,7 @@ public class GameMasterRegistry : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"[GameMasterRegistry] Failed to parse '{entry}': {ex.Message}");
+
             return null;
         }
     }
@@ -328,6 +351,7 @@ public class GameMasterRegistry : IDisposable
             // the mapped public one when there is one.
             var publicHost = domain;
             var publicPort = (ushort)7000; // TODO: use actual SRV port when DnsClient is added
+
             if (_publicAddresses is not null && _publicAddresses.TryGetValue(domain, out var mapped))
             {
                 publicHost = mapped.Host;
@@ -335,7 +359,10 @@ public class GameMasterRegistry : IDisposable
             }
 
             var addresses = HostName(publicHost);
-            if (addresses.Length == 0) return null;
+
+            if (addresses.Length == 0)
+
+                return null;
 
             var ip = addresses[0];
 

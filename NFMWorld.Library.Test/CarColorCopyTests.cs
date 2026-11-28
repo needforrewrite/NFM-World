@@ -31,10 +31,12 @@ public class CarColorCopyTests
     {
         Assert.AreEqual(0, CarColorCopy.Match([], [new CarColorSlot(0, default)]).Count);
         Assert.AreEqual(0, CarColorCopy.Match([new CarColorSlot(0, default)], []).Count);
-        Assert.AreEqual(0, CarColorCopy.Match(
-            [new CarColorSlot(-1, default), new CarColorSlot(4, default)],
-            [new CarColorSlot(-1, default), new CarColorSlot(4, default)]
-        ).Count
+        Assert.AreEqual(
+            0,
+            CarColorCopy.Match(
+                [new CarColorSlot(-1, default), new CarColorSlot(4, default)],
+                [new CarColorSlot(-1, default), new CarColorSlot(4, default)]
+            ).Count
         );
     }
 

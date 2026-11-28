@@ -8,6 +8,7 @@ public static class BracketParser
     private static ReadOnlySpan<char> GetLineSlice(ReadOnlySpan<char> line)
     {
         var closingParen = line.IndexOf(')');
+
         return line[(line.IndexOf('(') + 1)..(closingParen != -1 ? closingParen : line.Length)];
     }
 
@@ -24,9 +25,11 @@ public static class BracketParser
         var lineSlice = GetLineSlice(line);
 
         var i = 0;
+
         foreach (var range in lineSlice.Split(','))
         {
             if (i >= n.Length)
+
                 break;
             // Logging.Info($"{i},{lineSlice[range]}");
             n[i] = T.Parse(lineSlice[range], CultureInfo.InvariantCulture);
@@ -42,9 +45,11 @@ public static class BracketParser
         var lineSlice = GetLineSlice(line);
 
         var i = 0;
+
         foreach (var range in lineSlice.Split(','))
         {
             if (i >= n.Length)
+
                 break;
             // Logging.Info($"{i},{lineSlice[range]}");
             n[i] = (short)int.Parse(lineSlice[range], CultureInfo.InvariantCulture);
@@ -65,9 +70,11 @@ public static class BracketParser
 
         var strings = new List<string>(n ?? 3);
         var i = 0;
+
         foreach (var range in lineSlice.Split(','))
         {
             if (i >= n)
+
                 break;
             strings.Add(new string(lineSlice[range]));
             i++;

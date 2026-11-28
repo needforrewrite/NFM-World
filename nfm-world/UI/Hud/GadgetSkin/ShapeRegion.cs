@@ -39,11 +39,13 @@ internal sealed class ShapeRegion
         tess.Tessellate(WindingRule.Positive, ElementType.BoundaryContours, 3, null, new Vec3(0, 0, 1));
 
         var result = new Vector2[tess.ElementCount][];
+
         for (var i = 0; i < result.Length; i++)
         {
             var start = tess.Elements[i * 2];
             var count = tess.Elements[i * 2 + 1];
             var points = new Vector2[count];
+
             for (var j = 0; j < count; j++)
             {
                 var p = tess.Vertices[start + j].Position;
@@ -54,12 +56,14 @@ internal sealed class ShapeRegion
         }
 
         _contours = result;
+
         return this;
     }
 
     private static ContourVertex[] ToVertices(Vector2[] points, bool reverse)
     {
         var vertices = new ContourVertex[points.Length];
+
         for (var i = 0; i < points.Length; i++)
         {
             var p = points[reverse ? points.Length - 1 - i : i];
@@ -72,6 +76,7 @@ internal sealed class ShapeRegion
     private static float SignedArea(Vector2[] points)
     {
         var area = 0f;
+
         for (var i = 0; i < points.Length; i++)
         {
             var a = points[i];
@@ -90,7 +95,9 @@ internal sealed class ShapeRegion
     public static Vector2[] Polygon(params float[] xy)
     {
         var points = new Vector2[xy.Length / 2];
-        for (var i = 0; i < points.Length; i++) points[i] = new Vector2(xy[i * 2], xy[i * 2 + 1]);
+        for (var i = 0; i < points.Length; i++)
+            points[i] = new Vector2(xy[i * 2], xy[i * 2 + 1]);
+
         return points;
     }
 
@@ -98,6 +105,7 @@ internal sealed class ShapeRegion
     {
         var count = (int)MathF.Ceiling(360f / ArcStepDegrees);
         var points = new Vector2[count];
+
         for (var i = 0; i < count; i++)
         {
             var a = (i + 0.5f) * MathF.Tau / count;
@@ -130,7 +138,9 @@ internal sealed class ShapeRegion
     {
         var segments = Math.Max(2, (int)MathF.Ceiling(MathF.Abs(sweepDeg) / ArcStepDegrees));
         var points = new List<Vector2>(segments + 2);
-        if (centre) points.Add(new Vector2(cx, cy));
+        if (centre)
+            points.Add(new Vector2(cx, cy));
+
         for (var i = 0; i <= segments; i++)
         {
             var a = (startDeg + sweepDeg * i / segments) * MathF.PI / 180f;
@@ -158,6 +168,7 @@ internal sealed class ShapeRegion
         Corner(x + w - radius, y + h - radius, 0);
         Corner(x + radius, y + h - radius, 90);
         Corner(x + radius, y + radius, 180);
+
         return points.ToArray();
     }
 }

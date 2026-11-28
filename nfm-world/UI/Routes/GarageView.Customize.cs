@@ -38,16 +38,26 @@ public static partial class GarageView
                 ? "Garage color " + state.EditingSlots[index].Slot
                 : index == -1 ? "Garage wheel " + (state.OriginalWheels.Value ? "Classic" : "Model") : "";
             var target = state.CustomizeTabsFocused.Value ? null : Find(this, name);
-            if (ReferenceEquals(target, _revealed)) return;
+
+            if (ReferenceEquals(target, _revealed))
+
+                return;
             _revealed = target;
             target?.ScrollIntoView();
         }
 
         private static Component? Find(Node node, string name)
         {
-            if (node is Component component && component.Name == name) return component;
+            if (node is Component component && component.Name == name)
+
+                return component;
+
             foreach (var child in node.VisualChildren)
-                if (Find(child, name) is { } found) return found;
+
+                if (Find(child, name) is { } found)
+
+                    return found;
+
             return null;
         }
     }
@@ -73,6 +83,7 @@ public static partial class GarageView
     {
         var hovered = new Signal<bool>(false);
         var active = () => UiState.Garage.EditingWheels == wheels;
+
         return Sx.View(
             name: () => "Garage customize tab " + label,
             style: () => Sx.Styles(
@@ -92,13 +103,15 @@ public static partial class GarageView
             onmouseleave: _ => hovered.Value = false,
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(
-                    fontSize: 14,
-                    fontFamily: FontFamily.NotoSans,
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 14,
+                        fontFamily: FontFamily.NotoSans,
                         fontStyle: FontStyle.Bold,
                         horizontalAlignment: TextHorizontalAlignment.Center,
                         foregroundColor: active() ? RowBorderActive : Theme.MenuDim
-                ), text: () => label
+                    ),
+                    text: () => label
                 ),
                 Sx.View(style: () => Sx.Styles(
                     position: Position.Absolute,
@@ -116,25 +129,29 @@ public static partial class GarageView
     }
 
     private static Node WheelChoices(Actions actions)
-        => Sx.View(style: () => Sx.Styles(
-            width: 100.Percent(),
-            flexDirection: FlexDirection.Row,
+        => Sx.View(
+            style: () => Sx.Styles(
+                width: 100.Percent(),
+                flexDirection: FlexDirection.Row,
                 gapColumn: 10,
-            flexShrink: 0
-        ), children:
+                flexShrink: 0
+            ),
+            children:
             [
                 Sx.Show(
                     when: () => UiState.Garage.HasCustomWheels.Value,
                     then: () => WheelChoice("Model", false, actions)
                 ),
                 WheelChoice("Classic", true, actions)
-            ]);
+            ]
+        );
 
     private static Node WheelChoice(string label, bool original, Actions actions)
     {
         var hovered = new Signal<bool>(false);
         var selected = () => UiState.Garage.OriginalWheels.Value == original;
         var key = () => CarThumbnails.WheelKey(UiState.Garage.CurrentCar.Value?.FileName ?? "", original);
+
         return Sx.View(
             name: () => "Garage wheel " + label,
             style: () => Sx.Styles(
@@ -162,7 +179,7 @@ public static partial class GarageView
                 Sx.Text(
                     style: () => Sx.TextStyles(
                         fontSize: 11,
-                    horizontalAlignment: TextHorizontalAlignment.Center,
+                        horizontalAlignment: TextHorizontalAlignment.Center,
                         foregroundColor: Theme.MenuTextBlue
                     ),
                     layout: () => Sx.Styles(width: 100.Percent()),
@@ -175,6 +192,7 @@ public static partial class GarageView
     private static Node WheelThumbnail(string id)
     {
         var ready = CarThumbnails.ReadySignal(id);
+
         return Sx.Show(
             () => ready.Value,
             () => new NFMWorld.DriverInterface.UI.Image

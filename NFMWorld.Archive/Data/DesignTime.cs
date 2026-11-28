@@ -14,6 +14,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Arc
         var options = new DbContextOptionsBuilder<ArchiveDbContext>()
             .UseSqlite("Data Source=archive.db")
             .Options;
+
         return new ArchiveDbContext(options);
     }
 }

@@ -41,6 +41,7 @@ public class Scene : IDisposable
     {
         _renderQueue.Clear();
         _camera.OnBeforeRender(alpha);
+
         foreach (var lightCamera in _lightCameras)
         {
             lightCamera.OnBeforeRender(alpha);
@@ -65,7 +66,10 @@ public class Scene : IDisposable
             for (var i = 0; i < totalCascades; i++)
             {
                 var shadowTarget = i < GameSparker.ShadowRenderTargets.Count ? GameSparker.ShadowRenderTargets[i] : null;
-                if (shadowTarget is null) continue;
+
+                if (shadowTarget is null)
+
+                    continue;
 
                 cb.SetRenderTarget(shadowTarget);
                 cb.SetViewport(new Viewport(0, 0, GameSparker.ShadowResolution, GameSparker.ShadowResolution));
@@ -101,6 +105,7 @@ public class Scene : IDisposable
         _renderQueue.Clear(beginFrame: false);
 
         _renderQueue.Begin(_camera, lighting);
+
         foreach (var obj in Objects)
         {
             obj.SubmitDraws(_renderQueue, _camera, lighting, pass);
@@ -112,6 +117,7 @@ public class Scene : IDisposable
     public void OnBeforeUpdate()
     {
         _camera.OnBeforeGameTick();
+
         foreach (var lightCamera in _lightCameras)
         {
             lightCamera.OnBeforeGameTick();
@@ -131,6 +137,7 @@ public class Scene : IDisposable
     public void Dispose()
     {
         if (_disposed)
+
             return;
 
         _disposed = true;

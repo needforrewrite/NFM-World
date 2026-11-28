@@ -79,6 +79,7 @@ internal sealed class ReplayBrowserController : IDisposable
     private void SelectSource(bool online)
     {
         if (_state.Online.Value == online)
+
             return;
 
         _onlineCancellation?.Cancel();
@@ -95,6 +96,7 @@ internal sealed class ReplayBrowserController : IDisposable
         {
             _state.Entries.Value = [];
             _ = BrowseAsync(_query, append: false);
+
             return;
         }
 
@@ -105,9 +107,11 @@ internal sealed class ReplayBrowserController : IDisposable
     private void Search(string query)
     {
         _query = query.Trim();
+
         if (_state.Online.Value)
         {
             _ = BrowseAsync(_query, append: false);
+
             return;
         }
 
@@ -130,7 +134,9 @@ internal sealed class ReplayBrowserController : IDisposable
         {
             var page = await _client.Value.BrowseAsync(query, RemotePageSize, append ? _nextCursor : null, cancellation.Token);
             await LoadingWork.NextFrame;
+
             if (generation != _onlineGeneration)
+
                 return;
 
             var rows = page.Items.Select(ToRemoteEntry).ToArray();
@@ -148,7 +154,9 @@ internal sealed class ReplayBrowserController : IDisposable
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             await LoadingWork.NextFrame;
+
             if (generation != _onlineGeneration)
+
                 return;
 
             if (!append)
@@ -182,17 +190,21 @@ internal sealed class ReplayBrowserController : IDisposable
         using var loading = LoadingWork.Begin("Reading recordings...");
         _state.Busy.Value = true;
         _state.Status.Value = "Reading recordings...";
+
         try
         {
             var result = await Task.Run(ReadLocal);
             await LoadingWork.NextFrame;
+
             if (_disposed || generation != _onlineGeneration)
+
                 return false;
             _localEntries = result.Entries;
             ApplyLocalFilter();
             _state.HasMore.Value = false;
             _state.Status.Value = result.Malformed == 0 ? ""
                 : $"{result.Malformed} recording(s) could not be read and were skipped.";
+
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or TightPackSerializationException)
@@ -200,6 +212,7 @@ internal sealed class ReplayBrowserController : IDisposable
             await LoadingWork.NextFrame;
             if (!_disposed && generation == _onlineGeneration)
                 _state.Status.Value = $"Could not read the recordings: {ex.Message}";
+
             return false;
         }
         finally
@@ -231,10 +244,13 @@ internal sealed class ReplayBrowserController : IDisposable
             {
                 SavedTimeTrial? replay;
                 byte[] recording;
+
                 try
                 {
                     recording = VFS.ReadAllBytes(file);
+
                     if (!seen.Add(Convert.ToHexStringLower(SHA256.HashData(recording))))
+
                         continue;
                     replay = SavedTimeTrial.Load(recording);
                 }
@@ -242,12 +258,14 @@ internal sealed class ReplayBrowserController : IDisposable
                 {
                     Logging.Warning($"[Replay] Skipping unreadable recording {file}: {ex.Message}");
                     malformed++;
+
                     continue;
                 }
 
                 if (replay is null)
                 {
                     malformed++;
+
                     continue;
                 }
 
@@ -289,6 +307,7 @@ internal sealed class ReplayBrowserController : IDisposable
         if (_query.Length == 0)
         {
             _state.Entries.Value = _localEntries;
+
             return;
         }
 
@@ -303,18 +322,21 @@ internal sealed class ReplayBrowserController : IDisposable
     {
         var seconds = ticks / 63.0;
         var minutes = (int)(seconds / 60);
+
         return $"{minutes}:{seconds - minutes * 60:00.000}";
     }
 
     private void Open(string id)
     {
         if (_state.Busy.Value)
+
             return;
 
         if (id.StartsWith(RemotePrefix, StringComparison.Ordinal))
         {
             if (int.TryParse(id.AsSpan(RemotePrefix.Length), out var remoteId))
                 _ = OpenRemoteAsync(remoteId);
+
             return;
         }
 
@@ -326,14 +348,20 @@ internal sealed class ReplayBrowserController : IDisposable
         using var loading = LoadingWork.Begin("Loading replay...");
         var generation = ++_onlineGeneration;
         _state.Busy.Value = true;
+
         try
         {
             var replay = await Task.Run(() => SavedTimeTrial.Load(id));
             await LoadingWork.NextFrame;
-            if (_disposed || generation != _onlineGeneration) return;
+
+            if (_disposed || generation != _onlineGeneration)
+
+                return;
+
             if (replay is null)
             {
                 _state.Status.Value = "That recording could not be read.";
+
                 return;
             }
 
@@ -341,6 +369,7 @@ internal sealed class ReplayBrowserController : IDisposable
             {
                 _state.Status.Value =
                     $"That recording is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.OLDEST_PLAYABLE_VERSION}–{SavedTimeTrial.CURRENT_VERSION}.";
+
                 return;
             }
 
@@ -349,12 +378,14 @@ internal sealed class ReplayBrowserController : IDisposable
         catch (Exception ex)
         {
             await LoadingWork.NextFrame;
-            if (!_disposed && generation == _onlineGeneration) _state.Status.Value = "Could not load the replay: " + ex.Message;
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Status.Value = "Could not load the replay: " + ex.Message;
         }
         finally
         {
             await LoadingWork.NextFrame;
-            if (!_disposed && generation == _onlineGeneration) _state.Busy.Value = false;
+            if (!_disposed && generation == _onlineGeneration)
+                _state.Busy.Value = false;
         }
     }
 
@@ -374,10 +405,15 @@ internal sealed class ReplayBrowserController : IDisposable
             var bytes = await _client.Value.DownloadAsync(id, RadpackLimits.MaxTimeTrialBytes, CancellationToken.None);
             var replay = await Task.Run(() => SavedTimeTrial.Load(bytes));
             await LoadingWork.NextFrame;
-            if (_disposed || generation != _onlineGeneration) return;
+
+            if (_disposed || generation != _onlineGeneration)
+
+                return;
+
             if (replay is null)
             {
                 _state.Status.Value = "That replay could not be read.";
+
                 return;
             }
 
@@ -385,6 +421,7 @@ internal sealed class ReplayBrowserController : IDisposable
             {
                 _state.Status.Value =
                     $"Replay #{id} is version {replay.Version ?? 0}; this build plays {SavedTimeTrial.OLDEST_PLAYABLE_VERSION}–{SavedTimeTrial.CURRENT_VERSION}.";
+
                 return;
             }
 
@@ -395,7 +432,10 @@ internal sealed class ReplayBrowserController : IDisposable
             or TightPackSerializationException)
         {
             await LoadingWork.NextFrame;
-            if (_disposed || generation != _onlineGeneration) return;
+
+            if (_disposed || generation != _onlineGeneration)
+
+                return;
             _state.Status.Value = $"Could not download replay #{id}: {ex.Message}";
         }
         finally
@@ -412,17 +452,23 @@ internal sealed class ReplayBrowserController : IDisposable
     private async Task DeleteAsync(string id)
     {
         if (_state.Online.Value || _state.Busy.Value || !_localEntries.Any(entry => entry.Id == id && entry.Deletable))
+
             return;
 
         var generation = ++_onlineGeneration;
         _state.Busy.Value = true;
+
         try
         {
             await TimeTrialUploader.DeleteAsync(id);
+
             if (_disposed || generation != _onlineGeneration)
+
                 return;
             _state.SelectedId.Value = null;
+
             if (!await RefreshLocalAsync(generation))
+
                 return;
             _state.Status.Value = "Replay deleted from this device.";
         }
@@ -444,17 +490,20 @@ internal sealed class ReplayBrowserController : IDisposable
     private async Task UploadRecordingsAsync(IReadOnlyList<ReplayBrowserEntry> uploadable)
     {
         if (_state.Online.Value || _state.Busy.Value)
+
             return;
 
         if (uploadable.Count == 0)
         {
             _state.Status.Value = "Every recording has already been submitted.";
+
             return;
         }
 
         var generation = ++_onlineGeneration;
         _state.Busy.Value = true;
         _state.Status.Value = $"Submitting {uploadable.Count} recording(s)...";
+
         try
         {
             var results = new List<RequestResult>();
@@ -462,9 +511,11 @@ internal sealed class ReplayBrowserController : IDisposable
                 results.Add(await TimeTrialUploader.UploadAsync(entry.Id));
 
             if (_disposed || generation != _onlineGeneration)
+
                 return;
 
             if (!await RefreshLocalAsync(generation))
+
                 return;
             var submitted = results.Count(result => result.Success);
             var failure = results.FirstOrDefault(result => !result.Success);
@@ -487,7 +538,9 @@ internal sealed class ReplayBrowserController : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         _onlineGeneration++;
 

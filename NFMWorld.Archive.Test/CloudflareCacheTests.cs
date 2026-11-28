@@ -22,6 +22,7 @@ public class CloudflareCacheTests
                     request.Content is null ? "" : await request.Content.ReadAsStringAsync(ct)
                 )
             );
+
             return new HttpResponseMessage(status);
         }
     }

@@ -21,6 +21,7 @@ public class MousePressOcclusionTests
     {
         var root = new View { Name = "root" };
         root.Styles = root.Styles with { Width = 200, Height = 200 };
+
         return root;
     }
 
@@ -36,6 +37,7 @@ public class MousePressOcclusionTests
             Height = height,
             ZIndex = z,
         };
+
         return v;
     }
 

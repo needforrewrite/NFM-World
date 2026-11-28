@@ -14,6 +14,7 @@ public sealed class TwoDimensionalArrayFormatter<T> : TightPackFormatter<T[,]?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -30,11 +31,13 @@ public sealed class TwoDimensionalArrayFormatter<T> : TightPackFormatter<T[,]?>
         if (!reader.TryReadCollectionHeader(out _))
         {
             value = null;
+
             return;
         }
 
         int rows = reader.ReadInt32();
         int columns = reader.ReadInt32();
+
         if (rows < 0 || columns < 0)
         {
             TightPackSerializationException.ThrowMessage($"Invalid array dimensions {rows}x{columns}.");
@@ -55,6 +58,7 @@ public sealed class ThreeDimensionalArrayFormatter<T> : TightPackFormatter<T[,,]
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -64,6 +68,7 @@ public sealed class ThreeDimensionalArrayFormatter<T> : TightPackFormatter<T[,,]
         writer.WriteInt32(value.GetLength(2));
 
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         foreach (T item in value)
         {
             T? current = item;
@@ -76,12 +81,14 @@ public sealed class ThreeDimensionalArrayFormatter<T> : TightPackFormatter<T[,,]
         if (!reader.TryReadCollectionHeader(out _))
         {
             value = null;
+
             return;
         }
 
         int x = reader.ReadInt32();
         int y = reader.ReadInt32();
         int z = reader.ReadInt32();
+
         if (x < 0 || y < 0 || z < 0)
         {
             TightPackSerializationException.ThrowMessage($"Invalid array dimensions {x}x{y}x{z}.");
@@ -92,6 +99,7 @@ public sealed class ThreeDimensionalArrayFormatter<T> : TightPackFormatter<T[,,]
         int i = 0;
         int j = 0;
         int k = 0;
+
         for (int index = 0; index < result.Length; index++)
         {
             T? item = default;
@@ -104,6 +112,7 @@ public sealed class ThreeDimensionalArrayFormatter<T> : TightPackFormatter<T[,,]
             }
 
             k = 0;
+
             if (++j < y)
             {
                 continue;
@@ -126,6 +135,7 @@ public sealed class FourDimensionalArrayFormatter<T> : TightPackFormatter<T[,,,]
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -136,6 +146,7 @@ public sealed class FourDimensionalArrayFormatter<T> : TightPackFormatter<T[,,,]
         writer.WriteInt32(value.GetLength(3));
 
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         foreach (T item in value)
         {
             T? current = item;
@@ -148,6 +159,7 @@ public sealed class FourDimensionalArrayFormatter<T> : TightPackFormatter<T[,,,]
         if (!reader.TryReadCollectionHeader(out _))
         {
             value = null;
+
             return;
         }
 
@@ -155,6 +167,7 @@ public sealed class FourDimensionalArrayFormatter<T> : TightPackFormatter<T[,,,]
         int y = reader.ReadInt32();
         int z = reader.ReadInt32();
         int w = reader.ReadInt32();
+
         if (x < 0 || y < 0 || z < 0 || w < 0)
         {
             TightPackSerializationException.ThrowMessage($"Invalid array dimensions {x}x{y}x{z}x{w}.");
@@ -163,6 +176,7 @@ public sealed class FourDimensionalArrayFormatter<T> : TightPackFormatter<T[,,,]
         var result = new T[x, y, z, w];
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
         var indices = new int[4];
+
         for (int index = 0; index < result.Length; index++)
         {
             T? item = default;
@@ -172,6 +186,7 @@ public sealed class FourDimensionalArrayFormatter<T> : TightPackFormatter<T[,,,]
             for (int axis = 3; axis >= 0; axis--)
             {
                 int length = axis switch { 0 => x, 1 => y, 2 => z, _ => w };
+
                 if (++indices[axis] < length)
                 {
                     break;
@@ -198,6 +213,7 @@ internal static class MultiDimensionalArrays
         where TBufferWriter : System.Buffers.IBufferWriter<byte>
     {
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = rowStart; i < rows; i++)
         {
             for (int j = columnStart; j < columns; j++)
@@ -213,6 +229,7 @@ internal static class MultiDimensionalArrays
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
         int rows = value.GetLength(0);
         int columns = value.GetLength(1);
+
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < columns; j++)

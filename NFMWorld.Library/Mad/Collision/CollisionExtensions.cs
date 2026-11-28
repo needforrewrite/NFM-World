@@ -19,6 +19,7 @@ public static class CollisionExtensions
         public f64Vector3 RotateXz(fix64 xz)
         {
             var a = -xz;
+
             return new f64Vector3(
                 vec.X * UMath.Cos(a) + vec.Z * UMath.Sin(a),
                 vec.Y,
@@ -38,9 +39,11 @@ public static class CollisionExtensions
             var b2 = f64Vector3.Dot(v2, vec);
 
             var det = a11 * a22 - a12 * a12;
+
             if (fix64.Abs(det) < (fix64)1e-9)
             {
                 ThrowArgumentException();
+
                 return default;
             }
 
@@ -62,6 +65,7 @@ public static class CollisionExtensions
         public Vector2 RotateXz(fix64 xz)
         {
             var a = -xz;
+
             return new Vector2(
                 (float)((fix64)vec.X * UMath.Cos(a) + (fix64)vec.Y * UMath.Sin(a)),
                 (float)((fix64)vec.X * -UMath.Sin(a) + (fix64)vec.Y * UMath.Cos(a))

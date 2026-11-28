@@ -130,6 +130,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         _host = host;
         _spectating = spectating;
         _localPlayerId = players.FirstOrDefault(p => p.IsClientPlayer)?.Id ?? Guid.Empty;
+
         if (host is NetworkRaceHost network)
         {
             network.ChatReceived += ReceiveChat;
@@ -157,6 +158,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             else
                 base.Dispose(true);
             Gamemode.End();
+
             throw;
         }
     }
@@ -165,9 +167,12 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     private async Task InitializeRaceAsync()
     {
-        if (_initializingRace) return;
+        if (_initializingRace)
+
+            return;
         _initializingRace = true;
         using var loading = LoadingWork.Begin("Preparing race...");
+
         try
         {
             if (_host is LocalRaceHost local)
@@ -175,18 +180,27 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
                 var stage = CurrentStage!.Backend;
                 var serverStage = await Task.Run(() => new BackendStage(stage.Path, stage.StageLoader, throwOnError: true));
                 await LoadingWork.NextFrame;
-                if (_raceDisposed || CurrentStage is null) return;
+
+                if (_raceDisposed || CurrentStage is null)
+
+                    return;
                 local.InitializeStage(serverStage);
             }
-            else await LoadingWork.NextFrame;
+            else
+                await LoadingWork.NextFrame;
 
-            if (_raceDisposed || CurrentStage is null) return;
+            if (_raceDisposed || CurrentStage is null)
+
+                return;
             InitializeRace(_host);
         }
         catch (Exception ex)
         {
             await LoadingWork.NextFrame;
-            if (_raceDisposed || CurrentStage is null) return;
+
+            if (_raceDisposed || CurrentStage is null)
+
+                return;
             OnStageLoadFailed(ex);
         }
     }
@@ -215,6 +229,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         host.RaceCanStart += () => RaceState = RaceState.InProgress;
         host.RaceFailedToStart += () => RaceState = RaceState.FailedToStart;
         host.PlayerStateReceived += ApplyPlayerState;
+
         if (host is NetworkRaceHost network)
         {
             network.StagePieceStateReceived += CurrentStage.Backend.ApplyPieceState;
@@ -236,6 +251,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             GamemodeInstance?.SetServerResults(results);
             RaceResults = results;
             RaceState = RaceState.Finished;
+
             if (_finishRequested)
             {
                 _finishRequested = false;
@@ -258,13 +274,21 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     private void SendStageImpact(int carIndex, StageImpact impact)
     {
-        if (_spectating || RaceState != RaceState.InProgress || _host is not NetworkRaceHost network
-            || GamemodeInstance is not BaseClientGamemode gm) return;
+        if (_spectating
+            || RaceState != RaceState.InProgress
+            || _host is not NetworkRaceHost network
+            || GamemodeInstance is not BaseClientGamemode gm)
+
+            return;
+
         foreach (var player in gm.Players)
-            if (player.Index == carIndex && !player.IsFake
+
+            if (player.Index == carIndex
+                && !player.IsFake
                 && (player.Info.Id == _localPlayerId || player.Info.IsBot && player.Info.OwnerId == _localPlayerId))
             {
                 network.SendStageImpact(player.Info.Id, impact);
+
                 return;
             }
     }
@@ -305,11 +329,13 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         base.PushUiState();
 
         if (GamemodeInstance is not BaseClientGamemode gm)
+
             return;
 
         UiState.Race.Update(gm.HudState, IsPaused);
         UiState.Race.GamemodeWidgets = gm.GetHudWidgets() ?? [];
         var defeated = ShowingDeathResult;
+
         if (defeated)
         {
             UiState.Race.Finished.Value = true;
@@ -364,6 +390,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             hud.ArrowTarget = OrderedPlayers(gm).FirstOrDefault(p => ReferenceEquals(p.Car, watched))?.Info.PlayerName ?? "";
         hud.TimeTrial = gm.GamemodeId == "nfmm/timetrial";
         var client = WatchingPlayers ? SpectateCar() : ClientCar;
+
         if (WatchingPlayers && client is not null)
         {
             hud.Speed.Value = _watchedHudSpeed;
@@ -390,13 +417,15 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         // configured track instead left "Now listening" on screen for the whole race, and on
         // screen even when no music was playing at all.
         var playing = GameSparker.CurrentMusic;
+
         if (!ReferenceEquals(playing, _announcedMusic))
         {
             _announcedMusic = playing;
             _musicAnnounceUntilTick = System.Environment.TickCount64 + MusicAnnounceMs;
         }
 
-        hud.MusicTrack = playing is not null && System.Environment.TickCount64 < _musicAnnounceUntilTick
+        hud.MusicTrack = playing is not null
+                         && System.Environment.TickCount64 < _musicAnnounceUntilTick
                          && GetMusicTrack() is { } musicTrack
             ? System.IO.Path.GetFileNameWithoutExtension(musicTrack.Path)
             : null;
@@ -418,6 +447,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         // slot that locks that row's car. Every car is listed here (wasted ones included) so the
         // two never disagree about which index a car occupies.
         var lockSlot = 0;
+
         foreach (var player in OrderedPlayers(gm))
         {
             var car = player.Car!;
@@ -448,9 +478,13 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
                     car.Wasted
                 )
             );
-            if (isViewed) continue;
+
+            if (isViewed)
+
+                continue;
             hud.Opponents++;
-            if (car.Wasted) hud.Wasted++;
+            if (car.Wasted)
+                hud.Wasted++;
         }
 
         hud.Racers.Sort(static (a, b) => a.Position.CompareTo(b.Position));
@@ -459,6 +493,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             : _input.CarCamHeld && !IsPaused && client.Control.Arrace
                 ? _carCamOpponent
                 : TargetCarFor(client);
+
         if (client is not null)
         {
             hud.ClientPosition = ((float)client.Position.X, (float)client.Position.Y, (float)client.Position.Z);
@@ -467,6 +502,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             // from the declared bounds still map sensibly. Falls back to the stage bounds.
             var checkpoints = CurrentStage.Backend.Checkpoints;
             hud.TrackCenter = checkpoints.Count > 0 ? AverageCheckpoint(checkpoints) : StageCenter();
+
             if (CurrentStage.Backend.Nlaps > 0 && checkpoints.Count > 0)
             {
                 var next = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];
@@ -474,7 +510,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             }
         }
 
-        if (WatchingPlayers) return;
+        if (WatchingPlayers)
+
+            return;
 
         // If the client is out, or there is no car left to chase, car targeting ends. Losing the
         // locked car alone is not enough - TargetCarFor then falls back to the nearest opponent,
@@ -487,6 +525,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             client.Control.ArrowLock = -1;
         hud.ArrowAtCars = client?.Control.Arrace ?? false;
         hud.ArrowLocked = hud.ArrowAtCars && (client?.Control.ArrowLock ?? -1) >= 0;
+
         if (client is not null && (hud.ArrowAtCars || hud.Spectating))
         {
             hud.ArrowTarget = targetCar is null
@@ -495,16 +534,21 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
                   ?? "";
         }
 
-        if (ArrowTarget(client, targetCar) is not { } target) return;
+        if (ArrowTarget(client, targetCar) is not { } target)
+
+            return;
 
         var direction = target - new Vector3((float)client.Position.X, (float)client.Position.Y, (float)client.Position.Z);
         var forward = Camera.LookAt - Camera.Position;
+
         if (direction.X * direction.X + direction.Z * direction.Z < 1
-            || forward.X * forward.X + forward.Z * forward.Z < 1) return;
+            || forward.X * forward.X + forward.Z * forward.Z < 1)
+
+            return;
         var angle = MathF.Atan2(
-                        forward.Z * direction.X - forward.X * direction.Z,
-                        forward.X * direction.X + forward.Z * direction.Z
-                    )
+            forward.Z * direction.X - forward.X * direction.Z,
+            forward.X * direction.X + forward.Z * direction.Z
+        )
                     * (180 / MathF.PI);
         hud.ArrowAngle = Math.Clamp(angle, hud.ArrowAtCars ? -100 : -130, hud.ArrowAtCars ? 100 : 130);
         // phy's arrow readout divides world units by 100, so the gadget shows the same number.
@@ -528,11 +572,15 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
 
         _raceClockMs = System.Environment.TickCount64 - _raceClockStart;
+
         if (GamemodeInstance is not BaseClientGamemode gm)
+
             return;
 
         var lap = gm.HudState.Lap;
+
         if (lap < 1)
+
             return;
 
         if (lap != _trackedLap)
@@ -552,14 +600,25 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// </summary>
     private Vector3? ArrowTarget(BackendCar? client, BackendCar? targetCar)
     {
-        if (client is null || client.Wasted) return null;
-        if (CurrentStage.Backend.Physics.NoArrow) return null;
+        if (client is null || client.Wasted)
+
+            return null;
+        if (CurrentStage.Backend.Physics.NoArrow)
+
+            return null;
         if (client.Control.Arrace && targetCar is not null)
+
             return new Vector3((float)targetCar.Position.X, (float)targetCar.Position.Y, (float)targetCar.Position.Z);
-        if (CurrentStage.Backend.Nlaps == 0) return null;
+        if (CurrentStage.Backend.Nlaps == 0)
+
+            return null;
         var checkpoints = CurrentStage.Backend.Checkpoints;
-        if (checkpoints.Count == 0) return null;
+
+        if (checkpoints.Count == 0)
+
+            return null;
         var checkpoint = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];
+
         return new Vector3((float)checkpoint.Position.X, (float)checkpoint.Position.Y, (float)checkpoint.Position.Z);
     }
 
@@ -573,11 +632,13 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             ? MathF.Sqrt(delta.X * delta.X + delta.Z * delta.Z) : 0;
         _watchedHudCar = car;
         _watchedHudPosition = position;
+
         if (WatchingPlayers && GamemodeInstance is BaseClientGamemode gamemode)
         {
             _spectatorFeedbackActive = true;
             _spectatorFeedback.Tick(car, gamemode);
-            if (_spectatorFeedback.PassedCheckpoint) SfxLibrary.checkpoint?.Play();
+            if (_spectatorFeedback.PassedCheckpoint)
+                SfxLibrary.checkpoint?.Play();
             if (_spectatorFeedback.PlayPowerUp && CurrentStage.CarSoundsEnabled)
                 SfxLibrary.powerup?.Play();
             if (_spectatorFeedback.NextCheckpoint is { } checkpoint)
@@ -625,19 +686,30 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// </summary>
     private BackendCar? TargetCarFor(BackendCar client)
     {
-        if (GamemodeInstance is not BaseClientGamemode gm) return null;
+        if (GamemodeInstance is not BaseClientGamemode gm)
+
+            return null;
         var opponents = OrderedOpponents(gm);
-        if (opponents.Length == 0) return null;
+
+        if (opponents.Length == 0)
+
+            return null;
 
         // ArrowLock is a player index, so other cars dying cannot shift it onto a different car.
-        if (LockTargetHelper.LockedCar(opponents, client.Control.ArrowLock) is { } locked) return locked;
+
+        if (LockTargetHelper.LockedCar(opponents, client.Control.ArrowLock) is { } locked)
+
+            return locked;
 
         BackendCar? best = null;
         var nearest = double.PositiveInfinity;
         var bestOnscreen = false;
+
         foreach (var player in opponents)
         {
-            if (player.Car is not { Wasted: false } car) continue;
+            if (player.Car is not { Wasted: false } car)
+
+                continue;
             var dx = (double)(car.Position.X - client.Position.X);
             var dz = (double)(car.Position.Z - client.Position.Z);
             var distance = dx * dx + dz * dz;
@@ -651,7 +723,10 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
                 Camera.ViewProjectionMatrix
             );
             var onscreen = clip.W > 0 && MathF.Abs(clip.X) <= clip.W && MathF.Abs(clip.Y) <= clip.W;
-            if ((bestOnscreen && !onscreen) || (onscreen == bestOnscreen && distance >= nearest)) continue;
+
+            if ((bestOnscreen && !onscreen) || (onscreen == bestOnscreen && distance >= nearest))
+
+                continue;
             nearest = distance;
             best = car;
             bestOnscreen = onscreen;
@@ -670,8 +745,11 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     private int SpectateTargetAt(int slot)
     {
-        if (GamemodeInstance is not BaseClientGamemode gm) return -1;
+        if (GamemodeInstance is not BaseClientGamemode gm)
+
+            return -1;
         var players = _spectating ? OrderedPlayers(gm) : OrderedOpponents(gm);
+
         return slot >= 0 && slot < players.Length && players[slot].Car is { Wasted: false } ? players[slot].Index : -1;
     }
 
@@ -680,18 +758,24 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// </summary>
     private BackendCar? SpectateCar()
     {
-        if (GamemodeInstance is not BaseClientGamemode gm) return null;
+        if (GamemodeInstance is not BaseClientGamemode gm)
+
+            return null;
         var players = OrderedPlayers(gm);
+
         if (LockTargetHelper.LockedCar(players, _spectateTarget) is { } current)
+
             return current;
 
         _spectateTarget = -1;
         _spectateLock = -1;
+
         foreach (var player in players)
         {
             if (player.Car is { Wasted: false } car)
             {
                 _spectateTarget = player.Index;
+
                 return car;
             }
         }
@@ -706,8 +790,11 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// </summary>
     private int OpponentTargetAt(int slot)
     {
-        if (GamemodeInstance is not BaseClientGamemode gm) return -1;
+        if (GamemodeInstance is not BaseClientGamemode gm)
+
+            return -1;
         var opponents = OrderedOpponents(gm);
+
         return slot >= 0 && slot < opponents.Length && opponents[slot].Car is { Wasted: false }
             ? opponents[slot].Index
             : -1;
@@ -716,6 +803,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     private (float X, float Z) StageCenter()
     {
         var stage = CurrentStage.Backend;
+
         return ((float)stage.Sx + (float)stage.Ncx / 2, (float)stage.Sz + (float)stage.Ncz / 2);
     }
 
@@ -723,6 +811,7 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         var x = 0f;
         var z = 0f;
+
         foreach (var checkpoint in checkpoints)
         {
             x += (float)checkpoint.Position.X;
@@ -740,7 +829,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// </summary>
     private void PauseRace()
     {
-        if (IsPaused) return;
+        if (IsPaused)
+
+            return;
         CloseChat();
         _input.Reset(ClientCar?.Control);
         IsPaused = true;
@@ -758,7 +849,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     /// </summary>
     private void ResumeRace()
     {
-        if (!IsPaused) return;
+        if (!IsPaused)
+
+            return;
         IsPaused = false;
         SoundEffects.SetPaused(false);
         UiState.Race.Paused.Value = false;
@@ -766,13 +859,17 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     private void RestartRace()
     {
-        if (_host is not LocalRaceHost) return;
+        if (_host is not LocalRaceHost)
+
+            return;
         GamemodeInstance?.Reset();
     }
 
     void IClientCallbacks.RaceRestarted()
     {
-        if (_host is not LocalRaceHost localHost) return;
+        if (_host is not LocalRaceHost localHost)
+
+            return;
         localHost.Restart();
         RaceResults = null;
         _finish.Reset();
@@ -849,7 +946,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     private void DetachStageEvents(BackendStage stage)
     {
-        if (_host is not NetworkRaceHost network) return;
+        if (_host is not NetworkRaceHost network)
+
+            return;
         network.StagePieceStateReceived -= stage.ApplyPieceState;
         stage.ObjectHit -= SendStageImpact;
     }
@@ -860,11 +959,13 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         {
             _raceDisposed = true;
             _finish.Reset();
+
             if (_host is NetworkRaceHost network)
             {
                 network.ChatReceived -= ReceiveChat;
                 network.PlayerLeft -= ReceivePlayerLeft;
-                if (CurrentStage is { } stage) DetachStageEvents(stage.Backend);
+                if (CurrentStage is { } stage)
+                    DetachStageEvents(stage.Backend);
             }
 
             _chat.Clear();
@@ -889,12 +990,16 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
 
-        if (imguiWantsKeyboard || _chat.Open.Value || _finish.ShowSummary.Value) return;
+        if (imguiWantsKeyboard || _chat.Open.Value || _finish.ShowSummary.Value)
+
+            return;
 
         if (IsPaused && PauseMenuView.HandleKeyPressed(GameSparker.UiRenderer?.ActiveRoot, key))
+
             return;
 
         // Enter opens pause during gameplay and selects an item once the menu is open.
+
         if (key == Key.Escape || (!IsPaused && key == Key.Enter))
         {
             if (IsPaused)
@@ -908,12 +1013,15 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
 
         // ── While paused, the UI owns input ────────────────────────
+
         if (IsPaused)
+
             return;
 
         if (key != Key.None && key == SettingsMenu.Bindings.ToggleHud)
         {
             _hudVisible.Value = !_hudVisible.Value;
+
             return;
         }
 
@@ -924,22 +1032,33 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         }
 
         // Spectate keys select a living player without changing anyone's car controls.
+
         if (WatchingPlayers)
         {
-            if (key == SettingsMenu.Bindings.ToggleArrace) return;
+            if (key == SettingsMenu.Bindings.ToggleArrace)
+
+                return;
             var slots = SettingsMenu.Bindings.LockSlots;
+
             for (var slot = 0; slot < slots.Length; slot++)
             {
-                if (key != slots[slot]) continue;
+                if (key != slots[slot])
+
+                    continue;
                 var target = SpectateTargetAt(slot);
-                if (target < 0) break;
+
+                if (target < 0)
+
+                    break;
                 // Releasing the lock picks a default target again.
                 _spectateLock = _spectateLock == target ? -1 : target;
                 _spectateTarget = _spectateLock;
+
                 break;
             }
 
             GamemodeInstance?.KeyPressed(key, in keys);
+
             return;
         }
 
@@ -954,7 +1073,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         base.KeyTyped(character, imguiWantsKeyboard);
 
-        if (imguiWantsKeyboard || IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
+        if (imguiWantsKeyboard || IsPaused || _chat.Open.Value || _finish.ShowSummary.Value)
+
+            return;
 
         GamemodeInstance?.KeyTyped(character);
     }
@@ -966,13 +1087,16 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
         if (_chat.Open.Value || _finish.ShowSummary.Value || WatchingPlayers || ShowingDeathResult)
         {
             _input.Reset(ClientCar?.Control);
+
             return;
         }
 
         var car = ClientCar;
+
         if (imguiWantsKeyboard || IsPaused || GameSparker.devConsole.IsOpen())
         {
             _input.SetCarCamHeld(false, car?.Control);
+
             return;
         }
 
@@ -984,11 +1108,14 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);
-        if (_chatOpeningKey == key) _chatOpeningKey = null;
+        if (_chatOpeningKey == key)
+            _chatOpeningKey = null;
 
         _input.KeyReleased(key, ClientCar?.Control);
 
-        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value)
+
+            return;
 
         GamemodeInstance?.KeyReleased(key, keys);
     }
@@ -1006,7 +1133,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value)
+
+            return;
 
         GamemodeInstance?.MousePressed(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -1024,7 +1153,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value)
+
+            return;
 
         GamemodeInstance?.MouseReleased(x, y, button, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -1042,7 +1173,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value)
+
+            return;
 
         GamemodeInstance?.MouseScrolled(x, y, delta, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -1059,7 +1192,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value) return;
+        if (IsPaused || _chat.Open.Value || _finish.ShowSummary.Value)
+
+            return;
 
         GamemodeInstance?.MouseMoved(x, y, buttons, ctrlKey, shiftKey, altKey);
     }
@@ -1074,7 +1209,9 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        if (CurrentStage is null) return;
+        if (CurrentStage is null)
+
+            return;
         base.Render(cb, alpha);
 
         if (RaceState == RaceState.WaitingToStart)
@@ -1133,14 +1270,18 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
     private void ApplyPlayerState(int carIndex, PlayerState state)
     {
         if (GamemodeInstance is not BaseClientGamemode gm)
+
             return;
 
         // A car this client simulates is authoritative here; relaying it back would fight
         // the local physics with its own history.
+
         if (IsLocallySimulated(gm.Players[carIndex]))
+
             return;
 
         if (state.Ticks <= _lastTick[carIndex])
+
             return;
 
         _lastTick[carIndex] = state.Ticks;
@@ -1156,13 +1297,18 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     public override void GameTick()
     {
-        if (CurrentStage is null || GamemodeInstance is null) return;
+        if (CurrentStage is null || GamemodeInstance is null)
+
+            return;
         _settingsCamera.RestoreNormal(Camera);
+
         // Only a local race actually stops when paused. Online the world keeps ticking: the
         // pause menu just means this client has stopped driving.
+
         if (IsPaused && _host is LocalRaceHost)
         {
             InvalidateOrdering();
+
             if ((WatchingPlayers ? SpectateCar() : ClientCar) is { } pausedCar
                 && _cameraDirector.CurrentViewMode is RaceCameraDirector.ViewMode.Follow
                     or RaceCameraDirector.ViewMode.FollowStatic)
@@ -1178,26 +1324,33 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
         _host.Update();
         ResetWithdrawnFinish();
-        if (_finish.ShowSummary.Value) return;
+
+        if (_finish.ShowSummary.Value)
+
+            return;
 
         // The Game Master is gone and reconnection gave up. WaitingToStart used to sit on the
         // "waiting for other players" screen forever in this case.
+
         if (!_host.IsConnected
             && _host is NetworkRaceHost { ReconnectFailed: true }
             && RaceState is RaceState.WaitingToStart or RaceState.InProgress)
         {
             RaceState = RaceState.FailedToStart;
+
             return;
         }
 
         // Still waiting on other players, and the deadline has passed. The GM abandons the race
         // from its side, but a client that never reached the GM hears nothing, so this is what
         // stops "waiting for other players to load" from being permanent.
+
         if (RaceState == RaceState.WaitingToStart
             && _waitingSince is { } waitingSince
             && System.Environment.TickCount64 - waitingSince >= LoadTimeoutMs)
         {
             RaceState = RaceState.FailedToStart;
+
             return;
         }
 
@@ -1211,7 +1364,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             TickRaceClock();
         }
 
-        if (ClientCar is { Wasted: false }) _deathSpectating = false;
+        if (ClientCar is { Wasted: false })
+            _deathSpectating = false;
         UpdateWatchedFeedback();
         _carCamOpponent = null;
 
@@ -1253,15 +1407,20 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
             // Online bots use player ids; local bots use the roster slots above.
             // A spectator owns nothing; with no client id, an ownerless bot would look like one
             // it fielded, and relaying it would fight the client that really drives it.
+
             if (!_spectating && GamemodeInstance is BaseClientGamemode gm && _host is NetworkRaceHost)
             {
                 foreach (var player in gm.Players)
                 {
                     if (!player.Info.IsBot || player.Car is not { } botCar)
+
                         continue;
+
                     // An empty owner is a bot this build drives itself (singleplayer roster
                     // reused online); treat it as ours rather than leaving it undriven.
+
                     if (player.Info.OwnerId != Guid.Empty && player.Info.OwnerId != _localPlayerId)
+
                         continue;
                     _host.SendPlayerState(PlayerState.CreateFrom(tick, botCar), player.Info.Id);
                 }
@@ -1273,7 +1432,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     void IClientCallbacks.ResetCheckpointGlow()
     {
-        if (!WatchingPlayers) CurrentStage.Renderer.ResetCheckpointGlow();
+        if (!WatchingPlayers)
+            CurrentStage.Renderer.ResetCheckpointGlow();
     }
 
     void IClientCallbacks.TimeTrialCompleted(TimeTrialCompletion completion) =>
@@ -1284,7 +1444,8 @@ public partial class RacePhase : BaseStageRenderingPhase, IGamemodeContext, ICli
 
     void IClientCallbacks.UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
     {
-        if (!WatchingPlayers) CurrentStage.Renderer.UpdateCheckpointGlow(currentCheckpoint, isFinish);
+        if (!WatchingPlayers)
+            CurrentStage.Renderer.UpdateCheckpointGlow(currentCheckpoint, isFinish);
     }
 
     void IClientCallbacks.PlayFinishCheckpointSound(ushort checkpoint)

@@ -13,20 +13,20 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiLayoutType : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Horizontal = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiLayoutType : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Horizontal = unchecked(0),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Vertical = unchecked(1),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Vertical = unchecked(1),
+    }
 }

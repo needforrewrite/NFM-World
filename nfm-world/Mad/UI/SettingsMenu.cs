@@ -245,6 +245,7 @@ public class SettingsMenu()
     private static string[] GetSupportedResolutions(IntPtr window = default)
     {
         if (OperatingSystem.IsBrowser())
+
             return
             [
                 "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
@@ -256,25 +257,33 @@ public class SettingsMenu()
             .ThenBy(mode => mode.Height)
             .Select(mode => $"{mode.Width} x {mode.Height}")
             .ToArray();
+
         return resolutions.Length > 0 ? resolutions : ["1280 x 720"];
     }
 
     public static void RefreshSupportedResolutions()
     {
-        if (OperatingSystem.IsBrowser()) return;
+        if (OperatingSystem.IsBrowser())
+
+            return;
         var selected = _resolutions[Math.Clamp(_selectedResolution, 0, _resolutions.Length - 1)];
         var resolutions = GetSupportedResolutions(GameSparker.Game.Window.Handle);
+
         if (_selectedDisplayMode == 1)
         {
             var window = GameSparker.Game.Window;
             var current = $"{window.Width} x {window.Height}";
-            if (!resolutions.Contains(current)) resolutions = [.. resolutions, current];
+            if (!resolutions.Contains(current))
+                resolutions = [.. resolutions, current];
         }
 
-        if (_resolutions.SequenceEqual(resolutions)) return;
+        if (_resolutions.SequenceEqual(resolutions))
+
+            return;
         _resolutions = resolutions;
         _selectedResolution = Array.IndexOf(resolutions, selected);
-        if (_selectedResolution < 0) _selectedResolution = resolutions.Length - 1;
+        if (_selectedResolution < 0)
+            _selectedResolution = resolutions.Length - 1;
         ResolutionsChanged?.Invoke();
     }
 
@@ -285,14 +294,18 @@ public class SettingsMenu()
     /// </summary>
     public static void RegisterResolution(int width, int height)
     {
-        if (!OperatingSystem.IsBrowser() && _selectedDisplayMode == 2) return;
+        if (!OperatingSystem.IsBrowser() && _selectedDisplayMode == 2)
+
+            return;
         var res = $"{width} x {height}";
 
         // Already exists — just select it
         var idx = Array.IndexOf(_resolutions, res);
+
         if (idx >= 0)
         {
             _selectedResolution = idx;
+
             return;
         }
 
@@ -304,6 +317,7 @@ public class SettingsMenu()
                 var bParts = b.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
                 var aPixels = aParts[0] * aParts[1];
                 var bPixels = bParts[0] * bParts[1];
+
                 return aPixels.CompareTo(bPixels);
             }
         );
@@ -315,18 +329,22 @@ public class SettingsMenu()
     public void HandleKeyCapture(Key key)
     {
         if (_capturingAction == null || !_isOpen)
+
             return;
 
         // Cancel capture on ESC
+
         if (key == Key.Escape)
         {
             _capturingAction = null;
             _selectedBindingIndex = -1;
+
             return;
         }
 
         // Clear any existing binding that uses this key
         var allProperties = typeof(KeyBindings).GetProperties();
+
         foreach (var prop in allProperties)
         {
             if (prop.Name != _capturingAction && prop.GetValue(Bindings) is Key existingKey && existingKey == key)
@@ -339,6 +357,7 @@ public class SettingsMenu()
 
         // Set the new binding
         var property = typeof(KeyBindings).GetProperty(_capturingAction);
+
         if (property != null)
         {
             property.SetValue(Bindings, key);
@@ -401,6 +420,7 @@ public class SettingsMenu()
         }
 
         // Show message if settings were applied
+
         if (!string.IsNullOrEmpty(_settingMessage))
         {
             ImGui.Spacing();
@@ -458,6 +478,7 @@ public class SettingsMenu()
 
         var graphicsChanged = false;
         requireRestart = false;
+
         if (game.Graphics.SynchronizeWithVerticalRetrace != _vsync)
         {
             game.Graphics.SynchronizeWithVerticalRetrace = _vsync;
@@ -543,10 +564,12 @@ public class SettingsMenu()
         // window is created at the page's own size, so applying a stored resolution here would
         // resize the window away from the page and leave the first camera built for that aspect
         // until something resized the page. The stored value stays as the last desktop size.
+
         if (!OperatingSystem.IsBrowser())
         {
             var widthHeight = Resolutions[_selectedResolution].Split('x', StringSplitOptions.TrimEntries);
             var (width, height) = (int.Parse(widthHeight[0]), int.Parse(widthHeight[1]));
+
             if (game.Graphics.PreferredBackBufferWidth != width || game.Graphics.PreferredBackBufferHeight != height)
             {
                 game.Graphics.PreferredBackBufferWidth = width;
@@ -567,6 +590,7 @@ public class SettingsMenu()
         // config value naming a desktop entry, and offering a restart over it would be advice that
         // cannot change anything. Silent rather than merely unprompted - the stored value is
         // rewritten from the list the page actually has.
+
         if (!OperatingSystem.IsBrowser() && _selectedRenderer != _originalRenderer)
         {
             requireRestart = true;
@@ -583,6 +607,7 @@ public class SettingsMenu()
         // whether there is actually a pending difference - a backend that clamped the request reports
         // a permanent difference with nothing left to apply, and prompting for a restart over that
         // would be advice the user could follow forever. See RequiresRestartForMultiSampling.
+
         if (game.Graphics.RequiresRestartForMultiSampling)
         {
             requireRestart = true;
@@ -605,6 +630,7 @@ public class SettingsMenu()
 
         World.OutlineThickness = _lineWidth;
         World.PixelOutlines = _pixelOutlines;
+
         if (World.TransparentGlass != _transparentGlass)
         {
             World.TransparentGlass = _transparentGlass;
@@ -626,12 +652,14 @@ public class SettingsMenu()
     public static bool SaveConfigAndCheckRestart(out bool requireRestart)
     {
         ApplySettings(out requireRestart);
+
         return SaveConfig();
     }
 
     public static bool SaveConfig()
     {
         var content = SaveConfigToString();
+
         try
         {
             // Through the VFS: the browser has no writable install directory, so the write root is
@@ -641,12 +669,14 @@ public class SettingsMenu()
             using (var writer = new StreamWriter(stream))
                 writer.Write(content);
             Logging.Debug($"Config saved to {configPath}");
+
             return true;
         }
         catch (Exception ex)
         {
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error saving config: {ex.Message}");
+
             return false;
         }
     }
@@ -735,6 +765,7 @@ public class SettingsMenu()
         sw.WriteLine($"key_console {(int)Bindings.ToggleDevConsole}");
         for (var i = 0; i < 10; i++)
             sw.WriteLine($"key_lockslot{i + 1} {(int)Bindings.LockSlots[i]}");
+
         return sw.ToString();
     }
 
@@ -759,14 +790,19 @@ public class SettingsMenu()
         InitializeCameraConfig(configString);
         using var sr = new StringReader(configString);
         string? line;
+
         while ((line = sr.ReadLine()) != null)
         {
             var trimmed = line.Trim();
+
             if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
+
                 continue;
 
             var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
             if (parts.Length != 2)
+
                 continue;
 
             ParseConfigLine(parts[0], parts[1]);
@@ -788,172 +824,227 @@ public class SettingsMenu()
                 case "video_renderer3":
                     _selectedRenderer = Renderers.IndexOf(value) is var rend and > -1 ? rend : _selectedRenderer;
                     _originalRenderer = _selectedRenderer;
+
                     break;
                 case "video_resolution3":
                     _selectedResolution = Resolutions.IndexOf(value) is var res and > -1 ? res : _selectedResolution;
+
                     break;
                 case "video_displaymode":
                     _selectedDisplayMode = int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "video_vsync":
                     _vsync = int.Parse(value) != 0;
+
                     break;
                 case "video_antialias":
                     _antialias = int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "video_fps":
                     _fpsLimit = int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "video_linewidth2":
                     _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "video_distant_outline_behavior":
                     _distantOutlineBehavior = ParseDistantOutlineBehavior(value, _distantOutlineBehavior);
+
                     break;
                 case "video_shadow_cascade":
                     _shadowCascadeLevel = int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "video_shadow_res":
                     _shadowResolution = int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "video_low_latency":
                     _lowLatency = int.Parse(value) != 0;
+
                     break;
                 case "video_pixel_outlines":
                     _pixelOutlines = int.Parse(value) != 0;
+
                     break;
                 case "video_transparent_glass":
                     _transparentGlass = int.Parse(value) != 0;
+
                     break;
                 case "video_render_distance":
                     _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
 
                 // Audio settings
                 case "audio_mute":
                     _muteAll = int.Parse(value) != 0;
+
                     break;
                 case "audio_master":
                     _masterVolume = float.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "audio_music":
                     _musicVolume = float.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "audio_effects":
                     _effectsVolume = float.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "audio_remaster":
                     _remasteredMusic = int.Parse(value) != 0;
+
                     break;
 
                 case "hud_skin":
                     HudSkin = HudSkinId.Normalize(value);
+
                     break;
                 case "hud_scale":
                     HudScale = HudScaleSettings.Parse(value);
+
                     break;
                 case "hud_safezone_x":
                     HudSafeZoneHorizontal = HudSafeZoneSettings.Parse(value);
+
                     break;
                 case "hud_safezone_y":
                     HudSafeZoneVertical = HudSafeZoneSettings.Parse(value);
+
                     break;
                 case "hud_classic_meters":
                     HudClassicMeters = int.Parse(value) != 0;
+
                     break;
                 case "hud_radar":
                     HudRadar = int.Parse(value) != 0;
+
                     break;
                 case "hud_opponents":
                     HudOpponents = int.Parse(value) != 0;
+
                     break;
                 case "hud_nametags":
                     HudNameTags = int.Parse(value) != 0;
+
                     break;
                 case "hud_flash":
                     HudFlash = int.Parse(value) != 0;
+
                     break;
                 case "lock_mouse_in_game":
                     LockMouseInGame = int.Parse(value) != 0;
+
                     break;
                 case "menu_stage":
                     MenuStage = MenuPreferences.NormalizeStage(value);
+
                     break;
                 case "menu_music":
                     MenuMusic = MenuPreferences.NormalizeMusic(value);
+
                     break;
 
                 // Camera settings
                 case "camera_preset_name":
                     _cameraPresetName = value;
+
                     break;
                 case "camera_presets":
                     _cameraPresets = CameraPresetConfig.ReadPresets(value);
+
                     break;
                 case "camera_modified_preset":
                     _modifiedCameraPreset = CameraPresetConfig.ReadPresets(value).FirstOrDefault();
+
                     break;
 
                 // Key bindings
                 case "key_accelerate":
                     Bindings.Accelerate = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_ab":
                     Bindings.AerialBounce = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_smoothturn":
                     Bindings.AerialStrafe = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
-                case string s when s.StartsWith("key_gamemode", StringComparison.Ordinal) && int.TryParse(
-                    s["key_gamemode".Length..],
-                    out var actionIndex
-                ) && actionIndex is >= 1 and <= 10:
+                case string s when s.StartsWith("key_gamemode", StringComparison.Ordinal)
+                        && int.TryParse(
+                            s["key_gamemode".Length..],
+                            out var actionIndex
+                        )
+                        && actionIndex is >= 1 and <= 10:
                     Bindings.SetGamemodeActionKey(actionIndex - 1, (Key)int.Parse(value, CultureInfo.InvariantCulture));
+
                     break;
                 case "key_turnleft":
                     Bindings.TurnLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_turnright":
                     Bindings.TurnRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_handbrake":
                     Bindings.Handbrake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_lookback":
                     Bindings.LookBack = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_lookleft":
                     Bindings.LookLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_lookright":
                     Bindings.LookRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_togglemusic":
                     Bindings.ToggleMusic = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_togglesfx":
                     Bindings.ToggleSFX = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_togglearrace":
                     Bindings.ToggleArrace = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_console":
                     Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_toggleradar":
                     Bindings.ToggleRadar = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_togglehud":
                     Bindings.ToggleHud = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_cycleview":
                     Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_carcam":
                     Bindings.CarCam = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_chat":
                     Bindings.OpenChat = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+
                     break;
                 case "key_lockslot1": Bindings.LockSlot1 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
                 case "key_lockslot2": Bindings.LockSlot2 = (Key)int.Parse(value, CultureInfo.InvariantCulture); break;
@@ -978,16 +1069,21 @@ public class SettingsMenu()
         const string configPath = "data/cfg/config.cfg";
 
         string? selectedRenderer = null;
+
         if (TheVFS.VFS.FileExists(configPath))
         {
             foreach (var line in TheVFS.VFS.ReadAllLines(configPath))
             {
                 var trimmed = line.Trim();
+
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
+
                     continue;
 
                 var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
                 if (parts.Length != 2)
+
                     continue;
 
                 var key = parts[0];
@@ -1000,6 +1096,7 @@ public class SettingsMenu()
                         // Video settings
                         case "video_renderer3":
                             selectedRenderer = value;
+
                             break;
                     }
                 }
@@ -1015,38 +1112,47 @@ public class SettingsMenu()
             switch (selectedRenderer)
             {
                 case "Auto":
+
                     return true;
                 case "Metal via ANGLE":
                     renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Metal, AngleDeviceType.Hardware);
+
                     return true;
                 case "OpenGL":
                     renderer = Renderer.DesktopGl;
+
                     return true;
                 case "WebGPU":
                     renderer = Renderer.WebGpu;
+
                     return true;
                 // Deliberately NOT the entry above it. "DirectX 11 via ANGLE" goes through ANGLE's
                 // D3D11 backend and is spelled the same way to the user, which is why both exist -
                 // this one is our own backend over TerraFX, with no translation layer in between.
                 case "DirectX 11":
                     renderer = Renderer.D3d11;
+
                     return true;
                 case "Vulkan via ANGLE":
                     renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Vulkan, AngleDeviceType.Hardware);
+
                     return true;
                 case "DirectX 11 via ANGLE":
                     renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.D3d11, AngleDeviceType.Hardware);
+
                     return true;
                 case "OpenGL via ANGLE":
                     renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Gl, AngleDeviceType.Hardware);
+
                     return true;
                 case "OpenGL ES via ANGLE":
                     renderer = Renderer.Angle;
                     angleSelection = new AngleSelection(AnglePlatformType.Gles, AngleDeviceType.Hardware);
+
                     return true;
             }
         }
@@ -1141,6 +1247,7 @@ public class SettingsMenu()
         HudFlash = true;
         MenuStage = MenuPreferences.LastPlayedStage;
         MenuMusic = MenuPreferences.StageSoundtrack;
+
         try
         {
             const string configPath = "data/cfg/config.cfg";
@@ -1149,19 +1256,25 @@ public class SettingsMenu()
             {
                 Logging.Warning("No config file found, using defaults.");
                 InitializeCameraConfig("");
+
                 return;
             }
 
             var content = TheVFS.VFS.ReadAllText(configPath);
             InitializeCameraConfig(content);
+
             foreach (var line in content.Split('\n'))
             {
                 var trimmed = line.Trim();
+
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
+
                     continue;
 
                 var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
                 if (parts.Length != 2)
+
                     continue;
 
                 var key = parts[0];
@@ -1232,6 +1345,7 @@ public class SettingsMenu()
         SyncRuntimeOutlineSettings();
         RememberModifiedCamera();
         var borderlessResolution = "";
+
         if (!OperatingSystem.IsBrowser() && _selectedDisplayMode == 2)
         {
             var (width, height) = SdlWindow.GetPrimaryDesktopResolution();
@@ -1244,6 +1358,7 @@ public class SettingsMenu()
         var bindingProps = typeof(KeyBindings).GetProperties()
             .Where(p => p.PropertyType == typeof(Key)).ToArray();
         var keyBindings = new KeyBindingData[bindingProps.Length];
+
         for (var i = 0; i < bindingProps.Length; i++)
         {
             var prop = bindingProps[i];
@@ -1327,6 +1442,7 @@ public class SettingsMenu()
     public static AvailableOptions GetAvailableOptions()
     {
         HudSkinRegistry.Refresh();
+
         return new AvailableOptions
         {
             HudSkins = HudSkinRegistry.Options,
@@ -1361,12 +1477,15 @@ public class SettingsMenu()
                 // SaveConfig indexing past the end when it writes the name back.
                 if (AsInt(value) is { } renderer && renderer >= 0 && renderer < Renderers.Length)
                     _selectedRenderer = renderer;
+
                 break;
             case "selectedResolution":
                 if (AsInt(value) is { } resolution && resolution >= 0 && resolution < _resolutions.Length)
                     _selectedResolution = resolution;
+
                 break;
             case "selectedDisplayMode":
+
                 if (AsInt(value) is { } displayMode && displayMode >= 0 && displayMode < DisplayModes.Length)
                 {
                     _selectedDisplayMode = displayMode;
@@ -1377,131 +1496,174 @@ public class SettingsMenu()
             case "vsync":
                 if (value is bool vsync)
                     _vsync = vsync;
+
                 break;
             case "fpsLimit":
                 if (AsInt(value) is { } fpsLimit)
                     _fpsLimit = fpsLimit;
+
                 break;
             case "antialias":
                 if (AsInt(value) is { } antialias)
                     _antialias = antialias;
+
                 break;
             case "shadowCascadeLevel":
                 if (AsInt(value) is { } cascade)
                     _shadowCascadeLevel = cascade;
+
                 break;
             case "shadowResolution":
                 if (AsInt(value) is { } shadowResolution)
                     _shadowResolution = shadowResolution;
+
                 break;
             case "renderDistance":
                 if (AsInt(value) is { } renderDistance)
                     _renderDistance = renderDistance;
+
                 break;
             case "lowLatency":
                 if (value is bool lowLatency)
                     _lowLatency = lowLatency;
+
                 break;
             case "pixelOutlines":
                 if (value is bool pixelOutlines)
                     _pixelOutlines = pixelOutlines;
+
                 break;
             case "transparentGlass":
                 if (value is bool transparentGlass)
                     _transparentGlass = transparentGlass;
+
                 break;
             case "lineWidth":
                 if (AsFloat(value) is { } lineWidth)
                     _lineWidth = lineWidth;
+
                 break;
             case "distantOutlineBehavior":
                 if (AsInt(value) is { } outline && Enum.IsDefined(typeof(DistantOutlineBehavior), outline))
                     _distantOutlineBehavior = (DistantOutlineBehavior)outline;
+
                 break;
 
             // Audio
             case "masterVolume":
                 if (AsFloat(value) is { } masterVolume)
                     _masterVolume = masterVolume;
+
                 break;
             case "musicVolume":
                 if (AsFloat(value) is { } musicVolume)
                     _musicVolume = musicVolume;
+
                 break;
             case "effectsVolume":
                 if (AsFloat(value) is { } effectsVolume)
                     _effectsVolume = effectsVolume;
+
                 break;
             case "muteAll":
                 if (value is bool muteAll)
                     _muteAll = muteAll;
+
                 break;
             case "remasteredMusic":
                 if (value is bool remasteredMusic)
                     _remasteredMusic = remasteredMusic;
+
                 break;
 
             case "hudSkin":
-                if (value is string skin) HudSkin = HudSkinId.Normalize(skin);
+                if (value is string skin)
+                    HudSkin = HudSkinId.Normalize(skin);
+
                 break;
             case "lockMouseInGame":
-                if (value is bool lockMouse) LockMouseInGame = lockMouse;
+                if (value is bool lockMouse)
+                    LockMouseInGame = lockMouse;
+
                 break;
             case "hudScale":
-                if (AsFloat(value) is { } hudScale) HudScale = HudScaleSettings.Normalize(hudScale);
+                if (AsFloat(value) is { } hudScale)
+                    HudScale = HudScaleSettings.Normalize(hudScale);
+
                 break;
             case "hudSafeZoneHorizontal":
                 if (AsFloat(value) is { } hudSafeZoneHorizontal)
                     HudSafeZoneHorizontal = HudSafeZoneSettings.Normalize(hudSafeZoneHorizontal);
+
                 break;
             case "hudSafeZoneVertical":
                 if (AsFloat(value) is { } hudSafeZoneVertical)
                     HudSafeZoneVertical = HudSafeZoneSettings.Normalize(hudSafeZoneVertical);
+
                 break;
             case "hudClassicMeters":
-                if (value is bool classicMeters) HudClassicMeters = classicMeters;
+                if (value is bool classicMeters)
+                    HudClassicMeters = classicMeters;
+
                 break;
             case "hudRadar":
-                if (value is bool radar) HudRadar = radar;
+                if (value is bool radar)
+                    HudRadar = radar;
+
                 break;
             case "hudOpponents":
-                if (value is bool opponents) HudOpponents = opponents;
+                if (value is bool opponents)
+                    HudOpponents = opponents;
+
                 break;
             case "hudNameTags":
-                if (value is bool nameTags) HudNameTags = nameTags;
+                if (value is bool nameTags)
+                    HudNameTags = nameTags;
+
                 break;
             case "hudFlash":
-                if (value is bool flash) HudFlash = flash;
+                if (value is bool flash)
+                    HudFlash = flash;
+
                 break;
             case "menuStage":
-                if (value is string stage) MenuStage = MenuPreferences.NormalizeStage(stage);
+                if (value is string stage)
+                    MenuStage = MenuPreferences.NormalizeStage(stage);
+
                 break;
             case "menuMusic":
-                if (value is string music) MenuMusic = MenuPreferences.NormalizeMusic(music);
+                if (value is string music)
+                    MenuMusic = MenuPreferences.NormalizeMusic(music);
+
                 break;
 
             // Camera
             case "fov":
                 if (AsFloat(value) is { } fov)
                     _fov = fov;
+
                 break;
             case "followY":
                 if (AsInt(value) is { } followY)
                     _followY = followY;
+
                 break;
             case "followZ":
                 if (AsInt(value) is { } followZ)
                     _followZ = followZ;
+
                 break;
             case "smoothFov":
                 if (value is bool smoothFov)
                     _smoothFov = smoothFov;
+
                 break;
 
             // Key binding
             case "keyBinding":
                 if (action is { } actionName && AsInt(value) is { } keyCode)
                     typeof(KeyBindings).GetProperty(actionName)?.SetValue(Bindings, (Key)keyCode);
+
                 break;
         }
 
@@ -1575,7 +1737,9 @@ public class SettingsMenu()
 
     public static void SelectModifiedCameraPreset()
     {
-        if (_modifiedCameraPreset is not { } modified) return;
+        if (_modifiedCameraPreset is not { } modified)
+
+            return;
         SetCamera(modified);
         _cameraPresetName = "";
         ApplySettings(out _);
@@ -1586,7 +1750,9 @@ public class SettingsMenu()
         CameraPreset[] presets = [CameraPreset.NFMW, CameraPreset.Classic, .. _cameraPresets];
         var current = CurrentCamera("");
         var index = Array.FindIndex(presets, p => p.Name == _cameraPresetName && p.Matches(current));
-        if (index < 0) index = Array.FindIndex(presets, p => p.Matches(current));
+        if (index < 0)
+            index = Array.FindIndex(presets, p => p.Matches(current));
+
         return index;
     }
 
@@ -1602,15 +1768,21 @@ public class SettingsMenu()
     public static void SaveCameraPreset(string name, string? replaceName = null)
     {
         name = CameraPreset.ValidateCustomName(name);
+
         if (_cameraPresets.Any(p => p.Name != replaceName && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+
             throw new ArgumentException("A camera preset with this name already exists.");
         var preset = CurrentCamera(name);
+
         if (replaceName is null)
             _cameraPresets.Add(preset);
         else
         {
             var index = _cameraPresets.FindIndex(p => p.Name == replaceName);
-            if (index < 0) throw new ArgumentException("Choose a custom preset to update.");
+
+            if (index < 0)
+
+                throw new ArgumentException("Choose a custom preset to update.");
             _cameraPresets[index] = preset;
         }
 
@@ -1622,7 +1794,9 @@ public class SettingsMenu()
     public static void RemoveCameraPreset(string name)
     {
         if (_cameraPresets.RemoveAll(p => p.Name == name) == 0)
+
             throw new ArgumentException("Only custom presets can be removed.");
-        if (_cameraPresetName == name) _cameraPresetName = "";
+        if (_cameraPresetName == name)
+            _cameraPresetName = "";
     }
 }

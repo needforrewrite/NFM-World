@@ -13,30 +13,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiSeparatorFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiSeparatorFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Axis default to current layout type, so generally Horizontal unless e.g. in a menu bar<br/>
-		/// </summary>
-		Horizontal = unchecked(1),
+        /// <summary>
+        /// Axis default to current layout type, so generally Horizontal unless e.g. in a menu bar<br/>
+        /// </summary>
+        Horizontal = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Vertical = unchecked(2),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Vertical = unchecked(2),
 
-		/// <summary>
-		/// Make separator cover all columns of a legacy Columns() set.<br/>
-		/// </summary>
-		SpanAllColumns = unchecked(4),
-	}
+        /// <summary>
+        /// Make separator cover all columns of a legacy Columns() set.<br/>
+        /// </summary>
+        SpanAllColumns = unchecked(4),
+    }
 }

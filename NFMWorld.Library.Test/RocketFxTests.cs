@@ -62,6 +62,7 @@ public class RocketFxTests
             },
             new Ctx()
         );
+
         try
         {
             gamemode.Begin();
@@ -118,6 +119,7 @@ public class RocketFxTests
             .GetField("_states", BindingFlags.NonPublic | BindingFlags.Instance)!
             .GetValue(fx)!;
         var total = 0;
+
         foreach (var state in states)
         {
             var stages = (int[])state.GetType()
@@ -138,6 +140,7 @@ public class RocketFxTests
         var cx = (float)car.Position.X;
         var cz = (float)car.Position.Z;
         var farthest = 0f;
+
         foreach (var state in states)
         {
             var stages = (int[])state.GetType()
@@ -149,9 +152,11 @@ public class RocketFxTests
             var zs = (float[])state.GetType()
                 .GetField("DustZ", BindingFlags.Public | BindingFlags.Instance)!
                 .GetValue(state)!;
+
             for (var i = 0; i < stages.Length; i++)
             {
                 if (stages[i] == 0)
+
                     continue;
                 var dx = xs[i] - cx;
                 var dz = zs[i] - cz;

@@ -126,6 +126,7 @@ namespace Poly2Tri
         public override bool Equals(object obj)
         {
             TriangulationPoint p2 = obj as TriangulationPoint;
+
             if (p2 != null)
             {
                 return mVertexCode == p2.VertexCode;
@@ -173,6 +174,7 @@ namespace Poly2Tri
         public bool HasEdge(TriangulationPoint p)
         {
             DTSweepConstraint tmp = null;
+
             return GetEdge(p, out tmp);
         }
 
@@ -180,6 +182,7 @@ namespace Poly2Tri
         public bool GetEdge(TriangulationPoint p, out DTSweepConstraint edge)
         {
             edge = null;
+
             if (Edges == null || Edges.Count < 1 || p == null || p.Equals(this))
             {
                 return false;
@@ -190,6 +193,7 @@ namespace Poly2Tri
                 if ((sc.P.Equals(this) && sc.Q.Equals(p)) || (sc.P.Equals(p) && sc.Q.Equals(this)))
                 {
                     edge = sc;
+
                     return true;
                 }
             }
@@ -219,6 +223,7 @@ namespace Poly2Tri
         public bool MoveNext()
         {
             position++;
+
             return (position < mPoints.Count);
         }
 

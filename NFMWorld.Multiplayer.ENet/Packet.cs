@@ -50,6 +50,7 @@ public struct Packet : IDisposable
         get
         {
             ThrowIfNotCreated();
+
             return Content!.Length;
         }
     }
@@ -59,6 +60,7 @@ public struct Packet : IDisposable
         get
         {
             ThrowIfNotCreated();
+
             return Content!.Flags;
         }
     }
@@ -68,6 +70,7 @@ public struct Packet : IDisposable
         get
         {
             ThrowIfNotCreated();
+
             return Content!.Buffer.AsSpan(0, Content.Length);
         }
     }
@@ -77,6 +80,7 @@ public struct Packet : IDisposable
         get
         {
             ThrowIfNotCreated();
+
             return Content!.Buffer.AsMemory(0, Content.Length);
         }
     }
@@ -86,6 +90,7 @@ public struct Packet : IDisposable
         get
         {
             ThrowIfNotCreated();
+
             return Content!.Buffer.AsSpan(0, Content.Length);
         }
     }
@@ -95,6 +100,7 @@ public struct Packet : IDisposable
         get
         {
             ThrowIfNotCreated();
+
             return Content!.ReferenceCount > 0;
         }
     }
@@ -124,6 +130,7 @@ public struct Packet : IDisposable
         ArgumentOutOfRangeException.ThrowIfNegative(length);
 
         if (length > data.Length)
+
             throw new ArgumentOutOfRangeException(nameof(length));
 
         Create(data.AsSpan(0, length), flags);
@@ -136,6 +143,7 @@ public struct Packet : IDisposable
         ArgumentOutOfRangeException.ThrowIfNegative(length);
 
         if (offset + length > data.Length)
+
             throw new ArgumentOutOfRangeException(nameof(length));
 
         Create(data.AsSpan(offset, length), flags);
@@ -157,6 +165,7 @@ public struct Packet : IDisposable
     private readonly void ThrowIfNotCreated()
     {
         if (Content is null || Content.Destroyed)
+
             throw new InvalidOperationException("Packet not created");
     }
 

@@ -35,6 +35,7 @@ public sealed class CloudflareCache(HttpClient http, ArchiveOptions options, ILo
     public async Task PurgeAssetsAsync(IEnumerable<string> contentHashes)
     {
         if (!IsConfigured)
+
             return;
 
         var baseUrl = options.PublicBaseUrl.TrimEnd('/');
@@ -47,9 +48,12 @@ public sealed class CloudflareCache(HttpClient http, ArchiveOptions options, ILo
         for (var start = 0; start < files.Length; start += BatchSize)
         {
             var batch = files[start..Math.Min(start + BatchSize, files.Length)];
+
             // A refused or unreachable API fails every batch; don't make a bulk unlist wait 5s per
             // 30 URLs. A transient failure is followed by the next moderation action anyway.
+
             if (!await PurgeAsync(batch))
+
                 return;
         }
     }
@@ -58,6 +62,7 @@ public sealed class CloudflareCache(HttpClient http, ArchiveOptions options, ILo
     {
         // Not the request's token: a player closing the page must not cancel a moderation purge.
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
         try
         {
             using var request = new HttpRequestMessage(
@@ -70,6 +75,7 @@ public sealed class CloudflareCache(HttpClient http, ArchiveOptions options, ILo
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.CloudflareApiToken);
 
             using var response = await http.SendAsync(request, timeout.Token);
+
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning(
@@ -78,15 +84,18 @@ public sealed class CloudflareCache(HttpClient http, ArchiveOptions options, ILo
                     (int)response.StatusCode,
                     Truncate(await response.Content.ReadAsStringAsync(timeout.Token), 400)
                 );
+
                 return false;
             }
 
             logger.LogInformation("[Cache] Purged {Count} asset(s) from the edge.", files.Length);
+
             return true;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             logger.LogWarning(ex, "[Cache] Could not purge {Count} asset(s) from Cloudflare.", files.Length);
+
             return false;
         }
     }

@@ -16,111 +16,124 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiMetricsConfig
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowDebugLog;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiMetricsConfig
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowDebugLog;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowIDStackTool;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowIDStackTool;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowWindowsRects;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowWindowsRects;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowWindowsBeginOrder;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowWindowsBeginOrder;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowTablesRects;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowTablesRects;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowDrawCmdMesh;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowDrawCmdMesh;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowDrawCmdBoundingBoxes;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowDrawCmdBoundingBoxes;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowTextEncodingViewer;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowTextEncodingViewer;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowTextureUsedRect;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowTextureUsedRect;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowDockingNodes;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowDockingNodes;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int ShowWindowsRectsType;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int ShowWindowsRectsType;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int ShowTablesRectsType;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int ShowTablesRectsType;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int HighlightMonitorIdx;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int HighlightMonitorIdx;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint HighlightViewportID;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint HighlightViewportID;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte ShowFontPreview;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiMetricsConfig(bool showDebugLog = default, bool showIdStackTool = default, bool showWindowsRects = default, bool showWindowsBeginOrder = default, bool showTablesRects = default, bool showDrawCmdMesh = default, bool showDrawCmdBoundingBoxes = default, bool showTextEncodingViewer = default, bool showTextureUsedRect = default, bool showDockingNodes = default, int showWindowsRectsType = default, int showTablesRectsType = default, int highlightMonitorIdx = default, uint highlightViewportId = default, bool showFontPreview = default)
-		{
-			ShowDebugLog = showDebugLog ? (byte)1 : (byte)0;
-			ShowIDStackTool = showIdStackTool ? (byte)1 : (byte)0;
-			ShowWindowsRects = showWindowsRects ? (byte)1 : (byte)0;
-			ShowWindowsBeginOrder = showWindowsBeginOrder ? (byte)1 : (byte)0;
-			ShowTablesRects = showTablesRects ? (byte)1 : (byte)0;
-			ShowDrawCmdMesh = showDrawCmdMesh ? (byte)1 : (byte)0;
-			ShowDrawCmdBoundingBoxes = showDrawCmdBoundingBoxes ? (byte)1 : (byte)0;
-			ShowTextEncodingViewer = showTextEncodingViewer ? (byte)1 : (byte)0;
-			ShowTextureUsedRect = showTextureUsedRect ? (byte)1 : (byte)0;
-			ShowDockingNodes = showDockingNodes ? (byte)1 : (byte)0;
-			ShowWindowsRectsType = showWindowsRectsType;
-			ShowTablesRectsType = showTablesRectsType;
-			HighlightMonitorIdx = highlightMonitorIdx;
-			HighlightViewportID = highlightViewportId;
-			ShowFontPreview = showFontPreview ? (byte)1 : (byte)0;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte ShowFontPreview;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiMetricsConfig(
+            bool showDebugLog = default,
+            bool showIdStackTool = default,
+            bool showWindowsRects = default,
+            bool showWindowsBeginOrder = default,
+            bool showTablesRects = default,
+            bool showDrawCmdMesh = default,
+            bool showDrawCmdBoundingBoxes = default,
+            bool showTextEncodingViewer = default,
+            bool showTextureUsedRect = default,
+            bool showDockingNodes = default,
+            int showWindowsRectsType = default,
+            int showTablesRectsType = default,
+            int highlightMonitorIdx = default,
+            uint highlightViewportId = default,
+            bool showFontPreview = default
+        )
+        {
+            ShowDebugLog = showDebugLog ? (byte)1 : (byte)0;
+            ShowIDStackTool = showIdStackTool ? (byte)1 : (byte)0;
+            ShowWindowsRects = showWindowsRects ? (byte)1 : (byte)0;
+            ShowWindowsBeginOrder = showWindowsBeginOrder ? (byte)1 : (byte)0;
+            ShowTablesRects = showTablesRects ? (byte)1 : (byte)0;
+            ShowDrawCmdMesh = showDrawCmdMesh ? (byte)1 : (byte)0;
+            ShowDrawCmdBoundingBoxes = showDrawCmdBoundingBoxes ? (byte)1 : (byte)0;
+            ShowTextEncodingViewer = showTextEncodingViewer ? (byte)1 : (byte)0;
+            ShowTextureUsedRect = showTextureUsedRect ? (byte)1 : (byte)0;
+            ShowDockingNodes = showDockingNodes ? (byte)1 : (byte)0;
+            ShowWindowsRectsType = showWindowsRectsType;
+            ShowTablesRectsType = showTablesRectsType;
+            HighlightMonitorIdx = highlightMonitorIdx;
+            HighlightViewportID = highlightViewportId;
+            ShowFontPreview = showFontPreview ? (byte)1 : (byte)0;
+        }
+    }
 }

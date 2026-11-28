@@ -22,12 +22,14 @@ public sealed class TightPackBufferWriter : IBufferWriter<byte>
     public static TightPackBufferWriter Rent()
     {
         Stack<TightPackBufferWriter>? free = t_free;
+
         return free is { Count: > 0 } ? free.Pop() : new TightPackBufferWriter();
     }
 
     public static void Return(TightPackBufferWriter writer)
     {
         writer.Reset();
+
         if (writer._buffer.Length > 1 << 20)
         {
             // Do not pin a large serialization's buffer forever.
@@ -47,6 +49,7 @@ public sealed class TightPackBufferWriter : IBufferWriter<byte>
     public void Advance(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(count);
+
         if (_length + count > _buffer.Length)
         {
             throw new ArgumentOutOfRangeException(nameof(count), "Advanced past the end of the buffer.");
@@ -58,12 +61,14 @@ public sealed class TightPackBufferWriter : IBufferWriter<byte>
     public Memory<byte> GetMemory(int sizeHint = 0)
     {
         EnsureCapacity(sizeHint);
+
         return _buffer.AsMemory(_length);
     }
 
     public Span<byte> GetSpan(int sizeHint = 0)
     {
         EnsureCapacity(sizeHint);
+
         return _buffer.AsSpan(_length);
     }
 
@@ -77,6 +82,7 @@ public sealed class TightPackBufferWriter : IBufferWriter<byte>
         }
 
         int required = checked(_length + sizeHint);
+
         if (_buffer.Length >= required)
         {
             return;
@@ -85,6 +91,7 @@ public sealed class TightPackBufferWriter : IBufferWriter<byte>
         int newSize = Math.Max(required, _buffer.Length == 0 ? 256 : _buffer.Length * 2);
         byte[] next = Pool.Rent(newSize);
         _buffer.AsSpan(0, _length).CopyTo(next);
+
         if (_buffer.Length != 0)
         {
             Pool.Return(_buffer, clearArray: false);

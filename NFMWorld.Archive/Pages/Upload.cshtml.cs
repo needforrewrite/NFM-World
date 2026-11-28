@@ -30,42 +30,52 @@ public sealed class UploadModel(
     public async Task<IActionResult> OnGetAsync()
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         MaxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(Db, HttpContext.RequestAborted);
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         MaxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(Db, HttpContext.RequestAborted);
+
         if (options.ReadOnly)
         {
             Error = "This archive is not accepting uploads.";
+
             return Page();
         }
 
         if (File is null || !AssetKinds.TryParseName(Type, out var kind))
         {
             Error = "Choose a file, a name and a type.";
+
             return Page();
         }
 
         // The same helpers the JSON API uses: the form had its own copy of these rules and
         // silently lost the extension check, storing a .txt with no validation at all.
+
         if (AssetUpload.NormalizeName(Name) is not { } name)
         {
             Error = $"Choose a name of at most {AssetUpload.MaxNameLength} characters.";
+
             return Page();
         }
 
         var description = AssetUpload.NormalizeDescription(Description);
+
         if (AssetUpload.DescriptionTooLong(description))
         {
             Error = $"The description must be at most {AssetUpload.MaxDescriptionLength} characters.";
+
             return Page();
         }
 
@@ -73,12 +83,14 @@ public sealed class UploadModel(
         {
             Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
             Error = AssetUpload.SizeLimitMessage(MaxUploadBytes);
+
             return Page();
         }
 
         if (AssetUpload.CheckClaim(kind, File.FileName) is { } claimError)
         {
             Error = claimError;
+
             return Page();
         }
 
@@ -93,24 +105,29 @@ public sealed class UploadModel(
             MaxUploadBytes,
             HttpContext.RequestAborted
         );
+
         if (stored.Error is { } validationError)
         {
             Error = validationError;
+
             return Page();
         }
 
         var existing = await Db.Assets.FirstOrDefaultAsync(a => a.ContentHash == stored.Hash);
+
         if (existing is not null)
         {
             if (!existing.IsListed && existing.OwnerId != Account!.Id)
             {
                 Error = "These bytes are already in the Archive.";
+
                 return Page();
             }
 
             if ((byte)existing.Type != kind)
             {
                 Error = $"Those bytes are already catalogued as a {AssetKinds.Name((byte)existing.Type)}.";
+
                 return Page();
             }
 
@@ -121,6 +138,7 @@ public sealed class UploadModel(
             }
 
             Message = $"Already present as {existing.Name} ({stored.Hash}).";
+
             return Page();
         }
 
@@ -145,6 +163,7 @@ public sealed class UploadModel(
         Message = review == AssetReviewStatus.Pending
             ? "Uploaded and awaiting verification. The file will be listed after staff approve it."
             : $"Uploaded and verified. Content hash: {stored.Hash}";
+
         return Page();
     }
 }

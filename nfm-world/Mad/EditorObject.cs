@@ -35,6 +35,7 @@ public class EditorObject : StaticMeshObject, IDisposable
     {
         Boxes = rad.Boxes;
         Wheels = rad.Wheels;
+
         if (showCollision && rad.Boxes.Length > 0)
         {
             _collisionDebugMesh = new CollisionDebugMesh(rad.Boxes)
@@ -59,6 +60,7 @@ public class EditorObject : StaticMeshObject, IDisposable
     {
         base.OnBeforeRender(alpha);
         _collisionDebugMesh?.OnBeforeRender(alpha);
+
         for (var i = 0; i < _wheels.Length; i++)
         {
             _wheels[i].Parent = this;
@@ -80,10 +82,13 @@ public class EditorObject : StaticMeshObject, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         Mesh.Dispose();
         _collisionDebugMesh?.Dispose();
+
         foreach (var wheel in _wheels)
         {
             wheel.Mesh.Dispose();

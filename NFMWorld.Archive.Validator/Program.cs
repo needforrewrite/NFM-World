@@ -28,6 +28,7 @@ public static class Program
     public static int Main(string[] args)
     {
         if (args.Length < 2)
+
             return Fail("usage: validator <tt-info|tt-sim|radpack|rad> <file> [stage] [car|kind]");
 
         try
@@ -60,10 +61,13 @@ public static class Program
         if (path.StartsWith("stock:", StringComparison.Ordinal))
         {
             var stock = StockCatalog.Find(AppContext.BaseDirectory, kind, id);
+
             if (stock is null || stock.Hash != path["stock:".Length..])
+
                 throw new InvalidDataException(
                     $"The server's shipped {kind.ToString().ToLowerInvariant()} '{id}' does not match this recording."
                 );
+
             return RadpackSerializer.Deserialize(stock.Bytes);
         }
 
@@ -73,7 +77,9 @@ public static class Program
     private static int TimeTrialInfo(string path)
     {
         var replay = SavedTimeTrial.Load(File.ReadAllBytes(path));
+
         if (replay is null)
+
             return Fail("replay could not be read");
 
         Console.WriteLine(
@@ -93,6 +99,7 @@ public static class Program
 
         // A replay recorded by a different backend is refused before it is simulated: its ticks
         // mean different physics, so the result would not be comparable.
+
         return (replay.Version ?? 0) == SavedTimeTrial.CURRENT_VERSION ? 0 : 2;
     }
 
@@ -105,12 +112,16 @@ public static class Program
     )
     {
         var replay = SavedTimeTrial.Load(File.ReadAllBytes(path));
+
         if (replay is null)
+
             return Fail("replay could not be read");
 
         // Refused before simulating, for the same reason tt-info refuses it: another backend's
         // ticks are different physics, so the result is not comparable with the leaderboard's.
+
         if ((replay.Version ?? 0) != SavedTimeTrial.CURRENT_VERSION)
+
             return Fail(
                 $"The replay is version {replay.Version ?? 0}, this backend is version {SavedTimeTrial.CURRENT_VERSION}."
             );
@@ -118,18 +129,25 @@ public static class Program
         // The stage must come from server-owned content, never from the replay. A
         // replay carries its own StageData and the simulator prefers it, which made the tick
         // count circular: a replay of a stage whose finish is at the start reproduces itself.
+
         if (stageRadpackPath is null)
+
             return Fail("No stage asset was supplied to simulate against.");
 
         var stageAsset = ReadTrialAsset(stageRadpackPath, stageName, AssetKind.Stage);
+
         if (stageAsset is not RadpackStage track)
+
             return Fail("The stage asset is not a track.");
 
         if (carRadpackPath is null)
+
             return Fail("No car asset was supplied to simulate against.");
 
         var carAsset = ReadTrialAsset(carRadpackPath, carName, AssetKind.Car);
+
         if (carAsset is not RadpackRad3d car)
+
             return Fail("The car asset is not a model.");
 
         var expectedTicks = replay.DemoData.Ticks.Count;
@@ -141,7 +159,9 @@ public static class Program
             track.Stage,
             car.Rad
         );
+
         if (elapsed is null)
+
             return Fail("simulation did not finish within the tick limit");
 
         var ok = elapsed == expectedTicks;
@@ -163,7 +183,9 @@ public static class Program
     private static int Radpack(string path, string? kindName)
     {
         var data = File.ReadAllBytes(path);
+
         if (data.Length > RadpackLimits.MaxCompressedBytes)
+
             return Fail("radpack exceeds the compressed size limit");
 
         var asset = RadpackSerializer.Deserialize(data, RadpackLimits.MaxCompressedBytes, RadpackLimits.MaxDecompressedBytes);
@@ -174,9 +196,11 @@ public static class Program
         var claimedIsCar = kindName is null
             ? assetType == AssetKinds.Car
             : AssetKinds.TryParseName(kindName, out var claimed) && claimed == AssetKinds.Car;
+
         if (claimedIsCar
             && asset is RadpackRad3d car
             && CarModelValidator.Validate(car.Rad) is { } invalid)
+
             return Fail(invalid);
 
         Console.WriteLine(
@@ -201,25 +225,32 @@ public static class Program
     private static int LegacyRad(string path, string? kindName)
     {
         var data = File.ReadAllBytes(path);
+
         if (data.Length > RadpackLimits.MaxCompressedBytes)
+
             return Fail("legacy rad exceeds the size limit");
 
         if (!AssetKinds.TryParseName(kindName, out var kind) || !AssetKinds.IsLegacyRadKind(kind))
+
             return Fail("legacy .rad files may only be published as a Car, StagePiece or Wheel.");
 
         var rad = RadParser.ParseRad(System.Text.Encoding.UTF8.GetString(data), Path.GetFileNameWithoutExtension(path));
 
         // Same rule as a packed car: a legacy model is published into other players' races too.
+
         if (kind == AssetKinds.Car && CarModelValidator.Validate(rad) is { } invalid)
+
             return Fail(invalid);
 
         Console.WriteLine(JsonSerializer.Serialize(new { ok = true, type = "Rad3d", kind = AssetKinds.Name(kind) }));
+
         return 0;
     }
 
     private static int Fail(string message)
     {
         Console.WriteLine(JsonSerializer.Serialize(new { ok = false, error = message }));
+
         return 1;
     }
 }

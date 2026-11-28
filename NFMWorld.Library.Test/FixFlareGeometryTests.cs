@@ -16,7 +16,9 @@ public class FixFlareGeometryTests
             (new(-400, -30, -100), new(300, 90, 200))
         ];
         Span<Vector3> shell = stackalloc Vector3[FixFlareGeometry.ShellVertexCount];
+
         foreach (var (min, max) in cars)
+
         foreach (var inflation in new[] { 1.3f, 1.67f })
         {
             var center = (min + max) * 0.5f;
@@ -67,6 +69,7 @@ public class FixFlareGeometryTests
         for (var shell = 0; shell < 2; shell++)
         {
             var offset = shell * FixFlareGeometry.ShellVertexCount;
+
             for (var i = shell * perShell; i < (shell + 1) * perShell; i += 3)
             {
                 var a = indices[i];
@@ -89,6 +92,7 @@ public class FixFlareGeometryTests
             (new(200, 80, 440), 200),
             (new(60, 100, 90), 100)
         ];
+
         foreach (var (halfSize, expectedHeight) in cars)
         {
             var ball = FixFlareGeometry.BallHalfSize(halfSize);

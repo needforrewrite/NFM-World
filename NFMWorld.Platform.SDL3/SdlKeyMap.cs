@@ -179,11 +179,17 @@ public static class SdlKeyMap
     public static MouseButtons FromButtonFlags(SDL.SDL_MouseButtonFlags flags)
     {
         var buttons = MouseButtons.None;
-        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_LMASK) != 0) buttons |= MouseButtons.Primary;
-        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_RMASK) != 0) buttons |= MouseButtons.Secondary;
-        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_MMASK) != 0) buttons |= MouseButtons.Middle;
-        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_X1MASK) != 0) buttons |= MouseButtons.XButton1;
-        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_X2MASK) != 0) buttons |= MouseButtons.XButton2;
+        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_LMASK) != 0)
+            buttons |= MouseButtons.Primary;
+        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_RMASK) != 0)
+            buttons |= MouseButtons.Secondary;
+        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_MMASK) != 0)
+            buttons |= MouseButtons.Middle;
+        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_X1MASK) != 0)
+            buttons |= MouseButtons.XButton1;
+        if ((flags & SDL.SDL_MouseButtonFlags.SDL_BUTTON_X2MASK) != 0)
+            buttons |= MouseButtons.XButton2;
+
         return buttons;
     }
 }

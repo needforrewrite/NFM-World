@@ -64,6 +64,7 @@ internal static class LobbyPlayerMenu
     private static Node Item(string label, Action action)
     {
         var hovered = new Signal<bool>(false);
+
         return Sx.View(
             name: () => label,
             style: () => Sx.Styles(
@@ -84,7 +85,8 @@ internal static class LobbyPlayerMenu
             onmousedown: e =>
             {
                 e.StopPropagation();
-                if (e.Button == MouseButton.Primary) action();
+                if (e.Button == MouseButton.Primary)
+                    action();
             },
             children: [Sx.Text(
                 style: () => Sx.TextStyles(

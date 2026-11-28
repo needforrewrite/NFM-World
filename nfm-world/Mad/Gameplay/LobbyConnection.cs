@@ -25,9 +25,11 @@ public static class LobbyConnection
     public static bool TryOpen(string host, ushort port, bool insecure, out string error)
     {
         // The browser has no UDP sockets, so the ENet race transport cannot work there.
+
         if (OperatingSystem.IsBrowser())
         {
             error = "Multiplayer is not available in the browser build.";
+
             return false;
         }
 
@@ -37,16 +39,19 @@ public static class LobbyConnection
             {
                 menu.RequireLobbySignIn(host, port, insecure);
                 error = "";
+
                 return true;
             }
 
             error = "Sign in from the main menu before opening multiplayer.";
+
             return false;
         }
 
         ENetMultiplayer.Init();
         GameSparker.PushPhase(new LobbyPhase(new WebSocketMultiplayerClientTransport(host, port, insecure)));
         error = "";
+
         return true;
     }
 }

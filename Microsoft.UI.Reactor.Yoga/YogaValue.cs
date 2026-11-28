@@ -53,7 +53,9 @@ internal static class YogaFloat
     public static bool InexactEquals(float a, float b)
     {
         if (IsDefined(a) && IsDefined(b))
+
             return MathF.Abs(a - b) < Epsilon;
+
         return IsUndefined(a) && IsUndefined(b);
     }
 
@@ -63,7 +65,9 @@ internal static class YogaFloat
     public static float MaxOrDefined(float a, float b)
     {
         if (IsDefined(a) && IsDefined(b))
+
             return MathF.Max(a, b);
+
         return IsDefined(a) ? a : b;
     }
 
@@ -73,7 +77,9 @@ internal static class YogaFloat
     public static float MinOrDefined(float a, float b)
     {
         if (IsDefined(a) && IsDefined(b))
+
             return MathF.Min(a, b);
+
         return IsDefined(a) ? a : b;
     }
 

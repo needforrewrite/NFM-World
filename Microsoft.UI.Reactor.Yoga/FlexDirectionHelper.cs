@@ -19,9 +19,14 @@ internal static class FlexDirectionHelper
     {
         if (direction == FlexLayoutDirection.RTL)
         {
-            if (flexDirection == FlexDirection.Row) return FlexDirection.RowReverse;
-            if (flexDirection == FlexDirection.RowReverse) return FlexDirection.Row;
+            if (flexDirection == FlexDirection.Row)
+
+                return FlexDirection.RowReverse;
+            if (flexDirection == FlexDirection.RowReverse)
+
+                return FlexDirection.Row;
         }
+
         return flexDirection;
     }
 
@@ -55,7 +60,9 @@ internal static class FlexDirectionHelper
     public static YogaPhysicalEdge InlineStartEdge(FlexDirection flexDirection, FlexLayoutDirection direction)
     {
         if (IsRow(flexDirection))
+
             return direction == FlexLayoutDirection.RTL ? YogaPhysicalEdge.Right : YogaPhysicalEdge.Left;
+
         return YogaPhysicalEdge.Top;
     }
 
@@ -63,7 +70,9 @@ internal static class FlexDirectionHelper
     public static YogaPhysicalEdge InlineEndEdge(FlexDirection flexDirection, FlexLayoutDirection direction)
     {
         if (IsRow(flexDirection))
+
             return direction == FlexLayoutDirection.RTL ? YogaPhysicalEdge.Left : YogaPhysicalEdge.Right;
+
         return YogaPhysicalEdge.Bottom;
     }
 

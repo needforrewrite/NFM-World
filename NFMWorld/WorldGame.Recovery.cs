@@ -28,6 +28,7 @@ public partial class WorldGame
         catch (Exception ex)
         {
             Logging.Warning($"Could not read startup status: {ex.Message}");
+
             return "";
         }
     }
@@ -83,16 +84,21 @@ public partial class WorldGame
         // there would detach the child from the debugger and leave it orphaned when the IDE
         // stops the parent. The crash hook is gated the same way.
 #if DEBUG
+
         return -1;
 #else
+
         if (!OperatingSystem.IsWindows()
             || Debugger.IsAttached
             || System.Environment.GetEnvironmentVariable(CrashDumpChildVariable) == "1")
+
             return -1;
 
         var executable = System.Environment.ProcessPath;
+
         if (executable is null
             || string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
+
             return -1;
 
         var start = new ProcessStartInfo(executable)
@@ -105,7 +111,8 @@ public partial class WorldGame
             WindowStyle = ProcessWindowStyle.Hidden,
             WorkingDirectory = System.Environment.CurrentDirectory
         };
-        foreach (var argument in args) start.ArgumentList.Add(argument);
+        foreach (var argument in args)
+            start.ArgumentList.Add(argument);
         start.Environment[CrashDumpChildVariable] = "1";
         start.Environment[CrashDumpParentVariable] = System.Environment.ProcessId.ToString(
             System.Globalization.CultureInfo.InvariantCulture
@@ -118,6 +125,7 @@ public partial class WorldGame
 
         // createdump writes into an existing folder or not at all - it does not create one,
         // and it fails silently when it cannot open the path.
+
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(CrashDumpPath)!);
@@ -130,7 +138,10 @@ public partial class WorldGame
         try
         {
             using var child = Process.Start(start);
-            if (child is null) return -1;
+
+            if (child is null)
+
+                return -1;
 
             // The parent has no window of its own to close, so the only way it ends other than
             // through the child exiting is being killed. Taking the child with it then keeps a
@@ -139,7 +150,8 @@ public partial class WorldGame
             {
                 try
                 {
-                    if (!child.HasExited) child.Kill(entireProcessTree: true);
+                    if (!child.HasExited)
+                        child.Kill(entireProcessTree: true);
                 }
                 catch
                 {
@@ -148,12 +160,14 @@ public partial class WorldGame
             };
 
             child.WaitForExit();
+
             return child.ExitCode;
         }
         catch (Exception ex)
         {
             // No dump, but the game itself still has to start.
             Logging.Warning($"Could not relaunch for crash dumps: {ex.Message}");
+
             return -1;
         }
 
@@ -176,6 +190,7 @@ public partial class WorldGame
             UseShellExecute = false,
             WorkingDirectory = System.Environment.CurrentDirectory
         };
+
         if (string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase))
         {
             // The host needs the assembly path, which Assembly.Location cannot give: it is empty
@@ -186,7 +201,8 @@ public partial class WorldGame
             start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, entry + ".dll"));
         }
 
-        foreach (var argument in args) start.ArgumentList.Add(argument);
+        foreach (var argument in args)
+            start.ArgumentList.Add(argument);
         using var restarted = Process.Start(start)
                               ?? throw new InvalidOperationException("Failed to restart the game.");
     }
@@ -195,6 +211,7 @@ public partial class WorldGame
     {
         Logging.Error($"Game startup failed: {error}");
         WriteStartupStatus(error.ToString());
+
         try
         {
             program?.Dispose();
@@ -211,9 +228,12 @@ public partial class WorldGame
     {
         const string configPath = "data/cfg/config.cfg";
         const string backupPath = "data/cfg/config.before-recovery.cfg";
+
         if (!SettingsMenu.Renderers.Contains(renderer))
+
             throw new ArgumentException("Unsupported renderer.", nameof(renderer));
         var original = TheVFS.VFS.FileExists(configPath) ? TheVFS.VFS.ReadAllText(configPath) : "";
+
         if (!TheVFS.VFS.FileExists(backupPath))
         {
             using var backup = new StreamWriter(TheVFS.VFS.OpenWrite(backupPath));
@@ -223,7 +243,9 @@ public partial class WorldGame
         var updated = GraphicsRecoveryConfig.SelectRenderer(original, renderer, reset);
         using (var writer = new StreamWriter(TheVFS.VFS.OpenWrite(configPath)))
             writer.Write(updated);
+
         if (TheVFS.VFS.ReadAllText(configPath) != updated)
+
             throw new IOException("The saved configuration could not be read back.");
         WriteStartupStatus("");
     }
@@ -231,9 +253,11 @@ public partial class WorldGame
     private static void RunGraphicsRecovery(string[] args)
     {
         var error = ReadStartupStatus();
+
         if (error.StartsWith(RecoveryUiPrefix, StringComparison.Ordinal))
         {
             RunNativeGraphicsRecovery(args, error[RecoveryUiPrefix.Length..]);
+
             return;
         }
 
@@ -242,6 +266,7 @@ public partial class WorldGame
         var resetConfirmation = false;
         WorldGame? recovery = null;
         WriteStartupStatus(RecoveryUiPrefix + error);
+
         try
         {
             _graphicsRecoveryMode = true;
@@ -255,6 +280,7 @@ public partial class WorldGame
             var clock = Stopwatch.StartNew();
             var previous = TimeSpan.Zero;
             var firstFrame = true;
+
             while (!recovery.Window.ShouldQuit)
             {
                 recovery.Window.PumpEvents();
@@ -264,19 +290,21 @@ public partial class WorldGame
                 previous = now;
                 ImGui.SetNextWindowPos(Vector2.Zero);
                 ImGui.SetNextWindowSize(new Vector2(recovery.Window.Width, recovery.Window.Height));
+
                 if (ImGui.Begin(
-                        "Graphics recovery",
-                        ImGuiWindowFlags.NoResize
-                        | ImGuiWindowFlags.NoMove
-                        | ImGuiWindowFlags.NoCollapse
-                        | ImGuiWindowFlags.NoSavedSettings
-                    ))
+                    "Graphics recovery",
+                    ImGuiWindowFlags.NoResize
+                    | ImGuiWindowFlags.NoMove
+                    | ImGuiWindowFlags.NoCollapse
+                    | ImGuiWindowFlags.NoSavedSettings
+                ))
                 {
                     ImGui.TextUnformatted("NFM World could not finish starting.");
                     ImGui.TextWrapped(
                         "Choose a renderer to retry, or reset settings to defaults. A copy of your original configuration is kept as config.before-recovery.cfg."
                     );
                     ImGui.Separator();
+
                     if (ImGui.BeginCombo("Renderer", SettingsMenu.Renderers[selected]))
                     {
                         for (var i = 0; i < SettingsMenu.Renderers.Length; i++)
@@ -288,17 +316,22 @@ public partial class WorldGame
                     if (resetConfirmation)
                     {
                         ImGui.TextWrapped("Reset all settings to defaults and retry with Auto?");
-                        if (ImGui.Button("Reset and retry")) Save("Auto", true);
+                        if (ImGui.Button("Reset and retry"))
+                            Save("Auto", true);
                         ImGui.SameLine();
-                        if (ImGui.Button("Cancel reset")) resetConfirmation = false;
+                        if (ImGui.Button("Cancel reset"))
+                            resetConfirmation = false;
                     }
                     else
                     {
-                        if (ImGui.Button("Save and retry")) Save(SettingsMenu.Renderers[selected], false);
+                        if (ImGui.Button("Save and retry"))
+                            Save(SettingsMenu.Renderers[selected], false);
                         ImGui.SameLine();
-                        if (ImGui.Button("Reset settings to defaults")) resetConfirmation = true;
+                        if (ImGui.Button("Reset settings to defaults"))
+                            resetConfirmation = true;
                         ImGui.SameLine();
-                        if (ImGui.Button("Exit")) recovery.Window.RequestClose();
+                        if (ImGui.Button("Exit"))
+                            recovery.Window.RequestClose();
                     }
 
                     ImGui.Separator();
@@ -318,9 +351,11 @@ public partial class WorldGame
                 recovery.ImguiRenderer.EndLayout(cb);
                 recovery._device.Submit(cb);
                 recovery._device.Swapchain.Present();
+
                 if (firstFrame)
                 {
-                    if (!retry) WriteStartupStatus(error);
+                    if (!retry)
+                        WriteStartupStatus(error);
                     firstFrame = false;
                 }
 
@@ -344,6 +379,7 @@ public partial class WorldGame
         catch (Exception ex)
         {
             RunNativeGraphicsRecovery(args, $"{error}\n\nRecovery renderer failed: {ex.Message}");
+
             return;
         }
         finally
@@ -364,12 +400,14 @@ public partial class WorldGame
             }
         }
 
-        if (retry) Relaunch(RecoveryRetryArguments(args));
+        if (retry)
+            Relaunch(RecoveryRetryArguments(args));
     }
 
     private static void RunNativeGraphicsRecovery(string[] args, string error)
     {
         var labels = SettingsMenu.Renderers.Concat(["Reset defaults", "Exit"]).ToArray();
+
         while (true)
         {
             var choice = NativeRecoveryChoice(
@@ -377,8 +415,12 @@ public partial class WorldGame
                 "Choose a renderer to retry.\n\n" + error[..Math.Min(error.Length, 1200)],
                 labels
             );
-            if (choice < 0 || choice >= labels.Length - 1) return;
+
+            if (choice < 0 || choice >= labels.Length - 1)
+
+                return;
             var reset = choice == SettingsMenu.Renderers.Length;
+
             if (reset
                 && NativeRecoveryChoice(
                     "Reset settings?",
@@ -386,11 +428,14 @@ public partial class WorldGame
                     ["Reset", "Cancel"]
                 )
                 != 0)
+
                 continue;
+
             try
             {
                 SaveRecoverySettings(reset ? "Auto" : SettingsMenu.Renderers[choice], reset);
                 Relaunch(RecoveryRetryArguments(args));
+
                 return;
             }
             catch (Exception ex)
@@ -408,6 +453,7 @@ public partial class WorldGame
         {
             var pointer = Marshal.StringToCoTaskMemUTF8(text);
             strings.Add(pointer);
+
             return (byte*)pointer;
         }
 
@@ -426,13 +472,18 @@ public partial class WorldGame
                 flags = SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR,
                 title = Utf8(title), message = Utf8(message), numbuttons = labels.Length, buttons = buttons
             };
-            if (SDL.SDL_ShowMessageBox(ref data, out var choice)) return choice;
+
+            if (SDL.SDL_ShowMessageBox(ref data, out var choice))
+
+                return choice;
             Console.Error.WriteLine($"{title}: {message}\n{SDL.SDL_GetError()}");
+
             return -1;
         }
         finally
         {
-            foreach (var pointer in strings) Marshal.FreeCoTaskMem(pointer);
+            foreach (var pointer in strings)
+                Marshal.FreeCoTaskMem(pointer);
         }
     }
 }

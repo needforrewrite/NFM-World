@@ -115,16 +115,19 @@ internal static class Protocol
         commandSize = 0;
 
         if (data.Length - offset < 4)
+
             return false;
 
         var type = (CommandType)(data[offset] & ProtocolConstants.CommandMask);
 
         if (type >= CommandType.Count)
+
             return false;
 
         var size = CommandSizes[(int)type];
 
         if (size == 0 || data.Length - offset < size)
+
             return false;
 
         commandSize = size;
@@ -138,6 +141,7 @@ internal static class Protocol
             case CommandType.Acknowledge:
                 command.ReceivedReliableSequenceNumber = BinaryPrimitives.ReadUInt16BigEndian(data[(offset + 4)..]);
                 command.ReceivedSentTime = BinaryPrimitives.ReadUInt16BigEndian(data[(offset + 6)..]);
+
                 break;
 
             case CommandType.Connect:
@@ -154,6 +158,7 @@ internal static class Protocol
                 command.PacketThrottleDeceleration = ReadU32(data, offset + 36);
                 command.ConnectId = ReadU32(data, offset + 40);
                 command.Data = ReadU32(data, offset + 44);
+
                 break;
 
             case CommandType.VerifyConnect:
@@ -169,24 +174,29 @@ internal static class Protocol
                 command.PacketThrottleAcceleration = ReadU32(data, offset + 32);
                 command.PacketThrottleDeceleration = ReadU32(data, offset + 36);
                 command.ConnectId = ReadU32(data, offset + 40);
+
                 break;
 
             case CommandType.Disconnect:
                 command.Data = ReadU32(data, offset + 4);
+
                 break;
 
             case CommandType.SendReliable:
                 command.DataLength = ReadU16(data, offset + 4);
+
                 break;
 
             case CommandType.SendUnreliable:
                 command.UnreliableSequenceNumber = ReadU16(data, offset + 4);
                 command.DataLength = ReadU16(data, offset + 6);
+
                 break;
 
             case CommandType.SendUnsequenced:
                 command.UnsequencedGroup = ReadU16(data, offset + 4);
                 command.DataLength = ReadU16(data, offset + 6);
+
                 break;
 
             case CommandType.SendFragment:
@@ -197,17 +207,20 @@ internal static class Protocol
                 command.FragmentNumber = ReadU32(data, offset + 12);
                 command.TotalLength = ReadU32(data, offset + 16);
                 command.FragmentOffset = ReadU32(data, offset + 20);
+
                 break;
 
             case CommandType.BandwidthLimit:
                 command.IncomingBandwidth = ReadU32(data, offset + 4);
                 command.OutgoingBandwidth = ReadU32(data, offset + 8);
+
                 break;
 
             case CommandType.ThrottleConfigure:
                 command.PacketThrottleInterval = ReadU32(data, offset + 4);
                 command.PacketThrottleAcceleration = ReadU32(data, offset + 8);
                 command.PacketThrottleDeceleration = ReadU32(data, offset + 12);
+
                 break;
         }
 
@@ -227,6 +240,7 @@ internal static class Protocol
             case CommandType.Acknowledge:
                 WriteU16(destination, 4, command.ReceivedReliableSequenceNumber);
                 WriteU16(destination, 6, command.ReceivedSentTime);
+
                 break;
 
             case CommandType.Connect:
@@ -243,6 +257,7 @@ internal static class Protocol
                 WriteU32(destination, 36, command.PacketThrottleDeceleration);
                 WriteU32(destination, 40, command.ConnectId);
                 WriteU32(destination, 44, command.Data);
+
                 break;
 
             case CommandType.VerifyConnect:
@@ -258,24 +273,29 @@ internal static class Protocol
                 WriteU32(destination, 32, command.PacketThrottleAcceleration);
                 WriteU32(destination, 36, command.PacketThrottleDeceleration);
                 WriteU32(destination, 40, command.ConnectId);
+
                 break;
 
             case CommandType.Disconnect:
                 WriteU32(destination, 4, command.Data);
+
                 break;
 
             case CommandType.SendReliable:
                 WriteU16(destination, 4, command.DataLength);
+
                 break;
 
             case CommandType.SendUnreliable:
                 WriteU16(destination, 4, command.UnreliableSequenceNumber);
                 WriteU16(destination, 6, command.DataLength);
+
                 break;
 
             case CommandType.SendUnsequenced:
                 WriteU16(destination, 4, command.UnsequencedGroup);
                 WriteU16(destination, 6, command.DataLength);
+
                 break;
 
             case CommandType.SendFragment:
@@ -286,17 +306,20 @@ internal static class Protocol
                 WriteU32(destination, 12, command.FragmentNumber);
                 WriteU32(destination, 16, command.TotalLength);
                 WriteU32(destination, 20, command.FragmentOffset);
+
                 break;
 
             case CommandType.BandwidthLimit:
                 WriteU32(destination, 4, command.IncomingBandwidth);
                 WriteU32(destination, 8, command.OutgoingBandwidth);
+
                 break;
 
             case CommandType.ThrottleConfigure:
                 WriteU32(destination, 4, command.PacketThrottleInterval);
                 WriteU32(destination, 8, command.PacketThrottleAcceleration);
                 WriteU32(destination, 12, command.PacketThrottleDeceleration);
+
                 break;
         }
 

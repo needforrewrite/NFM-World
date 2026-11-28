@@ -27,12 +27,14 @@ public static class SentrySdk
         lock (InitLock)
         {
             if (_initialized)
+
                 throw new InvalidOperationException("SentrySdk.Init has already been called");
 
             var options = new SentryOptions();
             configure(options);
 
             if (string.IsNullOrWhiteSpace(options.Dsn))
+
                 throw new ArgumentException("Sentry DSN must be configured");
 
             _options = options;
@@ -71,7 +73,9 @@ public static class SentrySdk
     {
         // Reporting is best effort. Library code runs in hosts that never configured Sentry (the
         // archive, the validator, tests), and a report must never be what takes them down.
+
         if (!_initialized)
+
             return default;
 
 
@@ -86,6 +90,7 @@ public static class SentrySdk
         };
 
         _uploader!.Enqueue(new EventItem(evt));
+
         return evt.EventId;
     }
 
@@ -96,6 +101,7 @@ public static class SentrySdk
     public static SentryEventId CaptureMessage(string message, SentryLevel level = SentryLevel.Info)
     {
         if (!_initialized)
+
             return default;
 
 
@@ -111,6 +117,7 @@ public static class SentrySdk
         };
 
         _uploader!.Enqueue(new EventItem(evt));
+
         return evt.EventId;
     }
 
@@ -121,12 +128,14 @@ public static class SentrySdk
     public static SentryEventId CaptureEvent(SentryEvent evt)
     {
         if (!_initialized)
+
             return default;
 
 
         evt.Release ??= _options!.Release;
         evt.Breadcrumbs ??= SnapshotBreadcrumbs();
         _uploader!.Enqueue(new EventItem(evt));
+
         return evt.EventId;
     }
 
@@ -138,7 +147,9 @@ public static class SentrySdk
     public static void AddBreadcrumb(Breadcrumb breadcrumb)
     {
         var buffer = _breadcrumbs;
+
         if (buffer is null || buffer.Length == 0)
+
             return;
 
         var index = Interlocked.Increment(ref _breadcrumbIndex) - 1;
@@ -158,16 +169,21 @@ public static class SentrySdk
     internal static IReadOnlyList<Breadcrumb>? SnapshotBreadcrumbs()
     {
         var buffer = _breadcrumbs;
+
         if (buffer is null || buffer.Length == 0)
+
             return null;
 
         var count = _breadcrumbCount;
+
         if (count == 0)
+
             return null;
 
         // Read the ring buffer in insertion order
         var startIndex = _breadcrumbIndex - count;
         var snapshot = new Breadcrumb[count];
+
         for (var i = 0; i < count; i++)
         {
             var srcIndex = ((startIndex + i) % buffer.Length + buffer.Length) % buffer.Length;
@@ -183,6 +199,7 @@ public static class SentrySdk
     public static void CaptureFeedback(SentryFeedback feedback)
     {
         if (!_initialized)
+
             return;
 
 
@@ -197,16 +214,21 @@ public static class SentrySdk
     {
         // Tracing is optional instrumentation: library code that parses content must keep working
         // in hosts that never configured Sentry (the archive, the validator, tests).
+
         if (!_initialized)
+
             return new SentryTransaction();
 
         // Sampling check
+
         if (_options!.TracesSampleRate <= 0)
+
             return new SentryTransaction();
 
         if (_options.TracesSampleRate < 1.0)
         {
             if (Random.Shared.NextDouble() >= _options.TracesSampleRate)
+
                 return new SentryTransaction();
         }
 
@@ -280,9 +302,11 @@ public static class SentrySdk
         public void Finish(SpanStatus status = SpanStatus.Ok)
         {
             if (_noop)
+
                 return;
 
             if (EndTimestamp.HasValue)
+
                 return; // Already finished
 
             EndTimestamp = DateTimeOffset.UtcNow;
@@ -313,7 +337,9 @@ public static class SentrySdk
     public static Task FlushAsync(TimeSpan timeout)
     {
         if (_uploader is null)
+
             return Task.CompletedTask;
+
         return _uploader.FlushAsync(timeout);
     }
 

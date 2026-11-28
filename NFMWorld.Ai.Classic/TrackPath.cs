@@ -77,9 +77,11 @@ internal sealed class TrackPath
     public int AdvanceNormal(int index, int steps)
     {
         if (Count == 0)
+
             return 0;
 
         var next = index;
+
         for (var i = 0; i < steps; i++)
         {
             next = Advance(next, 1);
@@ -96,6 +98,7 @@ internal sealed class TrackPath
         var nodes = stage.Nodes;
 
         var points = new List<int>(nodes.Count);
+
         for (var i = 0; i < nodes.Count; i++)
         {
             if (nodes[i].Kind != AiNodeKind.FixHoop)
@@ -106,6 +109,7 @@ internal sealed class TrackPath
         _y = new fix64[points.Count];
         _z = new fix64[points.Count];
         _typ = new int[points.Count];
+
         for (var i = 0; i < points.Count; i++)
         {
             var node = nodes[points[i]];
@@ -124,6 +128,7 @@ internal sealed class TrackPath
             _fixBlockEnd[i] = -1;
 
         var lastCheckpoint = -1;
+
         for (var i = 0; i < _typ.Length; i++)
         {
             if (_typ[i] > 0)
@@ -133,14 +138,17 @@ internal sealed class TrackPath
         for (var i = 0; i < _typ.Length; i++)
         {
             if (_typ[i] != FixRoadStart)
+
                 continue;
 
             var end = -1;
+
             for (var j = i + 1; j < _typ.Length; j++)
             {
                 if (_typ[j] is FixRoadStart or FixRoadEnd)
                 {
                     end = j;
+
                     break;
                 }
             }
@@ -148,6 +156,7 @@ internal sealed class TrackPath
             if (end < 0)
             {
                 if (i <= lastCheckpoint)
+
                     continue;
 
                 end = _typ.Length - 1;
@@ -181,6 +190,7 @@ internal sealed class TrackPath
             var z = new fix64[mainCount];
             var typ = new int[mainCount];
             var fixEnd = new int[mainCount];
+
             for (var i = 0; i < mainCount; i++)
             {
                 x[i] = _x[i];
@@ -198,6 +208,7 @@ internal sealed class TrackPath
         }
 
         var checkpoints = new List<int>();
+
         for (var i = 0; i < _typ.Length; i++)
         {
             if (_typ[i] > 0)
@@ -213,6 +224,7 @@ internal sealed class TrackPath
         FixRamp = new bool[hoops.Count];
         FixRoad = new bool[hoops.Count];
         FixIsSpecial = new bool[hoops.Count];
+
         for (var h = 0; h < hoops.Count; h++)
         {
             var hoop = hoops[h];
@@ -223,12 +235,14 @@ internal sealed class TrackPath
 
             // A hoop far from the tracked path belongs to a fix lane the trim removed (or a
             // practice area); do not pair it with an unrelated ramp on the main line.
+
             if (DistanceSquared10(hoop.Position.X, hoop.Position.Z, _x[nearest], _z[nearest]) > (fix64)640_000)
             {
                 FixApproach[h] = nearest;
                 FixAerial[h] = true;
                 FixRamp[h] = false;
                 FixRoad[h] = false;
+
                 continue;
             }
 
@@ -239,6 +253,7 @@ internal sealed class TrackPath
             // the window so a closing `)po` after the hoop is not mistaken for the start.
             var road = -1;
             var ramp = -1;
+
             for (var back = 0; back <= 12; back++)
             {
                 var index = Advance(nearest, -back);
@@ -253,12 +268,15 @@ internal sealed class TrackPath
                 // Prefer a ramp on the fix road itself over one on the main line.
                 var routeRamp = -1;
                 var length = ForwardDistance(road, nearest);
+
                 for (var step = 0; step <= length; step++)
                 {
                     var index = Advance(road, step);
+
                     if (_typ[index] == Ramp)
                     {
                         routeRamp = index;
+
                         break;
                     }
                 }
@@ -299,11 +317,13 @@ internal sealed class TrackPath
     public int CheckpointPath(int ordinal)
     {
         if (_checkpointPath.Length == 0)
+
             return 0;
         if (ordinal < 0 || ordinal >= _checkpointPath.Length)
             ordinal %= _checkpointPath.Length;
         if (ordinal < 0)
             ordinal += _checkpointPath.Length;
+
         return _checkpointPath[ordinal];
     }
 
@@ -314,10 +334,12 @@ internal sealed class TrackPath
     public int Advance(int index, int steps)
     {
         if (Count == 0)
+
             return 0;
         var next = (index + steps) % Count;
         if (next < 0)
             next += Count;
+
         return next;
     }
 
@@ -325,10 +347,12 @@ internal sealed class TrackPath
     public int ForwardDistance(int from, int to)
     {
         if (Count == 0)
+
             return 0;
         var distance = (to - from) % Count;
         if (distance < 0)
             distance += Count;
+
         return distance;
     }
 
@@ -345,17 +369,22 @@ internal sealed class TrackPath
     public int NearestInWindow(BackendCar car, int around, int window)
     {
         if (Count == 0)
+
             return 0;
         if (around < 0 || around >= Count)
+
             return NearestAnywhere(car);
 
         var best = around;
         var bestDistance = fix64.MaxValue;
+
         for (var offset = 0; offset <= window; offset++)
         {
             var index = Advance(around, offset);
             var distance = DistanceSquared10(car.Position.X, car.Position.Z, _x[index], _z[index]);
+
             if (distance >= bestDistance)
+
                 continue;
 
             bestDistance = distance;
@@ -369,14 +398,18 @@ internal sealed class TrackPath
     public int NearestAnywhere(BackendCar car)
     {
         if (Count == 0)
+
             return 0;
 
         var best = 0;
         var bestDistance = fix64.MaxValue;
+
         for (var i = 0; i < Count; i++)
         {
             var distance = DistanceSquared10(car.Position.X, car.Position.Z, _x[i], _z[i]);
+
             if (distance >= bestDistance)
+
                 continue;
 
             bestDistance = distance;
@@ -390,6 +423,7 @@ internal sealed class TrackPath
     {
         var dx = (x1 - x2) / (fix64)10;
         var dz = (z1 - z2) / (fix64)10;
+
         return (dx * dx) + (dz * dz);
     }
 
@@ -397,14 +431,18 @@ internal sealed class TrackPath
     private int NearestPoint(fix64 x, fix64 z)
     {
         if (Count == 0)
+
             return 0;
 
         var nearest = 0;
         var closest = fix64.MaxValue;
+
         for (var i = 0; i < Count; i++)
         {
             var d = DistanceSquared10(x, z, _x[i], _z[i]);
+
             if (d >= closest)
+
                 continue;
 
             closest = d;

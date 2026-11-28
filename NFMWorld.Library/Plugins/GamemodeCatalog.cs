@@ -39,7 +39,9 @@ public static class GamemodeCatalog
             PluginPaths.For("gamemodes", gamemodeId, "gamemode.dll"),
             PluginPaths.PackageFor("gamemodes", gamemodeId, "gamemode.radpack")
         );
+
         if (plugin is null)
+
             return [];
 
         try
@@ -67,7 +69,8 @@ public static class GamemodeCatalog
                 property.VisibleWhenProperty,
                 property.VisibleWhenValue,
                 property.InvertVisibility
-            ))];
+            )
+            )];
 }
 
 /// <summary>One value a gamemode's config field offers.</summary>
@@ -89,8 +92,11 @@ public sealed record GamemodeConfigField(
 {
     public bool IsVisible(Func<string, string?> getValue)
     {
-        if (VisibleWhenProperty is not { } property) return true;
+        if (VisibleWhenProperty is not { } property)
+
+            return true;
         var matches = getValue(property) is { } value && value == VisibleWhenValue;
+
         return matches != InvertVisibility;
     }
 }

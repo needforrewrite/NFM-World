@@ -14,6 +14,7 @@ public class RadpackContentTests
     {
         var writer = new ArrayBufferWriter<byte>();
         RadpackSerializer.Serialize(asset, writer);
+
         return writer.WrittenSpan.ToArray();
     }
 

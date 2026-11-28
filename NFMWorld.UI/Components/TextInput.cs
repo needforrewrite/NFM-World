@@ -133,7 +133,9 @@ public partial class TextInput : Component
     private string DisplayText()
     {
         if (string.IsNullOrEmpty(Text))
+
             return Placeholder ?? "";
+
         return MaskCharacter is { } mask ? new string(mask, Text.Length) : Text;
     }
 
@@ -260,6 +262,7 @@ public partial class TextInput : Component
             TextChanged?.Invoke(Text ?? "");
 
         // Draw placeholder when empty and not focused
+
         if (string.IsNullOrEmpty(Text) && !string.IsNullOrEmpty(Placeholder))
         {
             _text.TextStyles = _text.TextStyles with { ForegroundColor = TextInputStyles.Resolved.PlaceholderColor };
@@ -278,10 +281,12 @@ public partial class TextInput : Component
     private (int start, int end)? GetSelectionRange()
     {
         if (_selectionAnchor is not { } anchor || anchor == _cursorIndex)
+
             return null;
 
         var start = Math.Min(anchor, _cursorIndex);
         var end = Math.Max(anchor, _cursorIndex);
+
         return (start, end);
     }
 
@@ -298,13 +303,16 @@ public partial class TextInput : Component
     private bool DeleteSelection()
     {
         var sel = GetSelectionRange();
+
         if (sel is not { } range)
+
             return false;
 
         var t = CurrentText;
         SetTextFromUserInput(t[..range.start] + t[range.end..]);
         _cursorIndex = range.start;
         ClearSelection();
+
         return true;
     }
 
@@ -324,7 +332,9 @@ public partial class TextInput : Component
     private float GetCursorXForCharIndex(int charIndex)
     {
         var laidOut = _text.LaidOutComplexText;
+
         if (laidOut is not { } container || container.Elements.Count == 0)
+
             return 0;
 
         var targetIdx = Math.Clamp(charIndex, 0, CurrentText.Length);
@@ -333,28 +343,35 @@ public partial class TextInput : Component
         foreach (var elem in container.Elements)
         {
             var elemLen = elem.Text.Length;
+
             if (accumIdx + elemLen <= targetIdx)
             {
                 accumIdx += elemLen;
+
                 continue;
             }
 
             // Cursor is within this element
             var charsBefore = targetIdx - accumIdx;
+
             if (charsBefore <= 0)
+
                 return elem.Position.X;
 
             var fontMetrics = G.GetFontMetrics(elem.Font);
             var measured = fontMetrics.MeasureText(elem.Text.AsSpan(..charsBefore));
+
             return elem.Position.X + measured.X;
         }
 
         // Cursor is at the very end — after the last element
+
         if (container.Elements.Count > 0)
         {
             var last = container.Elements[^1];
             var fontMetrics = G.GetFontMetrics(last.Font);
             var measured = fontMetrics.MeasureText(last.Text);
+
             return last.Position.X + measured.X;
         }
 
@@ -367,7 +384,9 @@ public partial class TextInput : Component
     private int GetCharIndexForCursorX(float cursorX)
     {
         var laidOut = _text.LaidOutComplexText;
+
         if (laidOut is not { } container || container.Elements.Count == 0)
+
             return 0;
 
         var accumIdx = 0;
@@ -379,6 +398,7 @@ public partial class TextInput : Component
             var elemWidth = fontMetrics.MeasureText(elem.Text).X;
 
             if (cursorX < elemStartX)
+
                 return accumIdx;
 
             if (cursorX >= elemStartX && cursorX <= elemStartX + elemWidth)
@@ -387,10 +407,12 @@ public partial class TextInput : Component
                 var relX = cursorX - elemStartX;
                 var bestIdx = 0;
                 var bestDist = float.MaxValue;
+
                 for (var i = 0; i <= elem.Text.Length; i++)
                 {
                     var charX = fontMetrics.MeasureText(elem.Text.AsSpan(..i)).X;
                     var dist = Math.Abs(charX - relX);
+
                     if (dist < bestDist)
                     {
                         bestDist = dist;
@@ -405,6 +427,7 @@ public partial class TextInput : Component
         }
 
         // Clicked past all elements — cursor at end
+
         return accumIdx;
     }
 
@@ -415,21 +438,27 @@ public partial class TextInput : Component
         var c = @event.KeyChar;
 
         // Backspace
+
         if (c == '\b')
         {
             HandleBackspace();
+
             return;
         }
 
         // Enter / Return — submit
+
         if (c is '\r' or '\n')
         {
             HandleSubmit();
+
             return;
         }
 
         // Ignore other control characters
+
         if (char.IsControl(c))
+
             return;
 
         // Replace selection or insert at cursor
@@ -454,39 +483,51 @@ public partial class TextInput : Component
         {
             case Key.A when ctrl:
                 SelectAll();
+
                 break;
             case Key.C when ctrl:
                 CopySelection();
+
                 break;
             case Key.X when ctrl:
                 CutSelection();
+
                 break;
             case Key.V when ctrl:
                 PasteClipboard();
+
                 break;
             case Key.Escape:
                 CloseContextMenu();
+
                 break;
             case Key.Left:
                 HandleArrow(-1, shift, ctrl);
+
                 break;
             case Key.Right:
                 HandleArrow(+1, shift, ctrl);
+
                 break;
             case Key.Home:
                 HandleHome(shift);
+
                 break;
             case Key.End:
                 HandleEnd(shift);
+
                 break;
             case Key.Back:
                 HandleBackspace();
+
                 break;
             case Key.Delete:
                 HandleDelete();
+
                 break;
             case Key.Enter:
                 HandleSubmit();
+
                 break;
         }
     }
@@ -494,6 +535,7 @@ public partial class TextInput : Component
     private void HandleBackspace()
     {
         if (DeleteSelection())
+
             return;
 
         if (_cursorIndex > 0)
@@ -528,6 +570,7 @@ public partial class TextInput : Component
     private void PasteClipboard()
     {
         if (ResolveGetClipboard?.Invoke() is not { } pasted)
+
             return;
 
         // A single-line field has no line breaks; strip whatever the source carried.
@@ -556,6 +599,7 @@ public partial class TextInput : Component
         {
             // Word-skip: move to next/previous word boundary
             var target = _cursorIndex;
+
             if (direction < 0)
             {
                 while (target > 0 && char.IsWhiteSpace(CurrentText[target - 1]))
@@ -592,10 +636,12 @@ public partial class TextInput : Component
     private void HandleDelete()
     {
         if (DeleteSelection())
+
             return;
 
         var t = CurrentText;
         var idx = Math.Min(_cursorIndex, t.Length);
+
         if (idx < t.Length)
         {
             SetTextFromUserInput(t[..idx] + t[(idx + 1)..]);
@@ -665,10 +711,12 @@ public partial class TextInput : Component
                 MoveCursorTo(GetCharIndexForCursorX(@event.RelativePosition.X - LayoutPaddingLeft + _horizontalOffset), false);
 
             OpenContextMenu(@event.Position);
+
             return;
         }
 
         if (@event.Button != MouseButton.Primary)
+
             return;
 
         CloseContextMenu();
@@ -710,6 +758,7 @@ public partial class TextInput : Component
     protected override void OnMouseDragged(MouseDragEvent @event)
     {
         if (!_isDragging)
+
             return;
 
         _clickCount = 1; // a drag is not part of a multi-click sequence
@@ -728,6 +777,7 @@ public partial class TextInput : Component
     protected override void GameTick()
     {
         _cursorBlinkTimer += FrameDeltaMs;
+
         if (_cursorBlinkTimer >= CursorBlinkPeriodMs)
         {
             _cursorBlinkTimer -= CursorBlinkPeriodMs;
@@ -736,6 +786,7 @@ public partial class TextInput : Component
 
         // The menu follows focus: it opens on a secondary press (which also focuses the
         // field), so a click anywhere that moves focus away closes it.
+
         if (_contextMenu.IsOpen)
         {
             if (!IsFocused)
@@ -752,10 +803,15 @@ public partial class TextInput : Component
         var width = Math.Max(0, LayoutContentSize.X - Math.Max(1, G.Scale));
         var end = GetCursorXForCharIndex(CurrentText.Length);
         _horizontalOffset = Math.Clamp(_horizontalOffset, 0, Math.Max(0, end - width));
-        if (!IsFocused) return;
+
+        if (!IsFocused)
+
+            return;
         var caret = GetCursorXForCharIndex(_cursorIndex);
-        if (caret < _horizontalOffset) _horizontalOffset = caret;
-        else if (caret > _horizontalOffset + width) _horizontalOffset = caret - width;
+        if (caret < _horizontalOffset)
+            _horizontalOffset = caret;
+        else if (caret > _horizontalOffset + width)
+            _horizontalOffset = caret - width;
     }
 
     private void ClipInputContent()
@@ -796,6 +852,7 @@ public partial class TextInput : Component
         protected override void RenderContent(Vector2 position, Vector2 size)
         {
             if (!_owner.IsFocused)
+
                 return;
 
             G.SaveState();
@@ -810,6 +867,7 @@ public partial class TextInput : Component
 
             // ── Draw selection highlight ────────────────────────
             var sel = _owner.GetSelectionRange();
+
             if (sel is { } range)
             {
                 var selStartX = _owner.GetCursorXForCharIndex(range.start);
@@ -825,6 +883,7 @@ public partial class TextInput : Component
             }
 
             // ── Draw cursor ─────────────────────────────────────
+
             if (_owner._cursorVisible)
             {
                 var cursorX = _owner.GetCursorXForCharIndex(_owner._cursorIndex);

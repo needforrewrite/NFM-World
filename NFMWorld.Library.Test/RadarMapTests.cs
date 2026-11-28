@@ -27,6 +27,7 @@ public class RadarMapTests
     private static Vector2 Blip(float worldX, float worldZ, float clientX, float clientZ, float heading)
     {
         var (sin, cos) = Heading(heading);
+
         return RadarMap.ToRadar(
             worldX,
             worldZ,
@@ -62,6 +63,7 @@ public class RadarMapTests
         // v runs down the image, which its bake lays along -Z.
         var image = RadarMap.PixelToScreen(placement, u, v);
         var blip = Blip(MinX + u * UnitsPerPixel, MaxZ - v * UnitsPerPixel, clientX, clientZ, heading);
+
         return (image, blip);
     }
 
@@ -120,8 +122,11 @@ public class RadarMapTests
     public void Place_AnySampleOnTheImage_MatchesItsBlip()
     {
         // The general property, over a spread of points and headings.
+
         foreach (var heading in new[] { 0f, 0.3f, MathF.PI / 2, 2.1f, MathF.PI, -1.4f })
+
         foreach (var (clientX, clientZ) in new[] { (0f, 0f), (MinX, MaxZ), (4_321f, -987f) })
+
         foreach (var (u, v) in new[] { (0f, 0f), (ImageSize, 0f), (0f, ImageSize), (ImageSize, ImageSize), (137f, 411f) })
         {
             var (image, blip) = Sample(u, v, clientX, clientZ, heading);

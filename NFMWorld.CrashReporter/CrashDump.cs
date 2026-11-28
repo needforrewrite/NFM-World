@@ -40,12 +40,15 @@ public static class CrashDump
     public static void Hook()
     {
         if (_hooked || !OperatingSystem.IsWindows())
+
             return;
 
         // The game relaunches itself with this set, which makes the runtime's own createdump
         // write the dump - including for the fail-fasts this filter cannot see. Writing one here
         // as well would just duplicate it.
+
         if (System.Environment.GetEnvironmentVariable("DOTNET_DbgEnableMiniDump") == "1")
+
             return;
 
         _hooked = true;
@@ -54,6 +57,7 @@ public static class CrashDump
             // The runtime's own filter and every registered handler get first refusal; this
             // only writes when nothing has handled it and the process is about to die.
             Write("crash");
+
             return ExceptionContinuingSearch;
         };
         SetUnhandledExceptionFilter(_filter);
@@ -105,12 +109,13 @@ public static class CrashDump
         }
     }
 
-    private delegate int TopLevelExceptionFilter(
-        IntPtr exceptionPointers,
-        IntPtr exceptionInfo,
-        IntPtr context,
-        IntPtr dispatcher
-    );
+    private delegate int
+        TopLevelExceptionFilter(
+            IntPtr exceptionPointers,
+            IntPtr exceptionInfo,
+            IntPtr context,
+            IntPtr dispatcher
+        );
 
     [DllImport("kernel32.dll")]
     private static extern IntPtr SetUnhandledExceptionFilter(TopLevelExceptionFilter filter);

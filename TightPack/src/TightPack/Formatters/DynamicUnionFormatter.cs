@@ -23,9 +23,11 @@ public sealed class DynamicUnionFormatter<T> : TightPackFormatter<T>
 
         _typeToTag = new Dictionary<Type, ushort>(unions.Length);
         _tagToType = new Dictionary<ushort, Type>(unions.Length);
+
         foreach ((ushort tag, Type type) in unions)
         {
             ArgumentNullException.ThrowIfNull(type);
+
             if (!_typeToTag.TryAdd(type, tag))
             {
                 TightPackSerializationException.ThrowMessage($"Type {type.FullName} is listed twice in the union.");
@@ -43,13 +45,16 @@ public sealed class DynamicUnionFormatter<T> : TightPackFormatter<T>
         if (value is null)
         {
             writer.WriteNullUnionHeader();
+
             return;
         }
 
         Type actual = value.GetType();
+
         if (!_typeToTag.TryGetValue(actual, out ushort tag))
         {
             TightPackSerializationException.ThrowUnionValueNotMapped(actual, typeof(T));
+
             return;
         }
 
@@ -62,12 +67,14 @@ public sealed class DynamicUnionFormatter<T> : TightPackFormatter<T>
         if (!reader.TryReadUnionHeader(out ushort tag))
         {
             value = null;
+
             return;
         }
 
         if (!_tagToType.TryGetValue(tag, out Type? actual))
         {
             TightPackSerializationException.ThrowInvalidUnionTag(tag, typeof(T));
+
             return;
         }
 

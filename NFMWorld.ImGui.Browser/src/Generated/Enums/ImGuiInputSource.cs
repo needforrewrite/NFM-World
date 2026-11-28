@@ -13,35 +13,35 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiInputSource : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiInputSource : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Note: may be Mouse or TouchScreen or Pen. See io.MouseSource to distinguish them.<br/>
-		/// </summary>
-		Mouse = unchecked(1),
+        /// <summary>
+        /// Note: may be Mouse or TouchScreen or Pen. See io.MouseSource to distinguish them.<br/>
+        /// </summary>
+        Mouse = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Keyboard = unchecked(2),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Keyboard = unchecked(2),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Gamepad = unchecked(3),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Gamepad = unchecked(3),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Count = unchecked(4),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Count = unchecked(4),
+    }
 }

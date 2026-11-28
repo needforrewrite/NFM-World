@@ -49,6 +49,7 @@ public class MouseCursorStateTests
         var state = new MouseCursorState();
         var saved = new Vector2(50, 60);
         state.Update(false, true, saved, Viewport);
+
         foreach (var menuVisible in new[] { false, true })
         {
             var inactive = state.Update(menuVisible, false, new Vector2(-500, 3000), Viewport);
@@ -87,6 +88,7 @@ public class MouseCursorStateTests
     public void LockPreferenceOff_KeepsGameplayPointerVisibleWithoutWarping()
     {
         var state = new MouseCursorState();
+
         foreach (var chatOpen in new[] { false, true, false })
         {
             var result = state.Update(chatOpen, true, new Vector2(300, 200), Viewport, lockDuringGameplay: false);

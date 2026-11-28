@@ -20,6 +20,7 @@ public class SoundSpatializationTests
     public void DistanceGainIsBoundedAndMonotonicallyDecreasing()
     {
         var previous = 1f;
+
         for (var distance = 0; distance <= SoundSpatialization.MaximumDistance * 2; distance++)
         {
             var gain = SoundSpatialization.DistanceGain(distance);

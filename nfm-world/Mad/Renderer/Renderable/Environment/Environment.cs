@@ -86,6 +86,7 @@ public class Environment
 
             var i39 = 0;
             var i40 = 0;
+
             for (var i41 = 0; i41 < nrw * ncl; i41++)
             {
                 cgpx[i41] = sgpx + i39 * 1200 + (int)(random.NextDouble() * 1000.0 - 500.0);
@@ -141,15 +142,18 @@ public class Environment
                 ogpz[i43, 6] = 0;
                 ogpx[i43, 7] = -(int)((100.0 + random.NextDouble() * 760.0) * 0.7071 * f);
                 ogpz[i43, 7] = -ogpx[i43, 7];
+
                 for (var i44 = 0; i44 < 8; i44++)
                 {
                     var i45 = i44 - 1;
+
                     if (i45 == -1)
                     {
                         i45 = 7;
                     }
 
                     var i46 = i44 + 1;
+
                     if (i46 == 8)
                     {
                         i46 = 0;
@@ -161,6 +165,7 @@ public class Environment
                 }
 
                 pcv[i43] = (float)(0.97 + random.NextDouble() * 0.03);
+
                 if (pcv[i43] > 1.0F)
                 {
                     pcv[i43] = 1.0F;
@@ -182,6 +187,7 @@ public class Environment
 
         // fan triangulation
         var tris = new uint[18];
+
         for (uint j = 1; j < 7; j++)
         {
             tris[(j - 1) * 3] = 0;
@@ -345,12 +351,14 @@ public class Environment
             for (int i_93 = 0; i_93 < 12; i_93++)
             {
                 int i_94 = i_93 - 1;
+
                 if (i_94 == -1)
                 {
                     i_94 = 11;
                 }
 
                 int i_95 = i_93 + 1;
+
                 if (i_95 == 12)
                 {
                     i_95 = 0;
@@ -378,12 +386,14 @@ public class Environment
             for (int i_97 = 0; i_97 < 12; i_97++)
             {
                 int i_98 = i_97 - 1;
+
                 if (i_98 == -1)
                 {
                     i_98 = 11;
                 }
 
                 int i_99 = i_97 + 1;
+
                 if (i_99 == 12)
                 {
                     i_99 = 0;
@@ -394,6 +404,7 @@ public class Environment
                 int i_100 = (int)MathF.Sqrt(
                     clax[i_91, 2, i_97] * clax[i_91, 2, i_97] + claz[i_91, 2, i_97] * claz[i_91, 2, i_97]
                 );
+
                 if (i_100 > cmx[i_91])
                 {
                     cmx[i_91] = i_100;
@@ -409,6 +420,7 @@ public class Environment
                 {
                     f_92 = clds[i_103] * 1.05F - clds[i_103];
                     clc[i_91, 0, i_101, i_103] = (int)(clds[i_103] + f_92 * d);
+
                     if (clc[i_91, 0, i_101, i_103] > 255)
                     {
                         clc[i_91, 0, i_101, i_103] = 255;
@@ -420,6 +432,7 @@ public class Environment
                     }
 
                     clc[i_91, 1, i_101, i_103] = (int)(clds[i_103] * 1.05F + f_92 * d_102);
+
                     if (clc[i_91, 1, i_101, i_103] > 255)
                     {
                         clc[i_91, 1, i_101, i_103] = 255;
@@ -467,10 +480,12 @@ public class Environment
                 );
 
                 points.Clear();
+
                 for (int k = 0; k < 6; k++)
                 {
                     int l = 0;
                     int m = 1;
+
                     if (k == 0)
                     {
                         l = j;
@@ -479,6 +494,7 @@ public class Environment
                     if (k == 1)
                     {
                         l = j + 1;
+
                         if (l >= 12)
                         {
                             l -= 12;
@@ -488,6 +504,7 @@ public class Environment
                     if (k == 2)
                     {
                         l = j + 2;
+
                         if (l >= 12)
                         {
                             l -= 12;
@@ -497,6 +514,7 @@ public class Environment
                     if (k == 3)
                     {
                         l = j + 2;
+
                         if (l >= 12)
                         {
                             l -= 12;
@@ -508,6 +526,7 @@ public class Environment
                     if (k == 4)
                     {
                         l = j + 1;
+
                         if (l >= 12)
                         {
                             l -= 12;
@@ -537,10 +556,12 @@ public class Environment
                 );
 
                 points.Clear();
+
                 for (int k = 0; k < 6; k++)
                 {
                     int lx = 0;
                     int mx = 0;
+
                     if (k == 0)
                     {
                         lx = j;
@@ -549,6 +570,7 @@ public class Environment
                     if (k == 1)
                     {
                         lx = j + 1;
+
                         if (lx >= 12)
                         {
                             lx -= 12;
@@ -558,6 +580,7 @@ public class Environment
                     if (k == 2)
                     {
                         lx = j + 2;
+
                         if (lx >= 12)
                         {
                             lx -= 12;
@@ -567,6 +590,7 @@ public class Environment
                     if (k == 3)
                     {
                         lx = j + 2;
+
                         if (lx >= 12)
                         {
                             lx -= 12;
@@ -578,6 +602,7 @@ public class Environment
                     if (k == 4)
                     {
                         lx = j + 1;
+
                         if (lx >= 12)
                         {
                             lx -= 12;
@@ -646,6 +671,7 @@ public class Environment
         var mtc = new int[nmt][][];
         var ais = new int[nmt];
         var is173 = new int[nmt];
+
         for (var i174 = 0; i174 < nmt; i174++)
         {
             int i175;
@@ -653,6 +679,7 @@ public class Environment
             float f176;
             ais[i174] = (int)(10000.0 + random.NextDouble() * 10000.0);
             var i177 = (int)(random.NextDouble() * 360.0);
+
             if (random.NextDouble() > random.NextDouble())
             {
                 f = (float)(0.2 + random.NextDouble() * 0.35);
@@ -672,6 +699,7 @@ public class Environment
             mty[i174] = new int[nmv[i174] * 2];
             mtz[i174] = new int[nmv[i174] * 2];
             mtc[i174] = ArrayExt.New<int>(nmv[i174], 3);
+
             for (var i178 = 0; i178 < nmv[i174]; i178++)
             {
                 mtx[i174][i178] =
@@ -681,6 +709,7 @@ public class Environment
                 mtx[i174][nmv[i174]] = (int)(mtx[i174][0] - (100.0 + random.NextDouble() * 600.0) * f);
                 mtx[i174][nmv[i174] * 2 - 1] =
                     (int)(mtx[i174][nmv[i174] - 1] + (100.0 + random.NextDouble() * 600.0) * f);
+
                 if (i178 == 0 || i178 == nmv[i174] - 1)
                 {
                     mty[i174][i178] = (int)((-400.0 - 1200.0 * random.NextDouble()) * f176 + settings.Ground);
@@ -701,6 +730,7 @@ public class Environment
                 mtz[i174][i178 + nmv[i174]] = i171 + i172 + ais[i174];
                 var f179 = (float)(0.5 + random.NextDouble() * 0.5);
                 mtc[i174][i178][0] = (int)(170.0F * f179 + 170.0F * f179 * (settings.Snap[0] / 100.0F));
+
                 if (mtc[i174][i178][0] > 255)
                 {
                     mtc[i174][i178][0] = 255;
@@ -712,6 +742,7 @@ public class Environment
                 }
 
                 mtc[i174][i178][1] = (int)(i175 * f179 + 85.0F * f179 * (settings.Snap[1] / 100.0F));
+
                 if (mtc[i174][i178][1] > 255)
                 {
                     mtc[i174][i178][1] = 255;
@@ -788,6 +819,7 @@ public class Environment
                 for (int k = 0; k < 4; k++)
                 {
                     int l = k + j;
+
                     if (k == 2)
                     {
                         l = j + nmv[mrd[i]] + 1;

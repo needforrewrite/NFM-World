@@ -36,6 +36,7 @@ public static class SdlFileDialog
     )
     {
         if (_pending is not null)
+
             return;
 
         var state = new PendingDialog { OnFiles = onFiles, FilterMemory = new IntPtr[filters.Count * 2] };
@@ -61,6 +62,7 @@ public static class SdlFileDialog
         _mainCallback ??= OnMainThread;
 
         SDL.SDL_ClearError();
+
         unsafe
         {
             SDL.SDL_ShowOpenFileDialog(
@@ -77,6 +79,7 @@ public static class SdlFileDialog
         if (SDL.SDL_GetError() is { Length: > 0 } error)
         {
             Cleanup(state);
+
             throw new InvalidOperationException(error);
         }
     }
@@ -84,6 +87,7 @@ public static class SdlFileDialog
     private static void OnDialogClosed(IntPtr userdata, IntPtr fileList, int filter)
     {
         var files = new List<string>();
+
         if (fileList != IntPtr.Zero)
         {
             for (var entry = Marshal.ReadIntPtr(fileList); entry != IntPtr.Zero; entry = Marshal.ReadIntPtr(
@@ -96,6 +100,7 @@ public static class SdlFileDialog
         }
 
         if (GCHandle.FromIntPtr(userdata).Target is not PendingDialog state)
+
             return;
 
         state.Files = [.. files];
@@ -107,6 +112,7 @@ public static class SdlFileDialog
     private static void OnMainThread(IntPtr userdata)
     {
         if (GCHandle.FromIntPtr(userdata).Target is not PendingDialog state)
+
             return;
 
         if (ReferenceEquals(_pending, state))

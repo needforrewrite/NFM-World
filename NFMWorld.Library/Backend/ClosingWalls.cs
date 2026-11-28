@@ -64,8 +64,11 @@ public sealed class ClosingWalls
 
         foreach (var piece in pieces)
         {
-            if (piece is not StageObject { OriginalPlacement.IsWall: true } wall) continue;
+            if (piece is not StageObject { OriginalPlacement.IsWall: true } wall)
+
+                continue;
             var placement = wall.OriginalPlacement;
+
             switch (placement.WallSide ?? GetLegacyWallSide(placement))
             {
                 case WallDirection.Right: _right.Add(wall); break;
@@ -76,6 +79,7 @@ public sealed class ClosingWalls
         }
 
         if (_rightDef is null || _leftDef is null || _topDef is null || _bottomDef is null)
+
             return;
 
         _startRight = _rightEdge = _rightDef.Position;
@@ -88,6 +92,7 @@ public sealed class ClosingWalls
     private WallDirection? GetLegacyWallSide(PiecePlacement piece)
     {
         // Older radpacks store the generated wall transforms but omit WallSide.
+
         return (double)piece.Rotation.Xz.Degrees switch
         {
             0 when _rightDef is { } right && piece.Position.X == right.Position => WallDirection.Right,
@@ -106,7 +111,9 @@ public sealed class ClosingWalls
     [PluginVisible]
     public void Begin(double minutesToGo, StageLoader loader)
     {
-        if (!Enabled) return;
+        if (!Enabled)
+
+            return;
 
         _minutesToGo = Math.Max(0, minutesToGo);
         Closing = false;
@@ -131,7 +138,9 @@ public sealed class ClosingWalls
     [PluginVisible]
     public void Update(double elapsedMinutes)
     {
-        if (!Enabled) return;
+        if (!Enabled)
+
+            return;
 
         var closing = elapsedMinutes >= _minutesToGo;
         Closing = closing;
@@ -149,7 +158,10 @@ public sealed class ClosingWalls
     [PluginVisible]
     public bool IsInBounds(fix64 x, fix64 z)
     {
-        if (!Enabled || !Closing) return true;
+        if (!Enabled || !Closing)
+
+            return true;
+
         return x >= Left && x < Right && z >= Bottom && z < Top;
     }
 
@@ -171,15 +183,21 @@ public sealed class ClosingWalls
         var leftChanged = left != (double)Left;
         var topChanged = top != (double)Top;
         var bottomChanged = bottom != (double)Bottom;
-        if (!closing && !rightChanged && !leftChanged && !topChanged && !bottomChanged) return;
+
+        if (!closing && !rightChanged && !leftChanged && !topChanged && !bottomChanged)
+
+            return;
 
         // Phy moves the wall pieces themselves; the renderer re-reads StageObject positions each tick.
         if (rightChanged)
-            foreach (var piece in _right) piece.Position = new f64Vector3((fix64)right, piece.Position.Y, piece.Position.Z);
+            foreach (var piece in _right)
+                piece.Position = new f64Vector3((fix64)right, piece.Position.Y, piece.Position.Z);
         if (leftChanged)
-            foreach (var piece in _left) piece.Position = new f64Vector3((fix64)left, piece.Position.Y, piece.Position.Z);
+            foreach (var piece in _left)
+                piece.Position = new f64Vector3((fix64)left, piece.Position.Y, piece.Position.Z);
         if (topChanged)
-            foreach (var piece in _top) piece.Position = new f64Vector3(piece.Position.X, piece.Position.Y, (fix64)top);
+            foreach (var piece in _top)
+                piece.Position = new f64Vector3(piece.Position.X, piece.Position.Y, (fix64)top);
         if (bottomChanged)
             foreach (var piece in _bottom)
                 piece.Position = new f64Vector3(piece.Position.X, piece.Position.Y, (fix64)bottom);
@@ -197,6 +215,7 @@ public sealed class ClosingWalls
         var hash = 2166136261u;
         foreach (var c in name)
             hash = (hash ^ c) * 16777619u;
+
         return hash / (double)uint.MaxValue;
     }
 
@@ -206,7 +225,9 @@ public sealed class ClosingWalls
     /// </summary>
     internal void AppendCollidables(List<CollisionShapeRef> target, int indexBase)
     {
-        if (!Enabled || !Closing) return;
+        if (!Enabled || !Closing)
+
+            return;
 
         Append(_rightDef, indexBase, target);
         Append(_leftDef, indexBase + 1, target);
@@ -216,7 +237,9 @@ public sealed class ClosingWalls
 
     private void Append(StageWall? def, int index, List<CollisionShapeRef> target)
     {
-        if (def is null) return;
+        if (def is null)
+
+            return;
 
         var length = def.Count * 2400.0;
         Rad3dBoxDef box;
@@ -234,6 +257,7 @@ public sealed class ClosingWalls
                     NotWall: false,
                     Color: new Color3()
                 );
+
                 break;
             case WallDirection.Left:
                 box = new Rad3dBoxDef(
@@ -246,6 +270,7 @@ public sealed class ClosingWalls
                     NotWall: false,
                     Color: new Color3()
                 );
+
                 break;
             case WallDirection.Top:
                 box = new Rad3dBoxDef(
@@ -258,6 +283,7 @@ public sealed class ClosingWalls
                     NotWall: false,
                     Color: new Color3()
                 );
+
                 break;
             default:
                 box = new Rad3dBoxDef(
@@ -270,6 +296,7 @@ public sealed class ClosingWalls
                     NotWall: false,
                     Color: new Color3()
                 );
+
                 break;
         }
 

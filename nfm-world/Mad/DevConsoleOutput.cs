@@ -33,6 +33,7 @@ internal sealed class DevConsoleOutput
         var available = ImGui.GetContentRegionAvail();
         var width = Math.Max(1f, available.X);
         var fontSize = ImGui.GetFontSize();
+
         if (RefreshLogs() || width != _wrapWidth || fontSize != _fontSize)
         {
             _wrapWidth = width;
@@ -47,6 +48,7 @@ internal sealed class DevConsoleOutput
         var clipTop = ImGui.GetClipRectMin(drawList).Y;
         var clipBottom = ImGui.GetClipRectMax(drawList).Y;
         var mouse = ImGui.GetMousePos();
+
         if (ImGui.IsItemClicked())
         {
             _hasFocus = true;
@@ -57,6 +59,7 @@ internal sealed class DevConsoleOutput
         if (_dragging)
         {
             _dragging = ImGui.IsMouseDown(ImGuiMouseButton.Left);
+
             if (_dragging)
             {
                 var selectionPoint = new Vector2(mouse.X, Math.Clamp(mouse.Y, clipTop, clipBottom));
@@ -77,6 +80,7 @@ internal sealed class DevConsoleOutput
             var shortcut = OperatingSystem.IsMacOS()
                 ? keys[Key.LWin] || keys[Key.RWin]
                 : keys[Key.LControlKey] || keys[Key.RControlKey];
+
             if (shortcut && ImGui.IsKeyPressed(ImGuiKey.A, false))
             {
                 _anchor = 0;
@@ -95,6 +99,7 @@ internal sealed class DevConsoleOutput
         var first = Math.Max(0, (int)((clipTop - origin.Y) / lineHeight));
         var last = Math.Min(_lines.Count, (int)MathF.Ceiling((clipBottom - origin.Y) / lineHeight));
         var highlight = ImGui.GetColorU32(ImGuiCol.TextSelectedBg);
+
         fixed (byte* text = _text)
         {
             for (var i = first; i < last; i++)
@@ -103,6 +108,7 @@ internal sealed class DevConsoleOutput
                 var position = origin + new Vector2(0, i * lineHeight);
                 var start = Math.Max(selectionStart, line.Start);
                 var end = Math.Min(selectionEnd, line.End);
+
                 if (start < end)
                 {
                     drawList.AddRectFilled(
@@ -124,7 +130,10 @@ internal sealed class DevConsoleOutput
     private bool RefreshLogs()
     {
         var logs = NfmwLoggerProvider.GetLogs();
-        if (logs.SequenceEqual(_logs)) return false;
+
+        if (logs.SequenceEqual(_logs))
+
+            return false;
 
         var next = logs.ToArray();
         var overlap = Math.Min(_logs.Length, next.Length);
@@ -141,11 +150,13 @@ internal sealed class DevConsoleOutput
             _logStarts[i + 1] = _logStarts[i] + Encoding.UTF8.GetByteCount(next[i].message) + 1;
 
         _text = new byte[Math.Max(0, _logStarts[^1] - 1)];
+
         for (var i = 0; i < next.Length; i++)
         {
             var length = Encoding.UTF8.GetBytes(next[i].message, _text.AsSpan(_logStarts[i]));
             var end = _logStarts[i] + length;
-            if (end < _text.Length) _text[end] = (byte)'\n';
+            if (end < _text.Length)
+                _text[end] = (byte)'\n';
         }
 
         return true;
@@ -155,6 +166,7 @@ internal sealed class DevConsoleOutput
     {
         _lines.Clear();
         var font = ImGui.GetFont();
+
         fixed (byte* text = _text)
         {
             for (var i = 0; i < _logs.Length; i++)
@@ -174,16 +186,20 @@ internal sealed class DevConsoleOutput
                 {
                     var newline = Array.IndexOf(_text, (byte)'\n', start, logEnd - start);
                     var end = newline < 0 ? logEnd : newline;
-                    if (end > start && _text[end - 1] == (byte)'\r') end--;
+                    if (end > start && _text[end - 1] == (byte)'\r')
+                        end--;
+
                     do
                     {
                         var wrap = start == end ? end
                             : (int)(font.CalcWordWrapPosition(_fontSize, text + start, text + end, _wrapWidth) - text);
                         wrap = Math.Clamp(wrap, Math.Min(start + 1, end), end);
-                        while (wrap < end && (_text[wrap] & 0xC0) == 0x80) wrap++;
+                        while (wrap < end && (_text[wrap] & 0xC0) == 0x80)
+                            wrap++;
                         _lines.Add(new Line(start, wrap, color));
                         start = wrap;
-                        while (start < end && _text[start] is (byte)' ' or (byte)'\t') start++;
+                        while (start < end && _text[start] is (byte)' ' or (byte)'\t')
+                            start++;
                     } while (start < end);
 
                     start = newline < 0 ? logEnd + 1 : newline + 1;
@@ -194,21 +210,32 @@ internal sealed class DevConsoleOutput
 
     private unsafe int HitTest(Vector2 point, float lineHeight)
     {
-        if (_lines.Count == 0 || point.Y < 0) return 0;
+        if (_lines.Count == 0 || point.Y < 0)
+
+            return 0;
         var index = (int)(point.Y / lineHeight);
-        if (index >= _lines.Count) return _text.Length;
+
+        if (index >= _lines.Count)
+
+            return _text.Length;
 
         var line = _lines[index];
+
         fixed (byte* text = _text)
         {
             var position = line.Start;
             var left = 0f;
+
             while (position < line.End)
             {
                 var next = position + 1;
-                while (next < line.End && (_text[next] & 0xC0) == 0x80) next++;
+                while (next < line.End && (_text[next] & 0xC0) == 0x80)
+                    next++;
                 var right = Measure(text + line.Start, text + next);
-                if (point.X < (left + right) / 2f) return position;
+
+                if (point.X < (left + right) / 2f)
+
+                    return position;
                 position = next;
                 left = right;
             }

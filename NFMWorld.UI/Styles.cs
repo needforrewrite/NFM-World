@@ -482,6 +482,7 @@ public struct Styles() : IEquatable<Styles>
         hashCode.Add(BorderBottomRightRadius);
         hashCode.Add(PointerEvents);
         hashCode.Add(ZIndex);
+
         return hashCode.ToHashCode();
     }
 

@@ -11,10 +11,12 @@ public static class AssetTags
     public static string Extract(string? description)
     {
         if (string.IsNullOrEmpty(description))
+
             return "";
 
         var tags = new List<string>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var (start, length) in Find(description))
         {
             var tag = description.Substring(start, length);
@@ -30,13 +32,19 @@ public static class AssetTags
         for (var i = 0; i < description.Length; i++)
         {
             if (description[i] != '#')
+
                 continue;
             var end = i + 1;
-            while (end < description.Length && Rune.TryGetRuneAt(description, end, out var rune) &&
+            while (end < description.Length
+                   && Rune.TryGetRuneAt(description, end, out var rune)
+                   &&
                    IsTagCharacter(rune, end != i + 1))
                 end += rune.Utf16SequenceLength;
+
             if (end == i + 1)
+
                 continue;
+
             yield return (i, end - i);
             i = end - 1;
         }
@@ -46,7 +54,10 @@ public static class AssetTags
         string.IsNullOrEmpty(tags) ? [] : tags.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
     private static bool IsTagCharacter(Rune rune, bool hasPrevious) =>
-        Rune.IsLetterOrDigit(rune) || rune.Value == '_' || (hasPrevious && Rune.GetUnicodeCategory(rune) is
+        Rune.IsLetterOrDigit(rune)
+        || rune.Value == '_'
+        || (hasPrevious
+            && Rune.GetUnicodeCategory(rune) is
             UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark);
 
     // SQLite LIKE only folds ASCII. Store and search invariant-uppercase text instead so Unicode
@@ -61,8 +72,11 @@ public static class AssetTags
         {
             var rows = await db.Assets.Where(a => a.Tags == null || a.TagsSearch == null)
                 .OrderBy(a => a.Id).Take(500).ToListAsync(ct);
+
             if (rows.Count == 0)
+
                 return;
+
             foreach (var row in rows)
             {
                 row.Tags = Extract(row.Description);

@@ -20,6 +20,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public GameSession? Get(uint sessionId)
     {
         _sessions.TryGetValue(sessionId, out var session);
+
         return session;
     }
 
@@ -37,7 +38,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     )
     {
         var creator = players.Get(creatorclientIndex);
+
         if (creator is null)
+
             return null;
 
         lock (_lock)
@@ -66,6 +69,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             creator.InSession = (0, session.Id);
 
             if (!_sessions.TryAdd(session.Id, session))
+
                 return null;
 
             return session;
@@ -79,31 +83,45 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public (GameSession? Joined, GameSession? Left) JoinSession(uint clientIndex, uint sessionId, Guid inviteId = default)
     {
         var player = players.Get(clientIndex);
-        if (player is null) return (null, null);
+
+        if (player is null)
+
+            return (null, null);
 
         // Two joins arriving at once must not both take the same free slot.
+
         lock (_lock)
         {
-            if (player.Banned || player.IsInGame) return (null, null);
+            if (player.Banned || player.IsInGame)
+
+                return (null, null);
 
             // Already in it: re-leaving would end a session that only this player is in.
+
             if (player.InSession is { } already && already.SessionIndex == sessionId)
+
                 return (_sessions.TryGetValue(sessionId, out var joinedCurrent) ? joinedCurrent : null, null);
 
-            if (!_sessions.TryGetValue(sessionId, out var target) || target.State != SessionState.NotStarted
+            if (!_sessions.TryGetValue(sessionId, out var target)
+                || target.State != SessionState.NotStarted
                 || !HasOpenSlot(target))
+
                 return (null, null);
 
             if (inviteId != Guid.Empty)
             {
-                if (!target.Invites.TryGetValue(player.AccountId, out var invite) || invite.Id != inviteId
+                if (!target.Invites.TryGetValue(player.AccountId, out var invite)
+                    || invite.Id != inviteId
                     || invite.ExpiresAtUnixMs <= DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
+
                     return (null, null);
             }
             else if (target.RemovedAccounts.ContainsKey(player.AccountId))
+
                 return (null, null);
 
             GameSession? leftSession = null;
+
             if (player.InSession is { } current && _sessions.TryGetValue(current.SessionIndex, out var leaving))
             {
                 RemovePlayer(leaving, player);
@@ -118,6 +136,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             player.InSession = (playerIndex, target.Id);
             target.Invites.Remove(player.AccountId);
             target.RemovedAccounts.TryRemove(player.AccountId, out _);
+
             return (target, leftSession);
         }
     }
@@ -126,7 +145,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public GameSession? LeaveSession(uint clientIndex, uint sessionId)
     {
         var player = players.Get(clientIndex);
+
         if (player is null)
+
             return null;
 
         lock (_lock)
@@ -134,9 +155,11 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             if (player.InSession is not { } current
                 || current.SessionIndex != sessionId
                 || !_sessions.TryGetValue(sessionId, out var session))
+
                 return null;
 
             RemovePlayer(session, player);
+
             return session;
         }
     }
@@ -150,9 +173,11 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         lock (_lock)
         {
             if (player.InSession is not { } current || !_sessions.TryGetValue(current.SessionIndex, out var session))
+
                 return null;
 
             RemovePlayer(session, player);
+
             return session;
         }
     }
@@ -171,19 +196,24 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
 
         // A session nobody is in can never start and nobody can join it: it is dropped by the
         // pruner once it is marked finished.
+
         if (session.Players.IsEmpty)
         {
             // The race result can arrive after the last client goes back to the lobby.
+
             if (session.State == SessionState.Started)
             {
                 session.ClosesAtUnixMs = DateTimeOffset.UtcNow.AddSeconds(FinishedLingerSeconds)
                     .ToUnixTimeMilliseconds();
+
                 return;
             }
 
             session.State = SessionState.Finished;
+
             // A finished race with placings is still a thing to read. Its existing deadline
             // stands; one that was emptied before finishing gets no linger window.
+
             if (session.ClosesAtUnixMs == 0 && session.FinalStandings.Length > 0)
             {
                 session.ClosesAtUnixMs = DateTimeOffset.UtcNow
@@ -198,12 +228,16 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         // a session that loses its creator while others remain is a dead end that sits in the
         // list for ever. Hand it to the next human instead. This also covers a race that is
         // about to fail and be put back to NotStarted, and a running one keeps a live owner.
+
         if (session.Players.Values.Contains(session.CreatorId))
+
             return;
 
         var successorId = session.Players.OrderBy(slot => slot.Key).First().Value;
         var successor = players.Get(successorId);
+
         if (successor is null)
+
             return;
 
         session.CreatorId = successor.Id;
@@ -218,9 +252,11 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
 
     private GameSession? OpenGameOwnedBy(uint clientIndex, uint sessionId)
         => players.Get(clientIndex) is { Banned: false } host
-           && host.InSession?.SessionIndex == sessionId
+           && host.InSession?.SessionIndex
+           == sessionId
            && _sessions.TryGetValue(sessionId, out var session)
-           && session.CreatorId == host.Id && session.State == SessionState.NotStarted ? session : null;
+           && session.CreatorId == host.Id
+           && session.State == SessionState.NotStarted ? session : null;
 
     private static bool HasOpenSlot(GameSession session) => session.Players.Count + session.Bots.Count < session.MaxPlayers;
 
@@ -228,27 +264,35 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     {
         lock (_lock)
         {
-            if (playerId == Guid.Empty || OpenGameOwnedBy(clientIndex, sessionId) is not { } session
+            if (playerId == Guid.Empty
+                || OpenGameOwnedBy(clientIndex, sessionId) is not { } session
                 || session.CreatorId == playerId)
+
                 return false;
 
             if (players.Get(playerId) is { AccountId: > 0, InSession: { } current } player
-                && current.SessionIndex == sessionId && session.Players.TryGetValue(current.PlayerIndex, out var occupant)
+                && current.SessionIndex == sessionId
+                && session.Players.TryGetValue(current.PlayerIndex, out var occupant)
                 && occupant == playerId)
             {
                 session.RemovedAccounts.TryAdd(player.AccountId, 0);
                 session.Invites.Remove(player.AccountId);
                 RemovePlayer(session, player);
+
                 return true;
             }
 
             var bot = session.Bots.FirstOrDefault(slot => slot.Value.Id == playerId);
-            if (bot.Value.Id != playerId) return false;
+
+            if (bot.Value.Id != playerId)
+
+                return false;
 
             var bots = new Dictionary<byte, ServerSidePlayerInfo>(session.Bots);
             bots.Remove(bot.Key);
             session.Bots = bots;
             session.BotCount = bots.Count;
+
             return true;
         }
     }
@@ -257,9 +301,12 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     {
         lock (_lock)
         {
-            if (OpenGameOwnedBy(clientIndex, sessionId) is not { } session || !HasOpenSlot(session)
+            if (OpenGameOwnedBy(clientIndex, sessionId) is not { } session
+                || !HasOpenSlot(session)
                 || players.Get(playerId) is not { IsAuthenticated: true, AccountId: > 0, Banned: false } player
-                || player.InSession?.SessionIndex == sessionId)
+                || player.InSession?.SessionIndex
+                == sessionId)
+
                 return null;
 
             var now = DateTimeOffset.UtcNow;
@@ -270,6 +317,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
 
             var invite = (Id: Guid.NewGuid(), ExpiresAtUnixMs: now.AddMinutes(1).ToUnixTimeMilliseconds());
             session.Invites[player.AccountId] = invite;
+
             return (invite.Id, session.CreatorName, invite.ExpiresAtUnixMs);
         }
     }
@@ -279,12 +327,16 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         lock (_lock)
         {
             if (OpenGameOwnedBy(clientIndex, sessionId) is not { } session
-                || name is null || value is null
-                || !session.GamemodeParameters.TryGetValue(name, out var current) || current == value)
+                || name is null
+                || value is null
+                || !session.GamemodeParameters.TryGetValue(name, out var current)
+                || current == value)
+
                 return false;
 
             // Lobby snapshots can read the old dictionary while the rule is being updated.
             session.GamemodeParameters = new(session.GamemodeParameters) { [name] = value };
+
             return true;
         }
     }
@@ -293,11 +345,14 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public bool StartRace(uint clientIndex, uint sessionId)
     {
         var player = players.Get(clientIndex);
+
         if (player is null)
+
             return false;
 
         // The state check and the transition must be atomic, or two members' start
         // packets both pass it and two races are created for one session.
+
         lock (_lock)
         {
             if (_sessions.TryGetValue(sessionId, out var session)
@@ -310,7 +365,9 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                 foreach (var (_, id) in session.Players)
                 {
                     var aplayer = players.Get(id);
+
                     if (aplayer is null)
+
                         return false;
                     aplayer.IsInGame = true;
                 }
@@ -321,6 +378,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                 session.State = SessionState.Started;
                 session.StartTime = null;
                 session.Invites.Clear();
+
                 return true;
             }
 
@@ -341,10 +399,12 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public List<GameSession> CheckTimeouts()
     {
         var timedOut = new List<GameSession>();
+
         foreach (var (_, session) in _sessions)
         {
             // The deadline is absolute (StartTime = now + 20s), so it is reached once, not
             // every second after - which is why the state has to change when it fires.
+
             if (session.State == SessionState.WaitingToLoad
                 && session.StartTime is { } startTime
                 && DateTimeOffset.UtcNow >= startTime)
@@ -357,10 +417,13 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
                 // Players are keyed by slot to the player *id*, and IsInGame is tracked in the
                 // registry by connection index. Looking up by id always missed, so every client
                 // stayed flagged in-game and could not start anything again.
+
                 foreach (var id in session.Players.Values)
                 {
                     var player = players.Get(id);
+
                     if (player is null)
+
                         continue;
                     player.InSession = null;
                     player.IsInGame = false;
@@ -379,6 +442,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     {
         var removed = false;
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
         foreach (var (id, session) in _sessions)
         {
             var empty = session.State == SessionState.NotStarted && session.Players.IsEmpty;
@@ -386,15 +450,21 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             // means it was emptied rather than finished, so it goes now.
             var expired = session.State == SessionState.Finished
                           && (session.ClosesAtUnixMs == 0 || session.ClosesAtUnixMs <= now);
-            var abandoned = session.State == SessionState.Started && session.Players.IsEmpty
-                            && session.ClosesAtUnixMs > 0 && session.ClosesAtUnixMs <= now;
+            var abandoned = session.State == SessionState.Started
+                            && session.Players.IsEmpty
+                            && session.ClosesAtUnixMs > 0
+                            && session.ClosesAtUnixMs <= now;
+
             if (!empty && !expired && !abandoned)
+
                 continue;
 
             foreach (var playerId in session.Players.Values)
             {
                 var player = players.Get(playerId);
+
                 if (player?.InSession?.SessionIndex != id)
+
                     continue;
                 player.InSession = null;
                 player.IsInGame = false;
@@ -423,6 +493,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
     public bool SetPlayerReady(uint clientIndex, uint sessionId, bool isReady)
     {
         var player = players.Get(clientIndex);
+
         if (player?.InSession is { } current
             && current.SessionIndex == sessionId
             && _sessions.TryGetValue(sessionId, out var session)
@@ -431,6 +502,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
             // Readiness is tracked implicitly — all players must be ready before start.
             // For v1 we just validate that the player is in the session.
             // A future ReadyState field on ClientInfo could be added here.
+
             return true;
         }
 

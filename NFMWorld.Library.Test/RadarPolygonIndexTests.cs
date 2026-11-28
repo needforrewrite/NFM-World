@@ -10,6 +10,7 @@ public class RadarPolygonIndexTests
     public void Query_CullsDistantSurfacesAndPreservesPaintOrder()
     {
         var polygons = new List<MinimapPolygon>();
+
         for (var i = 0; i < 100; i++)
         {
             var x = (99 - i) * 1000f;

@@ -69,6 +69,7 @@ public static class DevConsoleCommands
                 if (args.Length < 1)
                 {
                     Logging.Info("Usage: go_lua <script_path> (relative to data/gamemodes/)");
+
                     return;
                 }
 
@@ -167,12 +168,14 @@ public static class DevConsoleCommands
         {
             LogOutlineMode();
             Logging.Info("Usage: r_outline_mode <next|prev|distance|distance_cutoff|classic|always|hide|0-4>");
+
             return;
         }
 
         if (!TryParseOutlineMode(args[0], out var behavior))
         {
             Logging.Info("Usage: r_outline_mode <next|prev|distance|distance_cutoff|classic|always|hide|0-4>");
+
             return;
         }
 
@@ -195,18 +198,21 @@ public static class DevConsoleCommands
         if (value.Equals("next", StringComparison.OrdinalIgnoreCase))
         {
             behavior = GetAdjacentOutlineMode(1);
+
             return true;
         }
 
         if (value.Equals("prev", StringComparison.OrdinalIgnoreCase))
         {
             behavior = GetAdjacentOutlineMode(-1);
+
             return true;
         }
 
         if (int.TryParse(value, out var numeric) && Enum.IsDefined(typeof(DistantOutlineBehavior), numeric))
         {
             behavior = (DistantOutlineBehavior)numeric;
+
             return true;
         }
 
@@ -215,27 +221,33 @@ public static class DevConsoleCommands
             case "distance":
             case "distance_falloff":
                 behavior = DistantOutlineBehavior.DistanceFalloff;
+
                 return true;
             case "distance_cutoff":
             case "distance_falloff_with_cutoff":
                 behavior = DistantOutlineBehavior.DistanceFalloffWithCutoff;
+
                 return true;
             case "classic":
             case "classic_cutoff":
             case "nfm":
                 behavior = DistantOutlineBehavior.ClassicCutoff;
+
                 return true;
             case "always":
             case "always_render":
                 behavior = DistantOutlineBehavior.AlwaysRender;
+
                 return true;
             case "hide":
             case "hide_outlines":
             case "off":
                 behavior = DistantOutlineBehavior.HideOutlines;
+
                 return true;
             default:
                 behavior = default;
+
                 return false;
         }
     }
@@ -243,10 +255,13 @@ public static class DevConsoleCommands
     private static DistantOutlineBehavior GetAdjacentOutlineMode(int offset)
     {
         var currentIndex = Array.IndexOf(DistantOutlineBehaviors, World.DistantOutlineBehavior);
+
         if (currentIndex < 0)
+
             return DistantOutlineBehaviors[0];
 
         var nextIndex = (currentIndex + offset + DistantOutlineBehaviors.Length) % DistantOutlineBehaviors.Length;
+
         return DistantOutlineBehaviors[nextIndex];
     }
 
@@ -270,20 +285,24 @@ public static class DevConsoleCommands
         if (OperatingSystem.IsBrowser())
         {
             Logging.Info("Server switching is available in the desktop client.");
+
             return;
         }
 
         var environment = args.Length == 1 ? args[0].ToLowerInvariant() : "";
+
         if (environment is not ("live" or "dev" or "default"))
         {
             Logging.Info($"Current archive: {ArchiveEndpoint.Url}. Lobby: {LobbyEndpoint.Host}:{LobbyEndpoint.Port}.");
             Logging.Info("Usage: server <live|dev|default>");
+
             return;
         }
 
         if (GameSparker.CurrentPhase is not MainMenuPhase)
         {
             Logging.Info("Return to the main menu before switching server environments.");
+
             return;
         }
 
@@ -299,6 +318,7 @@ public static class DevConsoleCommands
                 $"Connect to a lobby. Usage: connect <host> [port] [ws|wss] "
                 + $"(default {LobbyEndpoint.Host}:{LobbyEndpoint.Port}; remote hosts use wss)"
             );
+
             return;
         }
 
@@ -321,6 +341,7 @@ public static class DevConsoleCommands
         }
 
         if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+
             return;
 
         var visual = inRacePhase.GetCarVisual(0);
@@ -339,6 +360,7 @@ public static class DevConsoleCommands
         }
 
         if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+
             return;
 
         var visual = inRacePhase.GetCarVisual(0);
@@ -360,6 +382,7 @@ public static class DevConsoleCommands
         }
 
         if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+
             return;
 
         var visual = inRacePhase.GetCarVisual(0);
@@ -375,6 +398,7 @@ public static class DevConsoleCommands
         if (args.Length < 1 || !float.TryParse(args[0], out var blackPoint))
         {
             Logging.Info("Usage: r_blackpoint <value>");
+
             return;
         }
 
@@ -387,6 +411,7 @@ public static class DevConsoleCommands
         if (args.Length < 1 || !float.TryParse(args[0], out var whitePoint))
         {
             Logging.Info("Usage: r_whitepoint <value>");
+
             return;
         }
 
@@ -438,6 +463,7 @@ public static class DevConsoleCommands
     private static void PrintHelp(DevConsole console)
     {
         Logging.Info("Available commands:");
+
         foreach (var command in console.GetCommandNames())
         {
             Logging.Info($"- {command}");
@@ -454,6 +480,7 @@ public static class DevConsoleCommands
         if (args.Length < 1 || !float.TryParse(args[0], out var speed))
         {
             Logging.Info("Usage: speed <value>");
+
             return;
         }
 
@@ -468,6 +495,7 @@ public static class DevConsoleCommands
     private static void ResetCar(DevConsole console)
     {
         if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } originalCar)
+
             return;
 
         if (inRacePhase.GamemodeInstance is BaseClientGamemode gm)
@@ -493,14 +521,17 @@ public static class DevConsoleCommands
         if (GameSparker.CurrentPhase is not RacePhase inRacePhase)
         {
             Logging.Info("Not in a race.");
+
             return;
         }
 
         var gamemode = inRacePhase.GamemodeInstance;
         var tuning = gamemode?.GetType().GetProperty("Tuning")?.GetValue(gamemode);
+
         if (tuning is null)
         {
             Logging.Info($"Gamemode '{gamemode?.GetType().Name ?? "none"}' has no tuning values.");
+
             return;
         }
 
@@ -509,14 +540,17 @@ public static class DevConsoleCommands
             Logging.Info($"{gamemode!.GetType().Name} tuning (tune <name> <value>):");
             foreach (var entry in tuning.GetType().GetFields())
                 Logging.Info($"- {entry.Name} = {entry.GetValue(tuning)}");
+
             return;
         }
 
         var name = args[0];
         var field = tuning.GetType().GetField(name);
+
         if (field is null)
         {
             Logging.Info($"Unknown tuning value '{name}'.");
+
             return;
         }
 
@@ -524,6 +558,7 @@ public static class DevConsoleCommands
             || !double.TryParse(args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
         {
             Logging.Info($"Usage: tune {name} <number> (current: {field.GetValue(tuning)})");
+
             return;
         }
 
@@ -539,6 +574,7 @@ public static class DevConsoleCommands
             || !int.TryParse(args[2], out var z))
         {
             Logging.Info("Usage: setpos <x> <y> <z>");
+
             return;
         }
 
@@ -558,6 +594,7 @@ public static class DevConsoleCommands
             || !int.TryParse(args[4], out var r))
         {
             Logging.Info("Usage: create <object_name> <x> <y> <z> <r>");
+
             return;
         }
 
@@ -578,6 +615,7 @@ public static class DevConsoleCommands
         if (args.Length < 1)
         {
             Logging.Info("Usage: map <stage_file>");
+
             return;
         }
 
@@ -589,6 +627,7 @@ public static class DevConsoleCommands
                 && !TheVFS.VFS.FileExists($"data/stages/{stageName}.radpack"))
             {
                 Logging.Warning($"Stage '{stageName}' not found. Keeping the current stage.");
+
                 return;
             }
 
@@ -621,6 +660,7 @@ public static class DevConsoleCommands
         if (args.Length < 1)
         {
             Logging.Info("Usage: car <car_id>");
+
             return;
         }
 
@@ -630,6 +670,7 @@ public static class DevConsoleCommands
         if (car == null)
         {
             Logging.Warning($"Car '{carId}' not found.");
+
             return;
         }
 
@@ -681,6 +722,7 @@ public static class DevConsoleCommands
         if (args.Length < 1 || !float.TryParse(args[0], out var fov))
         {
             Logging.Info("Usage: fov <fov in degrees>");
+
             return;
         }
 
@@ -692,6 +734,7 @@ public static class DevConsoleCommands
         if (args.Length < 1 || !int.TryParse(args[0], out var yoff))
         {
             Logging.Info("Usage: followy <yoff>");
+
             return;
         }
 
@@ -703,6 +746,7 @@ public static class DevConsoleCommands
         if (args.Length < 1 || !int.TryParse(args[0], out var zoff))
         {
             Logging.Info("Usage: followz <zoff>");
+
             return;
         }
 
@@ -712,13 +756,16 @@ public static class DevConsoleCommands
     private static void ShowNotificationTest(DevConsole console, string[] args)
     {
         var seconds = 5;
+
         if (args.Length > 1 || (args.Length == 1 && !int.TryParse(args[0], out seconds)) || seconds is < 0 or > 60)
         {
             Logging.Info("Usage: ui_test_notification [delay in seconds, 0–60]");
+
             return;
         }
 
-        if (seconds > 0) Logging.Info($"Test notification in {seconds}s.");
+        if (seconds > 0)
+            Logging.Info($"Test notification in {seconds}s.");
         _ = ShowAfterDelay();
 
         async Task ShowAfterDelay()
@@ -738,6 +785,7 @@ public static class DevConsoleCommands
         if (args.Length == 0)
         {
             Logging.Info("Usage: msg <ok|yesno|okcancel|custom>");
+
             return;
         }
 
@@ -749,6 +797,7 @@ public static class DevConsoleCommands
                     "This is a simple message with an OK button.",
                     result => Logging.Info($"User clicked: {result}")
                 );
+
                 break;
 
             case "yesno":
@@ -758,6 +807,7 @@ public static class DevConsoleCommands
                     result =>
                     {
                         Logging.Info($"User clicked: {result}");
+
                         if (result == MessageWindow.MessageResult.Yes)
                         {
                             Logging.Info("User confirmed!");
@@ -768,6 +818,7 @@ public static class DevConsoleCommands
                         }
                     }
                 );
+
                 break;
 
             case "okcancel":
@@ -776,6 +827,7 @@ public static class DevConsoleCommands
                     "Are you sure you want to proceed? This action cannot be undone.",
                     result => Logging.Info($"User clicked: {result}")
                 );
+
                 break;
 
             case "custom":
@@ -785,10 +837,12 @@ public static class DevConsoleCommands
                     new[] { "Option A", "Option B", "Option C" },
                     result => Logging.Info($"User selected: {result}")
                 );
+
                 break;
 
             default:
                 Logging.Info("Invalid argument. Use: ok, yesno, okcancel, or custom");
+
                 break;
         }
     }
@@ -798,6 +852,7 @@ public static class DevConsoleCommands
         if (GameSparker.CurrentPhase is not RacePhase)
         {
             Logging.Info("Not in game.");
+
             return;
         }
 

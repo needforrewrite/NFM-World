@@ -76,6 +76,7 @@ public sealed class ArchiveContentClient : IDisposable
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
         var items = new List<RemoteAsset>();
+
         foreach (var item in body.GetProperty("items").EnumerateArray())
         {
             items.Add(
@@ -105,14 +106,18 @@ public sealed class ArchiveContentClient : IDisposable
     public async Task<RemoteAsset?> MetadataAsync(string hash, CancellationToken ct)
     {
         if (!ContentHashes.IsCanonical(hash))
+
             return null;
 
         using var response = await _http.GetAsync(new Uri(_baseUri, $"assets/meta/{hash.ToLowerInvariant()}"), ct);
+
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+
             return null;
         response.EnsureSuccessStatusCode();
 
         var item = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
+
         return new RemoteAsset(
             item.GetProperty("id").GetInt32(),
             item.GetProperty("name").GetString() ?? "",
@@ -140,6 +145,7 @@ public sealed class ArchiveContentClient : IDisposable
     public async Task<byte[]> DownloadAsync(string hash, int maxBytes, CancellationToken ct)
     {
         if (!ContentHashes.IsCanonical(hash))
+
             throw new InvalidDataException("Not a content hash.");
 
         var normalized = hash.ToLowerInvariant();
@@ -151,22 +157,27 @@ public sealed class ArchiveContentClient : IDisposable
         response.EnsureSuccessStatusCode();
 
         if (response.Content.Headers.ContentLength is { } length && length > maxBytes)
+
             throw new InvalidDataException($"Asset is larger than {maxBytes} bytes.");
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var buffer = new MemoryStream();
         var chunk = new byte[81920];
         int read;
+
         while ((read = await stream.ReadAsync(chunk, ct)) > 0)
         {
             if (buffer.Length + read > maxBytes)
+
                 throw new InvalidDataException($"Asset is larger than {maxBytes} bytes.");
             buffer.Write(chunk, 0, read);
         }
 
         var bytes = buffer.ToArray();
         var actual = Convert.ToHexStringLower(SHA256.HashData(bytes));
+
         if (!string.Equals(actual, normalized, StringComparison.Ordinal))
+
             throw new InvalidDataException("The downloaded asset's hash does not match the requested one.");
 
         return bytes;
@@ -228,6 +239,7 @@ public sealed class ArchiveReplayClient : IDisposable
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
         var items = new List<RemoteReplay>();
+
         foreach (var item in body.GetProperty("items").EnumerateArray())
         {
             items.Add(
@@ -240,7 +252,8 @@ public sealed class ArchiveReplayClient : IDisposable
                     item.GetProperty("carHash").GetString() ?? "",
                     item.GetProperty("totalTicks").GetInt32(),
                     item.GetProperty("replayVersion").GetInt32(),
-                    item.TryGetProperty("createdAt", out var createdAt) && createdAt.ValueKind == JsonValueKind.String
+                    item.TryGetProperty("createdAt", out var createdAt)
+                    && createdAt.ValueKind == JsonValueKind.String
                     && createdAt.TryGetDateTimeOffset(out var date)
                         ? date : null
                 )
@@ -265,15 +278,18 @@ public sealed class ArchiveReplayClient : IDisposable
         response.EnsureSuccessStatusCode();
 
         if (response.Content.Headers.ContentLength is { } length && length > maxBytes)
+
             throw new InvalidDataException($"Replay is larger than {maxBytes} bytes.");
 
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var buffer = new MemoryStream();
         var chunk = new byte[81920];
         int read;
+
         while ((read = await stream.ReadAsync(chunk, ct)) > 0)
         {
             if (buffer.Length + read > maxBytes)
+
                 throw new InvalidDataException($"Replay is larger than {maxBytes} bytes.");
             buffer.Write(chunk, 0, read);
         }
@@ -302,7 +318,9 @@ public static class ContentHashes
     {
         hash = "";
         var trimmed = reference?.Trim();
+
         if (string.IsNullOrEmpty(trimmed))
+
             return false;
 
         var candidate = RadpackReader.IsArchiveId(trimmed)
@@ -310,9 +328,11 @@ public static class ContentHashes
             : trimmed;
 
         if (!IsCanonical(candidate))
+
             return false;
 
         hash = candidate.ToLowerInvariant();
+
         return true;
     }
 
@@ -350,6 +370,7 @@ public static class ContentCache
     public static void Mount()
     {
         if (_mounted is not null)
+
             return;
 
         foreach (var root in CacheRoots())
@@ -358,6 +379,7 @@ public static class ContentCache
             {
                 MountAt(root);
                 Logging.Info($"[Cache] Archive cache: {_root}");
+
                 return;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -375,16 +397,22 @@ public static class ContentCache
         if (OperatingSystem.IsBrowser())
         {
             if (TheVFS.VFS.WriteRoot is { } browserRoot)
+
                 yield return Path.Combine(browserRoot, "cache", "archive");
+
             yield break;
         }
 
         var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
         if (!string.IsNullOrWhiteSpace(local))
+
             yield return Path.Combine(local, "NFMWorld", "cache", "archive");
 
         // Read-only profiles and sandboxes still get a cache for this install.
+
         if (TheVFS.VFS.WriteRoot is { } writeRoot)
+
             yield return Path.Combine(writeRoot, "data", "cache", "archive");
     }
 
@@ -392,6 +420,7 @@ public static class ContentCache
     public static void MountAt(string root)
     {
         if (_mounted is not null)
+
             return;
 
         Directory.CreateDirectory(root);
@@ -426,30 +455,39 @@ public static class ContentCache
     )
     {
         if (_root is null)
+
             return ContentPrepareResult.Failure("The content cache is not mounted.");
 
         if (!ContentHashes.TryResolve(reference, out var normalized))
+
             return ContentPrepareResult.Failure("Not a content hash.");
 
         var radpackKind = AssetKinds.ToRadpackType(kind);
+
         if (radpackKind is null)
+
             return ContentPrepareResult.Failure($"{AssetKinds.Name((byte)kind)} is not downloadable content.");
 
         if (ReadPrepared(normalized, radpackKind.Value, out _))
+
             return ContentPrepareResult.Success;
 
         var gate = Gates[byte.Parse(
             normalized.AsSpan(0, 2),
             System.Globalization.NumberStyles.HexNumber,
             System.Globalization.CultureInfo.InvariantCulture
-        ) % Gates.Length];
+        )
+                   % Gates.Length];
         await gate.WaitAsync(ct);
+
         try
         {
             if (ReadPrepared(normalized, radpackKind.Value, out _))
+
                 return ContentPrepareResult.Success;
 
             byte[] bytes;
+
             try
             {
                 bytes = await client.DownloadAsync(normalized, RadpackLimits.MaxCompressedBytes, ct);
@@ -460,6 +498,7 @@ public static class ContentCache
             }
 
             if (!TryDecode(bytes, normalized, radpackKind.Value, out var error))
+
                 return ContentPrepareResult.Failure(error!);
 
             try
@@ -483,6 +522,7 @@ public static class ContentCache
     public static void Invalidate(string reference)
     {
         if (_root is null || !ContentHashes.TryResolve(reference, out var hash))
+
             return;
 
         var path = PathFor(hash);
@@ -496,12 +536,14 @@ public static class ContentCache
         if (!ContentHashes.TryResolve(reference, out var hash))
         {
             error = "Not a content hash.";
+
             return false;
         }
 
         if (!string.Equals(ContentHashes.Of(bytes), hash, StringComparison.Ordinal))
         {
             error = "The asset's hash does not match the requested one.";
+
             return false;
         }
 
@@ -518,20 +560,24 @@ public static class ContentCache
             // A car this build cannot drive must never reach the cache: it would be handed to the
             // race as a model and throw when the physics built its wheels. The archive refuses
             // these on upload; this is the same rule on the receiving side, for rows that predate it.
+
             if (kind == RadpackType.Car
                 && asset is RadpackRad3d car
                 && CarModelValidator.Validate(car.Rad) is { } invalid)
             {
                 error = $"The car cannot be driven: {invalid}";
+
                 return false;
             }
 
             error = null;
+
             return true;
         }
         catch (InvalidDataException ex)
         {
             error = ex.Message;
+
             return false;
         }
     }
@@ -547,10 +593,13 @@ public static class ContentCache
     {
         error = null;
         var path = PathFor(normalizedHash);
+
         if (!File.Exists(path))
+
             return false;
 
         byte[] bytes;
+
         try
         {
             bytes = File.ReadAllBytes(path);
@@ -561,6 +610,7 @@ public static class ContentCache
         }
 
         if (TryDecode(bytes, normalizedHash, kind, out error))
+
             return true;
 
         try
@@ -585,6 +635,7 @@ public static class ContentCache
         // A per-attempt name: two processes (a game and a game master under one account) can
         // download the same asset at once, and a fixed ".tmp" would make one of them fail.
         var temporary = $"{destination}.{Guid.NewGuid():N}.tmp";
+
         try
         {
             File.WriteAllBytes(temporary, bytes);
@@ -616,6 +667,7 @@ internal sealed class ArchiveCacheFileSystem(string root) : IVirtualFileSystem
     public Stream? OpenRead(string path)
     {
         var file = FileFor(path);
+
         return file is not null ? File.OpenRead(file) : null;
     }
 
@@ -631,17 +683,22 @@ internal sealed class ArchiveCacheFileSystem(string root) : IVirtualFileSystem
         var directory = path.Replace('\\', '/').Trim('/');
         while (directory.StartsWith("./", StringComparison.Ordinal))
             directory = directory[2..];
-        if (directory == ".") directory = "";
+        if (directory == ".")
+            directory = "";
+
         if (!directory.Equals("archive", StringComparison.OrdinalIgnoreCase)
             && !(directory.Length == 0 && searchOption == SearchOption.AllDirectories)
             || !Directory.Exists(root))
+
             yield break;
 
         foreach (var file in Directory.EnumerateFiles(root, "*"))
         {
             var name = Path.GetFileName(file);
+
             if (ContentHashes.IsCanonical(name)
                 && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(searchPattern, name, ignoreCase: true))
+
                 yield return Prefix + name.ToLowerInvariant();
         }
     }
@@ -653,13 +710,17 @@ internal sealed class ArchiveCacheFileSystem(string root) : IVirtualFileSystem
             normalized = normalized[2..];
 
         if (!normalized.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
+
             return null;
 
         var hash = normalized[Prefix.Length..];
+
         if (!ContentHashes.IsCanonical(hash))
+
             return null;
 
         var file = Path.Combine(root, ContentHashes.Normalize(hash));
+
         return File.Exists(file) ? file : null;
     }
 }

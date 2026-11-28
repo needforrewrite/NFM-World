@@ -58,6 +58,7 @@ public sealed class CircularReferenceTests
     {
         var value = new Node { Value = 0 };
         Node current = value;
+
         for (int i = 1; i < 10; i++)
         {
             current.Next = new Node { Value = i };
@@ -67,6 +68,7 @@ public sealed class CircularReferenceTests
         Node result = TightPackSerializer.Deserialize<Node>(TightPackSerializer.Serialize(in value));
 
         int expected = 0;
+
         for (Node? node = result; node is not null; node = node.Next)
         {
             Assert.AreEqual(expected++, node.Value);

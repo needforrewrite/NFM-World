@@ -163,19 +163,27 @@ public class StageMusicPackagingTests
 
         var declared = 0;
         var missing = new List<string>();
+
         foreach (var file in TheVFS.VFS.EnumerateFiles("data/stages", "*.txt", SearchOption.AllDirectories))
         {
             foreach (var line in TheVFS.VFS.ReadAllText(file).Split('\n'))
             {
                 var start = line.IndexOf("soundtrackremaster(", StringComparison.Ordinal);
-                if (start < 0) continue;
+
+                if (start < 0)
+
+                    continue;
 
                 var args = line[(start + "soundtrackremaster(".Length)..].Split(')')[0].Split(',');
-                if (args.Length < 2) continue;
+
+                if (args.Length < 2)
+
+                    continue;
 
                 declared++;
                 var path = $"data/music/{args[0].Trim()}/{args[1].Trim()}";
-                if (!TheVFS.VFS.FileExists(path)) missing.Add($"{file} -> {path}");
+                if (!TheVFS.VFS.FileExists(path))
+                    missing.Add($"{file} -> {path}");
             }
         }
 

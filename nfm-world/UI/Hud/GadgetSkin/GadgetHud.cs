@@ -34,10 +34,14 @@ internal abstract class GadgetHud(IHudData race) : Component
         var dt = Math.Clamp((float)Stopwatch.GetElapsedTime(_lastFrame, now).TotalSeconds, 0, 0.1f);
         _lastFrame = now;
         Dt = dt;
-        if (!Race.Paused) Clock += dt;
+        if (!Race.Paused)
+            Clock += dt;
 
         var scale = MathF.Min(size.X / 800, size.Y / 450) * HudScaleSettings.Default * SettingsMenu.HudScale;
-        if (scale <= 0) return;
+
+        if (scale <= 0)
+
+            return;
         var bounds = HudSafeZone.Bounds(position, size);
         _boundsMin = new Vector2(bounds.X, bounds.Y);
         _boundsMax = new Vector2(bounds.X + bounds.Width, bounds.Y + bounds.Height);
@@ -47,6 +51,7 @@ internal abstract class GadgetHud(IHudData race) : Component
         G.SaveState();
         // phy drew on an aliased canvas, where a 1px line is one pixel wide; stay that thin.
         G.SetExactCoverage(true);
+
         try
         {
             DrawGadgets();
@@ -99,7 +104,11 @@ internal abstract class GadgetHud(IHudData race) : Component
     protected static float Ease(float eased, float target, float dt, float sensitivity = 3.55f)
     {
         var frames = MathF.Min(1f, dt * 60f);
-        if (MathF.Abs(target - eased) < 1.5f * frames) return target;
+
+        if (MathF.Abs(target - eased) < 1.5f * frames)
+
+            return target;
+
         return eased + (target - eased) * frames / sensitivity;
     }
 
@@ -113,6 +122,7 @@ internal abstract class GadgetHud(IHudData race) : Component
     protected (float X, float Y) Polar(float px, float py, float degrees, float radius)
     {
         var rad = degrees * MathF.PI / 180f;
+
         return (px - MathF.Sin(rad) * radius, py - MathF.Cos(rad) * radius);
     }
 
@@ -126,6 +136,7 @@ internal abstract class GadgetHud(IHudData race) : Component
         var rad = (int)degrees * (Math.PI / 180.0);
         var sin = (float)Math.Sin(rad);
         var cos = (float)Math.Cos(rad);
+
         return (px - (int)(sin * radius * scale), py - (int)(cos * radius * scale));
     }
 
@@ -174,14 +185,18 @@ internal abstract class GadgetHud(IHudData race) : Component
     protected float TextWidth(string text, float fontSize, FontFamily family = FontFamily.NotoSans, bool bold = true)
     {
         G.SetFont(new Font(family, bold ? FontStyle.Bold : FontStyle.Plain, fontSize * _scale));
+
         return G.GetFontMetrics().MeasureText(text).X / _scale;
     }
 
     protected void Polygon(Color color, ReadOnlySpan<float> x, ReadOnlySpan<float> y)
     {
-        if (x.Length < 3 || x.Length != y.Length) return;
+        if (x.Length < 3 || x.Length != y.Length)
+
+            return;
         Span<int> px = stackalloc int[x.Length];
         Span<int> py = stackalloc int[x.Length];
+
         for (var i = 0; i < x.Length; i++)
         {
             px[i] = (int)X(x[i]);
@@ -194,9 +209,12 @@ internal abstract class GadgetHud(IHudData race) : Component
 
     protected void PolygonOutline(Color color, float width, ReadOnlySpan<float> x, ReadOnlySpan<float> y)
     {
-        if (x.Length < 3 || x.Length != y.Length) return;
+        if (x.Length < 3 || x.Length != y.Length)
+
+            return;
         Span<int> px = stackalloc int[x.Length];
         Span<int> py = stackalloc int[x.Length];
+
         for (var i = 0; i < x.Length; i++)
         {
             px[i] = (int)X(x[i]);
@@ -257,10 +275,12 @@ internal abstract class GadgetHud(IHudData race) : Component
         static (float X, float Y) At(float ox, float oy, float rx, float ry, float deg)
         {
             var rad = deg * MathF.PI / 180f;
+
             return (ox + rx * MathF.Cos(rad), oy - ry * MathF.Sin(rad));
         }
 
         var start = At(ox, oy, dx, dy, startDeg);
+
         if (toCentre)
         {
             G.MoveTo(ox, oy);
@@ -277,7 +297,8 @@ internal abstract class GadgetHud(IHudData race) : Component
             G.LineTo(p.X, p.Y);
         }
 
-        if (toCentre) G.LineTo(ox, oy);
+        if (toCentre)
+            G.LineTo(ox, oy);
     }
 
     /// <summary>phy's `drawArc(x, y, w, h, start, sweep)`: a stroked arc.</summary>
@@ -331,7 +352,9 @@ internal abstract class GadgetHud(IHudData race) : Component
     {
         foreach (var contour in region.Contours)
         {
-            if (contour.Length < 3) continue;
+            if (contour.Length < 3)
+
+                continue;
             G.MoveTo(X(contour[0].X), Y(contour[0].Y));
             for (var i = 1; i < contour.Length; i++)
                 G.LineTo(X(contour[i].X), Y(contour[i].Y));
@@ -378,10 +401,12 @@ internal abstract class GadgetHud(IHudData race) : Component
     {
         var amount = (int)(98 * Math.Clamp(damage, 0, 1));
         var green = amount > 33 ? (int)(244 - 233f * (amount - 33) / 65) : 244;
+
         if (blink && amount > 70 && SettingsMenu.HudFlash)
         {
             var period = (168 - amount * 1.5f) / 30;
-            if (Clock % period > period / 2) green = 170;
+            if (Clock % period > period / 2)
+                green = 170;
         }
 
         return new Color(244, Math.Clamp(green, 0, 255), 11, alpha);
@@ -428,9 +453,12 @@ internal abstract class GadgetHud(IHudData race) : Component
     /// <summary>Screen-space polygon, for gauge vertices already transformed by <see cref="Polar"/>.</summary>
     protected void ScreenPolygon(Color color, ReadOnlySpan<float> x, ReadOnlySpan<float> y)
     {
-        if (x.Length < 3 || x.Length != y.Length) return;
+        if (x.Length < 3 || x.Length != y.Length)
+
+            return;
         Span<int> px = stackalloc int[x.Length];
         Span<int> py = stackalloc int[x.Length];
+
         for (var i = 0; i < x.Length; i++)
         {
             px[i] = (int)x[i];
@@ -444,9 +472,12 @@ internal abstract class GadgetHud(IHudData race) : Component
     /// <summary>Screen-space polygon outline, for the arrow's lit border.</summary>
     protected void ScreenPolygonOutline(Color color, float width, ReadOnlySpan<float> x, ReadOnlySpan<float> y)
     {
-        if (x.Length < 3 || x.Length != y.Length) return;
+        if (x.Length < 3 || x.Length != y.Length)
+
+            return;
         Span<int> px = stackalloc int[x.Length];
         Span<int> py = stackalloc int[x.Length];
+
         for (var i = 0; i < x.Length; i++)
         {
             px[i] = (int)x[i];
@@ -475,6 +506,7 @@ internal abstract class GadgetHud(IHudData race) : Component
     protected static string Time(int ms)
     {
         ms = Math.Max(0, ms);
+
         return $"{ms / 60000:00}:{ms / 1000 % 60:00}.{ms % 1000:00}";
     }
 }

@@ -49,6 +49,7 @@ public abstract partial class Node
         if (Renderer.CurrentScope is { } scope)
         {
             register(scope);
+
             return;
         }
 
@@ -62,6 +63,7 @@ public abstract partial class Node
         if (Renderer.CurrentScope is { } current)
         {
             current.Adopt(scope);
+
             return;
         }
 
@@ -73,6 +75,7 @@ public abstract partial class Node
     internal void AdoptPendingScope(RenderScope scope)
     {
         if (_pendingScope is null)
+
             return;
 
         var pending = _pendingScope;

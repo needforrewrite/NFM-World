@@ -73,11 +73,14 @@ public sealed class LocalRaceHost : IRaceHost
     )
     {
         var clientPlayerIndex = parameters.Players.FindIndex(e => e.IsClientPlayer);
+
         if (clientPlayerIndex < 0)
+
             throw new InvalidOperationException("A local race needs exactly one client player.");
 
         var ownerId = Guid.NewGuid();
         var ids = new List<ServerSidePlayerInfo>(parameters.Players.Count);
+
         for (var i = 0; i < parameters.Players.Count; i++)
         {
             var player = parameters.Players[i];
@@ -101,7 +104,8 @@ public sealed class LocalRaceHost : IRaceHost
 
         host._pendingFactory = factory;
         host._pendingParameters = new ServerGamemodeParameters { Players = ids };
-        if (!deferred) host.InitializeServer();
+        if (!deferred)
+            host.InitializeServer();
 
         return host;
     }
@@ -114,7 +118,9 @@ public sealed class LocalRaceHost : IRaceHost
 
     private void InitializeServer()
     {
-        if (_pendingFactory is not { } factory) return;
+        if (_pendingFactory is not { } factory)
+
+            return;
         var parameters = _pendingParameters!;
         _pendingFactory = null;
         _pendingParameters = null;
@@ -129,8 +135,11 @@ public sealed class LocalRaceHost : IRaceHost
     public void Start()
     {
         if (_pendingFactory is not null)
+
             throw new InvalidOperationException("The local race stage is still loading.");
+
         if (_started)
+
             return;
 
         _started = true;
@@ -148,10 +157,12 @@ public sealed class LocalRaceHost : IRaceHost
     public void Update()
     {
         if (_serverGamemode is null)
+
             return;
 
         _serverGamemode.GameTick();
         var snapshot = _serverGamemode.GetStateSnapshot();
+
         if (!_finished && snapshot is { IsFinished: true, IsProvisional: false, Results: { } results })
         {
             _finished = true;

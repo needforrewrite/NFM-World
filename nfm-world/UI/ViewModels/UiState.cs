@@ -120,7 +120,11 @@ public static class UiState
             get
             {
                 _ = LapTimeMs.Value;
-                if (CountdownTimer.Value > 0) return $"Starting in {CountdownTimer.Value}";
+
+                if (CountdownTimer.Value > 0)
+
+                    return $"Starting in {CountdownTimer.Value}";
+
                 return StateTextEndsAt.Value is { } endsAt && DateTime.UtcNow >= endsAt
                     ? ""
                     : StateText.Value ?? "";

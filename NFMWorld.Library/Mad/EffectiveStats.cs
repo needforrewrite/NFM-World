@@ -34,6 +34,7 @@ public struct EffectiveStats
         var rage = (fix64)physics.Rage;
         var strength = fix64.One;
         var weakness = fix64.One;
+
         if (physics.Rage > 1f)
         {
             strength = fix64.One + damage * (rage - fix64.One);

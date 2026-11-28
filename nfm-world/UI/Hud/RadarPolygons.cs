@@ -22,17 +22,23 @@ internal static class RadarPolygons
         float range
     )
     {
-        if (polygons.Count == 0) return false;
+        if (polygons.Count == 0)
+
+            return false;
 
         var extent = range * (MathF.Abs(sin) + MathF.Abs(cos));
         var batch = Batches.GetValue(polygons, static polygons => new Batch(polygons));
         var count = 0;
         var half = size / 2;
+
         foreach (var i in batch.Index.Query(clientX - extent, clientZ - extent, clientX + extent, clientZ + extent))
         {
             var polygon = polygons[i];
             var vertices = polygon.Vertices;
-            if (vertices.Count < 3) continue;
+
+            if (vertices.Count < 3)
+
+                continue;
 
             var triangles = batch.Triangles[i];
             var vertexCount = triangles?.Length ?? 3;
@@ -41,6 +47,7 @@ internal static class RadarPolygons
             var maxX = float.NegativeInfinity;
             var minY = float.PositiveInfinity;
             var maxY = float.NegativeInfinity;
+
             for (var j = 0; j < vertexCount; j++)
             {
                 var vertex = triangles == null
@@ -54,8 +61,13 @@ internal static class RadarPolygons
                 batch.Positions[count + j] = p;
             }
 
-            if (maxX < centerX - half || minX > centerX + half ||
-                maxY < centerY - half || minY > centerY + half) continue;
+            if (maxX < centerX - half
+                || minX > centerX + half
+                ||
+                maxY < centerY - half
+                || minY > centerY + half)
+
+                continue;
 
             var color = new Color(polygon.R, polygon.G, polygon.B, 255);
             batch.Colors.AsSpan(count, vertexCount).Fill(color);
@@ -64,6 +76,7 @@ internal static class RadarPolygons
 
         if (count != 0)
             TheGraphics.G.FillTriangles(batch.Positions.AsSpan(0, count), batch.Colors.AsSpan(0, count));
+
         return true;
     }
 
@@ -87,7 +100,9 @@ internal static class RadarPolygons
 
         public void EnsureCapacity(int count)
         {
-            if (Positions.Length >= count) return;
+            if (Positions.Length >= count)
+
+                return;
             var capacity = Math.Max(count, Math.Max(Positions.Length * 2, 256));
             Array.Resize(ref Positions, capacity);
             Array.Resize(ref Colors, capacity);
@@ -102,6 +117,7 @@ internal static class RadarPolygons
             tess.AddContour(contour);
             tess.Tessellate(WindingRule.NonZero, ElementType.Polygons, 3, null, new Vec3(0, 0, 1));
             var result = new Vector2[tess.ElementCount * 3];
+
             for (var i = 0; i < result.Length; i++)
             {
                 var p = tess.Vertices[tess.Elements[i]].Position;

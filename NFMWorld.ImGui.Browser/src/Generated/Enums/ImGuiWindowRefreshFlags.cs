@@ -13,30 +13,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiWindowRefreshFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiWindowRefreshFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// [EXPERIMENTAL] Try to keep existing contents, USER MUST NOT HONOR BEGIN() RETURNING FALSE AND NOT APPEND.<br/>
-		/// </summary>
-		TryToAvoidRefresh = unchecked(1),
+        /// <summary>
+        /// [EXPERIMENTAL] Try to keep existing contents, USER MUST NOT HONOR BEGIN() RETURNING FALSE AND NOT APPEND.<br/>
+        /// </summary>
+        TryToAvoidRefresh = unchecked(1),
 
-		/// <summary>
-		/// [EXPERIMENTAL] Always refresh on hover<br/>
-		/// </summary>
-		OnHover = unchecked(2),
+        /// <summary>
+        /// [EXPERIMENTAL] Always refresh on hover<br/>
+        /// </summary>
+        OnHover = unchecked(2),
 
-		/// <summary>
-		/// [EXPERIMENTAL] Always refresh on focus<br/>
-		/// </summary>
-		OnFocus = unchecked(4),
-	}
+        /// <summary>
+        /// [EXPERIMENTAL] Always refresh on focus<br/>
+        /// </summary>
+        OnFocus = unchecked(4),
+    }
 }

@@ -74,14 +74,22 @@ internal sealed class GarageController
         _quickSelect = quickSelect;
         _confirmLabel = confirmLabel;
         _canSelect = canSelect;
-        if (currentCar == null) return;
+
+        if (currentCar == null)
+
+            return;
+
         foreach (var (collection, cars) in BackendGameSparker.cars)
         {
             var index = cars.FindIndex(c => c.FileName == currentCar.Rad.FileName);
-            if (index < 0) continue;
+
+            if (index < 0)
+
+                continue;
             _currentCollection = collection;
             _cars = cars;
             _selectedCarIdx = index;
+
             break;
         }
     }
@@ -94,20 +102,27 @@ internal sealed class GarageController
         // while the root has focus, and clicking a field (or any focusable child) takes it
         // away. A text field really does own the keys; anything else does not, or clicking
         // a slider would kill the garage's navigation.
+
         if (imguiWantsKeyboard && FocusManager.FocusedNode is TextInput or TextArea)
+
             return;
 
         switch (UiState.Garage.Page.Value)
         {
             case GaragePage.Home:
                 HomeKey(key);
+
                 break;
             case GaragePage.Cars:
-                if (_quickSelect) QuickSelectKey(key);
-                else CarsKey(key);
+                if (_quickSelect)
+                    QuickSelectKey(key);
+                else
+                    CarsKey(key);
+
                 break;
             case GaragePage.Colors:
                 ColorsKey(key, keys);
+
                 break;
         }
     }
@@ -119,6 +134,7 @@ internal sealed class GarageController
     public void KeyRepeated(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         if (key is not (Key.Up or Key.Down or Key.Left or Key.Right))
+
             return;
 
         KeyPressed(key, imguiWantsKeyboard, keys);
@@ -130,15 +146,19 @@ internal sealed class GarageController
         {
             case Key.Up:
                 MoveHome(-1);
+
                 break;
             case Key.Down:
                 MoveHome(1);
+
                 break;
             case Key.Enter:
                 ActivateHome(UiState.Garage.HomeCursor.Value);
+
                 break;
             case Key.Escape:
                 SelectionCancelled();
+
                 break;
         }
     }
@@ -151,24 +171,29 @@ internal sealed class GarageController
             {
                 case Key.Left:
                     MoveCategory(-1);
+
                     break;
                 case Key.Right:
                     MoveCategory(1);
+
                     break;
                 case Key.Down:
                 case Key.Enter:
                     GarageView.NavigatingCategories.Value = false;
                     if (!VisibleCars().Any(car => car.FileName == CurrentIdentity()))
                         MoveSelection(0);
+
                     break;
                 case Key.Up:
                     GarageView.NavigatingCategories.Value = false;
                     var last = VisibleCars().LastOrDefault();
                     if (last is not null)
                         SelectCar(last.Collection, last.FileName);
+
                     break;
                 case Key.Escape:
                     GarageView.NavigatingCategories.Value = false;
+
                     break;
             }
 
@@ -179,22 +204,28 @@ internal sealed class GarageController
         {
             case Key.Left:
                 MoveSelection(-1);
+
                 break;
             case Key.Right:
                 MoveSelection(1);
+
                 break;
             case Key.Up:
                 MoveGridRow(-1);
+
                 break;
             case Key.Down:
                 MoveGridRow(1);
+
                 break;
             case Key.Enter:
                 SelectedCar();
+
                 break;
             case Key.Escape:
                 if (!GarageView.ClearSearch())
                     SetPage(GaragePage.Home);
+
                 break;
         }
     }
@@ -202,7 +233,10 @@ internal sealed class GarageController
     private void MoveCategory(int delta)
     {
         var categories = UiState.Garage.Categories.Value;
-        if (categories.Count == 0) return;
+
+        if (categories.Count == 0)
+
+            return;
         var index = categories.ToList().IndexOf(UiState.Garage.Category.Value);
         SetCategory(categories[(index + delta + categories.Count) % categories.Count]);
     }
@@ -211,8 +245,11 @@ internal sealed class GarageController
     {
         if (FocusManager.FocusedNode is Component { Name: "Quick car category" } category)
         {
-            if (key == Key.Escape) FocusManager.ClearFocus();
-            else _quickCategoryNavigation.HandleKey(category, key);
+            if (key == Key.Escape)
+                FocusManager.ClearFocus();
+            else
+                _quickCategoryNavigation.HandleKey(category, key);
+
             return;
         }
 
@@ -236,7 +273,9 @@ internal sealed class GarageController
             case Key.Enter: SelectedCar(); break;
             case Key.C: SetPage(GaragePage.Colors); break;
             case Key.Escape:
-                if (!GarageView.ClearSearch()) SelectionCancelled();
+                if (!GarageView.ClearSearch())
+                    SelectionCancelled();
+
                 break;
         }
     }
@@ -244,10 +283,12 @@ internal sealed class GarageController
     private void ColorsKey(Key key, in Keys keys)
     {
         var state = UiState.Garage;
+
         if (key == Key.Tab && state.HasBodyColors)
         {
             SetCustomizeTab(!state.WheelsTab.Value);
             state.CustomizeTabsFocused.Value = true;
+
             return;
         }
 
@@ -255,6 +296,7 @@ internal sealed class GarageController
         {
             SetCustomizeTab(key == Key.Right);
             state.CustomizeTabsFocused.Value = true;
+
             return;
         }
 
@@ -263,43 +305,58 @@ internal sealed class GarageController
             state.CustomizeTabsFocused.Value = false;
             state.ActiveColorSlot.Value = key == Key.Up ? state.EditingSlots.Count
                 : state.EditingWheels && state.HasCustomWheels.Value ? -1 : 0;
+
             return;
         }
 
-        if (state.EditingWheels && state.ActiveColorSlot.Value == -1
+        if (state.EditingWheels
+            && state.ActiveColorSlot.Value == -1
             && key is (Key.Left or Key.Right or Key.Enter))
         {
-            var original = !state.HasCustomWheels.Value || key == Key.Right
+            var original = !state.HasCustomWheels.Value
+                           || key == Key.Right
                            || key == Key.Enter && state.OriginalWheels.Value;
             SetWheelStyle(original);
             state.ActiveColorSlot.Value = -1;
+
             return;
         }
 
         var shift = keys.ShiftKey;
+
         switch (key)
         {
             case Key.Enter:
                 if (state.EditingSlots.Count > 0
                     && state.ActiveColorSlot.Value == state.EditingSlots.Count)
                     ResetColors();
+
                 break;
             case Key.Up:
                 MoveColorSlot(-1);
+
                 break;
             case Key.Down:
                 MoveColorSlot(1);
+
                 break;
             case Key.Left:
-                if (shift) AdjustColor(-16);
-                else MoveColorChannel(-1);
+                if (shift)
+                    AdjustColor(-16);
+                else
+                    MoveColorChannel(-1);
+
                 break;
             case Key.Right:
-                if (shift) AdjustColor(16);
-                else MoveColorChannel(1);
+                if (shift)
+                    AdjustColor(16);
+                else
+                    MoveColorChannel(1);
+
                 break;
             case Key.Escape:
                 SetPage(_quickSelect ? GaragePage.Cars : GaragePage.Home);
+
                 break;
         }
     }
@@ -322,9 +379,11 @@ internal sealed class GarageController
             PaintInteraction: active =>
             {
                 _painting = active;
-                if (!active) FlushThumbnailChanges();
+                if (!active)
+                    FlushThumbnailChanges();
             }
         );
+
         return _quickSelect
             ? GarageView.BuildQuickSelect(actions, _confirmLabel, thumbnailPreview: _visualOf is null)
             : GarageView.Build(actions);
@@ -341,6 +400,7 @@ internal sealed class GarageController
         UiState.Garage.WheelsTab.Value = false;
         UiState.Garage.CustomizeTabsFocused.Value = false;
         UiState.Garage.OnlineStatus.Value = "";
+
         if (_backendCar == null)
         {
             SetupCurrentCar();
@@ -359,6 +419,7 @@ internal sealed class GarageController
         // Reopening starts on the tab the committed car lives in.
         UiState.Garage.Category.Value = _currentCollection.ToString();
         GarageDataRequested();
+
         if (_quickSelect)
         {
             SetPage(GaragePage.Cars);
@@ -386,8 +447,11 @@ internal sealed class GarageController
     {
         _painting = false;
         FlushThumbnailChanges();
-        if (_quickSelect && page == GaragePage.Home) page = GaragePage.Cars;
+        if (_quickSelect && page == GaragePage.Home)
+            page = GaragePage.Cars;
+
         if (UiState.Garage.Page.Value == page)
+
             return;
 
         CarPaint.Flush();
@@ -405,13 +469,19 @@ internal sealed class GarageController
     {
         var entries = GarageView.HomeEntries;
         var count = entries.Count;
-        if (count == 0) return;
+
+        if (count == 0)
+
+            return;
 
         var index = Math.Clamp(UiState.Garage.HomeCursor.Value, 0, count - 1);
+
         for (var step = 0; step < count; step++)
         {
             index = (index + delta + count) % count;
+
             if (entries[index].Enabled)
+
                 break;
         }
 
@@ -421,26 +491,33 @@ internal sealed class GarageController
     private void ActivateHome(int index)
     {
         var entries = GarageView.HomeEntries;
+
         if (index < 0 || index >= entries.Count)
+
             return;
 
         UiState.Garage.HomeCursor.Value = index;
         var entry = entries[index];
+
         if (!entry.Enabled)
+
             return;
 
         switch (entry.Action)
         {
             case GarageHomeAction.ChangeCar:
                 SetPage(GaragePage.Cars);
+
                 break;
             case GarageHomeAction.CustomizeCar:
                 if (_backendCar == null)
                     SetupCurrentCar();
                 SetPage(GaragePage.Colors);
+
                 break;
             case GarageHomeAction.Back:
                 SelectionCancelled();
+
                 break;
         }
     }
@@ -456,6 +533,7 @@ internal sealed class GarageController
         if (collection == GarageView.OnlineCategory)
         {
             _ = PrepareOnlineCarAsync(fileName);
+
             return;
         }
 
@@ -463,10 +541,12 @@ internal sealed class GarageController
         _onlineGeneration++;
 
         // Search ALL collections, switching if the car lives in another one.
+
         if (Enum.TryParse<Collection>(collection, out var col)
             && BackendGameSparker.cars.TryGetValue(col, out var cars))
         {
             var idx = cars.ToList().FindIndex(c => c.FileName == fileName);
+
             if (idx >= 0 && BackendCar.IsDrivable(cars[idx]))
             {
                 _currentCollection = col;
@@ -496,6 +576,7 @@ internal sealed class GarageController
             _selectionReady = false;
             // List recent public cars straight away; searching narrows it.
             SearchOnline("");
+
             return;
         }
 
@@ -505,6 +586,7 @@ internal sealed class GarageController
         // The grid changed under the selection, so keep it only if the car is in this tab.
         var identity = CurrentIdentity();
         var shown = UiState.Garage.Collections.Value.SelectMany(collection => collection.Cars).ToArray();
+
         if (shown.Length > 0
             && !shown.Any(car => string.Equals(car.FileName, identity, StringComparison.OrdinalIgnoreCase)))
         {
@@ -527,18 +609,21 @@ internal sealed class GarageController
                 )
                 .Where(collection => collection.Cars.Count > 0)
                 .ToArray();
-            if (_quickSelect && UiState.Garage.CurrentCar.Value is { } selected
+            if (_quickSelect
+                && UiState.Garage.CurrentCar.Value is { } selected
                 && !UiState.Garage.Collections.Value.SelectMany(collection => collection.Cars)
                 .Any(car => car.FileName == selected.FileName))
                 UiState.Garage.Collections.Value = UiState.Garage.Collections.Value
                     .Append(new CarCollectionViewModel(selected.Collection, [selected])).ToArray();
             foreach (var car in BackendGameSparker.cars.Values.SelectMany(cars => cars).Where(BackendCar.IsDrivable))
                 CarThumbnails.Request(car.FileName, car);
+
             return;
         }
 
         if (!Enum.TryParse<Collection>(category, out var collection)
             || !BackendGameSparker.cars.TryGetValue(collection, out var cars))
+
             return;
 
         _currentCollection = collection;
@@ -566,6 +651,7 @@ internal sealed class GarageController
             .ToList();
         ids.Insert(0, GarageView.AllCategory);
         ids.Add(GarageView.OnlineCategory);
+
         return ids;
     }
 
@@ -585,23 +671,28 @@ internal sealed class GarageController
                 0,
                 0,
                 0
-            ))
+            )
+            )
             .ToArray();
 
     /// <summary>Moves the highlighted car through the list the view is showing.</summary>
     private void MoveSelection(int delta)
     {
         var cars = VisibleCars();
+
         if (cars.Count == 0)
+
             return;
 
         var identity = CurrentIdentity();
         var index = -1;
+
         for (var i = 0; i < cars.Count; i++)
         {
             if (string.Equals(cars[i].FileName, identity, StringComparison.OrdinalIgnoreCase))
             {
                 index = i;
+
                 break;
             }
         }
@@ -609,6 +700,7 @@ internal sealed class GarageController
         if (index < 0)
         {
             SelectCar(cars[0].Collection, cars[0].FileName);
+
             return;
         }
 
@@ -628,13 +720,17 @@ internal sealed class GarageController
             .SelectMany(collection => collection.Cars.Chunk(GarageView.GridColumns))
             .ToArray();
         var row = Array.FindIndex(rows, cars => cars.Any(car => car.FileName == CurrentIdentity()));
+
         if (delta < 0 && row <= 0)
         {
             GarageView.NavigatingCategories.Value = true;
+
             return;
         }
 
-        if (rows.Length == 0) return;
+        if (rows.Length == 0)
+
+            return;
         var column = row < 0 ? 0 : Array.FindIndex(rows[row], car => car.FileName == CurrentIdentity());
         var next = rows[(row + delta + rows.Length) % rows.Length];
         var selected = next[Math.Min(column, next.Length - 1)];
@@ -654,15 +750,18 @@ internal sealed class GarageController
         {
             UiState.Garage.Collections.Value = [];
             PushCurrentCar();
+
             return;
         }
 
         UiState.Garage.Category.Value = category;
+
         if (category == GarageView.OnlineCategory)
         {
             UiState.Garage.OnlineSource.Value = true;
             _selectionReady = false;
             SearchOnline("");
+
             return;
         }
 
@@ -672,11 +771,15 @@ internal sealed class GarageController
 
     private void SetupCurrentCar(bool force = false)
     {
-        if (_cars.Count == 0) return;
+        if (_cars.Count == 0)
+
+            return;
         var rad = _cars[_selectedCarIdx];
+
         if (!BackendCar.IsDrivable(rad))
         {
             UiState.Garage.OnlineStatus.Value = "That car is incomplete and cannot be previewed.";
+
             return;
         }
 
@@ -687,6 +790,7 @@ internal sealed class GarageController
             var instance = CarPaint.CreateInstance(rad);
             CarPaint.Apply(instance, identity);
             var previous = _backendCar;
+
             try
             {
                 _backendCar = new BackendCar(
@@ -702,6 +806,7 @@ internal sealed class GarageController
                 // A model the physics cannot build must not take the garage down with it.
                 Logging.Error($"Could not build the preview car '{rad.FileName}': {ex.Message}");
                 UiState.Garage.OnlineStatus.Value = "That car is incomplete and cannot be previewed.";
+
                 return;
             }
 
@@ -719,7 +824,10 @@ internal sealed class GarageController
     private void PushCurrentCar()
     {
         // create and position stat bars
-        if (_backendCar == null) return;
+
+        if (_backendCar == null)
+
+            return;
         float switsLevel = (_backendCar.Stats.Swits[2] - 220) / 90f;
         switsLevel = Math.Max(0.05f, switsLevel);
 
@@ -772,7 +880,9 @@ internal sealed class GarageController
 
     private void SetCustomizeTab(bool wheels)
     {
-        if (!UiState.Garage.HasBodyColors) return;
+        if (!UiState.Garage.HasBodyColors)
+
+            return;
         _painting = false;
         FlushThumbnailChanges();
         CarPaint.Flush();
@@ -785,7 +895,9 @@ internal sealed class GarageController
 
     private void PushWheelSlots()
     {
-        if (_backendCar is not { } car || CurrentIdentity() is not { } id) return;
+        if (_backendCar is not { } car || CurrentIdentity() is not { } id)
+
+            return;
         var style = CarWheels.Get(id);
         UiState.Garage.HasCustomWheels.Value = CarWheels.HasCustomMeshes(car.Rad);
         UiState.Garage.OriginalWheels.Value = style.OriginalWheels || !CarWheels.HasCustomMeshes(car.Rad);
@@ -795,9 +907,13 @@ internal sealed class GarageController
             rim.Slot,
             rim.Color,
             rims.Count == 1 ? "Rim Color" : $"Rim Color {index + 1}"
-        )));
+        )
+        )
+        );
         UiState.Garage.WheelColorSlots.Value = slots;
-        if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.EditingWheels
+
+        if (UiState.Garage.Page.Value == GaragePage.Colors
+            && UiState.Garage.EditingWheels
             && UiState.Garage.HasCustomWheels.Value)
         {
             CarThumbnails.RequestWheel(id, car.Rad, true);
@@ -807,7 +923,9 @@ internal sealed class GarageController
 
     private void SetWheelStyle(bool original)
     {
-        if (_backendCar is not { } car || CurrentIdentity() is not { } id) return;
+        if (_backendCar is not { } car || CurrentIdentity() is not { } id)
+
+            return;
         var style = CarWheels.Get(id);
         style.OriginalWheels = original && CarWheels.HasCustomMeshes(car.Rad);
         CarWheels.Set(id, style);
@@ -847,35 +965,43 @@ internal sealed class GarageController
     private void SetColorChannel(int slot, int channel, double value)
     {
         if (_backendCar is not { } car || CurrentIdentity() is not { Length: > 0 } identity)
+
             return;
 
         var entry = UiState.Garage.EditingSlots.FirstOrDefault(candidate => candidate.Slot == slot);
+
         if (entry is null)
+
             return;
 
         entry.SetChannel(channel, value);
         var color = entry.Color;
+
         if (UiState.Garage.EditingWheels)
         {
             var style = CarWheels.Get(identity);
+
             if (slot >= CarPaint.SlotCount)
             {
                 var group = slot - CarPaint.SlotCount;
                 var colors = style.RimColors ?? [];
-                if (group >= colors.Length) Array.Resize(ref colors, group + 1);
+                if (group >= colors.Length)
+                    Array.Resize(ref colors, group + 1);
                 colors[group] = color;
                 style.RimColors = colors;
             }
             else
             {
                 var colors = new Color3?[CarPaint.SlotCount];
-                if (style.Colors is { } saved) Array.Copy(saved, colors, Math.Min(saved.Length, colors.Length));
+                if (style.Colors is { } saved)
+                    Array.Copy(saved, colors, Math.Min(saved.Length, colors.Length));
                 colors[slot] = color;
                 style.Colors = colors;
             }
 
             CarWheels.Set(identity, style);
             RefreshWheelPaint(car, identity);
+
             return;
         }
 
@@ -888,12 +1014,15 @@ internal sealed class GarageController
     private void ResetColors()
     {
         if (_backendCar is not { } car || CurrentIdentity() is not { Length: > 0 } identity)
+
             return;
 
         if (UiState.Garage.EditingWheels)
         {
             var style = CarWheels.Get(identity);
-            if (!UiState.Garage.OriginalWheels.Value) style.Colors = [];
+            if (!UiState.Garage.OriginalWheels.Value)
+                style.Colors = [];
+
             if (CarWheels.RimSlots(car.Rad).Count > 0)
             {
                 style.RimColor = null;
@@ -904,6 +1033,7 @@ internal sealed class GarageController
             RefreshWheelPaint(car, identity);
             PushWheelSlots();
             UiState.Garage.ActiveColorSlot.Value = UiState.Garage.EditingSlots.Count;
+
             return;
         }
 
@@ -933,10 +1063,12 @@ internal sealed class GarageController
         }
 
         _changedCarThumbnails.Clear();
+
         foreach (var (key, rad) in _changedWheelThumbnails)
         {
             CarThumbnails.Invalidate(CarThumbnails.WheelKey(key.Id, key.Original));
-            if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.EditingWheels
+            if (UiState.Garage.Page.Value == GaragePage.Colors
+                && UiState.Garage.EditingWheels
                 && CurrentIdentity() == key.Id)
                 CarThumbnails.RequestWheel(key.Id, rad, key.Original);
         }
@@ -946,20 +1078,29 @@ internal sealed class GarageController
 
     public void FinishPaintInteraction()
     {
-        if (!_painting) return;
+        if (!_painting)
+
+            return;
         _painting = false;
         FlushThumbnailChanges();
     }
 
     public void RenderThumbnails(NFMWorld.Graphics.ICommandBuffer cb)
     {
-        if (_painting) return;
-        if (System.Environment.TickCount64 - _lastPaintChange >= 150) FlushThumbnailChanges();
-        if (_changedCarThumbnails.Count > 0 || _changedWheelThumbnails.Count > 0) return;
+        if (_painting)
+
+            return;
+        if (System.Environment.TickCount64 - _lastPaintChange >= 150)
+            FlushThumbnailChanges();
+
+        if (_changedCarThumbnails.Count > 0 || _changedWheelThumbnails.Count > 0)
+
+            return;
         var previewIdentity = _quickSelect && _visualOf is null && UiState.Garage.Page.Value == GaragePage.Colors
             ? CurrentIdentity() : null;
         if (previewIdentity is not null && _backendCar is { } previewCar)
             CarThumbnails.Request(previewIdentity, previewCar.Rad);
+
         if (UiState.Garage.Page.Value == GaragePage.Cars)
         {
             var shown = GarageView.Filter(UiState.Garage.Collections.Value, UiState.Garage.SearchQuery.Value)
@@ -969,8 +1110,10 @@ internal sealed class GarageController
                 CarThumbnails.Request(identity, car.Rad);
             CarThumbnails.RenderPending(cb, shown.Contains);
         }
-        else if (UiState.Garage.Page.Value == GaragePage.Colors && UiState.Garage.EditingWheels
-                 && UiState.Garage.HasCustomWheels.Value && CurrentIdentity() is { } id)
+        else if (UiState.Garage.Page.Value == GaragePage.Colors
+                 && UiState.Garage.EditingWheels
+                 && UiState.Garage.HasCustomWheels.Value
+                 && CurrentIdentity() is { } id)
         {
             if (_backendCar is { } wheelCar)
             {
@@ -978,11 +1121,13 @@ internal sealed class GarageController
                 CarThumbnails.RequestWheel(id, wheelCar.Rad, false);
             }
 
-            CarThumbnails.RenderPending(cb, key => key == previewIdentity || key == CarThumbnails.WheelKey(id, true)
+            CarThumbnails.RenderPending(cb, key => key == previewIdentity
+                                                   || key == CarThumbnails.WheelKey(id, true)
                                                    || key == CarThumbnails.WheelKey(id, false)
             );
         }
-        else CarThumbnails.RenderPending(cb, key => key == previewIdentity);
+        else
+            CarThumbnails.RenderPending(cb, key => key == previewIdentity);
     }
 
     private void MoveColorSlot(int delta)
@@ -991,9 +1136,11 @@ internal sealed class GarageController
         var count = state.EditingSlots.Count;
         var next = state.ActiveColorSlot.Value + delta;
         var minimum = state.EditingWheels && state.HasCustomWheels.Value ? -1 : 0;
+
         if (next < minimum || next > count)
         {
             state.CustomizeTabsFocused.Value = state.HasBodyColors;
+
             return;
         }
 
@@ -1003,17 +1150,26 @@ internal sealed class GarageController
     private void MoveColorChannel(int delta)
     {
         if (UiState.Garage.EditingSlots.Count == 0
-            || UiState.Garage.ActiveColorSlot.Value >= UiState.Garage.EditingSlots.Count) return;
+            || UiState.Garage.ActiveColorSlot.Value >= UiState.Garage.EditingSlots.Count)
+
+            return;
         var index = (UiState.Garage.ActiveColorChannel.Value + delta) % 3;
-        if (index < 0) index += 3;
+        if (index < 0)
+            index += 3;
         UiState.Garage.ActiveColorChannel.Value = index;
     }
 
     private void AdjustColor(int delta)
     {
         var slots = UiState.Garage.EditingSlots;
-        if (slots.Count == 0 || UiState.Garage.ActiveColorSlot.Value < 0 || UiState.Garage.ActiveColorSlot.Value >= slots
-            .Count) return;
+
+        if (slots.Count == 0
+            || UiState.Garage.ActiveColorSlot.Value < 0
+            || UiState.Garage.ActiveColorSlot.Value
+            >= slots
+            .Count)
+
+            return;
 
         var slot = slots[Math.Clamp(UiState.Garage.ActiveColorSlot.Value, 0, slots.Count - 1)];
         var channel = Math.Clamp(UiState.Garage.ActiveColorChannel.Value, 0, 2);
@@ -1028,14 +1184,17 @@ internal sealed class GarageController
     private void RefreshPreviewPaint(BackendCar car)
     {
         if (_visualOf?.Invoke(car) is not { } visual)
+
             return;
 
         var polys = visual.Mesh.Polys;
         var source = car.Rad.Polys;
         var count = Math.Min(polys.Length, source.Length);
+
         for (var i = 0; i < count; i++)
         {
             if (polys[i].Color.Equals(source[i].Color))
+
                 continue;
 
             polys[i] = polys[i] with { Color = source[i].Color };
@@ -1059,25 +1218,27 @@ internal sealed class GarageController
         {
             var page = await Content.Value.SearchAsync(query, "Car", 30, null, cancellation.Token);
             await LoadingWork.NextFrame;
+
             if (generation != _onlineGeneration)
+
                 return;
 
             var cars = page.Items
                 .Where(item => item.Eligible)
                 .Select(item => new CarStatsViewModel(
-                        RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
-                        item.Name,
-                        GarageView.OnlineCategory,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0
-                    )
+                    RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
+                    item.Name,
+                    GarageView.OnlineCategory,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                )
                     {
                         Author = item.AuthorByline,
                         Tags = item.Tags
@@ -1120,6 +1281,7 @@ internal sealed class GarageController
             ?.Author;
 
         ContentPrepareResult result;
+
         try
         {
             result = await Task.Run(
@@ -1136,16 +1298,20 @@ internal sealed class GarageController
             await LoadingWork.NextFrame;
             if (generation == _onlineGeneration)
                 UiState.Garage.OnlineStatus.Value = $"Could not load the car: {ex.Message}";
+
             return;
         }
 
         await LoadingWork.NextFrame;
+
         if (cancellation.IsCancellationRequested || generation != _onlineGeneration)
+
             return;
 
         if (!result.Ok)
         {
             UiState.Garage.OnlineStatus.Value = result.Error ?? "That car could not be prepared.";
+
             return;
         }
 
@@ -1154,9 +1320,11 @@ internal sealed class GarageController
             RadpackReader.IsArchiveId(hashOrIdentity) ? hashOrIdentity : RadpackReader.ArchivePrefix + hashOrIdentity
         );
         var (_, rad) = BackendGameSparker.GetCar(identity);
+
         if (rad is null)
         {
             UiState.Garage.OnlineStatus.Value = "The downloaded car could not be read.";
+
             return;
         }
 
@@ -1175,14 +1343,18 @@ internal sealed class GarageController
         if (!_selectionReady || _backendCar is null)
         {
             UiState.Garage.OnlineStatus.Value = "That car is not ready yet.";
+
             return;
         }
 
         if (CarSelected == null)
+
             throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelected, but it was null.");
+
         if (_canSelect?.Invoke(_selectedCarIdentity ?? _backendCar.Rad.FileName) == false)
         {
             UiState.Garage.OnlineStatus.Value = "Pick a stock or published car for multiplayer.";
+
             return;
         }
 
@@ -1195,6 +1367,7 @@ internal sealed class GarageController
     private void SelectionCancelled()
     {
         if (CarSelectionCancelled == null)
+
             throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelectionCancelled, but it was null.");
         CarPaint.Flush();
         CarSelectionCancelled.Invoke(this, EventArgs.Empty);

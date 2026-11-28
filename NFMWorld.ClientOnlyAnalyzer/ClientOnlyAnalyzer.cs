@@ -72,17 +72,22 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     )
     {
         if (!IsClientOnly(symbol))
+
             return false;
 
         // The game assembly is the client, and the tests drive client APIs against fakes
         // on purpose.
+
         if (IsClientAssembly(context.Compilation.Assembly.Name))
+
             return false;
 
         if (IsInsideRunIfOnClientArgument(node, context.SemanticModel, context.CancellationToken))
+
             return false;
 
         if (IsInsideClientOnlyChain(node, context.SemanticModel, context.CancellationToken))
+
             return false;
 
         return true;
@@ -114,11 +119,14 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         var node = context.Node;
 
         // ── skip nameof(…) — the member name is a string literal, not an access.
+
         if (IsInsideNameOf(node))
+
             return;
 
         // ── de-duplicate: skip the inner IdentifierName of a
         //    MemberAccessExpression — the outer node already reports.
+
         if (node is IdentifierNameSyntax identifier)
         {
             if (identifier.Parent is MemberAccessExpressionSyntax memberAccess
@@ -130,6 +138,7 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
 
         // ── skip the left-hand side of an assignment — AnalyzeAssignment
         //    already reports those.
+
         if (node.Parent is AssignmentExpressionSyntax assignment
             && assignment.Left == node)
         {
@@ -138,11 +147,15 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
 
         // ── skip when used as an argument — the member is being passed as a
         //    delegate or ref, not accessed for its value.
+
         if (node.Parent is ArgumentSyntax)
+
             return;
 
         var symbol = context.SemanticModel.GetSymbolInfo(node, context.CancellationToken).Symbol;
+
         if (symbol is not IPropertySymbol and not IFieldSymbol)
+
             return;
 
         if (ShouldReport(symbol, node, context))
@@ -159,7 +172,9 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         var assignment = (AssignmentExpressionSyntax)context.Node;
 
         var symbol = context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol;
+
         if (symbol is not IPropertySymbol and not IFieldSymbol)
+
             return;
 
         if (ShouldReport(symbol, assignment, context))
@@ -180,12 +195,16 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         switch (symbol)
         {
             case IMethodSymbol method:
+
                 return IsClientOnlyMethod(method);
             case IPropertySymbol property:
+
                 return IsClientOnlyProperty(property);
             case IFieldSymbol field:
+
                 return IsClientOnlyField(field);
             default:
+
                 return false;
         }
     }
@@ -201,31 +220,39 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static bool IsClientOnlyMethod(IMethodSymbol methodSymbol)
     {
         // Check the method symbol itself.
+
         if (HasAttributeOnSymbol(methodSymbol))
+
             return true;
 
         // Check the original definition (e.g., for overrides or base. calls
         // Roslyn may resolve to a symbol that strips attributes).
+
         if (methodSymbol.OriginalDefinition is { } original
             && !SymbolEqualityComparer.Default.Equals(original, methodSymbol))
         {
             if (HasAttributeOnSymbol(original))
+
                 return true;
         }
 
         // Check overridden method chain.
+
         for (var overridden = methodSymbol.OverriddenMethod;
              overridden is not null;
              overridden = overridden.OverriddenMethod)
         {
             if (HasAttributeOnSymbol(overridden))
+
                 return true;
         }
 
         // Check explicitly implemented interface methods.
+
         foreach (var ifaceMethod in methodSymbol.ExplicitInterfaceImplementations)
         {
             if (HasAttributeOnSymbol(ifaceMethod))
+
                 return true;
         }
 
@@ -233,6 +260,7 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         // it synthesises a method on the base class that does not carry the
         // original [ClientOnly] attribute. Walk all interfaces of the
         // containing type and check matching methods.
+
         if (methodSymbol.ContainingType is { } containingType)
         {
             foreach (var iface in containingType.AllInterfaces)
@@ -240,18 +268,22 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
                 foreach (var ifaceMember in iface.GetMembers(methodSymbol.Name))
                 {
                     if (ifaceMember is not IMethodSymbol ifaceMethod)
+
                         continue;
 
                     if (ifaceMethod.Parameters.Length != methodSymbol.Parameters.Length)
+
                         continue;
 
                     if (HasAttributeOnSymbol(ifaceMethod))
+
                         return true;
                 }
             }
         }
 
         // Check the associated symbol (e.g. property getter/setter).
+
         if (methodSymbol.AssociatedSymbol is { } associated
             && HasAttributeOnSymbol(associated))
         {
@@ -259,6 +291,7 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         }
 
         // Check declaring type for type-level [ClientOnly].
+
         if (methodSymbol.ContainingType is { } ct
             && HasTypeLevelClientOnly(ct))
         {
@@ -275,15 +308,19 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static bool IsClientOnlyProperty(IPropertySymbol property)
     {
         if (HasAttributeOnSymbol(property))
+
             return true;
 
         if (property.GetMethod is { } getter && IsClientOnlyMethod(getter))
+
             return true;
 
         if (property.SetMethod is { } setter && IsClientOnlyMethod(setter))
+
             return true;
 
         if (property.ContainingType is { } ct && HasTypeLevelClientOnly(ct))
+
             return true;
 
         return false;
@@ -296,9 +333,11 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     private static bool IsClientOnlyField(IFieldSymbol field)
     {
         if (HasAttributeOnSymbol(field))
+
             return true;
 
         if (field.ContainingType is { } ct && HasTypeLevelClientOnly(ct))
+
             return true;
 
         return false;
@@ -348,7 +387,9 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
             }
 
             // Stop at member or type declarations.
+
             if (current is MemberDeclarationSyntax or TypeDeclarationSyntax)
+
                 break;
         }
 
@@ -370,6 +411,7 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     )
     {
         SyntaxNode? current = node.Parent;
+
         while (current is not null)
         {
             if (GetMemberSymbol(current, semanticModel, cancellationToken) is { } symbol
@@ -385,6 +427,7 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
             }
 
             if (current is TypeDeclarationSyntax)
+
                 break;
 
             current = current.Parent;
@@ -407,29 +450,36 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         {
             // Methods, constructors, operators, destructors.
             case BaseMethodDeclarationSyntax m:
+
                 return semanticModel.GetDeclaredSymbol(m, cancellationToken);
 
             // Properties (including expression-bodied).
             case PropertyDeclarationSyntax p:
+
                 return semanticModel.GetDeclaredSymbol(p, cancellationToken);
 
             // Property / event accessors (get, set, add, remove).
             case AccessorDeclarationSyntax a:
+
                 return semanticModel.GetDeclaredSymbol(a, cancellationToken);
 
             // Events (including expression-bodied).
             case EventDeclarationSyntax e:
+
                 return semanticModel.GetDeclaredSymbol(e, cancellationToken);
 
             // Local functions.
             case LocalFunctionStatementSyntax l:
+
                 return semanticModel.GetDeclaredSymbol(l, cancellationToken);
 
             // Field initializers: walk up to the VariableDeclarator.
             case VariableDeclaratorSyntax v:
+
                 return semanticModel.GetDeclaredSymbol(v, cancellationToken);
 
             default:
+
                 return null;
         }
     }
@@ -451,12 +501,14 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
         while (current is not null)
         {
             // Stop if we hit a member declaration — we've left the local scope.
+
             if (current is MemberDeclarationSyntax)
             {
                 return false;
             }
 
             // Check if the current node is an argument to an invocation.
+
             if (current is ArgumentSyntax argument
                 && argument.Parent is ArgumentListSyntax argList
                 && argList.Parent is InvocationExpressionSyntax outerInvocation)
@@ -502,6 +554,7 @@ public sealed class ClientOnlyAnalyzer : DiagnosticAnalyzer
     {
         var parts = new List<string>();
         BuildName(type, parts);
+
         return string.Join(".", parts);
 
         static void BuildName(INamedTypeSymbol t, List<string> list)

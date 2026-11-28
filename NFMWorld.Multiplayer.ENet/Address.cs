@@ -39,9 +39,11 @@ public struct Address
         ArgumentNullException.ThrowIfNull(ip);
 
         if (!IPAddress.TryParse(ip, out var address))
+
             return false;
 
         _address = address;
+
         return true;
     }
 
@@ -54,6 +56,7 @@ public struct Address
         if (IPAddress.TryParse(hostName, out var literal))
         {
             _address = literal;
+
             return true;
         }
 
@@ -62,16 +65,20 @@ public struct Address
             var addresses = Dns.GetHostAddresses(hostName);
 
             // Prefer IPv4; the port does not carry a scope for either family here.
+
             foreach (var candidate in addresses)
+
                 if (candidate.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                 {
                     _address = candidate;
+
                     return true;
                 }
 
             if (addresses.Length > 0)
             {
                 _address = addresses[0];
+
                 return true;
             }
         }

@@ -32,6 +32,7 @@ public class UiScaleRescaleTests
     {
         var v = new View { Name = name };
         v.Styles = v.Styles with { Width = size, Height = size };
+
         return v;
     }
 

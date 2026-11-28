@@ -279,12 +279,14 @@ public sealed class GeneratorDiagnosticsTests
     private static ImmutableArray<Diagnostic> Run(string body)
     {
         (ImmutableArray<Diagnostic> diagnostics, _) = Compile(body);
+
         return diagnostics;
     }
 
     internal static string RunAndGetGenerated(string body)
     {
         (_, string source) = Compile(body);
+
         return source;
     }
 
@@ -292,12 +294,14 @@ public sealed class GeneratorDiagnosticsTests
     internal static ImmutableDictionary<string, string> RunAndGetSources(string body)
     {
         (_, _, ImmutableDictionary<string, string> sources) = CompileAll(body);
+
         return sources;
     }
 
     internal static (ImmutableArray<Diagnostic> Diagnostics, string Generated) Compile(string body)
     {
         (ImmutableArray<Diagnostic> diagnostics, string generated, _) = CompileAll(body);
+
         return (diagnostics, generated);
     }
 
@@ -311,6 +315,7 @@ public sealed class GeneratorDiagnosticsTests
 
         // The probe compiles for the running runtime, so it needs the whole trusted platform set.
         var references = new List<MetadataReference>();
+
         if (AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") is string platform)
         {
             foreach (string path in platform.Split(Path.PathSeparator))
@@ -356,6 +361,7 @@ public sealed class GeneratorDiagnosticsTests
         );
 
         var sources = ImmutableDictionary.CreateBuilder<string, string>();
+
         foreach (GeneratedSourceResult source in runs.SelectMany(r => r.GeneratedSources))
         {
             sources[source.HintName] = source.SourceText.ToString();

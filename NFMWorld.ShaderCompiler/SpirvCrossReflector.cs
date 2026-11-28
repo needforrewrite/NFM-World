@@ -107,6 +107,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         Check(_cross.ContextCreate(&context), context, "context create");
 
         ParsedIr* ir = null;
+
         try
         {
             fixed (byte* p = spirv)
@@ -330,6 +331,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         // Must come after the options are installed, and only applies to the HLSL backend -
         // the remap table is an HLSL-signature concept.
         remap?.Invoke(compiler);
+
         return compiler;
     }
 
@@ -367,6 +369,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         // them by index - as this did while every entry point happened to use every input it
         // declared - would have silently attributed `world`'s registers to `Normal`.
         var pinned = new List<GCHandle>();
+
         try
         {
             var table = new List<HlslVertexAttributeRemap>();
@@ -400,7 +403,9 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             // caller's layout is not allowed to know - the failure would surface at runtime as an
             // input layout that never binds, so it is raised here instead.
             var uncovered = reflected.Where(r => !covered.Contains(r.Location)).ToList();
+
             if (uncovered.Count > 0)
+
                 throw new InvalidOperationException(
                     $"The vertex shader declares semantics at locations "
                     + $"[{string.Join(", ", declaredInputs.Select((d, i) => i))}] but the SPIR-V has "
@@ -414,7 +419,8 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         }
         finally
         {
-            foreach (var handle in pinned) handle.Free();
+            foreach (var handle in pinned)
+                handle.Free();
         }
     }
 
@@ -437,6 +443,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         foreach (var declared in declaredInputs)
         {
             if (declared.Registers <= 1)
+
                 continue;
             var (baseName, baseIndex) = SplitSemantic(declared.Semantic);
             for (var column = 0; column < declared.Registers; column++)
@@ -488,13 +495,16 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         ReflectedResource* list = null;
         UIntPtr count = 0;
         Check(_cross.ResourcesGetResourceListForType(resources, varyings, &list, &count), null, "varyings");
+
         for (nuint i = 0; i < (nuint)count; i++)
         {
             var id = list[i].Id;
 
             // gl_Position, gl_PointSize and gl_FragCoord are matched by the driver under their own
             // built-in names and must keep them.
+
             if (_cross.CompilerHasDecoration(compiler, id, Decoration.BuiltIn) != 0)
+
                 continue;
 
             var location = (int)_cross.CompilerGetDecoration(compiler, id, Decoration.Location);
@@ -541,7 +551,9 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             // image's own name is what makes the two agree.
             var imageId = samplers[i].ImageId;
             var name = _cross.CompilerGetNameS(compiler, imageId);
+
             if (string.IsNullOrEmpty(name))
+
                 continue;
 
             _cross.CompilerSetName(compiler, samplers[i].CombinedId, name);
@@ -557,6 +569,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         ReflectedResource* list = null;
         UIntPtr count = 0;
         Check(_cross.ResourcesGetResourceListForType(resources, ResourceType.StageInput, &list, &count), null, "stage inputs");
+
         for (nuint i = 0; i < (nuint)count; i++)
         {
             var id = list[i].Id;
@@ -571,6 +584,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         }
 
         inputs.Sort((a, b) => a.Location.CompareTo(b.Location));
+
         return inputs;
     }
 
@@ -578,7 +592,9 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
     private static (string Name, int Index) SplitSemantic(string semantic)
     {
         var split = semantic.Length;
-        while (split > 0 && char.IsAsciiDigit(semantic[split - 1])) split--;
+        while (split > 0 && char.IsAsciiDigit(semantic[split - 1]))
+            split--;
+
         return split == semantic.Length ? (semantic, 0) : (semantic[..split], int.Parse(semantic[split..]));
     }
 
@@ -588,11 +604,18 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         EntryPoint* entries = null;
         UIntPtr count = 0;
         Check(_cross.CompilerGetEntryPoints(compiler, &entries, &count), null, "get entry points");
+
         for (nuint i = 0; i < (nuint)count; i++)
         {
             var name = Marshal.PtrToStringUTF8((nint)entries[i].Name);
-            if (entries[i].ExecutionModel != model) continue;
-            if (!string.IsNullOrEmpty(name)) return name;
+
+            if (entries[i].ExecutionModel != model)
+
+                continue;
+
+            if (!string.IsNullOrEmpty(name))
+
+                return name;
         }
 
         return null;
@@ -602,8 +625,11 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
     {
         byte* source = null;
         var result = _cross.CompilerCompile(compiler, &source);
+
         if (result != Result.Success)
+
             throw new InvalidOperationException($"{what} cross-compile failed: {_cross.ContextGetLastErrorStringS(context)}");
+
         return Marshal.PtrToStringUTF8((nint)source) ?? "";
     }
 
@@ -614,6 +640,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         UIntPtr count = 0;
 
         Check(_cross.ResourcesGetResourceListForType(resources, ResourceType.StageInput, &list, &count), null, "stage inputs");
+
         for (nuint i = 0; i < (nuint)count; i++)
         {
             var id = list[i].Id;
@@ -632,6 +659,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
 
         var textures = new List<TextureBinding>();
         Check(_cross.ResourcesGetResourceListForType(resources, ResourceType.SeparateImage, &list, &count), null, "textures");
+
         for (nuint i = 0; i < (nuint)count; i++)
         {
             var id = list[i].Id;
@@ -642,6 +670,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
 
         var samplers = new List<SamplerBinding>();
         Check(_cross.ResourcesGetResourceListForType(resources, ResourceType.SeparateSamplers, &list, &count), null, "samplers");
+
         for (nuint i = 0; i < (nuint)count; i++)
         {
             var id = list[i].Id;
@@ -656,13 +685,15 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
             null,
             "uniform buffers"
         );
+
         for (nuint i = 0; i < (nuint)count; i++)
         {
             // For a uniform buffer, BaseTypeId is the block's struct type (the thing with
             // the members) and Id is the variable that carries the Binding decoration.
             var id = list[i].Id;
             var name = _cross.CompilerGetNameS(compiler, list[i].BaseTypeId)
-                       ?? _cross.CompilerGetNameS(compiler, id) ?? $"ub{i}";
+                       ?? _cross.CompilerGetNameS(compiler, id)
+                       ?? $"ub{i}";
             var binding = _cross.CompilerGetDecoration(compiler, id, Decoration.Binding);
             blocks.Add(ReflectBlock(compiler, id, list[i].BaseTypeId, binding, name));
         }
@@ -677,7 +708,9 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
     private UniformBlock ReflectBlock(Compiler* compiler, uint id, uint structTypeId, uint binding, string name)
     {
         var type = _cross.CompilerGetTypeHandle(compiler, structTypeId);
+
         if (type is null)
+
             return new UniformBlock(name, name, 0, Array.Empty<UniformMember>(), (int)binding) { SpirvId = (int)id };
 
         UIntPtr size = 0;
@@ -685,6 +718,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
 
         var members = new List<UniformMember>();
         var memberCount = _cross.TypeGetNumMemberTypes(type);
+
         for (uint m = 0; m < memberCount; m++)
         {
             // Member names hang off the struct type id, not the block variable's id.
@@ -722,6 +756,7 @@ public sealed unsafe class SpirvCrossReflector : IDisposable
         if (result != Result.Success)
         {
             var msg = context is null ? "" : _cross.ContextGetLastErrorStringS(context);
+
             throw new InvalidOperationException($"{what} failed: {result} {msg}");
         }
     }

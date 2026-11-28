@@ -104,12 +104,16 @@ public class IdleResourceCacheTests
         Resource Create(string _)
         {
             Interlocked.Increment(ref creates);
+
             return new Resource();
         }
 
         var root = cache.Acquire("stage", Create);
         var resource = root.Value;
-        Parallel.For(0, 128, _ =>
+        Parallel.For(
+            0,
+            128,
+            _ =>
             {
                 using var lease = cache.Acquire("stage", Create);
                 cache.Trim(clearUnused: true);
@@ -159,10 +163,16 @@ public class IdleResourceCacheTests
     public void FailedDisposalDoesNotSkipTheOtherEvictedResources()
     {
         Resource? failing = null;
-        var cache = new IdleResourceCache<string, Resource>(1, TimeSpan.Zero, resource =>
+        var cache = new IdleResourceCache<string, Resource>(
+            1,
+            TimeSpan.Zero,
+            resource =>
             {
                 resource.Dispose();
-                if (ReferenceEquals(resource, failing)) throw new InvalidOperationException("simulated disposal failure");
+
+                if (ReferenceEquals(resource, failing))
+
+                    throw new InvalidOperationException("simulated disposal failure");
             }
         );
         var first = cache.Acquire("first", _ => new Resource());

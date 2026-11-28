@@ -101,6 +101,7 @@ namespace Poly2Tri
         public override bool Equals(Object obj)
         {
             Point2D p = obj as Point2D;
+
             if (p != null)
             {
                 return Equals(p);
@@ -327,6 +328,7 @@ namespace Poly2Tri
         {
             Point2D p = new Point2D(a);
             p.Clamp(low, high);
+
             return p;
         }
 
@@ -335,6 +337,7 @@ namespace Poly2Tri
             Point2D p = new Point2D();
             p.X = Math.Min(a.X, b.X);
             p.Y = Math.Min(a.Y, b.Y);
+
             return p;
         }
 
@@ -343,18 +346,21 @@ namespace Poly2Tri
             Point2D p = new Point2D();
             p.X = Math.Max(a.X, b.X);
             p.Y = Math.Max(a.Y, b.Y);
+
             return p;
         }
 
         public static Point2D Abs(Point2D a)
         {
             Point2D p = new Point2D(Math.Abs(a.X), Math.Abs(a.Y));
+
             return p;
         }
 
         public static Point2D Reciprocal(Point2D a)
         {
             Point2D p = new Point2D(1.0 / a.X, 1.0 / a.Y);
+
             return p;
         }
 
@@ -362,12 +368,14 @@ namespace Poly2Tri
         public static Point2D Perpendicular(Point2D lhs, double scalar)
         {
             Point2D p = new Point2D(lhs.Y * scalar, lhs.X * -scalar);
+
             return p;
         }
 
         public static Point2D Perpendicular(double scalar, Point2D rhs)
         {
             Point2D p = new Point2D(-scalar * rhs.Y, scalar * rhs.X);
+
             return p;
         }
 
@@ -383,6 +391,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Add(rhs);
+
             return result;
         }
 
@@ -390,6 +399,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Add(scalar);
+
             return result;
         }
 
@@ -397,6 +407,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Subtract(rhs);
+
             return result;
         }
 
@@ -404,6 +415,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Subtract(scalar);
+
             return result;
         }
 
@@ -411,6 +423,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Multiply(rhs);
+
             return result;
         }
 
@@ -418,6 +431,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Multiply(scalar);
+
             return result;
         }
 
@@ -425,6 +439,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Multiply(scalar);
+
             return result;
         }
 
@@ -432,6 +447,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Divide(rhs);
+
             return result;
         }
 
@@ -439,6 +455,7 @@ namespace Poly2Tri
         {
             Point2D result = new Point2D(lhs);
             result.Divide(scalar);
+
             return result;
         }
 
@@ -447,6 +464,7 @@ namespace Poly2Tri
         {
             Point2D tmp = new Point2D(p);
             tmp.Negate();
+
             return tmp;
         }
 
@@ -489,6 +507,7 @@ namespace Poly2Tri
         public bool MoveNext()
         {
             position++;
+
             return (position < mPoints.Count);
         }
 

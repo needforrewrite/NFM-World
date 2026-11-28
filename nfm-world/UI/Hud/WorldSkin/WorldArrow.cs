@@ -28,10 +28,12 @@ internal sealed class WorldArrow : Component
         if (_race.ArrowAngle is not { } target)
         {
             _lastTicks = 0;
+
             return;
         }
 
         var now = System.Environment.TickCount64;
+
         if (_lastTicks == 0)
             _shown = target;
         else
@@ -47,6 +49,7 @@ internal sealed class WorldArrow : Component
         var cos = MathF.Cos(radians);
         Span<int> px = stackalloc int[7];
         Span<int> py = stackalloc int[7];
+
         for (var i = 0; i < 7; i++)
         {
             px[i] = (int)(position.X + size.X / 2 + (Xs[i] * cos - Ys[i] * sin) * size.X);
@@ -54,6 +57,7 @@ internal sealed class WorldArrow : Component
         }
 
         G.SaveState();
+
         try
         {
             G.SetColor(_race.ArrowLocked ? Theme.Warning : Theme.MenuBlue);

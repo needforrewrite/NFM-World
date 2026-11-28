@@ -25,7 +25,8 @@ public sealed class ReplayBrowserPhase : BasePhase
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _browser.Dispose();
+        if (disposing)
+            _browser.Dispose();
         base.Dispose(disposing);
     }
 }

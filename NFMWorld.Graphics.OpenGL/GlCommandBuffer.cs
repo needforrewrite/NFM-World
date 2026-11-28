@@ -148,7 +148,9 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         // running under the new shader. Skipping it is not a missed optimisation here, it is a
         // broken frame; it was skipped once, and the symptom was a dead z-buffer and black quads
         // around everything the changed pipeline drew.
+
         if (ReferenceEquals(_pipeline, glPipeline) && !_pipelineStateLostToClear)
+
             return;
 
         _pipeline = glPipeline;
@@ -186,6 +188,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     private void ApplyAfterClear()
     {
         if (_pipeline is null || !_pipelineStateLostToClear)
+
             return;
 
         _pipelineStateLostToClear = false;
@@ -206,6 +209,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         var end = 0;
         foreach (var uniform in pipeline.Reflection.Uniforms)
             end = Math.Max(end, uniform.Offset + uniform.SizeInBytes);
+
         return (end + 15) & ~15;
     }
 
@@ -234,6 +238,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     public void SetUniform(int slot, ReadOnlySpan<byte> value)
     {
         var pipeline = RequirePipeline();
+
         if (slot < 0 || slot + value.Length > _uniforms.Length)
         {
             throw new ArgumentOutOfRangeException(
@@ -248,9 +253,11 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         // The type comes from the reflection at this slot's own offset rather than from the slot
         // index, because the slot is a byte offset into the block and the uniform list is ordered by
         // name - the two are not the same numbering.
+
         if (IsMatrix4x4At(pipeline, slot))
         {
             Transpose4x4Into(value, _uniforms.AsSpan(slot));
+
             return;
         }
 
@@ -270,6 +277,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         foreach (var uniform in pipeline.Reflection.Uniforms)
         {
             if (uniform.Offset == offset)
+
                 return uniform.Type == Shaders.UniformType.Matrix4x4;
         }
 
@@ -294,6 +302,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     public void SetVertexBuffer(int slot, IBuffer buffer, int strideBytes, int offsetBytes = 0)
     {
         if ((uint)slot >= MaxVertexStreams)
+
             throw new ArgumentOutOfRangeException(
                 nameof(slot),
                 $"Vertex stream slot {slot} exceeds the {MaxVertexStreams} this backend tracks."
@@ -337,6 +346,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
         // Point the shader's sampler uniform at the unit. The location comes from the reflection's
         // name, which only resolves because the shader compiler names the combined sampler after
         // the texture - see NameCombinedSamplers.
+
         if (slot < pipeline.Program.TextureLocations.Count)
         {
             var location = pipeline.Program.TextureLocations[slot];
@@ -419,9 +429,12 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             _gl.ClearStencil(stencil);
 
         var bits = ClearBufferMask.None;
-        if (options.HasFlag(ClearOptions.Color)) bits |= ClearBufferMask.ColorBufferBit;
-        if (options.HasFlag(ClearOptions.Depth)) bits |= ClearBufferMask.DepthBufferBit;
-        if (options.HasFlag(ClearOptions.Stencil)) bits |= ClearBufferMask.StencilBufferBit;
+        if (options.HasFlag(ClearOptions.Color))
+            bits |= ClearBufferMask.ColorBufferBit;
+        if (options.HasFlag(ClearOptions.Depth))
+            bits |= ClearBufferMask.DepthBufferBit;
+        if (options.HasFlag(ClearOptions.Stencil))
+            bits |= ClearBufferMask.StencilBufferBit;
         if (bits != ClearBufferMask.None)
             _gl.Clear(bits);
     }
@@ -465,6 +478,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
                 _gl.DrawArrays(mode, firstIndex, count);
             else
                 _gl.DrawArraysInstanced(mode, firstIndex, count, (uint)instanceCount);
+
             return;
         }
 
@@ -479,6 +493,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
 
         // The element pointer is a byte offset into the bound index buffer, which is why it is
         // computed by hand rather than passed as an index - GL has no separate index operand.
+
         unsafe
         {
             var pointer = (void*)byteOffset;
@@ -486,12 +501,14 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             // A zero base vertex is the common case and needs no extension at all, so it stays on the
             // core entry points: a context without the extension still gets every draw whose indices
             // are already relative to the intended base.
+
             if (baseVertex == 0)
             {
                 if (instanceCount == 1)
                     _gl.DrawElements(mode, count, indexType, pointer);
                 else
                     _gl.DrawElementsInstanced(mode, count, indexType, pointer, (uint)instanceCount);
+
                 return;
             }
 
@@ -502,6 +519,7 @@ internal sealed class GlCommandBuffer : ICommandBuffer
             // off by the same *vertex*, and the offset here is in bytes into the index buffer, so
             // applying it would draw geometry from the wrong part of the buffer and read as a scene
             // bug rather than as an API limitation.
+
             if (!_baseVertexDraw.IsSupported)
             {
                 throw new NotSupportedException(
@@ -570,7 +588,9 @@ internal sealed class GlCommandBuffer : ICommandBuffer
                          );
 
             var current = new CachedBinding(buffer, stream.StrideBytes, stream.OffsetBytes, attribute.InstanceStepRate);
+
             if (i < cache.Count && cache.Bindings[i] == current)
+
                 continue;
 
             if (attribute.VertexSlot != boundSlot)
@@ -626,7 +646,9 @@ internal sealed class GlCommandBuffer : ICommandBuffer
     private void UploadUniforms(GlPipelineState pipeline)
     {
         var block = pipeline.Program.UniformBlock;
+
         if (block is null || _uniforms.Length == 0)
+
             return;
 
         if (_uniformBuffer == 0)

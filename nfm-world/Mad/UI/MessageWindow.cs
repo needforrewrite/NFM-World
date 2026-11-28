@@ -50,15 +50,22 @@ public class MessageWindow
         => Show(title, () => message, ["OK", "Cancel"], [MessageResult.OK, MessageResult.Cancel], callback, 1);
 
     public void ShowCustom(string title, string message, string[] buttonLabels, Action<MessageResult>? callback = null)
-        => Show(title, () => message, buttonLabels.ToArray(), buttonLabels.Select((_, index) => index switch
+        => Show(
+            title,
+            () => message,
+            buttonLabels.ToArray(),
+            buttonLabels.Select((_, index) => index switch
         {
             0 => MessageResult.Custom1, 1 => MessageResult.Custom2, 2 => MessageResult.Custom3,
             _ => MessageResult.None
-        }).ToArray(), callback);
+        }).ToArray(),
+            callback
+        );
 
     public (Func<bool> IsCurrent, Action Close) ShowProgress(string title, Func<string> text, Action cancel)
     {
         Show(title, text, ["Cancel"], [MessageResult.Cancel], _ => cancel());
+
         return TrackCurrent();
     }
 
@@ -66,6 +73,7 @@ public class MessageWindow
     {
         var message = _message.Value;
         bool IsCurrent() => message is not null && ReferenceEquals(_message.Value, message);
+
         return (IsCurrent, () => { if (IsCurrent()) Close(); });
     }
 
@@ -99,13 +107,19 @@ public class MessageWindow
 
     public bool HandleKey(Key key)
     {
-        if (_message.Value is not { } message) return false;
-        if (key == Key.Escape) Complete(message.Results.Length == 1 ? message.Results[0] : MessageResult.Cancel);
+        if (_message.Value is not { } message)
+
+            return false;
+        if (key == Key.Escape)
+            Complete(message.Results.Length == 1 ? message.Results[0] : MessageResult.Cancel);
         else if (key is (Key.Left or Key.Right or Key.Up or Key.Down or Key.Tab) && message.Labels.Length > 0)
-            _selected.Value = (_selected.Value + (key is Key.Left or Key.Up ? -1 : 1)
-                               + message.Labels.Length) % message.Labels.Length;
+            _selected.Value = (_selected.Value
+                               + (key is Key.Left or Key.Up ? -1 : 1)
+                               + message.Labels.Length)
+                              % message.Labels.Length;
         else if (key is (Key.Enter or Key.Space) && message.Results.Length > 0)
             Complete(message.Results[Math.Clamp(_selected.Value, 0, message.Results.Length - 1)]);
+
         return true;
     }
 

@@ -31,18 +31,28 @@ public sealed class HudSkinDefinition
     {
         var skin = JsonSerializer.Deserialize<HudSkinDefinition>(json, JsonOptions)
                    ?? throw new FormatException("Empty skin manifest.");
-        if (skin.Version != 1) throw new FormatException("Unsupported HUD skin version.");
+
+        if (skin.Version != 1)
+
+            throw new FormatException("Unsupported HUD skin version.");
         if (!HudSkinId.IsValid(skin.Id) || skin.Id != HudSkinId.Normalize(skin.Id))
+
             throw new FormatException("Skin id must contain lowercase letters, digits, hyphens or underscores.");
         if (string.IsNullOrWhiteSpace(skin.Name) || skin.Name.Length > 80 || skin.Author is null || skin.Description is null)
+
             throw new FormatException("A skin needs a name, author and description strings.");
         if (!Positive(skin.ReferenceWidth) || !Positive(skin.ReferenceHeight))
+
             throw new FormatException("Invalid reference dimensions.");
         if (skin.Elements is null || skin.Elements.Length is < 1 or > 128)
+
             throw new FormatException("A skin must have 1 to 128 elements.");
+
         foreach (var element in skin.Elements)
         {
-            if (element is null) throw new FormatException("An element cannot be null.");
+            if (element is null)
+
+                throw new FormatException("An element cannot be null.");
             element.Validate();
         }
 
@@ -77,10 +87,13 @@ public sealed class HudElement
     internal void Validate()
     {
         if (Type is not ("text" or "bar" or "image" or "arrow" or "standings"))
+
             throw new FormatException($"Unknown element type '{Type}'.");
         if (Anchor is not ("topLeft" or "topCenter" or "topRight" or "center" or "bottomLeft" or "bottomCenter" or "bottomRight"))
+
             throw new FormatException($"Unknown anchor '{Anchor}'.");
         if (VisibleWhen is not ("always" or "timeTrial" or "freePlay" or "hasTarget" or "hasPosition"))
+
             throw new FormatException($"Unknown visibility '{VisibleWhen}'.");
         if (!float.IsFinite(X)
             || !float.IsFinite(Y)
@@ -92,17 +105,25 @@ public sealed class HudElement
             || FontSize > 256
             || !float.IsFinite(OutlineWidth)
             || OutlineWidth is < 0 or > 16)
+
             throw new FormatException("Invalid element dimensions.");
         if (Font is not ("Adventure" or "AdventureHollow" or "DroidSans" or "NotoSans" or "RobotoMono")
             || Align is not ("left" or "center" or "right"))
+
             throw new FormatException("Unknown font or text alignment.");
         if (!IsColor(Color) || !IsColor(Background) || !IsColor(Outline))
+
             throw new FormatException("Colors must be #RRGGBB or #RRGGBBAA.");
-        if (Text is null || Text.Length > 1024) throw new FormatException("Invalid text.");
+        if (Text is null || Text.Length > 1024)
+
+            throw new FormatException("Invalid text.");
         HudText.Validate(Text);
+
         if (Type == "bar" && Value is not ("power" or "damage"))
+
             throw new FormatException("Bars bind to power or damage.");
         if (Type == "image" && !IsAssetPath(Source))
+
             throw new FormatException("Images need a relative path inside their skin folder.");
     }
 

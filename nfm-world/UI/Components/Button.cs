@@ -92,13 +92,16 @@ public static class Button
 
                 // Over only applies what the caller set, so an override that mentions
                 // only, say, MinWidth keeps the variant's padding and border.
+
                 return style?.Invoke() is { } overrides ? result.Over(overrides) : result;
             },
             onmousedown: e =>
             {
                 // Handled here: a modal backdrop behind the button must not also see it.
-                if (consumeGesture) e.ConsumeGesture();
-                else e.StopPropagation();
+                if (consumeGesture)
+                    e.ConsumeGesture();
+                else
+                    e.StopPropagation();
                 if (!disabled)
                     onPress();
             },
@@ -126,6 +129,7 @@ public static class Button
             };
 
         var result = Sx.TextStyles(fontSize: 13, fontStyle: FontStyle.Bold, foregroundColor: color);
+
         return overrides is { } over ? result.Over(over) : result;
     }
 }

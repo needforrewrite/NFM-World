@@ -31,8 +31,10 @@ public sealed class UsersModel(ArchiveDbContext db) : ArchivePageModel(db)
     public async Task<IActionResult> OnGetAsync(string? query, int? after)
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
         if (!IsModerator)
+
             return NotFound();
 
         Query = (query ?? "").Trim();
@@ -59,11 +61,13 @@ public sealed class UsersModel(ArchiveDbContext db) : ArchivePageModel(db)
                 u.DeletedAt != null,
                 Db.Assets.Count(a => a.OwnerId == u.Id),
                 u.LastSeenAt
-            ))
+            )
+            )
             .ToListAsync();
 
         NextCursor = rows.Count > page ? rows[page - 1].Id : null;
         Rows = rows.Take(page).ToList();
+
         return Page();
     }
 }

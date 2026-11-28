@@ -19,15 +19,20 @@ public sealed class ProfileModel(ArchiveDbContext db) : ArchivePageModel(db)
         var profile = await Db.Users.Where(user => user.Id == id && user.DeletedAt == null)
             .Select(user => new PublicUser(user.Id, user.Username, user.IsVerifiedUploader))
             .FirstOrDefaultAsync(ct);
-        if (profile is null) return NotFound();
+
+        if (profile is null)
+
+            return NotFound();
 
         Profile = profile;
         const int pageSize = 50;
         var query = Db.Assets.Listed().Where(asset => asset.OwnerId == id);
-        if (after is { } cursor) query = query.Where(asset => asset.Id < cursor);
+        if (after is { } cursor)
+            query = query.Where(asset => asset.Id < cursor);
         var rows = await query.OrderByDescending(asset => asset.Id).Take(pageSize + 1).ToListAsync(ct);
         Assets = rows.Take(pageSize).ToArray();
         NextCursor = rows.Count > pageSize ? Assets[^1].Id : null;
+
         return Page();
     }
 }

@@ -107,6 +107,7 @@ internal sealed class TextEditContextMenu : View
     public void Hide()
     {
         if (!IsOpen)
+
             return;
 
         IsOpen = false;
@@ -162,13 +163,16 @@ internal sealed class TextEditContextMenu : View
 
     private MenuRow AddRow(string label, Action action)
     {
-        var row = new MenuRow(label, () =>
+        var row = new MenuRow(
+            label,
+            () =>
             {
                 action();
                 Hide();
             }
         );
         AddChild(row);
+
         return row;
     }
 
@@ -216,6 +220,7 @@ internal sealed class TextEditContextMenu : View
         public void SetEnabled(bool enabled)
         {
             if (_enabled == enabled)
+
                 return;
 
             _enabled = enabled;
@@ -237,6 +242,7 @@ internal sealed class TextEditContextMenu : View
         public void SetHover(bool hovered)
         {
             if (!_enabled || _hovered == hovered)
+
                 return;
 
             _hovered = hovered;

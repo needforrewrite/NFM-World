@@ -17,11 +17,13 @@ public static class TightPackSerializer
         where T : ITightPackable<T>
     {
         var buffer = TightPackBufferWriter.Rent();
+
         try
         {
             var writer = new TightPackWriter<TightPackBufferWriter>(ref buffer);
             T.Serialize(ref writer, in value);
             writer.Flush();
+
             return buffer.ToArray();
         }
         finally
@@ -35,11 +37,13 @@ public static class TightPackSerializer
     {
         ArgumentNullException.ThrowIfNull(formatter);
         var buffer = TightPackBufferWriter.Rent();
+
         try
         {
             var writer = new TightPackWriter<TightPackBufferWriter>(ref buffer);
             formatter.Serialize(ref writer, in value);
             writer.Flush();
+
             return buffer.ToArray();
         }
         finally
@@ -75,6 +79,7 @@ public static class TightPackSerializer
         T value = default!;
         var reader = new TightPackReader(buffer);
         T.Deserialize(ref reader, ref value);
+
         return value;
     }
 
@@ -84,6 +89,7 @@ public static class TightPackSerializer
     {
         var reader = new TightPackReader(buffer);
         T.Deserialize(ref reader, ref value!);
+
         return reader.Consumed;
     }
 
@@ -93,6 +99,7 @@ public static class TightPackSerializer
         T? value = default;
         var reader = new TightPackReader(buffer);
         formatter.Deserialize(ref reader, ref value);
+
         return value;
     }
 
@@ -101,6 +108,7 @@ public static class TightPackSerializer
         ArgumentNullException.ThrowIfNull(formatter);
         var reader = new TightPackReader(buffer);
         formatter.Deserialize(ref reader, ref value);
+
         return reader.Consumed;
     }
 
@@ -117,9 +125,11 @@ public static class TightPackSerializer
         }
 
         byte[] rented = ArrayPool<byte>.Shared.Rent((int)buffer.Length);
+
         try
         {
             buffer.CopyTo(rented);
+
             return Deserialize<T>(rented.AsSpan(0, (int)buffer.Length));
         }
         finally
@@ -143,10 +153,12 @@ public static class TightPackSerializer
     {
         ArgumentNullException.ThrowIfNull(stream);
         var buffer = TightPackBufferWriter.Rent();
+
         try
         {
             Span<byte> chunk = stackalloc byte[8192];
             int read;
+
             while ((read = stream.Read(chunk)) > 0)
             {
                 chunk[..read].CopyTo(buffer.GetSpan(read));
@@ -171,11 +183,13 @@ public static class TightPackSerializer
         ArgumentNullException.ThrowIfNull(type);
 
         var buffer = TightPackBufferWriter.Rent();
+
         try
         {
             var writer = new TightPackWriter<TightPackBufferWriter>(ref buffer);
             writer.WriteValue(type, value);
             writer.Flush();
+
             return buffer.ToArray();
         }
         finally
@@ -194,6 +208,7 @@ public static class TightPackSerializer
         ArgumentNullException.ThrowIfNull(type);
         var reader = new TightPackReader(buffer);
         reader.ReadValue(type, ref value);
+
         return reader.Consumed;
     }
 }

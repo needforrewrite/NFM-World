@@ -346,6 +346,7 @@ namespace NFMWorldLibrary.Collision
             // faces opposite each vertex
 
             faceCount = 0;
+
             if (above)
             {
                 faces![faceCount++] = new Face(b0, b2, b1, 3, 1, 2, Normal(points[b0], points[b2], points[b1]));
@@ -365,9 +366,12 @@ namespace NFMWorldLibrary.Collision
 
             // Create the openSet. Add all points except the points of the seed
             // hull.
+
             for (int i = 0; i < points.Length; i++)
             {
-                if (i == b0 || i == b1 || i == b2 || i == b3) continue;
+                if (i == b0 || i == b1 || i == b2 || i == b3)
+
+                    continue;
 
                 openSet!.Add(new PointFace(i, UNASSIGNED, fix64.Zero));
             }
@@ -388,6 +392,7 @@ namespace NFMWorldLibrary.Collision
 
             // Assign all points of the open set. This does basically the same
             // thing as ReassignPoints()
+
             for (int i = 0; i <= openSetTail; i++)
             {
                 Debug.Assert(openSet[i].Face == UNASSIGNED);
@@ -399,6 +404,7 @@ namespace NFMWorldLibrary.Collision
 
                 Debug.Assert(faces.Count == 4);
                 Debug.Assert(faces.Count == faceCount);
+
                 for (int j = 0; j < 4; j++)
                 {
                     Debug.Assert(faces.ContainsKey(j));
@@ -414,6 +420,7 @@ namespace NFMWorldLibrary.Collision
                         openSet[i] = fp;
 
                         assigned = true;
+
                         break;
                     }
                 }
@@ -454,24 +461,31 @@ namespace NFMWorldLibrary.Collision
                     var p0 = points[i0];
                     var p1 = points[i1];
 
-                    if (AreCoincident(p0, p1)) continue;
+                    if (AreCoincident(p0, p1))
+
+                        continue;
 
                     for (int i2 = i1 + 1; i2 < count - 1; i2++)
                     {
                         var p2 = points[i2];
 
-                        if (AreCollinear(p0, p1, p2)) continue;
+                        if (AreCollinear(p0, p1, p2))
+
+                            continue;
 
                         for (int i3 = i2 + 1; i3 < count - 0; i3++)
                         {
                             var p3 = points[i3];
 
-                            if (AreCoplanar(p0, p1, p2, p3)) continue;
+                            if (AreCoplanar(p0, p1, p2, p3))
+
+                                continue;
 
                             b0 = i0;
                             b1 = i1;
                             b2 = i2;
                             b3 = i3;
+
                             return;
                         }
                     }
@@ -863,6 +877,7 @@ namespace NFMWorldLibrary.Collision
                             fp.Distance = dist;
 
                             openSet[i] = fp;
+
                             break;
                         }
                     }
@@ -946,6 +961,7 @@ namespace NFMWorldLibrary.Collision
             }
 
             if (splitVerts)
+
                 return;
 
             for (int i = 0; i < verts.Count; i++)

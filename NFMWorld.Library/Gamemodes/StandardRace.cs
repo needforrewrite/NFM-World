@@ -23,10 +23,12 @@ public static class StandardRace
     public static bool TickCountdown(ref int inner, ref int countdown, int interval)
     {
         if (--inner > 0)
+
             return false;
 
         inner = interval;
         countdown--;
+
         return countdown <= 0;
     }
 
@@ -49,19 +51,24 @@ public static class StandardRace
     )
     {
         if (checkpointCount == 0)
+
             return false;
 
         var currentTotal = currentCheckpoint + currentLap * checkpointCount;
         var claimedTotal = claimedCheckpoint + claimedLap * checkpointCount;
 
         if (claimedTotal != currentTotal + 1)
+
             return false;
 
         if (claimedCheckpoint >= checkpointCount || claimedLap > totalLaps)
+
             return false;
 
         // Without a relayed position yet there is nothing to corroborate the claim against.
+
         if (relayedPosition is not { } position)
+
             return false;
 
         // The client reports the checkpoint it is now heading for, so the crossing that sent
@@ -182,17 +189,21 @@ public sealed class RaceProgress
     public bool TrackWasted(bool? wasted, int serverTick)
     {
         if (Forfeited)
+
             return false;
 
         switch (wasted)
         {
             case true when WastedAt < 0:
                 WastedAt = serverTick;
+
                 return false;
             case false when WastedAt >= 0:
                 WastedAt = -1;
+
                 return true;
             default:
+
                 return false;
         }
     }

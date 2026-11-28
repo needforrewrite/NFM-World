@@ -53,6 +53,7 @@ public class LobbySessionOwnershipTests
         var creator = players.GetOrAdd(1, ClientState.Connected);
         creator.Name = "creator";
         var sessions = new SessionManager(new StubTransport(), players);
+
         return (sessions, players, creator);
     }
 

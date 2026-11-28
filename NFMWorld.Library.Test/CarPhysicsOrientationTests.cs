@@ -36,6 +36,7 @@ public class CarPhysicsOrientationTests
     public void FitTerrainAngles_StaysContinuousAcrossRegularAndInvertedRoll(int yawDegrees)
     {
         foreach (var pitchDegrees in new[] { 40, 115, 230 })
+
         foreach (var startRoll in new[] { 60, 240 })
         {
             var pitch = (Fixed64)pitchDegrees;
@@ -65,6 +66,7 @@ public class CarPhysicsOrientationTests
     public void FitTerrainAngles_PreservesLocalYawAtGimbalLock()
     {
         foreach (var yawDegrees in new[] { 0, 45, 180, 270 })
+
         foreach (var rollDegrees in new[] { 82, 90, 98, 262, 270, 278 })
         {
             const int pitchDegrees = 40;
@@ -119,6 +121,7 @@ public class CarPhysicsOrientationTests
         var cosPitch = UMath.Cos(pitch);
         var sinYaw = UMath.Sin(yaw);
         var cosYaw = UMath.Cos(yaw);
+
         return new Vector3d(
             sinRoll * cosYaw + cosRoll * sinPitch * sinYaw,
             -cosRoll * cosPitch,

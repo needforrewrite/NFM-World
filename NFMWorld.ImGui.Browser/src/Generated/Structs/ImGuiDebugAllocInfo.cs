@@ -16,157 +16,175 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiDebugAllocInfo
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int TotalAllocCount;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiDebugAllocInfo
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int TotalAllocCount;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int TotalFreeCount;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int TotalFreeCount;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public short LastEntriesIdx;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public short LastEntriesIdx;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiDebugAllocEntry LastEntriesBuf_0;
-		public ImGuiDebugAllocEntry LastEntriesBuf_1;
-		public ImGuiDebugAllocEntry LastEntriesBuf_2;
-		public ImGuiDebugAllocEntry LastEntriesBuf_3;
-		public ImGuiDebugAllocEntry LastEntriesBuf_4;
-		public ImGuiDebugAllocEntry LastEntriesBuf_5;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiDebugAllocInfo(int totalAllocCount = default, int totalFreeCount = default, short lastEntriesIdx = default, ImGuiDebugAllocEntry* lastEntriesBuf = default)
-		{
-			TotalAllocCount = totalAllocCount;
-			TotalFreeCount = totalFreeCount;
-			LastEntriesIdx = lastEntriesIdx;
-			if (lastEntriesBuf != default(ImGuiDebugAllocEntry*))
-			{
-				LastEntriesBuf_0 = lastEntriesBuf[0];
-				LastEntriesBuf_1 = lastEntriesBuf[1];
-				LastEntriesBuf_2 = lastEntriesBuf[2];
-				LastEntriesBuf_3 = lastEntriesBuf[3];
-				LastEntriesBuf_4 = lastEntriesBuf[4];
-				LastEntriesBuf_5 = lastEntriesBuf[5];
-			}
-		}
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiDebugAllocInfo(int totalAllocCount = default, int totalFreeCount = default, short lastEntriesIdx = default, Span<ImGuiDebugAllocEntry> lastEntriesBuf = default)
-		{
-			TotalAllocCount = totalAllocCount;
-			TotalFreeCount = totalFreeCount;
-			LastEntriesIdx = lastEntriesIdx;
-			if (lastEntriesBuf != default(Span<ImGuiDebugAllocEntry>))
-			{
-				LastEntriesBuf_0 = lastEntriesBuf[0];
-				LastEntriesBuf_1 = lastEntriesBuf[1];
-				LastEntriesBuf_2 = lastEntriesBuf[2];
-				LastEntriesBuf_3 = lastEntriesBuf[3];
-				LastEntriesBuf_4 = lastEntriesBuf[4];
-				LastEntriesBuf_5 = lastEntriesBuf[5];
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiDebugAllocEntry LastEntriesBuf_0;
+        public ImGuiDebugAllocEntry LastEntriesBuf_1;
+        public ImGuiDebugAllocEntry LastEntriesBuf_2;
+        public ImGuiDebugAllocEntry LastEntriesBuf_3;
+        public ImGuiDebugAllocEntry LastEntriesBuf_4;
+        public ImGuiDebugAllocEntry LastEntriesBuf_5;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe Span<ImGuiDebugAllocEntry> LastEntriesBuf
-		
-		{
-			get
-			{
-				fixed (ImGuiDebugAllocEntry* p = &this.LastEntriesBuf_0)
-				{
-					return new Span<ImGuiDebugAllocEntry>(p, 6);
-				}
-			}
-		}
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiDebugAllocInfo(
+            int totalAllocCount = default,
+            int totalFreeCount = default,
+            short lastEntriesIdx = default,
+            ImGuiDebugAllocEntry* lastEntriesBuf = default
+        )
+        {
+            TotalAllocCount = totalAllocCount;
+            TotalFreeCount = totalFreeCount;
+            LastEntriesIdx = lastEntriesIdx;
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiDebugAllocInfoPtr : IEquatable<ImGuiDebugAllocInfoPtr>
-	{
-		public ImGuiDebugAllocInfoPtr(ImGuiDebugAllocInfo* handle) { Handle = handle; }
+            if (lastEntriesBuf != default(ImGuiDebugAllocEntry*))
+            {
+                LastEntriesBuf_0 = lastEntriesBuf[0];
+                LastEntriesBuf_1 = lastEntriesBuf[1];
+                LastEntriesBuf_2 = lastEntriesBuf[2];
+                LastEntriesBuf_3 = lastEntriesBuf[3];
+                LastEntriesBuf_4 = lastEntriesBuf[4];
+                LastEntriesBuf_5 = lastEntriesBuf[5];
+            }
+        }
 
-		public ImGuiDebugAllocInfo* Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiDebugAllocInfo(
+            int totalAllocCount = default,
+            int totalFreeCount = default,
+            short lastEntriesIdx = default,
+            Span<ImGuiDebugAllocEntry> lastEntriesBuf = default
+        )
+        {
+            TotalAllocCount = totalAllocCount;
+            TotalFreeCount = totalFreeCount;
+            LastEntriesIdx = lastEntriesIdx;
 
-		public bool IsNull => Handle == null;
+            if (lastEntriesBuf != default(Span<ImGuiDebugAllocEntry>))
+            {
+                LastEntriesBuf_0 = lastEntriesBuf[0];
+                LastEntriesBuf_1 = lastEntriesBuf[1];
+                LastEntriesBuf_2 = lastEntriesBuf[2];
+                LastEntriesBuf_3 = lastEntriesBuf[3];
+                LastEntriesBuf_4 = lastEntriesBuf[4];
+                LastEntriesBuf_5 = lastEntriesBuf[5];
+            }
+        }
 
-		public static ImGuiDebugAllocInfoPtr Null => new ImGuiDebugAllocInfoPtr(null);
 
-		public ImGuiDebugAllocInfo this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe Span<ImGuiDebugAllocEntry> LastEntriesBuf
 
-		public static implicit operator ImGuiDebugAllocInfoPtr(ImGuiDebugAllocInfo* handle) => new ImGuiDebugAllocInfoPtr(handle);
+        {
+            get
+            {
+                fixed (ImGuiDebugAllocEntry* p = &this.LastEntriesBuf_0)
+                {
+                    return new Span<ImGuiDebugAllocEntry>(p, 6);
+                }
+            }
+        }
+    }
 
-		public static implicit operator ImGuiDebugAllocInfo*(ImGuiDebugAllocInfoPtr handle) => handle.Handle;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiDebugAllocInfoPtr : IEquatable<ImGuiDebugAllocInfoPtr>
+    {
+        public ImGuiDebugAllocInfoPtr(ImGuiDebugAllocInfo* handle)
+        {
+            Handle = handle;
+        }
 
-		public static bool operator ==(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfoPtr right) => left.Handle == right.Handle;
+        public ImGuiDebugAllocInfo* Handle;
 
-		public static bool operator !=(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfoPtr right) => left.Handle != right.Handle;
+        public bool IsNull => Handle == null;
 
-		public static bool operator ==(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfo* right) => left.Handle == right;
+        public static ImGuiDebugAllocInfoPtr Null => new ImGuiDebugAllocInfoPtr(null);
 
-		public static bool operator !=(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfo* right) => left.Handle != right;
+        public ImGuiDebugAllocInfo this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public bool Equals(ImGuiDebugAllocInfoPtr other) => Handle == other.Handle;
+        public static implicit operator ImGuiDebugAllocInfoPtr(ImGuiDebugAllocInfo* handle) => new ImGuiDebugAllocInfoPtr(handle);
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiDebugAllocInfoPtr handle && Equals(handle);
+        public static implicit operator ImGuiDebugAllocInfo*(ImGuiDebugAllocInfoPtr handle) => handle.Handle;
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        public static bool operator ==(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfoPtr right) => left.Handle == right.Handle;
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiDebugAllocInfoPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref int TotalAllocCount => ref Unsafe.AsRef<int>(&Handle->TotalAllocCount);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref int TotalFreeCount => ref Unsafe.AsRef<int>(&Handle->TotalFreeCount);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref short LastEntriesIdx => ref Unsafe.AsRef<short>(&Handle->LastEntriesIdx);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe Span<ImGuiDebugAllocEntry> LastEntriesBuf
-		
-		{
-			get
-			{
-				return new Span<ImGuiDebugAllocEntry>(&Handle->LastEntriesBuf_0, 6);
-			}
-		}
-	}
+        public static bool operator !=(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfoPtr right) => left.Handle != right.Handle;
 
+        public static bool operator ==(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfo* right) => left.Handle == right;
+
+        public static bool operator !=(ImGuiDebugAllocInfoPtr left, ImGuiDebugAllocInfo* right) => left.Handle != right;
+
+        public bool Equals(ImGuiDebugAllocInfoPtr other) => Handle == other.Handle;
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiDebugAllocInfoPtr handle && Equals(handle);
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiDebugAllocInfoPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref int TotalAllocCount => ref Unsafe.AsRef<int>(&Handle->TotalAllocCount);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref int TotalFreeCount => ref Unsafe.AsRef<int>(&Handle->TotalFreeCount);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref short LastEntriesIdx => ref Unsafe.AsRef<short>(&Handle->LastEntriesIdx);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe Span<ImGuiDebugAllocEntry> LastEntriesBuf
+
+        {
+            get { return new Span<ImGuiDebugAllocEntry>(&Handle->LastEntriesBuf_0, 6); }
+        }
+    }
 }

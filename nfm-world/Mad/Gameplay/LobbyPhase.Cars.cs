@@ -29,18 +29,20 @@ public partial class LobbyPhase
     private Node BuildLobbyUi() => Sx.View(
         style: () => Sx.Styles(position: Position.Absolute, left: 0, top: 0, right: 0, bottom: 0),
         children: [UI.Routes.LobbyView.Build(Actions, BuildStagePreview()),
-            Sx.Show(() => _showCarPicker.Value, () => Sx.View(
-                style: () => Sx.Styles(
-                    position: Position.Absolute,
-                    left: 0,
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 3000,
-                    backgroundColor: new Color(3, 8, 20, 255)
-                ),
-                children: [_carPicker!.BuildUi()]
-            )
+            Sx.Show(
+                () => _showCarPicker.Value,
+                () => Sx.View(
+                    style: () => Sx.Styles(
+                        position: Position.Absolute,
+                        left: 0,
+                        top: 0,
+                        right: 0,
+                        bottom: 0,
+                        zIndex: 3000,
+                        backgroundColor: new Color(3, 8, 20, 255)
+                    ),
+                    children: [_carPicker!.BuildUi()]
+                )
             )]
     );
 
@@ -67,7 +69,8 @@ public partial class LobbyPhase
     )
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
-        if (button == MouseButton.Primary) _carPicker?.FinishPaintInteraction();
+        if (button == MouseButton.Primary)
+            _carPicker?.FinishPaintInteraction();
     }
 
     public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
@@ -88,7 +91,9 @@ public partial class LobbyPhase
 
     private async void OpenCarPicker()
     {
-        if (!_carsActive || _carPicker is not null) return;
+        if (!_carsActive || _carPicker is not null)
+
+            return;
         CancelCarAction();
         var action = _carAction;
         var cancellation = _carCancellation.Token;
@@ -97,6 +102,7 @@ public partial class LobbyPhase
         var originalWheels = CarWheels.Get(identity);
         Rad3d? rad;
         using var loading = LoadingWork.Begin("Loading car picker...");
+
         try
         {
             rad = await ReadLobbyCarAsync(identity, cancellation);
@@ -114,7 +120,9 @@ public partial class LobbyPhase
             rad = null;
         }
 
-        if (cancellation.IsCancellationRequested || action != _carAction) return;
+        if (cancellation.IsCancellationRequested || action != _carAction)
+
+            return;
         var current = rad is not null && BackendCar.IsDrivable(rad)
             ? new BackendCar(CarPaint.CreateInstance(rad), 0, 0, 0, true) : null;
         _carPicker = new GarageController(
@@ -132,8 +140,9 @@ public partial class LobbyPhase
         _carPicker.CarSelectionCancelled += (_, _) =>
         {
             CloseCarPicker();
-            if (_carsActive && (!originalColors.SequenceEqual(CarPaint.SavedColors(identity))
-                                || !Equals(originalWheels, CarWheels.Get(identity))))
+            if (_carsActive
+                && (!originalColors.SequenceEqual(CarPaint.SavedColors(identity))
+                    || !Equals(originalWheels, CarWheels.Get(identity))))
                 IdentityChanged();
         };
         _carPicker.Enter();
@@ -158,9 +167,13 @@ public partial class LobbyPhase
 
     private void IdentityChanged()
     {
-        if (CanAct) SendUpdatePlayerIdentity();
+        if (CanAct)
+            SendUpdatePlayerIdentity();
         var index = _players.FindIndex(p => p.Id == _player.Id);
-        if (index < 0) return;
+
+        if (index < 0)
+
+            return;
         var player = _players[index];
         player.CarName = MenuHistory.LastPlayed.Car;
         player.CarColors = CarPaint.SavedColors(player.CarName);
@@ -201,21 +214,30 @@ public partial class LobbyPhase
         var identities = LobbyCarIdentities().ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var identity in _carDetails.Keys.Where(id => !identities.Contains(id)).ToArray())
             _carDetails.Remove(identity);
-        if (!_carsActive || _resolvingCars || identities.All(_carDetails.ContainsKey)) return;
+
+        if (!_carsActive || _resolvingCars || identities.All(_carDetails.ContainsKey))
+
+            return;
         _ = ResolvePlayerCarsAsync(_carCancellation.Token);
     }
 
     private async Task ResolvePlayerCarsAsync(CancellationToken cancellation)
     {
         _resolvingCars = true;
+
         try
         {
             using var loading = LoadingWork.Begin("Loading player cars...");
+
             while (!cancellation.IsCancellationRequested)
             {
                 var identity = LobbyCarIdentities().FirstOrDefault(id => !_carDetails.ContainsKey(id));
-                if (identity is null) break;
+
+                if (identity is null)
+
+                    break;
                 CarDetails details;
+
                 try
                 {
                     var rad = await ReadLobbyCarAsync(identity, cancellation);
@@ -234,7 +256,10 @@ public partial class LobbyPhase
                 }
 
                 await LoadingWork.NextFrame;
-                if (cancellation.IsCancellationRequested) return;
+
+                if (cancellation.IsCancellationRequested)
+
+                    return;
                 _carDetails[identity] = details;
                 Publish();
             }
@@ -243,42 +268,64 @@ public partial class LobbyPhase
         {
             await LoadingWork.NextFrame;
             _resolvingCars = false;
-            if (_carsActive) ResolvePlayerCars();
+            if (_carsActive)
+                ResolvePlayerCars();
         }
     }
 
     private static Task<Rad3d?> ReadLobbyCarAsync(string identity, CancellationToken cancellation)
     {
         var loaded = BackendGameSparker.FindLoadedCar(identity);
-        return Task.Run(async () =>
+
+        return Task.Run(
+            async () =>
             {
                 cancellation.ThrowIfCancellationRequested();
-                if (loaded is not null) return loaded;
-                if (!MultiplayerContentPolicy.IsAcceptedCar(identity)) return null;
+
+                if (loaded is not null)
+
+                    return loaded;
+                if (!MultiplayerContentPolicy.IsAcceptedCar(identity))
+
+                    return null;
+
                 if (RadpackReader.IsArchiveId(identity))
                 {
                     var prepared = await ContentCache.PrepareAsync(
                         GarageController.ContentClient,
-                    identity,
+                        identity,
                         AssetKind.Car,
                         cancellation
                     );
-                    if (!prepared.Ok) throw new InvalidDataException(prepared.Error);
+
+                    if (!prepared.Ok)
+
+                        throw new InvalidDataException(prepared.Error);
                 }
 
                 cancellation.ThrowIfCancellationRequested();
                 var rad = RadpackReader.TryReadModel(identity, RadpackType.Car, out var error);
-                if (error is not null) throw new InvalidDataException(error);
+
+                if (error is not null)
+
+                    throw new InvalidDataException(error);
+
                 return rad;
-            }, cancellation
+            },
+            cancellation
         );
     }
 
     private async void CopyPlayerCar(Guid playerId, bool colorsOnly)
     {
-        if (!_carsActive || _carPicker is not null || playerId == _player.Id) return;
+        if (!_carsActive || _carPicker is not null || playerId == _player.Id)
+
+            return;
         var source = _players.FirstOrDefault(p => p.Id == playerId);
-        if (source.Id != playerId) return;
+
+        if (source.Id != playerId)
+
+            return;
         CancelCarAction();
         var action = _carAction;
         var destination = MenuHistory.LastPlayed.Car;
@@ -287,17 +334,26 @@ public partial class LobbyPhase
         var cancellation = copyCancellation.Token;
         var sourceColors = source.CarColors?.ToArray();
         using var loading = LoadingWork.Begin(colorsOnly ? "Copying car colors..." : "Loading car...");
+
         try
         {
             var sourceRad = await ReadLobbyCarAsync(source.CarName, cancellation);
             await LoadingWork.NextFrame;
-            if (cancellation.IsCancellationRequested || action != _carAction) return;
+
+            if (cancellation.IsCancellationRequested || action != _carAction)
+
+                return;
             var destinationRad = colorsOnly ? await ReadLobbyCarAsync(destination, cancellation) : sourceRad;
             await LoadingWork.NextFrame;
-            if (cancellation.IsCancellationRequested || action != _carAction) return;
+
+            if (cancellation.IsCancellationRequested || action != _carAction)
+
+                return;
+
             if (sourceRad is null || destinationRad is null || !BackendCar.IsDrivable(destinationRad))
             {
                 SetStatus("That car could not be loaded.");
+
                 return;
             }
 
@@ -306,6 +362,7 @@ public partial class LobbyPhase
                 sourceRad.Stats.Class,
                 CarPaint.Slots(sourceRad).ToArray()
             );
+
             if (colorsOnly)
             {
                 var details = new CarDetails(
@@ -315,11 +372,14 @@ public partial class LobbyPhase
                 );
                 var colors = EffectiveColors(details, sourceColors);
                 var copied = CarColorCopy.Match(CarPaint.Slots(destinationRad), colors);
-                foreach (var slot in copied) CarPaint.Set(destination, slot.Slot, slot.Color);
+                foreach (var slot in copied)
+                    CarPaint.Set(destination, slot.Slot, slot.Color);
                 CarPaint.Flush();
+
                 if (copied.Count == 0)
                 {
                     SetStatus("These cars have no matching color channels.");
+
                     return;
                 }
 
@@ -327,7 +387,9 @@ public partial class LobbyPhase
             }
             else
             {
-                if (!MultiplayerContentPolicy.IsAcceptedCar(source.CarName)) return;
+                if (!MultiplayerContentPolicy.IsAcceptedCar(source.CarName))
+
+                    return;
                 MenuHistory.Remember(car: source.CarName);
             }
 
@@ -345,6 +407,7 @@ public partial class LobbyPhase
         finally
         {
             await LoadingWork.NextFrame;
+
             if (ReferenceEquals(_copyCancellation, copyCancellation))
             {
                 _copyCancellation = null;

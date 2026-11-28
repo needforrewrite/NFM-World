@@ -14,13 +14,16 @@ public static class TimeTrialInvalidation
         var rows = await db.TimeTrials
             .Where(t => t.IsValid && (t.StageHash == contentHash || t.CarHash == contentHash))
             .ToListAsync(ct);
+
         if (rows.Count == 0)
+
             return 0;
 
         foreach (var row in rows)
             row.IsValid = false;
 
         await db.SaveChangesAsync(ct);
+
         return rows.Count;
     }
 }

@@ -43,6 +43,7 @@ internal sealed class YogaConfig
         set
         {
             Debug.Assert(!_frozen, "Cannot mutate a frozen YogaConfig (e.g. YogaConfig.Default).");
+
             if (_pointScaleFactor != value)
             {
                 _pointScaleFactor = value;
@@ -57,6 +58,7 @@ internal sealed class YogaConfig
     {
         Debug.Assert(!_frozen, "Cannot mutate a frozen YogaConfig (e.g. YogaConfig.Default).");
         int idx = (int)feature;
+
         if (_experimentalFeatures[idx] != enabled)
         {
             _experimentalFeatures[idx] = enabled;
@@ -72,6 +74,7 @@ internal sealed class YogaConfig
     public void SetErrata(YogaErrata errata)
     {
         Debug.Assert(!_frozen, "Cannot mutate a frozen YogaConfig (e.g. YogaConfig.Default).");
+
         if (_errata != errata)
         {
             _errata = errata;
@@ -82,6 +85,7 @@ internal sealed class YogaConfig
     public void AddErrata(YogaErrata errata)
     {
         Debug.Assert(!_frozen, "Cannot mutate a frozen YogaConfig (e.g. YogaConfig.Default).");
+
         if (!HasErrata(errata))
         {
             _errata |= errata;
@@ -92,6 +96,7 @@ internal sealed class YogaConfig
     public void RemoveErrata(YogaErrata errata)
     {
         Debug.Assert(!_frozen, "Cannot mutate a frozen YogaConfig (e.g. YogaConfig.Default).");
+
         if (HasErrata(errata))
         {
             _errata &= ~errata;
@@ -108,9 +113,12 @@ internal sealed class YogaConfig
     /// </summary>
     public static bool ConfigUpdateInvalidatesLayout(YogaConfig oldConfig, YogaConfig newConfig)
     {
-        return oldConfig._errata != newConfig._errata ||
-               oldConfig._pointScaleFactor != newConfig._pointScaleFactor ||
-               oldConfig._useWebDefaults != newConfig._useWebDefaults ||
+        return oldConfig._errata != newConfig._errata
+               ||
+               oldConfig._pointScaleFactor != newConfig._pointScaleFactor
+               ||
+               oldConfig._useWebDefaults != newConfig._useWebDefaults
+               ||
                !ExperimentalFeaturesEqual(oldConfig, newConfig);
     }
 
@@ -119,8 +127,10 @@ internal sealed class YogaConfig
         for (int i = 0; i < a._experimentalFeatures.Length; i++)
         {
             if (a._experimentalFeatures[i] != b._experimentalFeatures[i])
+
                 return false;
         }
+
         return true;
     }
 }

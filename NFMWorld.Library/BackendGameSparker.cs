@@ -62,6 +62,7 @@ public static class BackendGameSparker
     public static void Load(bool isHeadless = true)
     {
         if (_loaded)
+
             return;
         _loaded = true;
 
@@ -78,6 +79,7 @@ public static class BackendGameSparker
         SentrySdk.CaptureMessage("Hello world", SentryLevel.Debug);
 
 #if !DEBUG
+
         if (!isHeadless && !System.Diagnostics.Debugger.IsAttached)
         {
             CrashReportLibrary.Hook(Logging.SentryDsn, Logging.Release);
@@ -86,6 +88,7 @@ public static class BackendGameSparker
 #endif
 
 #if DEBUG
+
         if (!OperatingSystem.IsBrowser()
             && (ProjectUtils.TryGetSolutionDirectory() ?? ProjectUtils.TryGetSolutionDirectory(AppContext.BaseDirectory))
             is { } solutionDirectory)
@@ -217,6 +220,7 @@ public static class BackendGameSparker
                     "No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")",
                     SentryLevel.Error
                 );
+
                 throw new Exception("No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
@@ -229,6 +233,7 @@ public static class BackendGameSparker
                     "No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")",
                     SentryLevel.Error
                 );
+
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
@@ -245,6 +250,7 @@ public static class BackendGameSparker
     public static void LoadForPreview()
     {
         if (_loaded)
+
             return;
         _loaded = true;
 
@@ -271,10 +277,12 @@ public static class BackendGameSparker
     private static void MountContentRoots(bool isHeadless)
     {
         if (OperatingSystem.IsBrowser())
+
             return;
 
         VFS.MountDirectory(AppDomain.CurrentDomain.BaseDirectory);
         VFS.MountDirectory(Directory.GetCurrentDirectory());
+
         if (OperatingSystem.IsMacOS() && !isHeadless)
         {
             var applicationData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
@@ -320,6 +328,7 @@ public static class BackendGameSparker
         if (!VFS.DirectoryExists(folder))
         {
             Logging.Info($"Folder not found: {folder}");
+
             return;
         }
 
@@ -328,8 +337,10 @@ public static class BackendGameSparker
         foreach (var file in VFS.EnumerateFiles(folder))
         {
             var extension = Path.GetExtension(file);
+
             if (!extension.Equals(".rad", StringComparison.OrdinalIgnoreCase)
                 && !extension.Equals(".radpack", StringComparison.OrdinalIgnoreCase))
+
                 continue;
 
             var name = Path.GetFileNameWithoutExtension(file);
@@ -338,6 +349,7 @@ public static class BackendGameSparker
                 Logging.Debug($"Extra file found: {file}");
 
             Rad3d? model;
+
             try
             {
                 model = ReadModelFile(file, extension, kind, labelPrefix + name);
@@ -346,10 +358,12 @@ public static class BackendGameSparker
             {
                 SentrySdk.CaptureEvent(new SentryEvent(ex) { Message = $"Error loading user model '{file}'" });
                 Logging.Info($"Error loading model '{file}': {ex.Message}\n{ex.StackTrace}");
+
                 continue;
             }
 
             if (model is null)
+
                 continue;
 
             if (index > -1)
@@ -359,6 +373,7 @@ public static class BackendGameSparker
         }
 
         var next = orderedNames?.Length ?? 0;
+
         foreach (var model in extras)
         {
             if (saveIndexed is not null)
@@ -373,6 +388,7 @@ public static class BackendGameSparker
         if (extension.Equals(".radpack", StringComparison.OrdinalIgnoreCase))
         {
             var asset = RadpackReader.Read(file, kind);
+
             return asset is RadpackRad3d rad ? rad.Rad : null;
         }
 
@@ -410,6 +426,7 @@ public static class BackendGameSparker
             }
 
             // What is this platform??
+
             return "unknown";
         }
 
@@ -488,6 +505,7 @@ public static class BackendGameSparker
     public static (int Id, Rad3d? Rad) GetCar(string name)
     {
         var total = 0;
+
         foreach (var t in cars.Values)
         {
             foreach (var car in t)
@@ -507,17 +525,20 @@ public static class BackendGameSparker
         }
 
         var identity = RadpackReader.Identity(name);
+
         if (_carFiles.TryGetValue(identity, out var cachedCar))
         {
             return cachedCar;
         }
 
         var model = RadpackReader.TryReadModel(name, RadpackType.Car, out var modelError);
+
         if (modelError is { } carError)
         {
             // A file that exists but is the wrong kind or unreadable is a real error: falling
             // through would substitute a legacy download of the same name for it.
             Logging.Error($"Error loading car '{name}': {carError}");
+
             return (-1, null!);
         }
 
@@ -531,6 +552,7 @@ public static class BackendGameSparker
 
         // Read-only legacy import: a .radq the user dropped in data/legacy/cars first, then the
         // original download host.
+
         if ((LegacyAssets.LegacyAssetImporter.TryReadLocal("cars", name)
              ?? LegacyAssets.LegacyAssetImporter.TryFetch("cars", name)) is { } legacyRad)
         {
@@ -538,6 +560,7 @@ public static class BackendGameSparker
             {
                 var rad = RadParser.ParseRad(legacyRad, name);
                 Logging.Info($"Imported legacy car '{name}' from .radq.");
+
                 return _carFiles.GetOrAdd(
                     identity,
                     _ => (total + dynamic_models.Count + Interlocked.Increment(ref _nextCarFileIndex) - 1, rad)
@@ -551,6 +574,7 @@ public static class BackendGameSparker
 
         SentrySdk.CaptureMessage("No results for GetCar: " + name, SentryLevel.Warning);
         Logging.Info("No results for GetCar: " + name);
+
         return (-1, null!);
     }
 
@@ -559,6 +583,7 @@ public static class BackendGameSparker
         IReadOnlyList<Rad3d>[] arrays = [stage_parts, vendor_stage_parts, user_stage_parts];
 
         var total = 0;
+
         foreach (var t in arrays)
         {
             foreach (var part in t)
@@ -573,15 +598,19 @@ public static class BackendGameSparker
         }
 
         var identity = RadpackReader.Identity(name);
+
         if (_stagePartFiles.TryGetValue(identity, out var cachedPart))
+
             return cachedPart;
 
         // Stage pieces are a different kind from cars: sharing a cache with GetCar let a car
         // named like a piece be used as that piece.
         var model = RadpackReader.TryReadModel(name, RadpackType.TrackPiece, out var partError);
+
         if (partError is { } error)
         {
             Logging.Error($"Error loading stage part '{name}': {error}");
+
             return (-1, null!);
         }
 
@@ -600,6 +629,7 @@ public static class BackendGameSparker
 
         // Read-only legacy import, same on-demand path as GetCar. Only a phy:/ds:/nfm: label
         // names a download; a bare part name has no source outside the shipped archive.
+
         if ((LegacyAssets.LegacyAssetImporter.TryReadLocal("stage", name)
              ?? LegacyAssets.LegacyAssetImporter.TryFetchModel(name)) is { } legacyPart)
         {
@@ -607,6 +637,7 @@ public static class BackendGameSparker
             {
                 var rad = RadParser.ParseRad(legacyPart, name);
                 Logging.Info($"Imported legacy stage part '{name}'.");
+
                 return _stagePartFiles.GetOrAdd(
                     identity,
                     _ => (total + Interlocked.Increment(ref _nextStagePartFileIndex) - 1, rad)
@@ -620,6 +651,7 @@ public static class BackendGameSparker
 
         SentrySdk.CaptureMessage("No results for GetStagePart: " + name, SentryLevel.Warning);
         Logging.Info("No results for GetStagePart: " + name);
+
         return (-1, null!);
     }
 
@@ -633,8 +665,14 @@ public static class BackendGameSparker
     {
         var installed = cars.Values.SelectMany(collection => collection)
             .FirstOrDefault(car => string.Equals(car.FileName, name, StringComparison.OrdinalIgnoreCase));
-        if (installed is not null) return installed;
-        if (dynamic_models.TryGetValue(name, out var dynamic)) return dynamic.Rad;
+
+        if (installed is not null)
+
+            return installed;
+        if (dynamic_models.TryGetValue(name, out var dynamic))
+
+            return dynamic.Rad;
+
         return _carFiles.TryGetValue(RadpackReader.Identity(name), out var cached) ? cached.Rad : null;
     }
 

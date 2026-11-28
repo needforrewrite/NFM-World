@@ -156,10 +156,12 @@ public sealed class RocketGamemode : PluginGamemode
     public override void GameTick()
     {
         base.GameTick();
+
         switch (_state)
         {
             case RocketState.Countdown:
                 HudState.CountdownTimer = _countdown;
+
                 if (StandardRace.TickCountdown(ref _countdownInner, ref _countdown, GamemodeUtils.CountdownInterval))
                 {
                     _state = RocketState.InProgress;
@@ -169,6 +171,7 @@ public sealed class RocketGamemode : PluginGamemode
                 break;
 
             case RocketState.InProgress:
+
                 foreach (var player in Players)
                 {
                     ArmArcadeInputs(player);
@@ -177,12 +180,18 @@ public sealed class RocketGamemode : PluginGamemode
                 _physics.GameTick();
 
                 var clientCrossed = false;
+
                 foreach (var player in Players)
                 {
-                    if (player.Car is not { } car) continue;
+                    if (player.Car is not { } car)
+
+                        continue;
                     TidyArcadeInputs(player);
                     FixHoopHelper.HandleFixHoops(CurrentStage, car);
-                    if (!IsLocallySimulated(player)) continue;
+
+                    if (!IsLocallySimulated(player))
+
+                        continue;
                     if (CheckPointHelper.HandleCheckPoint(CurrentStage, car) && player == ClientPlayer)
                         clientCrossed = true;
                 }
@@ -211,6 +220,7 @@ public sealed class RocketGamemode : PluginGamemode
                 }
 
                 // FX step: boosting flags per player, then particles advance. Drawn in Render().
+
                 if (_fx is { } fx)
                 {
                     var boosting = new bool[Players.Count];
@@ -227,6 +237,7 @@ public sealed class RocketGamemode : PluginGamemode
                     if (player.Car is { } car && car.CurrentLap >= CurrentStage.Nlaps)
                     {
                         Finish(player);
+
                         break;
                     }
                 }
@@ -235,6 +246,7 @@ public sealed class RocketGamemode : PluginGamemode
 
             case RocketState.Finished:
                 _physics.GameTick();
+
                 break;
         }
     }
@@ -277,9 +289,11 @@ public sealed class RocketGamemode : PluginGamemode
                           Y: (control.Up ? fix64.One : fix64.Zero) - (control.Down ? fix64.One : fix64.Zero));
 
         // Air heading: yaw left/right, the Q/E-style controls mapped onto heading instead of roll.
+
         if (physics.StuntState is 2 or -1)
         {
             var yawRate = (fix64)(Tuning.AirYawRate * (double)car.Stats.Airs);
+
             if (control.Left)
             {
                 state.StoredLeft = true;
@@ -308,6 +322,7 @@ public sealed class RocketGamemode : PluginGamemode
         else if (!physics.Grounded)
         {
             var yawRate = (fix64)(Tuning.AirYawRate * (double)car.Stats.Airs);
+
             if (control.Left)
             {
                 state.StoredLeft = true;
@@ -418,15 +433,18 @@ public sealed class RocketGamemode : PluginGamemode
                     finish.WinnerSlot >= 0 && finish.WinnerSlot < Players.Count ? Players[finish.WinnerSlot] : null,
                     authoritative: true
                 );
+
                 break;
             case CountdownGoEvent:
                 HudState.CountdownTimer = 0;
                 _state = RocketState.InProgress;
+
                 break;
             case RaceStateEvent state:
                 _state = state.InProgress ? RocketState.InProgress : RocketState.Countdown;
                 _countdown = state.Countdown;
                 HudState.CountdownTimer = state.Countdown;
+
                 break;
         }
     }
@@ -434,17 +452,22 @@ public sealed class RocketGamemode : PluginGamemode
     public override void OnServerRaceFinished(RaceResults results)
     {
         base.OnServerRaceFinished(results);
-        if (_receivedFinish) return;
+
+        if (_receivedFinish)
+
+            return;
         var first = results.Standings.FirstOrDefault(standing => standing.FinishPosition == 0);
         var winner = first.FinishTime.HasValue
             ? Players.FirstOrDefault(player => player.Info.Id != Guid.Empty && player.Info.Id == first.PlayerId)
             : null;
-        if (_state != RocketState.Finished) Finish(winner);
+        if (_state != RocketState.Finished)
+            Finish(winner);
     }
 
     private void Finish(ClientSidePlayer? winner = null, bool authoritative = false)
     {
         if (_state == RocketState.Finished && !authoritative)
+
             return;
 
         _state = RocketState.Finished;
@@ -493,7 +516,9 @@ public sealed class RocketGamemode : PluginGamemode
         // because a broken FX setup otherwise looks identical to "this gamemode has no effects".
         _fx?.Dispose();
         _fx = null;
+
         if (ClientPlayer is null)
+
             return;
 
         try
@@ -574,9 +599,11 @@ public sealed class RocketServerGamemode(
     public override void GameTick()
     {
         base.GameTick();
+
         switch (_state)
         {
             case RocketServerState.Countdown:
+
                 if (StandardRace.TickCountdown(ref _inner, ref _countdown, GamemodeUtils.ServerCountdownInterval))
                 {
                     _state = RocketServerState.InProgress;
@@ -588,6 +615,7 @@ public sealed class RocketServerGamemode(
                 _serverTick++;
                 foreach (var (id, info) in _perPlayer)
                     info.Progress.TrackWasted(IsPlayerWasted(id), _serverTick);
+
                 break;
         }
     }
@@ -595,9 +623,11 @@ public sealed class RocketServerGamemode(
     public override ReadOnlyMemory<byte>? CaptureState()
     {
         if (_state == RocketServerState.WaitingToStart)
+
             return null;
 
         if (_state == RocketServerState.Finished)
+
             return TightPackSerializer.Serialize<ServerToClientEvent>(
                 new RaceFinishedEvent(_winnerSlot) { Revision = _finishRevision }
             );
@@ -617,10 +647,12 @@ public sealed class RocketServerGamemode(
 
         if (e is ConfirmFinishEvent confirmation)
         {
-            if (_state == RocketServerState.Finished && _provisional
+            if (_state == RocketServerState.Finished
+                && _provisional
                 && confirmation.Revision == _finishRevision
                 && Players.Any(player => player.Id == clientId && !player.IsBot)
-                && _perPlayer.TryGetValue(clientId, out var info) && !info.Progress.Forfeited
+                && _perPlayer.TryGetValue(clientId, out var info)
+                && !info.Progress.Forfeited
                 && !TryResumeRace())
             {
                 _provisional = false;
@@ -633,26 +665,31 @@ public sealed class RocketServerGamemode(
         if (e is ForfeitEvent)
         {
             Forfeit(clientId);
+
             return;
         }
 
         if (e is CheckpointEvent { Index: var cp, Lap: var lap, Placement: var placement })
         {
-            if (!_perPlayer.TryGetValue(clientId, out var ps) || ps.Progress.Forfeited
+            if (!_perPlayer.TryGetValue(clientId, out var ps)
+                || ps.Progress.Forfeited
                 || _state == RocketServerState.Finished)
+
                 return;
 
             var progress = ps.Progress;
+
             if (!StandardRace.IsPlausibleCheckpoint(
-                    cp,
-                    lap,
-                    progress.Checkpoint,
-                    progress.Lap,
-                    CurrentStage.Checkpoints.Count,
-                    CurrentStage.Nlaps,
-                    GetPlayerPosition(clientId),
-                    CurrentStage.Checkpoints
-                ))
+                cp,
+                lap,
+                progress.Checkpoint,
+                progress.Lap,
+                CurrentStage.Checkpoints.Count,
+                CurrentStage.Nlaps,
+                GetPlayerPosition(clientId),
+                CurrentStage.Checkpoints
+            ))
+
                 return;
 
             progress.Lap = lap;
@@ -668,7 +705,9 @@ public sealed class RocketServerGamemode(
     {
         Forfeit(clientId);
         foreach (var player in Players)
-            if (player.IsBot && player.OwnerId == clientId) Forfeit(player.Id);
+            if (player.IsBot && player.OwnerId == clientId)
+                Forfeit(player.Id);
+
         if (_provisional && Players.Where(player => !player.IsBot).All(player => _perPlayer[player.Id].Progress.Forfeited))
         {
             _provisional = false;
@@ -679,6 +718,7 @@ public sealed class RocketServerGamemode(
     private void Forfeit(Guid clientId)
     {
         if (!_perPlayer.TryGetValue(clientId, out var forfeiter) || forfeiter.Progress.Forfeited)
+
             return;
 
         forfeiter.Progress.Forfeited = true;
@@ -692,14 +732,18 @@ public sealed class RocketServerGamemode(
     private void EndRace(Guid? winner = null)
     {
         if (_state == RocketServerState.Finished)
+
             return;
 
         _state = RocketServerState.Finished;
         _winnerSlot = -1;
+
         for (var slot = 0; slot < Players.Count; slot++)
+
             if (winner == Players[slot].Id)
             {
                 _winnerSlot = slot;
+
                 break;
             }
 
@@ -716,13 +760,16 @@ public sealed class RocketServerGamemode(
         foreach (var (id, info) in _perPlayer)
             revived |= info.Progress.TrackWasted(IsPlayerWasted(id), _serverTick);
 
-        if (!revived) return false;
+        if (!revived)
+
+            return false;
 
         _state = RocketServerState.InProgress;
         _provisional = false;
         _winnerSlot = -1;
         ResumeRace();
         BroadcastEvent<ServerToClientEvent>(new RaceResumedEvent());
+
         return true;
     }
 

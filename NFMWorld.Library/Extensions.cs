@@ -35,14 +35,20 @@ public static class Extensions
         public Color3 Snap(Color3 snap)
         {
             var r = (short)(color3[0] + color3[0] * (snap[0] / 100.0F));
-            if (r > 255) r = 255;
-            if (r < 0) r = 0;
+            if (r > 255)
+                r = 255;
+            if (r < 0)
+                r = 0;
             var g = (short)(color3[1] + color3[1] * (snap[1] / 100.0F));
-            if (g > 255) g = 255;
-            if (g < 0) g = 0;
+            if (g > 255)
+                g = 255;
+            if (g < 0)
+                g = 0;
             var b = (short)(color3[2] + color3[2] * (snap[2] / 100.0F));
-            if (b > 255) b = 255;
-            if (b < 0) b = 0;
+            if (b > 255)
+                b = 255;
+            if (b < 0)
+                b = 0;
 
             return new Color3(r, g, b);
         }
@@ -120,6 +126,7 @@ public static class Extensions
         public static Span2D<T> Create(Span<T> span, int height, int width)
         {
             if (height * width != span.Length)
+
                 throw new ArgumentException("Span length does not match the provided dimensions.");
 
             return Span2D<T>.DangerousCreate(ref span[0], height, width, 0);
@@ -145,6 +152,7 @@ public static class Extensions2
         public static Color GetHSBColor(float hue, float saturation, float brightness)
         {
             var v = Colors.HSBtoRGB(hue, saturation, brightness);
+
             return new Color(v.r, v.g, v.b);
         }
 
@@ -177,6 +185,7 @@ public static class Extensions2
              * 3. non pure color (non zero rgb) will eventually return white
              */
             const int i = (int)(1.0 / (1.0 - Factor));
+
             if (r == 0 && g == 0 && b == 0)
             {
                 return new Color(i, i, i, alpha);
@@ -212,6 +221,7 @@ public static class Extensions2
             packed |= (byte)((color.G & 0xFF) >> 8);
             packed |= (byte)((color.R & 0xFF) >> 16);
             packed |= (byte)((color.A & 0xFF) >> 24);
+
             return packed;
         }
 
@@ -258,6 +268,7 @@ public static class Extensions2
         public static Color Clamp(Color value, Color min, Color max)
         {
             Clamp(ref value, ref min, ref max, out var result);
+
             return result;
         }
 
@@ -294,6 +305,7 @@ public static class Extensions2
         public static Color Lerp(Color start, Color end, float amount)
         {
             Lerp(ref start, ref end, amount, out var result);
+
             return result;
         }
 
@@ -320,6 +332,7 @@ public static class Extensions2
         public static Color SmoothStep(Color start, Color end, float amount)
         {
             SmoothStep(ref start, ref end, amount, out var result);
+
             return result;
         }
 
@@ -337,7 +350,9 @@ public static class Extensions2
         public unsafe string GetString(byte* bytes)
         {
             var length = 0;
-            while (bytes[length] != 0) length++;
+            while (bytes[length] != 0)
+                length++;
+
             return encoding.GetString(bytes, length);
         }
     }

@@ -74,6 +74,7 @@ public static class WgslCompiler
             lock (TranslatorGate)
             {
                 if (TranslatorFailure is not null)
+
                     return TranslatorFailure;
 
                 if (!TranslatorStarted)
@@ -113,17 +114,21 @@ public static class WgslCompiler
     )
     {
         if (UnavailableReason is { } reason)
+
             throw new WgslUnavailableException($"WGSL cannot be produced on this host: {reason}");
 
         // Per-module failures are the shader's, so they throw; a translator that stopped answering
         // is the host's, and it rethrows as "unavailable" so the rest of the batch skips WGSL
         // instead of failing every shader.
-        var reply = Request(WgslProtocol.RequestTranslate, writer =>
+        var reply = Request(
+            WgslProtocol.RequestTranslate,
+            writer =>
             {
                 writer.Write(spirv.Length);
                 writer.Write(spirv);
                 WgslFrames.WriteString(writer, entryPoint);
                 writer.Write(bindings.Count);
+
                 foreach (var (variable, slot) in bindings)
                 {
                     writer.Write(variable);
@@ -135,15 +140,20 @@ public static class WgslCompiler
         switch (reply?.Status)
         {
             case WgslProtocol.StatusOk:
+
                 return (reply.Value.First, reply.Value.Second);
             case WgslProtocol.StatusFailed:
+
                 throw new InvalidOperationException(
                     $"SPIR-V -> WGSL failed for entry point '{entryPoint}':\n{reply.Value.First.Trim()}"
                 );
             case WgslProtocol.StatusUnavailable:
+
                 throw new WgslUnavailableException($"WGSL cannot be produced on this host: {Stop(reply.Value.First)}");
             default:
+
                 // No reply at all: the process died, which is the case this whole file exists for.
+
                 throw new WgslUnavailableException($"WGSL cannot be produced on this host: {Stop(null)}");
         }
     }
@@ -166,6 +176,7 @@ public static class WgslCompiler
     )
     {
         if (LocalUnavailableReason is { } reason)
+
             throw new InvalidOperationException($"WGSL cannot be produced on this host: {reason}");
 
         // One option matters: the derivative-uniformity rule is a WGSL restriction that predates the
@@ -179,6 +190,7 @@ public static class WgslCompiler
 
         using var module = Taint.Translate(retargeted, options);
         var wgsl = module.GetWgsl();
+
         if (wgsl is null)
         {
             throw new InvalidOperationException(
@@ -210,6 +222,7 @@ public static class WgslCompiler
             ? wgsl
             : Regex.Replace(wgsl, @"^[ \t]*diagnostic\([^)]*\);[ \t]*\r?\n", "", RegexOptions.Multiline);
         text = Regex.Replace(text, @"(?m)^([ \t]*)discard;[ \t]*\r?\n[ \t]*return;[ \t]*\r?\n", "$1discard;\n");
+
         return text;
     }
 
@@ -223,29 +236,36 @@ public static class WgslCompiler
     private static byte[] RetargetBindings(byte[] spirv, IReadOnlyDictionary<int, int> bindings)
     {
         if (spirv.Length % 4 != 0)
+
             throw new InvalidOperationException($"SPIR-V length {spirv.Length} is not a multiple of 4.");
 
         var words = new uint[spirv.Length / 4];
         Buffer.BlockCopy(spirv, 0, words, 0, spirv.Length);
 
         if (words.Length < 5 || words[0] != 0x07230203)
+
             throw new InvalidOperationException("Not a SPIR-V module.");
 
         var seen = new HashSet<int>();
+
         for (var i = 5; i < words.Length;)
         {
             var count = (int)(words[i] >> 16);
             var opcode = (int)(words[i] & 0xffff);
+
             if (count == 0)
+
                 throw new InvalidOperationException("Malformed SPIR-V: an instruction has a zero word count.");
 
             if (opcode == OpDecorate && count >= 4)
             {
                 var target = (int)words[i + 1];
                 var decoration = (int)words[i + 2];
+
                 if (decoration == DecorationBinding)
                 {
                     if (!bindings.TryGetValue(target, out var binding))
+
                         throw new InvalidOperationException(
                             $"SPIR-V variable %{target} carries a binding the reflection did not report; "
                             + "the two cannot be reconciled, and leaving it would collide with another "
@@ -267,6 +287,7 @@ public static class WgslCompiler
         if (seen.Count != bindings.Count)
         {
             var missing = bindings.Keys.Where(id => !seen.Contains(id)).ToList();
+
             throw new InvalidOperationException(
                 $"The reflection reported {bindings.Count} bound variable(s) but the module decorates "
                 + $"{seen.Count}; missing: {string.Join(", ", missing.Select(id => "%" + id))}."
@@ -275,6 +296,7 @@ public static class WgslCompiler
 
         var result = new byte[spirv.Length];
         Buffer.BlockCopy(words, 0, result, 0, result.Length);
+
         return result;
     }
 
@@ -292,24 +314,30 @@ public static class WgslCompiler
         if (host is null)
         {
             TranslatorFailure = error ?? "the WGSL translator process could not be started";
+
             return null;
         }
 
         if (probe!.Value.Status == WgslProtocol.StatusOk)
+
             return host;
 
         TranslatorFailure = probe.Value.First;
         host.Dispose();
+
         return null;
     }
 
     private static WgslTranslatorHost.Reply? Request(byte request, Action<BinaryWriter> body)
     {
         var host = Translator;
+
         if (host is null)
+
             return null;
 
         using var buffer = new MemoryStream();
+
         using (var writer = new BinaryWriter(buffer, Encoding.UTF8, leaveOpen: true))
         {
             writer.Write(request);
@@ -330,6 +358,7 @@ public static class WgslCompiler
         lock (TranslatorGate)
         {
             if (TranslatorFailure is not null)
+
                 return TranslatorFailure;
 
             TranslatorFailure = said
@@ -339,6 +368,7 @@ public static class WgslCompiler
 
             Translator?.Dispose();
             Translator = null;
+
             return TranslatorFailure;
         }
     }
@@ -371,9 +401,11 @@ public static class WgslCompiler
                 : "libtaint.so";
 
         var path = FindNative(name);
+
         if (path is null)
         {
             WgslTranslatorServer.Trace($"probe: {name} not found");
+
             return $"the taint native library ({name}) was not found beside the shader compiler";
         }
 
@@ -388,6 +420,7 @@ public static class WgslCompiler
             );
             _ = Taint.LibraryVersion;
             WgslTranslatorServer.Trace("probe: taint loaded");
+
             return null;
         }
         catch (Exception e) when (IsNativeLoadFailure(e))
@@ -411,6 +444,7 @@ public static class WgslCompiler
         {
             if (cause is DllNotFoundException or BadImageFormatException or EntryPointNotFoundException
                 or TypeLoadException or FileNotFoundException)
+
                 return true;
         }
 
@@ -422,6 +456,7 @@ public static class WgslCompiler
         var cause = e;
         while (cause.InnerException is { } inner)
             cause = inner;
+
         return cause;
     }
 
@@ -435,7 +470,9 @@ public static class WgslCompiler
     private static string? FindNative(string fileName)
     {
         var overridePath = Environment.GetEnvironmentVariable("NFMW_TAINT");
+
         if (!string.IsNullOrEmpty(overridePath) && File.Exists(overridePath))
+
             return overridePath;
 
         foreach (var directory in new[]
@@ -445,18 +482,24 @@ public static class WgslCompiler
                  })
         {
             if (string.IsNullOrEmpty(directory))
+
                 continue;
             var candidate = Path.Combine(directory, fileName);
+
             if (File.Exists(candidate))
+
                 return candidate;
         }
 
         foreach (var directory in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
         {
             if (directory.Length == 0)
+
                 continue;
             var candidate = Path.Combine(directory, fileName);
+
             if (File.Exists(candidate))
+
                 return candidate;
         }
 

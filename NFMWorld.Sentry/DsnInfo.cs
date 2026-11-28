@@ -30,6 +30,7 @@ public readonly struct DsnInfo
         result = default;
 
         if (string.IsNullOrWhiteSpace(dsn))
+
             return false;
 
         // Expected format: {protocol}://{public_key}@{host}/{project_id}
@@ -37,18 +38,24 @@ public readonly struct DsnInfo
         var uri = new Uri(dsn);
 
         var protocol = uri.Scheme;
+
         if (string.IsNullOrEmpty(protocol))
+
             return false;
 
         var host = uri.Host;
+
         if (string.IsNullOrEmpty(host))
+
             return false;
 
         var port = uri.IsDefaultPort ? "" : $":{uri.Port}";
         host = $"{host}{port}";
 
         var publicKey = uri.UserInfo;
+
         if (string.IsNullOrEmpty(publicKey))
+
             return false;
 
         // Project ID is the last path segment
@@ -57,9 +64,11 @@ public readonly struct DsnInfo
         var projectId = lastSlash >= 0 ? path[(lastSlash + 1)..] : path;
 
         if (string.IsNullOrEmpty(projectId))
+
             return false;
 
         result = new DsnInfo(protocol, publicKey, host, projectId);
+
         return true;
     }
 
@@ -69,7 +78,9 @@ public readonly struct DsnInfo
     public static DsnInfo Parse(string dsn)
     {
         if (!TryParse(dsn, out var result))
+
             throw new ArgumentException($"Invalid Sentry DSN: '{dsn}'");
+
         return result;
     }
 }

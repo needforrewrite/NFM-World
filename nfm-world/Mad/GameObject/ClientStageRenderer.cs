@@ -48,6 +48,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
     {
         if (!_sharedMeshes.TryGetValue(model, out var lease))
             _sharedMeshes.Add(model, lease = StageMeshCache.Acquire(model, prepared));
+
         return lease.Value;
     }
 
@@ -73,6 +74,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         Children = _mutableChildren;
         World.ResetValues();
         _environmentSeed = World.MountainSeed;
+
         try
         {
             var stageLoader = backendStage.StageLoader;
@@ -125,9 +127,12 @@ public partial class ClientStageRenderer : GameObject, IDisposable
             {
                 if (piece is StageObject obj)
                 {
-                    if (_cachedObjects.ContainsKey(obj)) continue;
+                    if (_cachedObjects.ContainsKey(obj))
+
+                        continue;
 
                     var mesh = GetStageMesh(obj.Rad);
+
                     if (obj.Kind == AiNodeKind.CheckPoint)
                     {
                         var clientObj = new StageObjectGameObject(mesh, obj)
@@ -191,10 +196,12 @@ public partial class ClientStageRenderer : GameObject, IDisposable
             World.DrawPolys, World.MountainSeed, World.FogDensity, World.LightDirection, World.Snap, World.Fog,
             World.Sky, World.GroundColor, World.GroundPolysColor, World.FadeFrom, World.Clouds, World.CloudColor,
             World.Texture);
+
         try
         {
             World.ResetValues();
             ApplyValues();
+
             return Environment.GenerationSettings.Capture();
         }
         finally
@@ -217,6 +224,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         token.ThrowIfCancellationRequested();
         var renderer = new ClientStageRenderer(stage, deferred: true);
         renderer._pendingOwnership = ContentCacheMaintenance.TrackPending(renderer);
+
         try
         {
             var settings = renderer.CaptureGenerationSettings();
@@ -229,14 +237,15 @@ public partial class ClientStageRenderer : GameObject, IDisposable
                     && StageMeshCache.TryAcquire(entry.Object.Rad, out var lease))
                     renderer._sharedMeshes.Add(entry.Object.Rad, lease!);
             var cachedModels = new HashSet<Rad3d>(renderer._sharedMeshes.Keys, Rad3d.VisualEqualityComparer.Instance);
-            var prepared = await Task.Run(() =>
+            var prepared = await Task.Run(
+                () =>
                 {
                     token.ThrowIfCancellationRequested();
                     var groundPolys = generateEnvironment && loader.DrawPolys ? EnvironmentMeshData.Prepare(
                         Environment.BuildPolys(
                             stage,
                             loader.maxl,
-                    loader.maxr - loader.maxl,
+                            loader.maxr - loader.maxl,
                             loader.maxb,
                             loader.maxt - loader.maxb,
                             stage.StagePartCount,
@@ -266,11 +275,13 @@ public partial class ClientStageRenderer : GameObject, IDisposable
                     var resolver = new CoplanarSurfaceResolver();
                     var pieces = new List<(StageObject Object, Mesh.Prepared? Replacement)>();
                     var meshes = new Dictionary<Rad3d, Mesh.Prepared>(Rad3d.VisualEqualityComparer.Instance);
+
                     foreach (var entry in objects)
                     {
                         token.ThrowIfCancellationRequested();
                         var rad = entry.Object.Rad;
-                        if (!cachedModels.Contains(rad) && !meshes.ContainsKey(rad)) meshes.Add(rad, Mesh.Prepare(rad));
+                        if (!cachedModels.Contains(rad) && !meshes.ContainsKey(rad))
+                            meshes.Add(rad, Mesh.Prepare(rad));
                         var polygons = entry.Object.Durability > 0 ? entry.Polys
                             : StageSurfaceOverlaps.Resolve(resolver, pieces.Count, entry.Polys, entry.World);
                         var replacement = ReferenceEquals(polygons, entry.Polys) ? null
@@ -279,20 +290,24 @@ public partial class ClientStageRenderer : GameObject, IDisposable
                     }
 
                     return (groundPolys, clouds, mountains, pieces, meshes);
-                }, token
+                },
+                token
             );
 
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
-            if (prepared.groundPolys is { } polys) renderer.polys = new GroundPolys(GameSparker.GraphicsDevice, polys);
+            if (prepared.groundPolys is { } polys)
+                renderer.polys = new GroundPolys(GameSparker.GraphicsDevice, polys);
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
             if (prepared.clouds is { } clouds)
                 renderer.clouds = new GroundPolys(GameSparker.GraphicsDevice, clouds, applyFog: false);
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
-            if (prepared.mountains is { } mountains) renderer.mountains = new Mountains(GameSparker.GraphicsDevice, mountains);
+            if (prepared.mountains is { } mountains)
+                renderer.mountains = new Mountains(GameSparker.GraphicsDevice, mountains);
             var uploadTimer = System.Diagnostics.Stopwatch.StartNew();
+
             foreach (var (obj, replacement) in prepared.pieces)
             {
                 if (uploadTimer.ElapsedMilliseconds >= 2)
@@ -303,6 +318,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
 
                 token.ThrowIfCancellationRequested();
                 var mesh = renderer.GetStageMesh(obj.Rad, prepared.meshes.GetValueOrDefault(obj.Rad));
+
                 if (replacement is not null)
                 {
                     mesh = new Mesh(replacement);
@@ -320,8 +336,11 @@ public partial class ClientStageRenderer : GameObject, IDisposable
 
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
-            renderer.sky = new Sky(GameSparker.GraphicsDevice, settings.Sky.Snap(settings.Snap), settings.Fog.Snap(settings
-                .Snap
+            renderer.sky = new Sky(
+                GameSparker.GraphicsDevice,
+                settings.Sky.Snap(settings.Snap),
+                settings.Fog.Snap(settings
+                    .Snap
             )
             );
             renderer.ground = new Ground(
@@ -335,12 +354,14 @@ public partial class ClientStageRenderer : GameObject, IDisposable
                 0, 0);
             renderer._mountainsKey = loader.DrawMountains ? (true, loader.maxl, loader.maxr, loader.maxb, loader.maxt) : (false,
                 0, 0, 0, 0);
+
             return renderer;
         }
         catch
         {
             await LoadingWork.NextFrame;
             renderer.Dispose();
+
             throw;
         }
     }
@@ -417,15 +438,20 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         }
 
         var geometryChanged = false;
+
         foreach (var piece in backendStage.Pieces)
         {
             if (piece is StageObject obj)
             {
                 seenObjects.Add(obj);
-                if (_cachedObjects.ContainsKey(obj)) continue;
+
+                if (_cachedObjects.ContainsKey(obj))
+
+                    continue;
                 geometryChanged = true;
 
                 var mesh = GetStageMesh(obj.Rad);
+
                 if (obj.Kind == AiNodeKind.CheckPoint)
                 {
                     var clientObj = new StageObjectGameObject(mesh, obj)
@@ -479,8 +505,10 @@ public partial class ClientStageRenderer : GameObject, IDisposable
             _cachedObjects.Remove(obj);
         }
 
-        if (geometryChanged || objsToRemove.Count > 0) ResolveSurfaceOverlaps();
+        if (geometryChanged || objsToRemove.Count > 0)
+            ResolveSurfaceOverlaps();
         var neededModels = new HashSet<Rad3d>(_cachedObjects.Keys.Select(obj => obj.Rad), Rad3d.VisualEqualityComparer.Instance);
+
         foreach (var model in _sharedMeshes.Keys.Where(model => !neededModels.Contains(model)).ToArray())
         {
             _sharedMeshes[model].Dispose();
@@ -494,6 +522,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         var entries = _cachedObjects.OrderBy(entry => entry.Value.Layer ?? 0).ToArray();
         var replacements = new List<(StageObjectGameObject Visual, Mesh Mesh)>();
         var owned = new List<Mesh>();
+
         try
         {
             for (var i = 0; i < entries.Length; i++)
@@ -503,6 +532,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
                 var polygons = obj.Durability > 0 ? obj.Rad.Polys
                     : StageSurfaceOverlaps.Resolve(resolver, i, obj.Rad.Polys, world);
                 var mesh = GetStageMesh(obj.Rad);
+
                 if (!ReferenceEquals(polygons, obj.Rad.Polys))
                 {
                     mesh = new Mesh(new Rad3d(polygons, obj.Rad.CastsShadow, obj.Rad.FileName));
@@ -514,12 +544,16 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         }
         catch
         {
-            foreach (var mesh in owned) mesh.Dispose();
+            foreach (var mesh in owned)
+                mesh.Dispose();
+
             throw;
         }
 
-        foreach (var (visual, mesh) in replacements) visual.Mesh = mesh;
-        foreach (var mesh in _resolvedMeshes) mesh.Dispose();
+        foreach (var (visual, mesh) in replacements)
+            visual.Mesh = mesh;
+        foreach (var mesh in _resolvedMeshes)
+            mesh.Dispose();
         _resolvedMeshes.Clear();
         _resolvedMeshes.AddRange(owned);
     }
@@ -532,28 +566,36 @@ public partial class ClientStageRenderer : GameObject, IDisposable
             {
                 case CloudsInstruction clouds:
                     World.HasClouds = true;
+
                     break;
                 case FogInstruction fog:
                     World.Fog = fog.Color;
+
                     break;
                 case GroundInstruction ground:
                     World.SetGround(ground.Color);
+
                     break;
                 case PolysInstruction polys:
                     World.GroundPolysColor = polys.Color;
                     World.HasPolys = true;
+
                     break;
                 case SkyInstruction sky:
                     World.SetSky(sky.Color);
+
                     break;
                 case SnapInstruction snap:
                     World.Snap = snap.Color;
+
                     break;
                 case TextureInstruction texture:
                     World.SetTexture(texture.Texture);
                     World.HasTexture = true;
+
                     break;
                 default:
+
                     throw new ArgumentOutOfRangeException(nameof(instruction), instruction, null);
             }
         }
@@ -586,6 +628,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
 
         World.DrawMountains = backendStage.StageLoader.DrawMountains;
         World.DrawStars = backendStage.StageLoader.DrawStars;
+
         if (backendStage.StageLoader.MountainSeed is { } mountainSeed)
         {
             World.MountainSeed = mountainSeed;
@@ -631,8 +674,12 @@ public partial class ClientStageRenderer : GameObject, IDisposable
     /// </summary>
     private void TickGroundPulse()
     {
-        if (_pulse is not { } pulse) return;
-        if (++_pulseTicks < Physics.OriginalTicksPerNewTick) return;
+        if (_pulse is not { } pulse)
+
+            return;
+        if (++_pulseTicks < Physics.OriginalTicksPerNewTick)
+
+            return;
         _pulseTicks = 0;
 
         var t = pulse.A + pulse.B * MathF.Sin(_pulsePhase * pulse.C);
@@ -678,7 +725,8 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         mountains?.SubmitDraws(queue, camera, lighting, pass);
 
         base.SubmitDraws(queue, camera, lighting, pass);
-        foreach (var debris in _debris) debris.SubmitDraws(queue, camera, lighting, pass);
+        foreach (var debris in _debris)
+            debris.SubmitDraws(queue, camera, lighting, pass);
     }
 
     public void ResetCheckpointGlow()
@@ -699,8 +747,13 @@ public partial class ClientStageRenderer : GameObject, IDisposable
 
         // A stage can declare laps and no checkpoint gates at all (football/stadium does), and the
         // array hands back default past its end - a null key is not a dictionary lookup here.
-        if (currentCheckpoint >= backendStage.Checkpoints.Count) return;
-        if (backendStage.Checkpoints[currentCheckpoint] is not { } checkpointStageObject) return;
+
+        if (currentCheckpoint >= backendStage.Checkpoints.Count)
+
+            return;
+        if (backendStage.Checkpoints[currentCheckpoint] is not { } checkpointStageObject)
+
+            return;
 
         if (_cachedObjects.TryGetValue(checkpointStageObject, out var gameObject))
         {
@@ -718,6 +771,7 @@ public partial class ClientStageRenderer : GameObject, IDisposable
     public void Dispose()
     {
         if (_disposed)
+
             return;
 
         _disposed = true;
@@ -730,13 +784,16 @@ public partial class ClientStageRenderer : GameObject, IDisposable
         clouds?.Dispose();
         mountains?.Dispose();
 
-        foreach (var mesh in _resolvedMeshes) mesh.Dispose();
+        foreach (var mesh in _resolvedMeshes)
+            mesh.Dispose();
         _resolvedMeshes.Clear();
 
-        foreach (var visual in _cachedObjects.Values) visual.Dispose();
+        foreach (var visual in _cachedObjects.Values)
+            visual.Dispose();
         _cachedObjects.Clear();
         _mutableChildren.Clear();
-        foreach (var lease in _sharedMeshes.Values) lease.Dispose();
+        foreach (var lease in _sharedMeshes.Values)
+            lease.Dispose();
         _sharedMeshes.Clear();
 
         GC.SuppressFinalize(this);

@@ -122,6 +122,7 @@ namespace NFMWorld.Library.Test
             queue.Clear();
             Add(queue, element, 1, 0);
             queue.Flush(device.Commands);
+
             for (var frame = 0; frame < 3; frame++)
             {
                 queue.Clear();
@@ -199,6 +200,7 @@ namespace NFMWorld.Library.Test
                 var buffer = new RecordingBuffer(desc);
                 initialData.CopyTo(buffer.Data);
                 Buffers.Add(buffer);
+
                 return buffer;
             }
 

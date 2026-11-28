@@ -122,6 +122,7 @@ internal sealed class GlPipelineState : IPipelineState
                 // because the layout is the caller's and does not know what the compiler kept.
                 // The span set is consulted rather than the name table because a matrix input is
                 // one entry occupying several locations - see GlShaderProgram.AttributeLocationSpans.
+
                 if (program.AttributeLocationSpans.Contains((int)location))
                 {
                     bindings.Add(
@@ -168,6 +169,7 @@ internal sealed class GlPipelineState : IPipelineState
     private void ApplyBlend(GL gl)
     {
         var blend = Desc.BlendState;
+
         if (blend.Enabled)
         {
             gl.Enable(GLEnum.Blend);
@@ -195,8 +197,10 @@ internal sealed class GlPipelineState : IPipelineState
     {
         var ds = Desc.DepthStencilState;
 
-        if (ds.DepthTestEnabled) gl.Enable(GLEnum.DepthTest);
-        else gl.Disable(GLEnum.DepthTest);
+        if (ds.DepthTestEnabled)
+            gl.Enable(GLEnum.DepthTest);
+        else
+            gl.Disable(GLEnum.DepthTest);
         gl.DepthMask(ds.DepthWriteEnabled);
         gl.DepthFunc(ds.DepthCompare.ToDepthFunction());
 
@@ -284,8 +288,10 @@ internal sealed class GlPipelineState : IPipelineState
         // on - ES 3.0 has no glPolygonMode at all.
         _ = raster.FillMode.ToPolygonMode();
 
-        if (raster.ScissorTestEnabled) gl.Enable(GLEnum.ScissorTest);
-        else gl.Disable(GLEnum.ScissorTest);
+        if (raster.ScissorTestEnabled)
+            gl.Enable(GLEnum.ScissorTest);
+        else
+            gl.Disable(GLEnum.ScissorTest);
     }
 
     public void Dispose()

@@ -20,8 +20,10 @@ public sealed class AssetsModel(ArchiveDbContext db, FileStorage storage) : Arch
     public async Task<IActionResult> OnGetAsync(int? after, bool pending = false)
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
         if (!IsModerator)
+
             return NotFound();
 
         After = after;
@@ -37,19 +39,28 @@ public sealed class AssetsModel(ArchiveDbContext db, FileStorage storage) : Arch
         var rows = await q.OrderByDescending(a => a.Id).Take(page + 1).ToListAsync();
         NextCursor = rows.Count > page ? rows[page - 1].Id : null;
         Rows = rows.Take(page).ToList();
+
         return Page();
     }
 
     public async Task<IActionResult> OnGetReviewFileAsync(int id, string hash)
     {
-        if (await ResolveAccountAsync() is null) return RedirectToLogin();
-        if (!IsModerator) return NotFound();
+        if (await ResolveAccountAsync() is null)
+
+            return RedirectToLogin();
+        if (!IsModerator)
+
+            return NotFound();
 
         var asset = await Db.Assets.FirstOrDefaultAsync(a => a.Id == id && a.ContentHash == hash, HttpContext.RequestAborted);
-        if (asset is null || storage.OpenRead(asset.StoragePath) is not { } stream) return NotFound();
+
+        if (asset is null || storage.OpenRead(asset.StoragePath) is not { } stream)
+
+            return NotFound();
 
         var header = new byte[3];
         int length;
+
         try
         {
             length = await stream.ReadAtLeastAsync(header, header.Length, false, HttpContext.RequestAborted);
@@ -58,11 +69,13 @@ public sealed class AssetsModel(ArchiveDbContext db, FileStorage storage) : Arch
         catch
         {
             await stream.DisposeAsync();
+
             throw;
         }
 
         var extension = length == 3 && header.AsSpan().SequenceEqual("RAD"u8) ? ".radpack" : ".rad";
         Response.Headers.CacheControl = "private, no-store";
+
         return File(stream, "application/octet-stream", $"{asset.Name}{extension}");
     }
 
@@ -74,12 +87,17 @@ public sealed class AssetsModel(ArchiveDbContext db, FileStorage storage) : Arch
 
     private async Task<IActionResult> ReviewAsync(int id, string hash, bool pending, AssetReviewStatus status)
     {
-        if (await ResolveAccountAsync() is null) return RedirectToLogin();
-        if (!IsModerator) return NotFound();
+        if (await ResolveAccountAsync() is null)
+
+            return RedirectToLogin();
+        if (!IsModerator)
+
+            return NotFound();
 
         ReviewMessage = await AssetModeration.ReviewAsync(Db, id, hash, status, Account!, HttpContext, HttpContext.RequestAborted)
             ? $"Asset {status.ToString().ToLowerInvariant()}."
             : "The file changed or was removed. Refresh the queue before reviewing it again.";
+
         return RedirectToPage(new { pending });
     }
 
@@ -92,12 +110,16 @@ public sealed class AssetsModel(ArchiveDbContext db, FileStorage storage) : Arch
     private async Task<IActionResult> SetAsync(int id, bool isTakedown)
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
         if (!IsModerator)
+
             return NotFound();
 
         var asset = await Db.Assets.FirstOrDefaultAsync(a => a.Id == id);
+
         if (asset is null)
+
             return NotFound();
 
         await NFMWorld.Archive.Moderation.AssetModeration.SetTakedownAsync(
@@ -108,6 +130,7 @@ public sealed class AssetsModel(ArchiveDbContext db, FileStorage storage) : Arch
             HttpContext,
             HttpContext.RequestAborted
         );
+
         return RedirectToPage(new { after = After });
     }
 }

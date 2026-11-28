@@ -17,6 +17,7 @@ public static class Utility
     {
         line = line[ArgumentStart(prefix)..];
         var i = 0;
+
         foreach (var range in line.SplitAny(',', ')'))
         {
             if (i++ == index)
@@ -32,6 +33,7 @@ public static class Utility
     {
         line = line[ArgumentStart(prefix)..];
         var i = 0;
+
         foreach (var range in line.SplitAny(',', ')'))
         {
             if (i++ == index)
@@ -47,6 +49,7 @@ public static class Utility
     {
         line = line[ArgumentStart(prefix)..];
         var i = 0;
+
         foreach (var range in line.SplitAny(',', ')'))
         {
             if (i++ == index)
@@ -62,6 +65,7 @@ public static class Utility
     {
         line = line[ArgumentStart(prefix)..];
         var i = 0;
+
         foreach (var range in line.SplitAny(',', ')'))
         {
             if (i++ == index)
@@ -132,6 +136,7 @@ public static class Utility
         var dz = z1 - z2;
 
         // We should avoid Math.Pow or Math.Hypot due to perfomance reasons
+
         return Math.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
@@ -142,6 +147,7 @@ public static class Utility
         var dz = z1 - z2;
 
         // We should avoid Math.Pow or Math.Hypot due to perfomance reasons
+
         return Math.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 

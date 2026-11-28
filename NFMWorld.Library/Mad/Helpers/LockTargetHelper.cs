@@ -15,10 +15,16 @@ public static class LockTargetHelper
     /// </summary>
     public static BackendCar? LockedCar(ClientSidePlayer[] opponents, int lockIndex)
     {
-        if (lockIndex < 0) return null;
+        if (lockIndex < 0)
+
+            return null;
+
         foreach (var player in opponents)
         {
-            if (player.Index != lockIndex) continue;
+            if (player.Index != lockIndex)
+
+                continue;
+
             return player.Car is { Wasted: false } car ? car : null;
         }
 

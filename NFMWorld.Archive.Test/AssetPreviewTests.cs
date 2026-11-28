@@ -34,6 +34,7 @@ public class AssetPreviewTests
         await db.SaveChangesAsync();
 
         var owner = db.Users.Single();
+
         foreach (var asset in assets)
         {
             asset.OwnerId ??= owner.Id;
@@ -41,6 +42,7 @@ public class AssetPreviewTests
         }
 
         await db.SaveChangesAsync();
+
         return assets.ToDictionary(a => a.Name, a => a.Id);
     }
 
@@ -48,6 +50,7 @@ public class AssetPreviewTests
     {
         var response = await client.GetAsync(url);
         response.EnsureSuccessStatusCode();
+
         return await response.Content.ReadAsStringAsync();
     }
 

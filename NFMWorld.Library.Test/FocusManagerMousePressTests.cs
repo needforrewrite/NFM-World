@@ -20,6 +20,7 @@ public class FocusManagerMousePressTests
     {
         var root = new View { Name = "root" };
         root.Styles = root.Styles with { Width = w, Height = h };
+
         return root;
     }
 
@@ -34,6 +35,7 @@ public class FocusManagerMousePressTests
             Width = width,
             Height = height,
         };
+
         return v;
     }
 

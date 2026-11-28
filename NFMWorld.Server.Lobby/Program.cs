@@ -34,6 +34,7 @@ var seenNonces = new NonceCache();
 
 // The archive only trusts this server to report results, so this key must not reach a game master.
 ArchiveClient? archive = null;
+
 if (Environment.GetEnvironmentVariable("ARCHIVE_URL") is { Length: > 0 } archiveUrl)
 {
     archive = new ArchiveClient(
@@ -95,6 +96,7 @@ catch (OperationCanceledException)
 
 http.Stop();
 orchestrator.Stop();
+
 return;
 
 static async Task HandleHttpRequest(
@@ -115,11 +117,13 @@ static async Task HandleHttpRequest(
         {
             res.StatusCode = 404;
             res.Close();
+
             return;
         }
 
         // A game master from another revision lays the results out differently; the signature
         // would still verify, so the version has to be checked separately and before parsing.
+
         if (req.Headers[Protocol.HeaderName] is not { } declared
             || !int.TryParse(declared, out var declaredVersion)
             || declaredVersion != Protocol.Version)
@@ -130,6 +134,7 @@ static async Task HandleHttpRequest(
             res.StatusCode = 409;
             res.StatusDescription = $"protocol {Protocol.Version}";
             res.Close();
+
             return;
         }
 
@@ -137,14 +142,17 @@ static async Task HandleHttpRequest(
         {
             res.StatusCode = 413;
             res.Close();
+
             return;
         }
 
         using var seq = req.InputStream.AsPooledReadOnlySequence();
+
         if (seq.Sequence.Length > maxBodyBytes)
         {
             res.StatusCode = 413;
             res.Close();
+
             return;
         }
 
@@ -162,11 +170,13 @@ static async Task HandleHttpRequest(
             out var keyId,
             out var nonce
         );
+
         if (authError is not null || !seenNonces.TryUse(keyId ?? "", nonce))
         {
             Logging.Warning($"[Lobby] {req.Url!.LocalPath} rejected: {authError ?? "nonce is missing or was already used"}");
             res.StatusCode = 401;
             res.Close();
+
             return;
         }
 
@@ -175,6 +185,7 @@ static async Task HandleHttpRequest(
             orchestrator.ReportRaceChat(TightPackSerializer.Deserialize<RaceServer2Lobby_Chat>(body));
             res.StatusCode = 200;
             res.Close();
+
             return;
         }
 
@@ -183,6 +194,7 @@ static async Task HandleHttpRequest(
             orchestrator.ReportLiveState(TightPackSerializer.Deserialize<RaceServer2Lobby_LiveState>(body));
             res.StatusCode = 200;
             res.Close();
+
             return;
         }
 
@@ -200,6 +212,7 @@ static async Task HandleHttpRequest(
     catch (Exception ex)
     {
         Logging.Error($"[Lobby] Error handling /race-ended: {ex}");
+
         try
         {
             res.StatusCode = 500;

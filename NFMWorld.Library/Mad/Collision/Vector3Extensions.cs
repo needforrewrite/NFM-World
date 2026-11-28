@@ -30,6 +30,7 @@ internal static class Vector3Extensions
         {
             var v1 = vec;
             v1.Normalize();
+
             return v1;
         }
     }

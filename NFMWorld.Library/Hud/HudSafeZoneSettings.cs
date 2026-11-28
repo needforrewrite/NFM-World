@@ -20,6 +20,7 @@ public static class HudSafeZoneSettings
     {
         var width = size.X * Normalize(horizontal);
         var height = size.Y * Normalize(vertical);
+
         return new RectangleF(position.X + (size.X - width) / 2, position.Y + (size.Y - height) / 2, width, height);
     }
 }

@@ -66,6 +66,7 @@ public partial class BackendStage
     public BackendStage(string stageName, StageLoader? stageLoader, bool throwOnError) : this()
     {
         Path = stageName;
+
         try
         {
             if (stageLoader == null)
@@ -93,7 +94,9 @@ public partial class BackendStage
         }
         catch (StageLoadException exception)
         {
-            if (throwOnError) throw;
+            if (throwOnError)
+
+                throw;
             SentrySdk.CaptureException(exception);
             Logging.Error(
                 $"Error in stage: {stageName}\nAt line: {exception.Line} (number {exception.LineNumber})\n{exception.ToString()}"
@@ -101,7 +104,9 @@ public partial class BackendStage
         }
         catch (Exception exception)
         {
-            if (throwOnError) throw;
+            if (throwOnError)
+
+                throw;
             SentrySdk.CaptureException(exception);
             Logging.Error($"Error in stage: {stageName}\n{exception.ToString()}");
         }
@@ -123,6 +128,7 @@ public partial class BackendStage
                         piece
                     );
                     Pieces[StagePartCount] = obj;
+
                     if (piece.NodeKind is { } nodeKind)
                     {
                         Nodes[Nodes.Count] = obj;
@@ -163,6 +169,7 @@ public partial class BackendStage
 
                     FixHoops[FixHoops.Count] = fix;
                     Nodes[Nodes.Count] = fix;
+
                     if (piece.IsSpecial)
                     {
                         fix.IsSpecial = true;
@@ -182,6 +189,7 @@ public partial class BackendStage
         Physics = stageLoader.Physics;
 
         // stage walls
+
         if (stageLoader.walls.Count > 0)
         {
             Pieces[StagePartCount] = new WallCollision([.. stageLoader.walls]);
@@ -197,18 +205,21 @@ public partial class BackendStage
         Sx = sx;
         Sz = sz;
         Ncx = ncx;
+
         if (Ncx <= 0)
         {
             Ncx = 1;
         }
 
         Ncz = ncz;
+
         if (Ncz <= 0)
         {
             Ncz = 1;
         }
 
         _collisionQuadTree = new QuadTree<CollisionShapeRef>(sx, sz, ncx, ncz);
+
         foreach (var piece in Pieces)
         {
             if (piece is ICollidable collidable)
@@ -224,6 +235,7 @@ public partial class BackendStage
     public ITransform CreateObject(string objectName, int x, int y, int z, int r)
     {
         var part = BackendGameSparker.GetStagePart(objectName);
+
         if (part.Rad == null)
         {
             Logging.Info($"Object '{objectName}' not found.");
@@ -251,6 +263,7 @@ public partial class BackendStage
         fix64 y = 0;
         fix64 z = 0;
         fix64 xz = 0;
+
         if (mesh is ITransform transform)
         {
             x = transform.Position.X;
@@ -318,6 +331,7 @@ public partial class BackendStage
         Walls.AppendCollidables(_tempTrackers, 0);
         var span = CollectionsMarshal.AsSpan(_tempTrackers);
         span.Sort(static (a, b) => a.Index.CompareTo(b.Index));
+
         return span;
     }
 
@@ -332,6 +346,7 @@ public partial class BackendStage
     {
         double x = 0, z = 0;
         var column = index % 3;
+
         if (column == 0)
         {
             x = 0;
@@ -353,16 +368,21 @@ public partial class BackendStage
 
         foreach (var start in StageLoader.Starts)
         {
-            if (start.PlayerCount != 0 && start.PlayerCount != playerCount) continue;
+            if (start.PlayerCount != 0 && start.PlayerCount != playerCount)
+
+                continue;
 
             double value;
+
             if (start.PlayerCount == 0)
             {
                 value = start.Values[0];
             }
             else
             {
-                if (index >= start.Values.Length) continue;
+                if (index >= start.Values.Length)
+
+                    continue;
                 value = start.Values[index];
             }
 
@@ -410,9 +430,11 @@ public partial class WallCollision : BackendGameObject, ICollidable
         Boxes = boxes;
 
         int maxRadius = 0;
+
         foreach (var box in Boxes)
         {
             int boxMax = (int)fix64.Ceiling(fix64.Max(box.Radius.X, fix64.Max(box.Radius.Y, box.Radius.Z)));
+
             if (boxMax > maxRadius)
             {
                 maxRadius = boxMax;

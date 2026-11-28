@@ -46,7 +46,8 @@ public class EditorControlsTests
                     textStyle: () => Sx.TextStyles(fontSize: fontSize.Value)
                 )
             ])
-        ));
+        )
+        );
         Assert.IsNull(field);
         open.Value = true;
         Renderer.Flush();
@@ -89,7 +90,8 @@ public class EditorControlsTests
                 appearance,
                 style: () => Sx.Styles(height: 32)
             )
-        ));
+        )
+        );
         var root = (View)mounted.Root;
         root.LayoutAndRender(new Vector2(400, 100));
         var tab = (View)root.Children.Single();

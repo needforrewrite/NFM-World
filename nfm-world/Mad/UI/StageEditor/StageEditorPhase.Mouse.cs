@@ -13,11 +13,16 @@ public partial class StageEditorPhase
     private bool CanUseViewport(int x, int y, bool imguiWantsMouse)
     {
         SyncViewportBounds();
-        if (imguiWantsMouse || _viewportMax.X <= _viewportMin.X || _viewportMax.Y <= _viewportMin.Y
+
+        if (imguiWantsMouse
+            || _viewportMax.X <= _viewportMin.X
+            || _viewportMax.Y <= _viewportMin.Y
             || !IsMouseInViewport(x, y))
+
             return false;
 
         if (GameSparker.UiRenderer?.ActiveRoot is not { } root)
+
             return true;
 
         foreach (var hit in FocusManager.HitTestChain(root, new Vector2(x, y)))
@@ -25,7 +30,9 @@ public partial class StageEditorPhase
             var ancestor = (Node?)_viewportView;
             while (ancestor != null && !ReferenceEquals(ancestor, hit))
                 ancestor = ancestor.VisualParent;
+
             if (ancestor == null)
+
                 return false;
         }
 
@@ -42,15 +49,21 @@ public partial class StageEditorPhase
         bool altKey
     )
     {
-        if (!GameSparker.Game.IsActive) return;
-        if (!_isOpen) return;
+        if (!GameSparker.Game.IsActive)
+
+            return;
+        if (!_isOpen)
+
+            return;
 
         _cursorPosition.Value = (x, y);
 
         // Handle gizmo dragging before anything else
+
         if (_gizmoDragging != GizmoAxis.None && ActiveTab != null)
         {
             var selectedPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
+
             if (selectedPiece != null)
             {
                 int dx = x - _gizmoDragStartX;
@@ -61,21 +74,28 @@ public partial class StageEditorPhase
                     // Project the gizmo arrow from the centroid to get pixels-per-world-unit ratio
                     var piecePos = new Vector3(_gizmoCentroidX, _gizmoCentroidY, _gizmoCentroidZ);
                     var gizmoMetrics = Debug.ComputeGizmoMetrics(piecePos, activeCamera);
+
                     if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera)
                         && Debug.WorldToScreen(piecePos + new Vector3(gizmoMetrics.ArrowLength, 0, 0), out var ss1, activeCamera))
                     {
                         var screenArrow = ss1 - ss0;
                         float screenLen = screenArrow.Length();
+
                         if (screenLen > 1f)
                         {
                             var axisDir = screenArrow / screenLen;
                             float pixelDelta = Vector2.Dot(new Vector2(dx, dy), axisDir);
                             float worldDelta = pixelDelta * (gizmoMetrics.ArrowLength / screenLen);
+
                             // Apply delta to every selected piece using its own start position
+
                             foreach (var (sid, spos) in _gizmoDragStartPositions)
                             {
                                 var sp = ActiveTab.ScenePieces.GetValueOrDefault(sid);
-                                if (sp == null) continue;
+
+                                if (sp == null)
+
+                                    continue;
                                 float newX = (float)spos.X + worldDelta;
                                 if (_isShiftPressed != _gridSnapEnabled && _gridSnapSize > 0f)
                                     newX = MathF.Round(newX / _gridSnapSize) * _gridSnapSize;
@@ -91,6 +111,7 @@ public partial class StageEditorPhase
                     // Y axis: project the upward arrow (world -Y direction) to screen
                     var piecePos = new Vector3(_gizmoCentroidX, _gizmoCentroidY, _gizmoCentroidZ);
                     var gizmoMetrics = Debug.ComputeGizmoMetrics(piecePos, activeCamera);
+
                     if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera)
                         && Debug.WorldToScreen(
                             piecePos + new Vector3(0, -gizmoMetrics.ArrowLength, 0),
@@ -100,16 +121,21 @@ public partial class StageEditorPhase
                     {
                         var screenArrow = ss1 - ss0;
                         float screenLen = screenArrow.Length();
+
                         if (screenLen > 1f)
                         {
                             var axisDir = screenArrow / screenLen;
                             float pixelDelta = Vector2.Dot(new Vector2(dx, dy), axisDir);
                             // Moving up on screen decreases world Y (camera is flipped), so negate
                             float worldDelta = -pixelDelta * (gizmoMetrics.ArrowLength / screenLen);
+
                             foreach (var (sid, spos) in _gizmoDragStartPositions)
                             {
                                 var sp = ActiveTab.ScenePieces.GetValueOrDefault(sid);
-                                if (sp == null) continue;
+
+                                if (sp == null)
+
+                                    continue;
                                 float newY = (float)spos.Y + worldDelta;
                                 if (_isShiftPressed != _gridSnapEnabled && _gridSnapSize > 0f)
                                     newY = MathF.Round(newY / _gridSnapSize) * _gridSnapSize;
@@ -124,20 +150,26 @@ public partial class StageEditorPhase
                 {
                     var piecePos = new Vector3(_gizmoCentroidX, _gizmoCentroidY, _gizmoCentroidZ);
                     var gizmoMetrics = Debug.ComputeGizmoMetrics(piecePos, activeCamera);
+
                     if (Debug.WorldToScreen(piecePos, out var ss0, activeCamera)
                         && Debug.WorldToScreen(piecePos + new Vector3(0, 0, gizmoMetrics.ArrowLength), out var ss1, activeCamera))
                     {
                         var screenArrow = ss1 - ss0;
                         float screenLen = screenArrow.Length();
+
                         if (screenLen > 1f)
                         {
                             var axisDir = screenArrow / screenLen;
                             float pixelDelta = Vector2.Dot(new Vector2(dx, dy), axisDir);
                             float worldDelta = pixelDelta * (gizmoMetrics.ArrowLength / screenLen);
+
                             foreach (var (sid, spos) in _gizmoDragStartPositions)
                             {
                                 var sp = ActiveTab.ScenePieces.GetValueOrDefault(sid);
-                                if (sp == null) continue;
+
+                                if (sp == null)
+
+                                    continue;
                                 float newZ = (float)spos.Z + worldDelta;
                                 if (_isShiftPressed != _gridSnapEnabled && _gridSnapSize > 0f)
                                     newZ = MathF.Round(newZ / _gridSnapSize) * _gridSnapSize;
@@ -155,11 +187,16 @@ public partial class StageEditorPhase
                     float radians = angleDelta * MathF.PI / 180f;
                     float cosA = MathF.Cos(radians);
                     float sinA = MathF.Sin(radians);
+
                     // Rotate every selected piece's position around the centroid and its own yaw
+
                     foreach (var (sid, startPos) in _gizmoDragStartPositions)
                     {
                         var sp = ActiveTab.ScenePieces.GetValueOrDefault(sid);
-                        if (sp == null) continue;
+
+                        if (sp == null)
+
+                            continue;
                         float relX = (float)startPos.X - _gizmoCentroidX;
                         float relZ = (float)startPos.Z - _gizmoCentroidZ;
                         float newRelX = relX * cosA - relZ * sinA;
@@ -172,6 +209,7 @@ public partial class StageEditorPhase
                         float startRot = _gizmoDragStartRotations.TryGetValue(sid, out var r) ? r : 0f;
 
                         fix64 rot = (fix64)((startRot + angleDelta) % 360f);
+
                         if (_isShiftPressed)
                         {
                             // snap to 15deg
@@ -187,6 +225,7 @@ public partial class StageEditorPhase
 
             _mouseX = x;
             _mouseY = y;
+
             return;
         }
 
@@ -194,6 +233,7 @@ public partial class StageEditorPhase
         _mouseY = y;
 
         // Update rect selection end while LMB is held
+
         if (_isRectSelecting)
         {
             _rectSelectEndX = x;
@@ -201,15 +241,18 @@ public partial class StageEditorPhase
         }
 
         // Update placement preview position while hovering over the viewport
+
         if (_pendingPlacementPartIndex >= 0)
         {
             if (CanUseViewport(x, y, imguiWantsMouse))
             {
                 _hasValidPlacementPos = TryGetGroundPositionAtMouse(x, y, out var groundPos);
+
                 if (_hasValidPlacementPos)
                 {
                     float gx = groundPos.X;
                     float gz = groundPos.Z;
+
                     if (_gridSnapEnabled && _gridSnapSize > 0f)
                     {
                         gx = MathF.Round(gx / _gridSnapSize) * _gridSnapSize;
@@ -236,6 +279,7 @@ public partial class StageEditorPhase
                                     float projLen = Vector2.Dot(toPoint, lineDir);
                                     var closestPoint = linePoint + lineDir * projLen;
                                     float dist = Vector2.Distance(new Vector2(gx, gz), closestPoint);
+
                                     if (dist < 500) // snap threshold in world units
                                     {
                                         gx = closestPoint.X;
@@ -256,6 +300,7 @@ public partial class StageEditorPhase
                                 var hbCenter = new Vector2((float)piece.Position.X, (float)piece.Position.Z)
                                                + new Vector2((float)atp.X, (float)atp.Y).RotateXz(piece.Rotation.Xz.Degrees);
                                 float dist = Vector2.Distance(new Vector2(gx, gz), hbCenter);
+
                                 if (dist < 500) // snap threshold in world units
                                 {
                                     gx = hbCenter.X;
@@ -274,10 +319,12 @@ public partial class StageEditorPhase
                                                       );
 
                                     dist = Vector2.Distance(ownHbCenter, hbCenter);
+
                                     if (dist < 500) // snap threshold in world units
                                     {
                                         gx += hbCenter.X - ownHbCenter.X;
                                         gz += hbCenter.Y - ownHbCenter.Y;
+
                                         goto snapped;
                                     }
                                 }
@@ -300,10 +347,12 @@ public partial class StageEditorPhase
         bool isRightButtonHeld = buttons.HasFlag(MouseButtons.Secondary);
 
         // Start dragging if right button is held, we're in viewport, in Scene view, and not already dragging
+
         if (isRightButtonHeld
             && _isRightButtonDown
             && CanUseViewport(x, y, imguiWantsMouse)
-            && ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene
+            && ActiveTab?.ViewMode
+            == StageEditorTab.ViewModeEnum.Scene
             && !_isRightDragging)
         {
             _isRightDragging = true;
@@ -314,6 +363,7 @@ public partial class StageEditorPhase
         }
 
         // Handle right-click drag for camera rotation (only in Scene view)
+
         if (_isRightDragging && isRightButtonHeld && !imguiWantsMouse && ActiveTab?.ViewMode == StageEditorTab.ViewModeEnum.Scene)
         {
             int deltaX = x - _rightDragStartX;
@@ -326,6 +376,7 @@ public partial class StageEditorPhase
         }
 
         // Stop dragging if right button is released
+
         if (!isRightButtonHeld && _isRightDragging)
         {
             _isRightDragging = false;
@@ -348,17 +399,25 @@ public partial class StageEditorPhase
         if (_dismissedEditorOverlay)
         {
             _dismissedEditorOverlay = false;
+
             return;
         }
 
-        if (!CanUseViewport(x, y, imguiWantsMouse)) return;
-        if (!GameSparker.Game.IsActive) return;
-        if (!_isOpen) return;
+        if (!CanUseViewport(x, y, imguiWantsMouse))
+
+            return;
+        if (!GameSparker.Game.IsActive)
+
+            return;
+        if (!_isOpen)
+
+            return;
 
         _mouseX = x;
         _mouseY = y;
 
         // Check if it's right mouse button via the SDL mouse state
+
         if (button == MouseButton.Secondary)
         {
             // Right-click for camera rotation (only in Scene view)
@@ -380,9 +439,11 @@ public partial class StageEditorPhase
             _isLeftButtonDown = true;
 
             // Check if clicking a gizmo handle first
+
             if (_gizmoHovered != GizmoAxis.None && ActiveTab != null && ActiveTab.ActivePieceId >= 0)
             {
                 var piece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
+
                 if (piece != null)
                 {
                     PushUndoSnapshot();
@@ -401,9 +462,11 @@ public partial class StageEditorPhase
                     // Capture start positions of all selected pieces for group drag
                     _gizmoDragStartPositions.Clear();
                     _gizmoDragStartRotations.Clear();
+
                     foreach (var selId in ActiveTab.SelectedPieceIds)
                     {
                         var selP = ActiveTab.ScenePieces.GetValueOrDefault(selId);
+
                         if (selP != null)
                         {
                             _gizmoDragStartPositions[selId] = selP.Position;
@@ -426,6 +489,7 @@ public partial class StageEditorPhase
         if (button == MouseButton.Middle)
         {
             // In placement mode
+
             if (_pendingPlacementPartIndex >= 0)
             {
                 _pendingPlacementYaw = (_pendingPlacementYaw + 90) % 360f;
@@ -446,30 +510,40 @@ public partial class StageEditorPhase
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
 
-        if (!GameSparker.Game.IsActive) return;
-        if (!_isOpen) return;
-        if (!CanUseViewport(x, y, imguiWantsMouse)) return;
+        if (!GameSparker.Game.IsActive)
+
+            return;
+        if (!_isOpen)
+
+            return;
+        if (!CanUseViewport(x, y, imguiWantsMouse))
+
+            return;
 
         _mouseX = x;
         _mouseY = y;
         Touch();
 
         // In placement mode
+
         if (_pendingPlacementPartIndex >= 0)
         {
             if (_isShiftPressed)
             {
                 _pendingPlacementYOff = (int)(_pendingPlacementYOff + (delta / 120f) * 50f);
+
                 return;
             }
             else if (_isCtrlPressed)
             {
                 _pendingPlacementYaw = (_pendingPlacementYaw + (delta / 120f) * 15f) % 360f;
+
                 return;
             }
         }
 
         // Only act if mouse is in viewport
+
         if (ActiveTab != null)
         {
             if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
@@ -503,6 +577,7 @@ public partial class StageEditorPhase
         Touch();
 
         // Check if it's right mouse button
+
         if (button == MouseButton.Secondary && _isRightButtonDown)
         {
             _isRightButtonDown = false;
@@ -523,13 +598,16 @@ public partial class StageEditorPhase
             _isLeftButtonDown = false;
 
             // If we were dragging gizmo, stop and skip ray picking
+
             if (_gizmoDragging != GizmoAxis.None)
             {
                 _gizmoDragging = GizmoAxis.None;
+
                 return;
             }
 
             // Finalise rect selection if active
+
             if (_isRectSelecting)
             {
                 _isRectSelecting = false;
@@ -540,17 +618,25 @@ public partial class StageEditorPhase
                 bool isRectDrag = rw > 5 || rh > 5;
 
                 // The drag began inside the viewport, so a release over the UI still completes it.
+
                 if (isRectDrag && ActiveTab != null)
                 {
                     var (minX, minY, maxX, maxY) = RectSelectionBounds();
+
                     if (maxX > minX && maxY > minY)
                     {
-                        if (!_isShiftPressed) ActiveTab.SelectedPieceIds.Clear();
+                        if (!_isShiftPressed)
+                            ActiveTab.SelectedPieceIds.Clear();
                         int lastId = -1;
+
                         foreach (var piece in ActiveTab.ScenePieces)
                         {
-                            if (piece.Obj == null) continue;
-                            if (!PieceIntersectsRect(piece, minX, minY, maxX, maxY)) continue;
+                            if (piece.Obj == null)
+
+                                continue;
+                            if (!PieceIntersectsRect(piece, minX, minY, maxX, maxY))
+
+                                continue;
 
                             ActiveTab.SelectedPieceIds.Add(piece.Id);
                             lastId = piece.Id;
@@ -562,6 +648,7 @@ public partial class StageEditorPhase
                             : ActiveTab.SelectedPieceIds.Count > 0 ? ActiveTab.SelectedPieceIds.First() : -1;
 
                         Touch();
+
                         return;
                     }
                 }
@@ -569,9 +656,11 @@ public partial class StageEditorPhase
             }
 
             // Handle piece selection on left click
+
             if (CanUseViewport(x, y, imguiWantsMouse))
             {
                 // Placement mode: spawn the part at the hovered ground position
+
                 if (_pendingPlacementPartIndex >= 0)
                 {
                     if (_hasValidPlacementPos && ActiveTab?.Stage != null)
@@ -605,6 +694,7 @@ public partial class StageEditorPhase
                 if (ActiveTab?.Stage != null)
                 {
                     var pickedPieceId = PerformRayPicking(x, y);
+
                     if (pickedPieceId >= 0)
                     {
                         if (_isCtrlPressed)
@@ -625,6 +715,7 @@ public partial class StageEditorPhase
                     else
                     {
                         var pickedWallId = PerformWallRayPicking(x, y);
+
                         if (pickedWallId >= 0)
                         {
                             ActiveTab.SelectedWallId = pickedWallId;
@@ -639,6 +730,7 @@ public partial class StageEditorPhase
                     }
 
                     // Keep the primary piece inside the selection: the gizmo and inspector read it.
+
                     if (ActiveTab.ActivePieceId >= 0 && !ActiveTab.SelectedPieceIds.Contains(ActiveTab.ActivePieceId))
                     {
                         ActiveTab.ActivePieceId = ActiveTab.SelectedPieceIds.Count > 0
@@ -678,12 +770,15 @@ public partial class StageEditorPhase
     private bool PieceIntersectsRect(StagePieceInstance piece, int minX, int minY, int maxX, int maxY)
     {
         var center = new Vector3((float)piece.Position.X, (float)piece.Position.Y, (float)piece.Position.Z);
+
         if (!Debug.WorldToScreen(center, out var screen, activeCamera))
+
             return false;
 
         var radius = (float)(piece.Obj?.MaxRadius ?? 0);
         var radiusX = 0f;
         var radiusY = 0f;
+
         if (radius > 0f)
         {
             if (Debug.WorldToScreen(center + new Vector3(radius, 0f, 0f), out var edgeX, activeCamera))

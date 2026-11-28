@@ -18,6 +18,7 @@ public sealed class StackFormatter<T> : TightPackFormatter<Stack<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -26,6 +27,7 @@ public sealed class StackFormatter<T> : TightPackFormatter<Stack<T>?>
         T[] items = value.ToArray();
         writer.WriteCollectionHeader(items.Length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = items.Length - 1; i >= 0; i--)
         {
             T? current = items[i];
@@ -38,11 +40,13 @@ public sealed class StackFormatter<T> : TightPackFormatter<Stack<T>?>
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         var result = new Stack<T>(length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;
@@ -63,6 +67,7 @@ public sealed class QueueFormatter<T> : TightPackFormatter<Queue<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -72,9 +77,11 @@ public sealed class QueueFormatter<T> : TightPackFormatter<Queue<T>?>
     public override void Deserialize(ref TightPackReader reader, ref Queue<T>? value)
     {
         List<T>? items = InterfaceCollections.ReadSequence<T>(ref reader);
+
         if (items is null)
         {
             value = null;
+
             return;
         }
 
@@ -91,6 +98,7 @@ public sealed class LinkedListFormatter<T> : TightPackFormatter<LinkedList<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -100,13 +108,16 @@ public sealed class LinkedListFormatter<T> : TightPackFormatter<LinkedList<T>?>
     public override void Deserialize(ref TightPackReader reader, ref LinkedList<T>? value)
     {
         List<T>? items = InterfaceCollections.ReadSequence<T>(ref reader);
+
         if (items is null)
         {
             value = null;
+
             return;
         }
 
         var result = new LinkedList<T>();
+
         foreach (T item in items)
         {
             result.AddLast(item);
@@ -125,6 +136,7 @@ public sealed class SortedSetFormatter<T> : TightPackFormatter<SortedSet<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -147,6 +159,7 @@ public sealed class CollectionFormatter<T> : TightPackFormatter<Collection<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -172,6 +185,7 @@ public sealed class ObservableCollectionFormatter<T> : TightPackFormatter<Observ
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -197,6 +211,7 @@ public sealed class ConcurrentQueueFormatter<T> : TightPackFormatter<ConcurrentQ
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -222,12 +237,14 @@ public sealed class ConcurrentStackFormatter<T> : TightPackFormatter<ConcurrentS
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         // Enumeration is top-first; the constructor pushes in order, so reverse it to keep the top.
         T[] items = value.ToArray();
         T[] reversed = new T[items.Length];
+
         for (int i = 0; i < items.Length; i++)
         {
             reversed[i] = items[items.Length - 1 - i];
@@ -252,6 +269,7 @@ public sealed class ConcurrentBagFormatter<T> : TightPackFormatter<ConcurrentBag
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -279,6 +297,7 @@ public sealed class ConcurrentDictionaryFormatter<TKey, TValue>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -309,6 +328,7 @@ public sealed class SortedDictionaryFormatter<TKey, TValue> : TightPackFormatter
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -339,6 +359,7 @@ public sealed class SortedListFormatter<TKey, TValue> : TightPackFormatter<Sorte
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -365,12 +386,14 @@ public sealed class PriorityQueueFormatter<TElement, TPriority>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Count);
         var elementFormatter = TightPackFormatterProvider.GetFormatter<TElement>();
         var priorityFormatter = TightPackFormatterProvider.GetFormatter<TPriority>();
+
         foreach ((TElement element, TPriority priority) in value.UnorderedItems)
         {
             TElement? currentElement = element;
@@ -385,12 +408,14 @@ public sealed class PriorityQueueFormatter<TElement, TPriority>
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         var result = new PriorityQueue<TElement, TPriority>(length);
         var elementFormatter = TightPackFormatterProvider.GetFormatter<TElement>();
         var priorityFormatter = TightPackFormatterProvider.GetFormatter<TPriority>();
+
         for (int i = 0; i < length; i++)
         {
             TElement? element = default;
@@ -417,6 +442,7 @@ public sealed class ReadOnlyCollectionFormatter<T> : TightPackFormatter<ReadOnly
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -443,6 +469,7 @@ public sealed class ReadOnlyObservableCollectionFormatter<T>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -472,6 +499,7 @@ public sealed class BlockingCollectionFormatter<T> : TightPackFormatter<Blocking
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -481,13 +509,16 @@ public sealed class BlockingCollectionFormatter<T> : TightPackFormatter<Blocking
     public override void Deserialize(ref TightPackReader reader, ref BlockingCollection<T>? value)
     {
         List<T>? items = InterfaceCollections.ReadSequence<T>(ref reader);
+
         if (items is null)
         {
             value = null;
+
             return;
         }
 
         var result = new BlockingCollection<T>();
+
         foreach (T item in items)
         {
             result.Add(item);
@@ -509,6 +540,7 @@ public sealed class ArraySegmentFormatter<T> : TightPackFormatter<ArraySegment<T
     {
         writer.WriteCollectionHeader(value.Count);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < value.Count; i++)
         {
             T? item = value[i];
@@ -521,11 +553,13 @@ public sealed class ArraySegmentFormatter<T> : TightPackFormatter<ArraySegment<T
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = default;
+
             return;
         }
 
         var items = new T[length];
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;

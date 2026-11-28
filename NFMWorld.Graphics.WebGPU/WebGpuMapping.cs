@@ -77,6 +77,7 @@ internal static class WebGpuMapping
     public static int RowCount(this TextureFormat format, int height)
     {
         var block = format.TexelBlockHeight();
+
         return (height + block - 1) / block;
     }
 

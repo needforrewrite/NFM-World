@@ -105,6 +105,7 @@ internal sealed unsafe class D3D11Buffer : IBuffer
         D3D11_SUBRESOURCE_DATA initial = default;
         var contents = _mirror ?? initialData.ToArray();
         var hasInitial = contents.Length > 0;
+
         fixed (byte* data = contents)
         {
             if (hasInitial)
@@ -250,6 +251,7 @@ internal sealed unsafe class D3D11Texture : ITexture
         // this tree creates a mipmapped texture with data, so that gap is theoretical today.
         D3D11_SUBRESOURCE_DATA initial = default;
         var hasInitial = !initialData.IsEmpty;
+
         fixed (byte* data = initialData)
         {
             if (hasInitial)
@@ -289,6 +291,7 @@ internal sealed unsafe class D3D11Texture : ITexture
     private ID3D11ShaderResourceView* CreateView(D3D11GraphicsDevice device)
     {
         if (SampleCount > 1)
+
             return null;
 
         if (!Format.IsDepthFormat())
@@ -300,6 +303,7 @@ internal sealed unsafe class D3D11Texture : ITexture
                 device.Device->CreateShaderResourceView((ID3D11Resource*)Texture, null, &colorView),
                 $"CreateShaderResourceView ({Width}x{Height} {Format})"
             );
+
             return colorView;
         }
 
@@ -318,12 +322,14 @@ internal sealed unsafe class D3D11Texture : ITexture
             device.Device->CreateShaderResourceView((ID3D11Resource*)Texture, &viewDesc, &view),
             $"CreateShaderResourceView ({Width}x{Height} {Format})"
         );
+
         return view;
     }
 
     private static int MipLevelCount(int width, int height)
     {
         var levels = 1;
+
         while (width > 1 || height > 1)
         {
             width = Math.Max(1, width >> 1);
@@ -470,6 +476,7 @@ internal sealed unsafe class D3D11RenderTarget : IRenderTarget
         ColorView = colorView;
 
         if (!desc.HasDepthStencil)
+
             return;
 
         DepthStencilTexture = new D3D11Texture(
@@ -616,7 +623,9 @@ internal static unsafe class D3D11ShaderCompiler
     internal static byte[] Compile(D3D11ShaderCache? cache, string hlsl, string profile, string what)
     {
         var cached = cache?.TryRead(hlsl, profile);
+
         if (cached is not null)
+
             return cached;
 
 
@@ -628,7 +637,9 @@ internal static unsafe class D3D11ShaderCompiler
         var entryBytes = System.Text.Encoding.ASCII.GetBytes(EntryPoint + "\0");
 
         fixed (byte* source = sourceBytes)
+
         fixed (byte* profilePointer = profileBytes)
+
         fixed (byte* entryPointer = entryBytes)
         {
             ID3DBlob* blob = null;

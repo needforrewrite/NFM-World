@@ -97,10 +97,13 @@ public static class HmacAuth
     {
         keyIdOut = null;
         nonce = "";
+
         if (string.IsNullOrEmpty(authHeader))
+
             return "Missing Authorization header";
 
         if (!authHeader.StartsWith(Scheme + " ", StringComparison.Ordinal))
+
             return $"Expected {Scheme} scheme";
 
         // Parse keyId, ts, sig from: HMAC-SHA256 keyId=X,ts=Y,sig=Z
@@ -121,22 +124,29 @@ public static class HmacAuth
         }
 
         if (keyId is null || tsField is null || sig is null)
+
             return "Malformed Authorization header: missing keyId, ts, or sig";
 
         // ts may carry a nonce as "ts.nonce"; the signature covers the field verbatim.
         var dot = tsField.IndexOf('.');
         var tsText = dot < 0 ? tsField : tsField[..dot];
         var nonceText = dot < 0 ? "" : tsField[(dot + 1)..];
+
         if (!long.TryParse(tsText, out var ts) || ts == 0)
+
             return "Malformed Authorization header: bad timestamp";
 
         // Replay check
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
         if (Math.Abs(now - ts) > maxClockSkewSec)
+
             return $"Timestamp outside ±{maxClockSkewSec}s window";
 
         // Look up key
+
         if (!knownKeys.TryGetValue(keyId, out var secretKey))
+
             return $"Unknown keyId: {keyId}";
 
         // Reconstruct signature
@@ -151,13 +161,15 @@ public static class HmacAuth
         var expectedHex = Convert.ToHexStringLower(expectedSig);
 
         if (!CryptographicOperations.FixedTimeEquals(
-                Encoding.UTF8.GetBytes(expectedHex),
-                Encoding.UTF8.GetBytes(sig)
-            ))
+            Encoding.UTF8.GetBytes(expectedHex),
+            Encoding.UTF8.GetBytes(sig)
+        ))
+
             return "Signature mismatch";
 
         keyIdOut = keyId;
         nonce = nonceText;
+
         return null; // Success
     }
 
@@ -165,10 +177,14 @@ public static class HmacAuth
     public static Dictionary<string, byte[]> ParseKnownKeys(string keysConfig)
     {
         var keys = new Dictionary<string, byte[]>();
+
         foreach (var pair in keysConfig.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
             var eq = pair.IndexOf('=');
-            if (eq < 0) continue;
+
+            if (eq < 0)
+
+                continue;
 
             var keyId = pair[..eq].Trim();
             var secretB64 = pair[(eq + 1)..].Trim();

@@ -36,10 +36,12 @@ internal static class WorldSidebar
         HudRacer? At(int i)
         {
             _ = tick();
+
             return i < race.Racers.Count ? race.Racers[i] : null;
         }
 
         var rows = new object?[MaxRows];
+
         for (var i = 0; i < MaxRows; i++)
         {
             var index = i;

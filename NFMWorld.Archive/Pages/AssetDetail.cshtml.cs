@@ -31,7 +31,9 @@ public sealed class AssetDetailModel(ArchiveDbContext db, ArchiveOptions options
         Asset = await Db.Assets.Listed()
             .Include(a => a.Owner)
             .FirstOrDefaultAsync(a => a.Id == id);
+
         if (Asset is null)
+
             return NotFound();
 
         CanEdit = Account is not null && (Asset.OwnerId == Account.Id || Account.IsModerator);

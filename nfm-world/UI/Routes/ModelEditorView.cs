@@ -219,7 +219,9 @@ public sealed class ModelEditorView
     public void UpdateWheelGizmo(bool visible, Vector2 origin, Vector2 axisX, Vector2 axisY, Vector2 axisZ)
     {
         _gizmoVisible.Value = visible;
+
         if (!visible)
+
             return;
 
         _gizmoOrigin.Value = origin;
@@ -243,10 +245,13 @@ public sealed class ModelEditorView
         }
 
         if (!_rimApplyPending || now < _rimApplyDue)
+
             return;
 
         _rimApplyPending = false;
+
         if (!ReferenceEquals(_phase.ActiveTab, _rimApplyTab))
+
             return;
 
         ApplyRims(live: true);
@@ -270,12 +275,15 @@ public sealed class ModelEditorView
     private void PushHistory(bool coalesce)
     {
         if (_historySuspended || _phase.ActiveTab is not { } tab)
+
             return;
 
         var now = System.Environment.TickCount64;
+
         if (coalesce && _lastHistoryCoalesced && now - _lastHistoryAt <= HistoryCoalesceMs)
         {
             _lastHistoryAt = now;
+
             return;
         }
 
@@ -291,12 +299,14 @@ public sealed class ModelEditorView
     {
         var text = _phase.ActiveTab?.TextContent ?? "";
         var editor = LiveCodeEditor();
+
         return new TextSnapshot(text, editor?.CursorIndex ?? 0, editor?.SelectionAnchor);
     }
 
     private void ScrollCodeToStart()
     {
         if (LiveCodeEditor() is not { } editor)
+
             return;
 
         editor.ScrollTop = 0;
@@ -307,12 +317,14 @@ public sealed class ModelEditorView
     private TextArea? LiveCodeEditor()
     {
         var tab = _phase.ActiveTab;
+
         return tab is { TextEditorExpanded: true, ShowPolygonEditor: false } ? _codeEditor : null;
     }
 
     public void UndoDocument()
     {
         if (_historySuspended || _phase.ActiveTab is not { } tab || _undoHistory.Count == 0)
+
             return;
 
         _redoHistory.Add(CaptureSnapshot());
@@ -325,6 +337,7 @@ public sealed class ModelEditorView
     public void RedoDocument()
     {
         if (_historySuspended || _phase.ActiveTab is not { } tab || _redoHistory.Count == 0)
+
             return;
 
         _undoHistory.Add(CaptureSnapshot());
@@ -337,9 +350,11 @@ public sealed class ModelEditorView
     private void ApplySnapshot(ModelEditorTab tab, TextSnapshot entry)
     {
         _historySuspended = true;
+
         try
         {
             tab.TextContent = entry.Text;
+
             if (LiveCodeEditor() is { } editor)
             {
                 editor.SetTextExternal(entry.Text);
@@ -395,42 +410,49 @@ public sealed class ModelEditorView
         if (_error.Value is not null)
         {
             _error.Value = null;
+
             return true;
         }
 
         if (_confirm.Value is not null)
         {
             _confirm.Value = null;
+
             return true;
         }
 
         if (_newModelOpen.Value)
         {
             _newModelOpen.Value = false;
+
             return true;
         }
 
         if (_loadOpen.Value)
         {
             _loadOpen.Value = false;
+
             return true;
         }
 
         if (_copyStatsOpen.Value)
         {
             _copyStatsOpen.Value = false;
+
             return true;
         }
 
         if (_publish.IsOpen)
         {
             _publish.Close();
+
             return true;
         }
 
         if (_phase.ActiveTab is { ShowPolygonEditor: true })
         {
             RequestClosePolygonEditor();
+
             return true;
         }
 
@@ -500,6 +522,7 @@ public sealed class ModelEditorView
                 active: () =>
                 {
                     _ = _revision.Value;
+
                     return _phase.ActiveTab is { TextEditorExpanded: true, ShowPolygonEditor: false };
                 },
                 size: ButtonSize.Sm,
@@ -523,6 +546,7 @@ public sealed class ModelEditorView
             each: () =>
             {
                 _ = _revision.Value;
+
                 return _phase.Tabs.ToList();
             },
             row: (tab, _) => TabChip(tab)
@@ -541,8 +565,11 @@ public sealed class ModelEditorView
     private int IndexOfTab(ModelEditorTab tab)
     {
         for (var i = 0; i < _phase.Tabs.Count; i++)
+
             if (ReferenceEquals(_phase.Tabs[i], tab))
+
                 return i;
+
         return -1;
     }
 
@@ -551,6 +578,7 @@ public sealed class ModelEditorView
         when: () =>
         {
             _ = _revision.Value;
+
             return _phase.Tabs.Count == 0;
         },
         then: () => Sx.View(
@@ -631,6 +659,7 @@ public sealed class ModelEditorView
         when: () =>
         {
             _ = _revision.Value;
+
             return _phase.ActiveTab?.Object != null;
         },
         then: () => Sx.View(
@@ -660,6 +689,7 @@ public sealed class ModelEditorView
                     when: () =>
                     {
                         _ = _revision.Value;
+
                         return _phase.ActiveTab?.ModelType == ModelEditorTab.ModelTypeEnum.Stage;
                     },
                     then: () => Sx.View(
@@ -723,7 +753,9 @@ public sealed class ModelEditorView
     private bool HasSelection()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab || tab.Object is null)
+
             return false;
 
         return tab.EditMode == ModelEditorTab.EditModeEnum.Collision
@@ -734,7 +766,9 @@ public sealed class ModelEditorView
     private string SelectionText()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab || tab.Object is null)
+
             return "";
 
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
@@ -742,6 +776,7 @@ public sealed class ModelEditorView
             if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Count)
             {
                 var box = tab.Object.Boxes[tab.SelectedCollisionIndex];
+
                 return $"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Object.Boxes.Count} selected ]\n"
                        + $"Angle: xy={box.Xy:F0}° zy={box.Zy:F0}°   Radius: [{box.Radius.X:F0}, {box.Radius.Y:F0}, {box.Radius.Z:F0}]   Offset: [{box.Translation.X:F0}, {box.Translation.Y:F0}, {box.Translation.Z:F0}]";
             }
@@ -754,11 +789,13 @@ public sealed class ModelEditorView
             && tab.SelectedWheelIndex < tab.Object.WheelObjects.Count)
         {
             var wheel = tab.Object.WheelObjects[tab.SelectedWheelIndex];
+
             return
                 $"[ Wheel {tab.SelectedWheelIndex + 1} of {tab.Object.WheelObjects.Count}, Piece {tab.SelectedWheelPolygonIndex + 1} of {wheel.Mesh.Polys.Length} selected ]";
         }
 
         if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Object.Mesh.Polys.Length)
+
             return $"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Object.Mesh.Polys.Length} selected ]";
 
         return "Click a polygon in the 3D view to select it.";
@@ -769,6 +806,7 @@ public sealed class ModelEditorView
         bool Active()
         {
             _ = _revision.Value;
+
             return _phase.ActiveTab?.EditMode == mode;
         }
 
@@ -778,7 +816,9 @@ public sealed class ModelEditorView
     private void EditSelectedPiece()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return;
 
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
@@ -795,6 +835,7 @@ public sealed class ModelEditorView
         when: () =>
         {
             _ = _revision.Value;
+
             return _phase.ActiveTab is { TextEditorExpanded: true, ShowPolygonEditor: false };
         },
         then: () => Sx.View(
@@ -830,6 +871,7 @@ public sealed class ModelEditorView
                             text: () =>
                             {
                                 _ = _revision.Value;
+
                                 return _phase.ActiveTab?.TextEditorDirty == true ? "MODIFIED" : "";
                             }
                         ),
@@ -863,11 +905,13 @@ public sealed class ModelEditorView
                         () =>
                         {
                             _ = _contentVersion.Value;
+
                             return _activeTab.Value?.TextContent ?? "";
                         },
                         value =>
                         {
                             if (_activeTab.Value is not { } tab)
+
                                 return;
                             tab.TextContent = value;
                             tab.TextEditorDirty = true;
@@ -921,12 +965,15 @@ public sealed class ModelEditorView
     private void ToggleCodeEditor()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return;
 
         if (tab.ShowPolygonEditor)
         {
             RequestClosePolygonEditor();
+
             return;
         }
 
@@ -938,6 +985,7 @@ public sealed class ModelEditorView
     public void SaveActiveDocument()
     {
         if (_phase.ActiveTab is not { } tab)
+
             return;
 
         if (_statsApplyPending && ReferenceEquals(tab, _statsApplyTab))
@@ -958,12 +1006,15 @@ public sealed class ModelEditorView
     private void SaveActiveCode(bool preview)
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return;
 
         if (_phase.SaveTab(tab, preview) is { } error)
         {
             ShowError("Save Failed", error);
+
             return;
         }
 
@@ -1120,6 +1171,7 @@ public sealed class ModelEditorView
                         () =>
                         {
                             var tab = ActiveTabValue();
+
                             return tab is null ? 0 : (float)tab.ModelRotation.X;
                         },
                         v => _phase.SetModelRotation(0, v),
@@ -1133,6 +1185,7 @@ public sealed class ModelEditorView
                         () =>
                         {
                             var tab = ActiveTabValue();
+
                             return tab is null ? 0 : (float)tab.ModelRotation.Y;
                         },
                         v => _phase.SetModelRotation(1, v),
@@ -1146,6 +1199,7 @@ public sealed class ModelEditorView
                         () =>
                         {
                             var tab = ActiveTabValue();
+
                             return tab is null ? 0 : (float)tab.ModelRotation.Z;
                         },
                         v => _phase.SetModelRotation(2, v),
@@ -1159,6 +1213,7 @@ public sealed class ModelEditorView
                         () =>
                         {
                             var tab = ActiveTabValue();
+
                             return tab is null ? 0 : (float)tab.ModelPosition.Y;
                         },
                         _phase.SetModelHeight,
@@ -1188,6 +1243,7 @@ public sealed class ModelEditorView
     private ModelEditorTab? ActiveTabValue()
     {
         _ = _revision.Value;
+
         return _phase.ActiveTab;
     }
 
@@ -1204,12 +1260,12 @@ public sealed class ModelEditorView
                 text: () => title
             ),
             .. lines.Select(line => Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 10,
-                        foregroundColor: TextBlue
-                    ),
-                    text: () => line
-                )
+                style: () => Sx.TextStyles(
+                    fontSize: 10,
+                    foregroundColor: TextBlue
+                ),
+                text: () => line
+            )
             )
         ]
     );
@@ -1242,6 +1298,7 @@ public sealed class ModelEditorView
                 () =>
                 {
                     _ = _revision.Value;
+
                     return value();
                 },
                 v =>
@@ -1259,6 +1316,7 @@ public sealed class ModelEditorView
                 text: () =>
                 {
                     _ = _revision.Value;
+
                     return display(value());
                 }
             )
@@ -1271,6 +1329,7 @@ public sealed class ModelEditorView
         when: () =>
         {
             _ = _revision.Value;
+
             return _phase.ActiveTab is { ModelType: ModelEditorTab.ModelTypeEnum.Car };
         },
         then: () => Sx.View(
@@ -1333,6 +1392,7 @@ public sealed class ModelEditorView
     private List<int> DefinedColorSlots()
     {
         _ = _revision.Value;
+
         return _phase.ActiveTab is { } tab
             ? _phase.GetColorDefinitions(tab).Select(definition => definition.Slot).ToList()
             : [];
@@ -1341,12 +1401,14 @@ public sealed class ModelEditorView
     private Color3? SlotColor(int slot)
     {
         _ = _revision.Value;
+
         return _phase.ActiveTab is { } tab ? _phase.GetSlotColor(tab, slot) : null;
     }
 
     private bool BothPrimaryColorsDefined()
     {
         _ = _revision.Value;
+
         return _phase.ActiveTab is { } tab
                && _phase.GetSlotColor(tab, 0) is not null
                && _phase.GetSlotColor(tab, 1) is not null;
@@ -1356,11 +1418,14 @@ public sealed class ModelEditorView
     {
         _ = _revision.Value;
         var tab = _phase.ActiveTab;
+
         if (tab is null)
+
             return "[ No model open ]";
 
         var first = _phase.GetSlotColor(tab, 0) is not null;
         var second = _phase.GetSlotColor(tab, 1) is not null;
+
         return (first, second) switch
         {
             (false, false) => "[ First & Second Color not defined yet ]",
@@ -1374,11 +1439,14 @@ public sealed class ModelEditorView
     {
         _ = _revision.Value;
         var tab = _phase.ActiveTab;
+
         if (tab is null)
+
             return "DEFINE COLORS";
 
         var first = _phase.GetSlotColor(tab, 0) is not null;
         var second = _phase.GetSlotColor(tab, 1) is not null;
+
         return (first, second) switch
         {
             (false, false) => "DEFINE 1ST AND 2ND COLOR",
@@ -1492,10 +1560,13 @@ public sealed class ModelEditorView
                     )
                 ]
             ),
-            new HsbColorPicker(() => SlotColor(slot) ?? default, color =>
+            new HsbColorPicker(
+                () => SlotColor(slot) ?? default,
+                color =>
                 {
                     PushHistory(coalesce: true);
-                    if (_phase.SetSlotColor(slot, color) is { } error) ShowError("Color", error);
+                    if (_phase.SetSlotColor(slot, color) is { } error)
+                        ShowError("Color", error);
                 }
             )
         ]
@@ -1517,6 +1588,7 @@ public sealed class ModelEditorView
                 () =>
                 {
                     _ = _revision.Value;
+
                     return GameSparker.devRenderTrackers;
                 },
                 () =>
@@ -1533,20 +1605,23 @@ public sealed class ModelEditorView
         ]
     );
 
-    private Node ScaleTab() => Sx.Switch<(ModelEditorTab? Tab, int Version)>(
+    private Node ScaleTab() => Sx.Switch<(ModelEditorTab? Tab, int Version)
+                               >(
         Sx.Computed(() => (_phase.ActiveTab, _scaleStateVersion.Value)),
         new Dictionary<(ModelEditorTab? Tab, int Version), Func<Node>>(),
         () =>
         {
             if (_phase.ActiveTab is { } tab)
                 LoadScaleFields(tab);
+
             return BuildScaleTab();
         }
-    );
+                               );
 
     private Node BuildScaleTab()
     {
         if (_phase.ActiveTab is null)
+
             return PlaceholderTab("Open a model to scale or align it.");
 
         return Sx.View(
@@ -1584,6 +1659,7 @@ public sealed class ModelEditorView
     private ModelEditorPhase.ScaleMode CurrentScaleMode()
     {
         _ = _revision.Value;
+
         return _phase.ActiveTab is { } tab
             ? _phase.GetScaleSettings(tab).Mode
             : ModelEditorPhase.ScaleMode.None;
@@ -1685,6 +1761,7 @@ public sealed class ModelEditorView
         {
             _ = _revision.Value;
             var mode = _phase.ActiveTab is { } tab ? _phase.GetScaleSettings(tab).Mode : ModelEditorPhase.ScaleMode.None;
+
             return percent
                 ? mode is ModelEditorPhase.ScaleMode.Percent or ModelEditorPhase.ScaleMode.Mixed
                     or ModelEditorPhase.ScaleMode.None
@@ -1696,9 +1773,12 @@ public sealed class ModelEditorView
             () =>
             {
                 _ = _revision.Value;
+
                 if (_phase.ActiveTab is not { } tab)
+
                     return;
                 PushHistory(coalesce: false);
+
                 if (_phase.UseScaleMode(percent) is { } error)
                     ShowError("Scale", error);
                 else
@@ -1733,6 +1813,7 @@ public sealed class ModelEditorView
     private void StepScale(Signal<string> field, int delta)
     {
         if (!int.TryParse(field.Value, out var value))
+
             return;
 
         field.Value = Math.Clamp(value + delta, 1, 1000).ToString();
@@ -1746,10 +1827,12 @@ public sealed class ModelEditorView
             || !TryParseScaleField(_scaleZField, out var z))
         {
             ShowError("Scale", "Scale values must be whole numbers.");
+
             return;
         }
 
         PushHistory(coalesce: false);
+
         if (_phase.SetScalePercent(x, y, z) is { } error)
             ShowError("Scale", error);
         else if (_phase.ActiveTab is { } tab)
@@ -1764,6 +1847,7 @@ public sealed class ModelEditorView
         if (!TryParseScaleField(_scaleXField, out var x))
         {
             ShowError("Scale", "Scale X must be a whole number.");
+
             return;
         }
 
@@ -1785,10 +1869,12 @@ public sealed class ModelEditorView
         if (!int.TryParse(_scaleDivField.Value, out var value))
         {
             ShowError("Scale", "Divider must be a whole number.");
+
             return;
         }
 
         PushHistory(coalesce: false);
+
         if (_phase.SetScaleDiv(_divIsIdiv.Value, value) is { } error)
             ShowError("Scale", error);
         else if (_phase.ActiveTab is { } tab)
@@ -1870,7 +1956,9 @@ public sealed class ModelEditorView
     private void TransformAlign(int axis, int delta, bool rotate)
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is null)
+
             return;
 
         PushHistory(coalesce: false);
@@ -1901,6 +1989,7 @@ public sealed class ModelEditorView
                 () =>
                 {
                     _ = _revision.Value;
+
                     return _phase.ActiveTab?.ShowReferenceOverlay == true;
                 },
                 () =>
@@ -1914,6 +2003,7 @@ public sealed class ModelEditorView
                 when: () =>
                 {
                     _ = _revision.Value;
+
                     return _phase.ActiveTab?.ShowReferenceOverlay == true;
                 },
                 then: () => Sx.View(
@@ -1924,11 +2014,13 @@ public sealed class ModelEditorView
                             options: () =>
                             {
                                 _ = _revision.Value;
+
                                 return BackendGameSparker.CarRads;
                             },
                             value: () =>
                             {
                                 _ = _revision.Value;
+
                                 return _phase.ActiveTab?.ReferenceCarIndex ?? 0;
                             },
                             onSelect: _phase.SetReferenceCar
@@ -1951,6 +2043,7 @@ public sealed class ModelEditorView
                                     () =>
                                     {
                                         _ = _revision.Value;
+
                                         return _phase.ActiveTab?.ReferenceOpacity ?? 0.5f;
                                     },
                                     v =>
@@ -1971,6 +2064,7 @@ public sealed class ModelEditorView
                                     text: () =>
                                     {
                                         _ = _revision.Value;
+
                                         return $"{(_phase.ActiveTab?.ReferenceOpacity ?? 0.5f) * 100:F0}%";
                                     }
                                 )
@@ -1987,6 +2081,7 @@ public sealed class ModelEditorView
         when: () =>
         {
             _ = _revision.Value;
+
             return _phase.ActiveTab is { ModelType: ModelEditorTab.ModelTypeEnum.Car };
         },
         then: () => Sx.View(
@@ -2084,21 +2179,27 @@ public sealed class ModelEditorView
         var fields = new Dictionary<string, Signal<string>>(StringComparer.Ordinal);
         foreach (var key in StatKeys)
             fields[key] = new Signal<string>("");
+
         return fields;
     }
 
-    private Node StatsTab() => Sx.Switch<(ModelEditorTab? Tab, int Version)>(
+    private Node StatsTab() => Sx.Switch<(ModelEditorTab? Tab, int Version)
+                               >(
         Sx.Computed(() => (_phase.ActiveTab, _statsStateVersion.Value)),
         new Dictionary<(ModelEditorTab? Tab, int Version), Func<Node>>(),
         () =>
         {
             var tab = _phase.ActiveTab;
+
             if (tab is not { ModelType: ModelEditorTab.ModelTypeEnum.Car })
+
                 return PlaceholderTab("Stats editing is available for car models.");
             if (tab.Object is null)
+
                 return PlaceholderTab("The model must parse before stats can be edited.");
 
             LoadStatFields(tab);
+
             return Sx.View(
                 style: () => Sx.Styles(
                     flexDirection: FlexDirection.Row,
@@ -2115,7 +2216,7 @@ public sealed class ModelEditorView
                 [
                     Section(
                         "CAR",
-                    [
+                        [
                         StatRow("Class (class)", "class", 80, 150),
                         StatRow("Name (name)", "name", 80, 150),
                         StatEngineRow(),
@@ -2123,11 +2224,11 @@ public sealed class ModelEditorView
                         StatRow("Durability (maxmag)", "maxmag", 60, 150),
                         StatRow("Damage Mult (dammult)", "dammult", 50, 150)
                     ],
-                    width: 300
+                        width: 300
                     ),
                     Section(
                         "PERFORMANCE",
-                    [
+                        [
                         StatTripleRow("Speed 1/2/3 (swits)", "switsX", "switsY", "switsZ"),
                         StatTripleRow("Accel 1/2/3 (acelf)", "acelfX", "acelfY", "acelfZ"),
                         Sx.Text(
@@ -2141,7 +2242,7 @@ public sealed class ModelEditorView
                     ),
                     Section(
                         "COMBAT",
-                    [
+                        [
                         StatRow("Pushes Others (push)", "push", 50, 160),
                         StatRow("Gets Pushed (revpush)", "revpush", 50, 160),
                         StatRow("Lifts Others (lift)", "lift", 50, 160),
@@ -2150,7 +2251,7 @@ public sealed class ModelEditorView
                     ),
                     Section(
                         "STAT BARS (UI)",
-                    [
+                        [
                         StatRow("Endurance (outdam)", "outdam", 50, 160),
                         StatRow("Steering Rating (dishandle)", "dishandle", 50, 160),
                         Sx.Text(
@@ -2169,20 +2270,25 @@ public sealed class ModelEditorView
                 ]
             );
         }
-    );
+                               );
 
-    private Node PhysicsTab() => Sx.Switch<(ModelEditorTab? Tab, int Version)>(
+    private Node PhysicsTab() => Sx.Switch<(ModelEditorTab? Tab, int Version)
+                                 >(
         Sx.Computed(() => (_phase.ActiveTab, _statsStateVersion.Value)),
         new Dictionary<(ModelEditorTab? Tab, int Version), Func<Node>>(),
         () =>
         {
             var tab = _phase.ActiveTab;
+
             if (tab is not { ModelType: ModelEditorTab.ModelTypeEnum.Car })
+
                 return PlaceholderTab("Physics editing is available for car models.");
             if (tab.Object is null)
+
                 return PlaceholderTab("The model must parse before physics can be edited.");
 
             LoadStatFields(tab);
+
             return Sx.View(
                 style: () => Sx.Styles(
                     flexDirection: FlexDirection.Row,
@@ -2199,7 +2305,7 @@ public sealed class ModelEditorView
                 [
                     Section(
                         "HANDLING",
-                    [
+                        [
                         StatRow("Handbrake (handb)", "handb", 50, 150),
                         StatRow("Turn Sens (turn)", "turn", 50, 150),
                         StatRow("Tire Grip (grip)", "grip", 50, 150),
@@ -2208,7 +2314,7 @@ public sealed class ModelEditorView
                     ),
                     Section(
                         "AIR & MOTION",
-                    [
+                        [
                         StatRow("Aerial Rotation (airs)", "airs", 50, 170),
                         StatRow("Aerial Control (airc)", "airc", 50, 170),
                         StatRow("Power Loss (powerloss)", "powerloss", 60, 170),
@@ -2219,7 +2325,7 @@ public sealed class ModelEditorView
                     ),
                     Section(
                         "COLLISION",
-                    [
+                        [
                         StatRow("Hitbox Radius (comprad)", "comprad", 50, 170),
                         StatRow("Collision Radius (clrad)", "clrad", 60, 170),
                         StatRow("Roof Damage (msquash)", "msquash", 60, 170)
@@ -2227,7 +2333,7 @@ public sealed class ModelEditorView
                     ),
                     Section(
                         "SURFACES",
-                    [
+                        [
                         StatRow("Road Grip (roadgrip)", "roadgrip", 50, 170),
                         StatRow("Offroad Grip (offroadgrip)", "offroadgrip", 50, 170),
                         StatRow("Offtrack Grip (offtrackgrip)", "offtrackgrip", 50, 170),
@@ -2244,7 +2350,7 @@ public sealed class ModelEditorView
                 ]
             );
         }
-    );
+                                 );
 
 
     private Node StatRow(string label, string key, float inputWidth, float labelWidth) => FieldRow(
@@ -2290,6 +2396,7 @@ public sealed class ModelEditorView
     private int EngineIndex()
     {
         var value = _statFields["enginesignature"].Value;
+
         return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var index)
             ? Math.Clamp(index, 0, EngineOptions.Length - 1)
             : 0;
@@ -2361,7 +2468,8 @@ public sealed class ModelEditorView
                                 () => CopyStats(car.Stats),
                                 size: ButtonSize.Sm,
                                 style: () => Sx.Styles(flexShrink: 0, justifyContent: Justify.FlexStart)
-                            )).ToArray()
+                            )
+                            ).ToArray()
                         ),
                         Button.Create(
                             () => "CANCEL",
@@ -2389,7 +2497,9 @@ public sealed class ModelEditorView
     private void CopyStats(CarStats source)
     {
         _copyStatsOpen.Value = false;
+
         if (_phase.ActiveTab is not { ModelType: ModelEditorTab.ModelTypeEnum.Car, Object: not null } tab)
+
             return;
 
         var name = _statFields["name"].Value.Trim();
@@ -2424,22 +2534,28 @@ public sealed class ModelEditorView
     private void ApplyStats(bool reportErrors, bool coalesce)
     {
         var tab = _phase.ActiveTab;
+
         if (tab is not { ModelType: ModelEditorTab.ModelTypeEnum.Car } || tab.Object is null)
+
             return;
 
         var (definitions, error) = BuildStatDefinitions();
+
         if (error is not null)
         {
             if (reportErrors)
                 ShowError("Stats", error);
+
             return;
         }
 
         if (definitions.Count == 0)
+
             return;
 
         PushHistory(coalesce);
         _statsApplying = true;
+
         try
         {
             if (_phase.SetStats(definitions) is { } message && reportErrors)
@@ -2460,51 +2576,67 @@ public sealed class ModelEditorView
         string? Field(string key)
         {
             var value = _statFields[key].Value.Trim();
+
             return value.Length == 0 ? null : value;
         }
 
         bool AddInt(string key, string directive, string label)
         {
             var value = Field(key);
+
             if (value is null)
+
                 return true;
+
             if (!int.TryParse(value, NumberStyles.Integer, invariant, out var parsed))
             {
                 error = $"{label} must be a whole number.";
+
                 return false;
             }
 
             definitions.Add($"{directive}({parsed})");
+
             return true;
         }
 
         bool AddSByte(string key, string directive, string label)
         {
             var value = Field(key);
+
             if (value is null)
+
                 return true;
+
             if (!sbyte.TryParse(value, NumberStyles.Integer, invariant, out var parsed))
             {
                 error = $"{label} must be a whole number between -128 and 127.";
+
                 return false;
             }
 
             definitions.Add($"{directive}({parsed})");
+
             return true;
         }
 
         bool AddFixed(string key, string directive, string label)
         {
             var value = Field(key);
+
             if (value is null)
+
                 return true;
+
             if (!double.TryParse(value, NumberStyles.Float, invariant, out var parsed))
             {
                 error = $"{label} must be a number.";
+
                 return false;
             }
 
             definitions.Add($"{directive}({parsed.ToString("0.######", invariant)})");
+
             return true;
         }
 
@@ -2521,6 +2653,7 @@ public sealed class ModelEditorView
         var speedLow = Field("switsX");
         var speedMed = Field("switsY");
         var speedHigh = Field("switsZ");
+
         if (speedLow is not null || speedMed is not null || speedHigh is not null)
         {
             if (speedLow is null
@@ -2541,6 +2674,7 @@ public sealed class ModelEditorView
         var accelHigh = Field("acelfX");
         var accelMed = Field("acelfY");
         var accelLow = Field("acelfZ");
+
         if (accelHigh is not null || accelMed is not null || accelLow is not null)
         {
             if (accelHigh is null
@@ -2595,6 +2729,7 @@ public sealed class ModelEditorView
     {
         // If the tab is being remounted while an edit is still debounced, commit it
         // before reading the source back, or the rebuild would discard it.
+
         if (_statsApplyPending && ReferenceEquals(tab, _statsApplyTab))
         {
             _statsApplyPending = false;
@@ -2602,6 +2737,7 @@ public sealed class ModelEditorView
         }
 
         if (tab.Object?.Rad.Stats is not { } stats)
+
             return;
 
         SetStatFields(stats);
@@ -2662,7 +2798,8 @@ public sealed class ModelEditorView
 
     // ── Wheels ─────────────────────────────────────────────────────────
 
-    private Node WheelsTab() => Sx.Switch<(ModelEditorTab? Tab, int Wheel, int Version)>(
+    private Node WheelsTab() => Sx.Switch<(ModelEditorTab? Tab, int Wheel, int Version)
+                                >(
         Sx.Computed(() => (_phase.ActiveTab, _selectedWheelIndex.Value, _wheelStateVersion.Value)),
         new Dictionary<(ModelEditorTab? Tab, int Wheel, int Version), Func<Node>>(),
         () =>
@@ -2675,17 +2812,21 @@ public sealed class ModelEditorView
 
             return BuildWheelsTab();
         }
-    );
+                                );
 
     private Node BuildWheelsTab()
     {
         var tab = _phase.ActiveTab;
+
         if (tab is null)
+
             return PlaceholderTab("Open a car model to edit its wheels.");
         if (tab.ModelType != ModelEditorTab.ModelTypeEnum.Car)
+
             return PlaceholderTab("Wheel editing is available for car models.");
 
         var specs = _phase.GetWheelSpecs(tab);
+
         if (specs.Count == 0)
         {
             return Sx.View(
@@ -2750,9 +2891,11 @@ public sealed class ModelEditorView
     private void AddBasicWheels()
     {
         PushHistory(coalesce: false);
+
         if (_phase.CreateBasicWheels() is { } error)
         {
             ShowError("Wheels", error);
+
             return;
         }
 
@@ -2764,7 +2907,9 @@ public sealed class ModelEditorView
     private void LoadWheelFields(ModelEditorTab tab)
     {
         var specs = _phase.GetWheelSpecs(tab);
+
         if (specs.Count == 0)
+
             return;
 
         var index = Math.Clamp(_selectedWheelIndex.Value, 0, specs.Count - 1);
@@ -2793,6 +2938,7 @@ public sealed class ModelEditorView
         var result = new List<int>(count);
         for (var i = 0; i < count; i++)
             result.Add(i);
+
         return result;
     }
 
@@ -2832,7 +2978,8 @@ public sealed class ModelEditorView
         () => spec.Custom ? $"W{index + 1}*" : $"W{index + 1}",
         () =>
         {
-            if (_rimApplyPending && ReferenceEquals(_phase.ActiveTab, _rimApplyTab)) ApplyRims(live: true);
+            if (_rimApplyPending && ReferenceEquals(_phase.ActiveTab, _rimApplyTab))
+                ApplyRims(live: true);
             _selectedWheelIndex.Value = index;
         },
         active: () => _selectedWheelIndex.Value == index,
@@ -2981,10 +3128,12 @@ public sealed class ModelEditorView
         {
             if (!live)
                 ShowError("Wheel", "Wheel values must be whole numbers.");
+
             return;
         }
 
         PushHistory(coalesce: live);
+
         if (_phase.SetWheels(BuildWheelEdits(index, x, y, z, rotates, width, height)) is { } error)
         {
             if (!live)
@@ -3012,14 +3161,19 @@ public sealed class ModelEditorView
         };
 
         if (!_mirrorWheelEdit.Value || _phase.ActiveTab is not { } tab)
+
             return edits;
 
         var partner = _phase.FindMirrorPartner(tab, index);
+
         if (partner < 0 || partner == index)
+
             return edits;
 
         var specs = _phase.GetWheelSpecs(tab);
+
         if (partner >= specs.Count)
+
             return edits;
 
         var partnerSpec = specs[partner];
@@ -3034,6 +3188,7 @@ public sealed class ModelEditorView
                 partnerSpec.Height
             )
         );
+
         return edits;
     }
 
@@ -3111,6 +3266,7 @@ public sealed class ModelEditorView
         protected override void RenderContent(Vector2 position, Vector2 size)
         {
             if (!_view._gizmoVisible.Value)
+
                 return;
 
             var origin = _view._gizmoOrigin.Value;
@@ -3129,6 +3285,7 @@ public sealed class ModelEditorView
         private static void DrawAxis(Vector2 origin, Vector2 axis, Color color)
         {
             if (axis.LengthSquared() < 0.25f)
+
                 return;
 
             var direction = Vector2.Normalize(axis);
@@ -3165,12 +3322,16 @@ public sealed class ModelEditorView
     private void BeginGizmoDrag(int axis, Vector2 position, Vector2 axisVector)
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return;
 
         var specs = _phase.GetWheelSpecs(tab);
         var index = _selectedWheelIndex.Value;
+
         if (index < 0 || index >= specs.Count)
+
             return;
 
         _gizmoAxis = axis;
@@ -3186,15 +3347,20 @@ public sealed class ModelEditorView
     private void UpdateGizmoDrag(Vector2 position)
     {
         if (_gizmoAxis < 0 || _phase.ActiveTab is not { } tab)
+
             return;
 
         var lengthSquared = _gizmoAxisVector.LengthSquared();
+
         if (lengthSquared < 0.0001f)
+
             return;
 
         var index = _selectedWheelIndex.Value;
         var specs = _phase.GetWheelSpecs(tab);
+
         if (index < 0 || index >= specs.Count)
+
             return;
 
         var rawDelta = Vector2.Dot(position - _gizmoDragStart, _gizmoAxisVector) / lengthSquared;
@@ -3223,6 +3389,7 @@ public sealed class ModelEditorView
     private void FlipWheelSide(int index)
     {
         if (!int.TryParse(_wheelWidth.Value, out var width))
+
             return;
 
         _wheelWidth.Value = (-width).ToString();
@@ -3264,11 +3431,13 @@ public sealed class ModelEditorView
                     StepButton("APPLY", () => ApplyRims(), minWidth: 50)
                 ]
             ),
-            new HsbColorPicker(() => new Color3(
-                (short)RimChannel(_rimR),
-                (short)RimChannel(_rimG),
-                (short)RimChannel(_rimB)
-            ), color =>
+            new HsbColorPicker(
+                () => new Color3(
+                    (short)RimChannel(_rimR),
+                    (short)RimChannel(_rimG),
+                    (short)RimChannel(_rimB)
+                ),
+                color =>
                 {
                     _rimR.Value = color.R.ToString();
                     _rimG.Value = color.G.ToString();
@@ -3307,6 +3476,7 @@ public sealed class ModelEditorView
     private void ApplyRims(bool live = false)
     {
         _rimApplyPending = false;
+
         if (!int.TryParse(_rimR.Value, out var r)
             || !int.TryParse(_rimG.Value, out var g)
             || !int.TryParse(_rimB.Value, out var b)
@@ -3315,10 +3485,12 @@ public sealed class ModelEditorView
         {
             if (!live)
                 ShowError("Rims", "Rim values must be whole numbers.");
+
             return;
         }
 
         PushHistory(coalesce: live);
+
         if (_phase.SetRims(_selectedWheelIndex.Value, r, g, b, size, depth) is { } error)
         {
             if (!live)
@@ -3343,11 +3515,13 @@ public sealed class ModelEditorView
     private void RequestCloseTab(int index)
     {
         if (index < 0)
+
             return;
 
         if (!_phase.TabHasUnsavedChanges(index))
         {
             _phase.PerformCloseTab(index);
+
             return;
         }
 
@@ -3363,6 +3537,7 @@ public sealed class ModelEditorView
                         if (_phase.SaveTab(tab) is { } error)
                         {
                             ShowError("Save Failed", error);
+
                             return;
                         }
 
@@ -3378,9 +3553,11 @@ public sealed class ModelEditorView
     public void RequestExit()
     {
         var dirty = _phase.Tabs.Where(tab => tab.TextEditorDirty && tab.ModelPath != null).ToList();
+
         if (dirty.Count == 0)
         {
             _phase.ExitModelViewer();
+
             return;
         }
 
@@ -3394,9 +3571,11 @@ public sealed class ModelEditorView
                     () =>
                     {
                         foreach (var tab in dirty)
+
                             if (_phase.SaveTab(tab) is { } error)
                             {
                                 ShowError("Save Failed", error);
+
                                 return;
                             }
 
@@ -3459,6 +3638,7 @@ public sealed class ModelEditorView
 
         _ = _revision.Value;
         var tab = _phase.ActiveTab;
+
         if (!openInNewTab && tab != null && tab.TextEditorDirty && tab.ModelPath != null)
         {
             ShowConfirm(
@@ -3472,6 +3652,7 @@ public sealed class ModelEditorView
                             if (_phase.SaveTab(tab) is { } error)
                             {
                                 ShowError("Save Failed", error);
+
                                 return;
                             }
 
@@ -3482,6 +3663,7 @@ public sealed class ModelEditorView
                     new ConfirmAction("Cancel", () => { })
                 ]
             );
+
             return;
         }
 
@@ -3595,14 +3777,15 @@ public sealed class ModelEditorView
     private void CreateModel()
     {
         if (_phase.CreateNewModel(
-                _newName.Value,
-                _newIsCar.Value,
-                _newImport.Value,
-                _newReference.Value,
-                _newOpenInTab.Value
-            ) is { } error)
+            _newName.Value,
+            _newIsCar.Value,
+            _newImport.Value,
+            _newReference.Value,
+            _newOpenInTab.Value
+        ) is { } error)
         {
             ShowError("Create Model", error);
+
             return;
         }
 
@@ -3761,6 +3944,7 @@ public sealed class ModelEditorView
     private Node FileRow(string file, string prefix)
     {
         var hovered = new Signal<bool>(false);
+
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
@@ -3790,6 +3974,7 @@ public sealed class ModelEditorView
         when: () =>
         {
             _ = _revision.Value;
+
             return _phase.ActiveTab is { ShowPolygonEditor: true };
         },
         then: () => Sx.View(
@@ -3828,6 +4013,7 @@ public sealed class ModelEditorView
                             text: () =>
                             {
                                 _ = _revision.Value;
+
                                 return _phase.ActiveTab?.PolygonEditorDirty == true ? "MODIFIED" : "";
                             }
                         ),
@@ -3858,11 +4044,13 @@ public sealed class ModelEditorView
                         () =>
                         {
                             _ = _polygonVersion.Value;
+
                             return _phase.ActiveTab?.PolygonEditorContent ?? "";
                         },
                         value =>
                         {
                             if (_phase.ActiveTab is not { } tab)
+
                                 return;
                             tab.PolygonEditorContent = value;
                             tab.PolygonEditorDirty = true;
@@ -3900,22 +4088,27 @@ public sealed class ModelEditorView
         _ = _revision.Value;
         var collision = _phase.ActiveTab?.PolygonEditorIsCollision == true;
         var flags = collision ? new[] { "dam()", "notwall()" } : ["gr(-18)", "decal", "noOutline()"];
+
         return flags.Select(flag => (object?)Button.Create(
-                () => flag,
-                () => _phase.InsertPolygonFlag(flag),
-                size: ButtonSize.Sm
-            )
+            () => flag,
+            () => _phase.InsertPolygonFlag(flag),
+            size: ButtonSize.Sm
+        )
         );
     }
 
     private string PolygonTitle()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return "EDIT POLYGON";
 
         if (tab.PolygonEditorIsCollision)
+
             return "EDIT COLLISION";
+
         return tab.PolygonEditorIsWheel
             ? $"EDIT WHEEL {tab.PolygonEditorWheelIndex + 1} POLYGON"
             : "EDIT POLYGON";
@@ -3924,18 +4117,24 @@ public sealed class ModelEditorView
     private string PolygonInfo()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return "";
 
         if (tab.PolygonEditorIsCollision)
+
             return $"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Object?.Boxes.Count ?? 0}";
 
         if (tab.PolygonEditorIsWheel)
         {
             var wheelIndex = tab.PolygonEditorWheelIndex;
+
             if (tab.Object is not null && wheelIndex >= 0 && wheelIndex < tab.Object.WheelObjects.Count)
+
                 return
                     $"Editing wheel {wheelIndex + 1}, polygon {tab.PolygonEditorLastSelectedIndex + 1} of {tab.Object.WheelObjects[wheelIndex].Mesh.Polys.Length}";
+
             return $"Editing wheel polygon {tab.PolygonEditorLastSelectedIndex + 1}";
         }
 
@@ -3945,7 +4144,9 @@ public sealed class ModelEditorView
     private void ApplyPolygonEditor()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return;
 
         if (string.IsNullOrWhiteSpace(tab.PolygonEditorContent))
@@ -3960,6 +4161,7 @@ public sealed class ModelEditorView
                 $"Are you sure you want to remove this {itemType}?\n\nThis will delete {itemType} {index + 1} from the model.",
                 [new ConfirmAction("Remove", () => ApplyPolygonEditor(removeElement: true))]
             );
+
             return;
         }
 
@@ -3976,13 +4178,16 @@ public sealed class ModelEditorView
     private void RequestClosePolygonEditor()
     {
         _ = _revision.Value;
+
         if (_phase.ActiveTab is not { } tab)
+
             return;
 
         if (!tab.PolygonEditorDirty)
         {
             tab.ShowPolygonEditor = false;
             Refresh();
+
             return;
         }
 
@@ -4108,6 +4313,7 @@ public sealed class ModelEditorView
         if (_phase.ActiveTab is not { } tab)
         {
             ShowError("Publish", "There is no model open.");
+
             return;
         }
 
@@ -4124,6 +4330,7 @@ public sealed class ModelEditorView
         }
 
         Rad3d parsed;
+
         try
         {
             parsed = RadParser.ParseRad(tab.TextContent, tab.ModelPath ?? "editing");
@@ -4131,6 +4338,7 @@ public sealed class ModelEditorView
         catch (Exception ex)
         {
             ShowError("Publish", $"The model could not be read: {ex.Message}");
+
             return;
         }
 

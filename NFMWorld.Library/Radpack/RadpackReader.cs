@@ -51,6 +51,7 @@ public static class RadpackReader
     )
     {
         RadpackAsset asset;
+
         try
         {
             asset = RadpackSerializer.Deserialize(data, maxCompressedBytes, maxDecompressedBytes);
@@ -61,6 +62,7 @@ public static class RadpackReader
         }
 
         if (asset.Metadata.Type != expected)
+
             throw new InvalidDataException($"'{description}' is a {asset.Metadata.Type}, not a {expected}.");
 
         return asset;
@@ -72,11 +74,13 @@ public static class RadpackReader
         try
         {
             error = null;
+
             return Read(path, expected);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             error = ex.Message;
+
             return null;
         }
     }
@@ -91,13 +95,17 @@ public static class RadpackReader
         error = null;
 
         if (IsArchiveId(reference))
+
             return ReadModelAt(reference, reference, expected, out error);
 
         var radpackPath = $"data/models/{reference}.radpack";
+
         if (VFS.FileExists(radpackPath))
+
             return ReadModelAt(radpackPath, reference, expected, out error);
 
         var radPath = $"data/models/{reference}.rad";
+
         if (VFS.FileExists(radPath))
         {
             try
@@ -107,6 +115,7 @@ public static class RadpackReader
             catch (Exception ex) when (ex is IOException or InvalidDataException or FormatException)
             {
                 error = $"'{radPath}': {ex.Message}";
+
                 return null;
             }
         }
@@ -119,7 +128,9 @@ public static class RadpackReader
     {
         error = null;
         var path = IsArchiveId(reference) ? reference : $"data/stages/{reference}.radpack";
+
         if (!VFS.FileExists(path))
+
             return null;
 
         try
@@ -131,6 +142,7 @@ public static class RadpackReader
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             error = ex.Message;
+
             return null;
         }
     }
@@ -140,6 +152,7 @@ public static class RadpackReader
         try
         {
             error = null;
+
             return Read(path, expected) is RadpackRad3d rad
                 ? rad.Rad
                 : throw new InvalidDataException($"'{description}' does not contain a model.");
@@ -147,6 +160,7 @@ public static class RadpackReader
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             error = ex.Message;
+
             return null;
         }
     }

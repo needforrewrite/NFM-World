@@ -18,6 +18,7 @@ public static class NfmwShaderText
         using var input = new MemoryStream(compressed, writable: false);
         using var deflate = new DeflateStream(input, CompressionMode.Decompress);
         using var reader = new StreamReader(deflate);
+
         return reader.ReadToEnd();
     }
 

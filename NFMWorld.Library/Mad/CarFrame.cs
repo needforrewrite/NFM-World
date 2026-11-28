@@ -190,6 +190,7 @@ public partial struct CarFrame
         entry.CarRotation.Xz = car.Rotation.Xz.Degrees;
         entry.CarRotation.Pxy = car.CarPhysics.Pxy;
         entry.CarRotation.Pzy = car.CarPhysics.Pzy;
+
         for (var i = 0; i < 4; i++)
         {
             entry.WheelVelocities.Scx[i] = car.CarPhysics.Scx[i];

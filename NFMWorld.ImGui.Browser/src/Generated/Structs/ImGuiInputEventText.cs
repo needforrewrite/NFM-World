@@ -16,27 +16,24 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEventText
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint Char;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEventText
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint Char;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEventText(uint @char = default)
-		{
-			Char = @char;
-		}
-
-
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEventText(uint @char = default)
+        {
+            Char = @char;
+        }
+    }
 }

@@ -31,6 +31,7 @@ public class CarPhysicsWallFlagTests
     {
         var carName = $"wall-flag-test/{index}";
         var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
+
         return new BackendCar(car, index, 0, 0, isClientPlayer: false);
     }
 

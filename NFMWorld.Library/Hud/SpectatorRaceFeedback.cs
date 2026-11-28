@@ -33,11 +33,13 @@ public sealed class SpectatorRaceFeedback
         PassedCheckpoint = car is not null && !changed && car.TotalCheckpoint > _lastProgress;
         _lastProgress = car?.TotalCheckpoint ?? 0;
         _car = car;
-        NextCheckpoint = car is not null && car.CurrentLap < gamemode.CurrentStage.Nlaps
+        NextCheckpoint = car is not null
+                         && car.CurrentLap < gamemode.CurrentStage.Nlaps
                          && car.CurrentCheckpoint < gamemode.CurrentStage.Checkpoints.Count
             ? car.CurrentCheckpoint : null;
         FinishCheckpoint = NextCheckpoint == gamemode.CurrentStage.Checkpoints.Count - 1
-                           && car?.CurrentLap == gamemode.CurrentStage.Nlaps - 1;
+                           && car?.CurrentLap
+                           == gamemode.CurrentStage.Nlaps - 1;
         PlayPowerUp = _announcer.TickSpectating(car, gamemode, changed);
     }
 }

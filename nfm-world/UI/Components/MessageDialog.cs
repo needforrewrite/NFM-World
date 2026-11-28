@@ -54,7 +54,7 @@ public static class MessageDialog
                         style: () => Sx.WrappingText(
                             fontSize: 26,
                             fontFamily: FontFamily.Adventure,
-                        foregroundColor: Theme.MenuBlue
+                            foregroundColor: Theme.MenuBlue
                         ),
                         layout: () => Sx.Styles(width: 100.Percent(), flexShrink: 0),
                         text: () => title
@@ -68,29 +68,30 @@ public static class MessageDialog
                         style: () => Sx.Styles(
                             width: 100.Percent(),
                             flexShrink: 0,
-                        flexDirection: FlexDirection.Row,
+                            flexDirection: FlexDirection.Row,
                             flexWrap: Wrap.Wrap,
                             justifyContent: Justify.FlexEnd,
-                        gapColumn: 10,
+                            gapColumn: 10,
                             gapRow: 8
                         ),
                         children: buttons.Select((button, index) =>
                             {
                                 var node = Button.Create(
-                                () => button.Label,
+                                    () => button.Label,
                                     button.OnPress,
-                                active: () => selected.Value == index,
-                                style: () => Sx.Styles(minWidth: 90, backgroundColor: selected.Value == index
+                                    active: () => selected.Value == index,
+                                    style: () => Sx.Styles(minWidth: 90, backgroundColor: selected.Value == index
                                     ? Theme.MenuHighlight : Theme.MenuFill, borderColor: selected.Value == index
                                     ? new Color(205, 227, 255) : Theme.MenuBorder),
-                                textStyle: () => Sx.TextStyles(
-                                    fontSize: 13,
-                                    fontStyle: FontStyle.Plain,
-                                    foregroundColor: Theme.MenuTextBlue
-                                ),
-                                name: () => "Message action " + button.Label
-                            );
+                                    textStyle: () => Sx.TextStyles(
+                                        fontSize: 13,
+                                        fontStyle: FontStyle.Plain,
+                                        foregroundColor: Theme.MenuTextBlue
+                                    ),
+                                    name: () => "Message action " + button.Label
+                                );
                                 node.MouseEntered += _ => selected.Value = index;
+
                                 return node;
                             }
                         ).ToArray()

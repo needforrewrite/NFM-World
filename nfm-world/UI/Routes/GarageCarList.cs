@@ -19,6 +19,7 @@ internal sealed class GarageCarList : View
         var columns = GarageView.ColumnsForWidth(TheGraphics.G.Viewport.X);
         if (GarageView.GridColumns != columns)
             GarageView.ColumnCount.Value = columns;
+
         return false;
     }
 
@@ -29,7 +30,9 @@ internal sealed class GarageCarList : View
         var collections = UiState.Garage.Collections.Value;
         var query = UiState.Garage.SearchQuery.Value;
         var columns = GarageView.GridColumns;
+
         if (_revealedCar == identity && ReferenceEquals(_collections, collections) && _query == query && _columns == columns)
+
             return;
 
         if (!ReferenceEquals(_collections, collections) || _query != query)
@@ -44,10 +47,15 @@ internal sealed class GarageCarList : View
     private static Component? FindCard(Node node, string name)
     {
         if (node is Component component && component.Name == name)
+
             return component;
+
         foreach (var child in node.VisualChildren)
+
             if (FindCard(child, name) is { } found)
+
                 return found;
+
         return null;
     }
 
@@ -55,8 +63,12 @@ internal sealed class GarageCarList : View
     {
         var origin = LayoutPaddingPosition;
         var size = LayoutPaddingSize;
-        return ScrollableHeight > 0 && point.X >= origin.X + size.X - 8
-               && point.X <= origin.X + size.X && point.Y >= origin.Y && point.Y <= origin.Y + size.Y;
+
+        return ScrollableHeight > 0
+               && point.X >= origin.X + size.X - 8
+               && point.X <= origin.X + size.X
+               && point.Y >= origin.Y
+               && point.Y <= origin.Y + size.Y;
     }
 
     private float ThumbHeight => Math.Min(
@@ -67,7 +79,9 @@ internal sealed class GarageCarList : View
     protected override void OnMousePressed(MouseEvent e)
     {
         _thumbOffset = null;
+
         if (e.Button != MouseButton.Primary || !OnTrack(e.Position))
+
             return;
 
         var travel = LayoutPaddingSize.Y - ThumbHeight;

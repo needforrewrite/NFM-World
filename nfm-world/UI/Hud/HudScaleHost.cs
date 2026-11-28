@@ -24,6 +24,7 @@ internal sealed class HudScaleHost : Component
     protected override void RenderContent(Vector2 position, Vector2 size)
     {
         var previous = G.Scale;
+
         try
         {
             G.Scale = previous * SettingsMenu.HudScale;

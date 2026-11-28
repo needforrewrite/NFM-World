@@ -46,12 +46,16 @@ namespace Poly2Tri
                 switch (index)
                 {
                     case 0:
+
                         return _0;
                     case 1:
+
                         return _1;
                     case 2:
+
                         return _2;
                     default:
+
                         throw new IndexOutOfRangeException();
                 }
             }
@@ -61,14 +65,18 @@ namespace Poly2Tri
                 {
                     case 0:
                         _0 = value;
+
                         break;
                     case 1:
                         _1 = value;
+
                         break;
                     case 2:
                         _2 = value;
+
                         break;
                     default:
+
                         throw new IndexOutOfRangeException();
                 }
             }

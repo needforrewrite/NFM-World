@@ -52,10 +52,13 @@ public static class TimeTrialEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 if (!request.HasFormContentType)
+
                     return Results.BadRequest(new { error = "Expected a multipart upload." });
 
                 var form = await request.ReadFormAsync(ct);
@@ -66,11 +69,16 @@ public static class TimeTrialEndpoints
                 var carName = form["carName"].ToString();
 
                 if (file is null || string.IsNullOrEmpty(stageHash) || string.IsNullOrEmpty(carHash))
+
                     return Results.BadRequest(new { error = "Missing replay, stage hash or car hash." });
 
-                if (stageHash.Length != 64 || carHash.Length != 64 || !stageHash.All(Uri.IsHexDigit) || !carHash.All(
-                    Uri.IsHexDigit
-                ))
+                if (stageHash.Length != 64
+                    || carHash.Length != 64
+                    || !stageHash.All(Uri.IsHexDigit)
+                    || !carHash.All(
+                        Uri.IsHexDigit
+                    ))
+
                     return Results.BadRequest(new { error = "Invalid stage or car hash." });
                 stageHash = stageHash.ToLowerInvariant();
                 carHash = carHash.ToLowerInvariant();
@@ -82,7 +90,9 @@ public static class TimeTrialEndpoints
                     .FirstOrDefaultAsync(a => a.ContentHash == stageHash && a.Type == AssetType.Stage, ct);
                 var carAsset = await usable
                     .FirstOrDefaultAsync(a => a.ContentHash == carHash && a.Type == AssetType.Car, ct);
+
                 if (file.Length > RadpackLimits.MaxTimeTrialBytes)
+
                     return Results.BadRequest(new { error = "Replay exceeds the size limit." });
 
                 var stagePath = stageAsset is null ? $"stock:{stageHash}" : Path.Combine(storage.Root, stageAsset.StoragePath);
@@ -102,19 +112,24 @@ public static class TimeTrialEndpoints
                 );
 
                 if (stored.Error is { } validationError)
+
                     return Results.BadRequest(new { error = validationError });
 
                 // The simulation is the authority on the time; a replay that does not reproduce its
                 // own tick count is refused, not stored.
+
                 if (stored.ValidatorOutput is not { } output
                     || !output.TryGetProperty("elapsedTicks", out var elapsed)
                     || !output.TryGetProperty("expectedTicks", out var expected)
                     || elapsed.GetInt32() != expected.GetInt32())
+
                     return Results.BadRequest(new { error = "The replay did not reproduce its own time." });
 
                 // Replays from another backend version tick different physics, so their time is not
                 // comparable with the leaderboard's.
+
                 if (!output.TryGetProperty("replayVersion", out var replayVersion))
+
                     return Results.BadRequest(new { error = "The replay did not report its version." });
 
                 var totalTicks = elapsed.GetInt32();
@@ -125,11 +140,14 @@ public static class TimeTrialEndpoints
                 // replacing it, so a player cannot lose a good time by retrying. An outdated entry
                 // is not ranked, so any current run replaces it. An entry invalidated by a removed
                 // stage or car becomes rankable again now that both resolve.
-                if (existing is not null && existing.IsValid
+
+                if (existing is not null
+                    && existing.IsValid
                     && existing.ReplayVersion == SavedTimeTrial.CURRENT_VERSION
                     && existing.TotalTicks <= totalTicks)
                 {
                     await storage.DeleteIfUnreferencedAsync(stored.StoragePath, db, ct);
+
                     return Results.Ok(new { status = "kept existing faster time", existing.TotalTicks });
                 }
 
@@ -137,6 +155,7 @@ public static class TimeTrialEndpoints
                 {
                     // The stored bytes are content-addressed, so a re-upload of the same recording
                     // lands on the same path: deleting "the old" file would delete the new one.
+
                     if (!string.Equals(existing.StoragePath, stored.StoragePath, StringComparison.Ordinal))
                     {
                         var previous = existing.StoragePath;
@@ -177,6 +196,7 @@ public static class TimeTrialEndpoints
                 }
 
                 await db.SaveChangesAsync(ct);
+
                 return Results.Ok(new { status = "recorded", totalTicks });
             }
         );
@@ -190,7 +210,9 @@ public static class TimeTrialEndpoints
                 ) =>
                 Results.Ok(
                     await db.TimeTrials
-                        .Where(t => t.StageHash == stageHash && t.CarHash == carHash && t.IsValid
+                        .Where(t => t.StageHash == stageHash
+                                    && t.CarHash == carHash
+                                    && t.IsValid
                                     && t.ReplayVersion == SavedTimeTrial.CURRENT_VERSION
                         )
                         .OrderBy(t => t.TotalTicks)
@@ -211,6 +233,7 @@ public static class TimeTrialEndpoints
                 var pageSize = Math.Clamp(limit ?? 50, 1, 100);
 
                 var q = db.TimeTrials.Where(t => t.IsValid);
+
                 if (!string.IsNullOrWhiteSpace(query))
                 {
                     var escaped = query.Trim();
@@ -246,6 +269,7 @@ public static class TimeTrialEndpoints
 
                 var hasMore = rows.Count > pageSize;
                 var items = rows.Take(pageSize).ToList();
+
                 return Results.Ok(new TimeTrialReplayPage(items, hasMore ? items[^1].Id : null));
             }
         );
@@ -257,10 +281,13 @@ public static class TimeTrialEndpoints
             ) =>
             {
                 var entry = await db.TimeTrials.FirstOrDefaultAsync(t => t.Id == id && t.IsValid, ct);
+
                 if (entry is null)
+
                     return Results.NotFound();
 
                 var stream = storage.OpenRead(entry.StoragePath);
+
                 return stream is null
                     ? Results.NotFound()
                     : Results.File(stream, "application/octet-stream", $"replay-{id}.timetrial");

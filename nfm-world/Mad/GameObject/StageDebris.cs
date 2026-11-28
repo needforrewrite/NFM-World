@@ -25,14 +25,19 @@ internal sealed class StageDebris : GameObject, IDisposable
         var world = Matrix.CreateFromEuler((Euler)obj.Rotation) * Matrix.CreateTranslation((Vector3)obj.Position);
         var speed = Math.Clamp((float)impactVelocity.LengthNoOverflow(), 20, 500);
         float Scatter() => (random.NextSingle() * 2 - 1) * speed * 0.25f;
+
         try
         {
             var polys = StageObjectDamage.Deform(obj);
             var step = Math.Max(1, (polys.Length + 95) / 96);
+
             for (var i = 0; i < polys.Length; i += step)
             {
                 var poly = polys[i];
-                if (poly.Points.Length < 3) continue;
+
+                if (poly.Points.Length < 3)
+
+                    continue;
                 var center = Vector3.Transform(poly.Centroid, world);
                 var points = poly.Points.Select(p => Vector3.Transform(p, world) - center).ToArray();
                 var mesh = new Mesh(new Rad3d([poly.WithPoints(points, poly.Triangles)], false, "stage-shard"));
@@ -57,6 +62,7 @@ internal sealed class StageDebris : GameObject, IDisposable
         catch
         {
             Dispose();
+
             throw;
         }
     }
@@ -66,10 +72,12 @@ internal sealed class StageDebris : GameObject, IDisposable
         base.GameTick(stage);
         _age++;
         var dt = Physics.PHYSICS_MULTIPLIER_F64;
+
         foreach (var shard in _shards)
         {
             shard.Velocity += new f64Vector3(0, (fix64)4 * dt, 0);
             shard.Position += shard.Velocity * dt;
+
             if (shard.Position.Y > 250 && shard.Velocity.Y > 0)
             {
                 shard.Position = shard.Position with { Y = (fix64)250 };
@@ -91,7 +99,8 @@ internal sealed class StageDebris : GameObject, IDisposable
 
     public void Dispose()
     {
-        foreach (var shard in _shards) shard.Mesh.Dispose();
+        foreach (var shard in _shards)
+            shard.Mesh.Dispose();
         _shards.Clear();
         Children = [];
     }

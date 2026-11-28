@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiPopupPositionPolicy : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Default = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiPopupPositionPolicy : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Default = unchecked(0),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		ComboBox = unchecked(1),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        ComboBox = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Tooltip = unchecked(2),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Tooltip = unchecked(2),
+    }
 }

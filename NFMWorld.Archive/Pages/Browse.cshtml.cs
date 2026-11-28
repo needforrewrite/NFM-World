@@ -21,11 +21,13 @@ public sealed class BrowseModel(ArchiveDbContext db, ArchiveOptions options) : A
         await ResolveAccountAsync();
 
         var q = Db.Assets.Listed().Include(asset => asset.Owner).AsQueryable();
+
         if (!string.IsNullOrWhiteSpace(Query))
         {
             var pattern = "%" + Sql.LikeEscape(Query.Trim()) + "%";
             var tagPattern = "%" + Sql.LikeEscape(AssetTags.SearchText(Query.Trim())) + "%";
-            q = q.Where(a => EF.Functions.Like(a.Name, pattern, "\\") ||
+            q = q.Where(a => EF.Functions.Like(a.Name, pattern, "\\")
+                             ||
                              EF.Functions.Like(a.TagsSearch!, tagPattern, "\\"));
         }
 
@@ -39,6 +41,7 @@ public sealed class BrowseModel(ArchiveDbContext db, ArchiveOptions options) : A
         var rows = await q.OrderByDescending(a => a.Id).Take(101).ToListAsync();
         Assets = rows.Take(100).ToArray();
         NextCursor = rows.Count > 100 ? Assets[^1].Id : null;
+
         return Page();
     }
 }

@@ -57,13 +57,17 @@ public class VirtualFS
     )
     {
         if (_writeRoot is null)
+
             yield break;
 
         var fullPath = Path.Combine(_writeRoot, path);
+
         if (!Directory.Exists(fullPath))
+
             yield break;
 
         foreach (var file in Directory.EnumerateFiles(fullPath, searchPattern, searchOption))
+
             yield return Path.GetRelativePath(_writeRoot, file).Replace("\\", "/");
     }
 
@@ -76,25 +80,31 @@ public class VirtualFS
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Read mounts (first match wins)
+
         foreach (var mount in _readMounts)
         {
             foreach (var file in mount.EnumerateFiles(path, searchPattern, searchOption))
             {
                 if (seen.Add(file))
+
                     yield return file;
             }
         }
 
         // Write root (lowest priority)
+
         if (_writeRoot is not null)
         {
             var fullPath = Path.Combine(_writeRoot, path);
+
             if (Directory.Exists(fullPath))
             {
                 foreach (var file in Directory.EnumerateFiles(fullPath, searchPattern, searchOption))
                 {
                     var relative = Path.GetRelativePath(_writeRoot, file).Replace("\\", "/");
+
                     if (seen.Add(relative))
+
                         yield return relative;
                 }
             }
@@ -112,6 +122,7 @@ public class VirtualFS
             foreach (var dir in mount.EnumerateDirectories(path))
             {
                 if (seen.Add(dir))
+
                     yield return dir;
             }
         }
@@ -119,12 +130,15 @@ public class VirtualFS
         if (_writeRoot is not null)
         {
             var fullPath = Path.Combine(_writeRoot, path);
+
             if (Directory.Exists(fullPath))
             {
                 foreach (var dir in Directory.EnumerateDirectories(fullPath))
                 {
                     var relative = Path.GetRelativePath(_writeRoot, dir).Replace("\\", "/");
+
                     if (seen.Add(relative))
+
                         yield return relative;
                 }
             }
@@ -136,10 +150,12 @@ public class VirtualFS
         foreach (var mount in _readMounts)
         {
             if (mount.FileExists(path))
+
                 return true;
         }
 
         if (_writeRoot is not null && File.Exists(Path.Combine(_writeRoot, path)))
+
             return true;
 
         return false;
@@ -150,10 +166,12 @@ public class VirtualFS
         foreach (var mount in _readMounts)
         {
             if (mount.DirectoryExists(path))
+
                 return true;
         }
 
         if (_writeRoot is not null && Directory.Exists(Path.Combine(_writeRoot, path)))
+
             return true;
 
         return false;
@@ -162,6 +180,7 @@ public class VirtualFS
     public void CreateDirectory(string path)
     {
         if (_writeRoot is null)
+
             throw new InvalidOperationException(
                 "No write destination mounted. Call MountWriteDestination first."
             );
@@ -174,19 +193,26 @@ public class VirtualFS
     public Stream OpenRead(string path)
     {
         if (SavedConfigPath(path) is { } saved)
+
             return File.OpenRead(saved);
+
         foreach (var mount in _readMounts)
         {
             var stream = mount.OpenRead(path);
+
             if (stream is not null)
+
                 return stream;
         }
 
         // Also check write root (so you can read back what you wrote)
+
         if (_writeRoot is not null)
         {
             var fullPath = Path.Combine(_writeRoot, path);
+
             if (File.Exists(fullPath))
+
                 return File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         }
 
@@ -204,18 +230,24 @@ public class VirtualFS
     public async System.Threading.Tasks.Task<Stream> OpenReadAsync(string path)
     {
         if (SavedConfigPath(path) is { } saved)
+
             return File.OpenRead(saved);
+
         foreach (var mount in _readMounts)
         {
             var stream = await mount.OpenReadAsync(path).ConfigureAwait(false);
+
             if (stream is not null)
+
                 return stream;
         }
 
         if (_writeRoot is not null)
         {
             var fullPath = Path.Combine(_writeRoot, path);
+
             if (File.Exists(fullPath))
+
                 return File.Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
         }
 
@@ -225,6 +257,7 @@ public class VirtualFS
     public Stream OpenWrite(string path)
     {
         if (_writeRoot is null)
+
             throw new InvalidOperationException(
                 "No write destination mounted. Call MountWriteDestination first."
             );
@@ -240,6 +273,7 @@ public class VirtualFS
     public DateTimeOffset? GetLastWriteTimeUtc(string path)
     {
         using var stream = OpenRead(path);
+
         return stream is FileStream file ? File.GetLastWriteTimeUtc(file.Name) : null;
     }
 
@@ -248,6 +282,7 @@ public class VirtualFS
         var fullPath = ResolveWritePath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         var temporary = fullPath + ".tmp-" + Guid.NewGuid().ToString("N");
+
         try
         {
             File.WriteAllBytes(temporary, bytes);
@@ -270,29 +305,38 @@ public class VirtualFS
     public bool DeleteWriteFile(string path)
     {
         var fullPath = ResolveWritePath(path);
+
         if (!File.Exists(fullPath))
+
             return false;
         File.Delete(fullPath);
+
         return true;
     }
 
     private string ResolveWritePath(string path)
     {
         if (_writeRoot is null)
+
             throw new InvalidOperationException("No write destination mounted.");
 
         var fullPath = Path.GetFullPath(Path.Combine(_writeRoot, path.Replace('\\', '/')));
         var relative = Path.GetRelativePath(_writeRoot, fullPath).Replace('\\', '/');
+
         if (Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith("../", StringComparison.Ordinal))
+
             throw new ArgumentException("The path must stay within the write destination.", nameof(path));
+
         return fullPath;
     }
 
     private string? SavedConfigPath(string path)
     {
         if (_writeRoot is null || !path.Replace('\\', '/').StartsWith("data/cfg/", StringComparison.OrdinalIgnoreCase))
+
             return null;
         var fullPath = Path.Combine(_writeRoot, path);
+
         return File.Exists(fullPath) ? fullPath : null;
     }
 
@@ -301,6 +345,7 @@ public class VirtualFS
         using var stream = OpenRead(path);
         using var ms = new MemoryStream();
         stream.CopyTo(ms);
+
         return ms.ToArray();
     }
 
@@ -308,6 +353,7 @@ public class VirtualFS
     {
         using var stream = OpenRead(path);
         using var reader = new StreamReader(stream);
+
         return reader.ReadToEnd();
     }
 
@@ -315,6 +361,7 @@ public class VirtualFS
     {
         using var stream = OpenRead(path);
         using var reader = new StreamReader(stream);
+
         while (!reader.EndOfStream)
         {
             yield return reader.ReadLine()!;

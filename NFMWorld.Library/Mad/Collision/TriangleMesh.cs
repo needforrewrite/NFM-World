@@ -69,10 +69,15 @@ public static class TriangleMesh
         in TriangleData tri
     )
     {
-        if (fix64.Abs(tri.NormalizedNormal.Y) < (fix64)1e-6) return null; // nearly vertical triangle
+        if (fix64.Abs(tri.NormalizedNormal.Y) < (fix64)1e-6)
+
+            return null; // nearly vertical triangle
 
         // Barycentric test: is the wheel's XZ within the triangle?
-        if (!PointInTriangle(tri.Edge1, tri.Edge2, tri.ToPoint)) return null;
+
+        if (!PointInTriangle(tri.Edge1, tri.Edge2, tri.ToPoint))
+
+            return null;
 
         // Compute the Y height on the triangle plane at the wheel's XZ position
         // Plane equation: n . (P - p0) = 0  =>  y = p0.Y - (n.X*(x-p0.X) + n.Z*(z-p0.Z)) / n.Y
@@ -83,8 +88,14 @@ public static class TriangleMesh
         // In Y-down: smaller Y = higher up. The surface should be at or above the wheel.
         // surfaceY <= position.Y means the surface is at or above the wheel (snap up onto it).
         // Allow a small tolerance below (wheel slightly above the surface) to maintain contact.
-        if (surfaceY > position.Y + MaxGroundPenetration) return null; // surface is below the wheel, skip
-        if (position.Y - surfaceY > MaxGroundSnapDistance) return null; // surface is way too far above, skip
+
+        if (surfaceY > position.Y + MaxGroundPenetration)
+
+            return null; // surface is below the wheel, skip
+
+        if (position.Y - surfaceY > MaxGroundSnapDistance)
+
+            return null; // surface is way too far above, skip
 
         return new GroundCollision(surfaceY);
     }
@@ -106,8 +117,14 @@ public static class TriangleMesh
         var distToPlane = f64Vector3.Dot(tri.NormalizedNormal, tri.ToPoint);
 
         // Only collide if the wheel is behind the front face (penetrating)
-        if (distToPlane > MaxWallSnapDistance) return null; // in front of the wall, no collision
-        if (distToPlane < -MaxWallPenetration) return null; // too deep, likely on the other side
+
+        if (distToPlane > MaxWallSnapDistance)
+
+            return null; // in front of the wall, no collision
+
+        if (distToPlane < -MaxWallPenetration)
+
+            return null; // too deep, likely on the other side
 
         // // Check if moving toward the wall (dot of velocity with normal < 0 means approaching)
         // var approachSpeed = f64Vector3.Dot(velocity, tri.NormalizedNormal);
@@ -116,16 +133,25 @@ public static class TriangleMesh
         // Project the position onto the plane and test if it's inside the triangle
         var projectedPoint = position - tri.NormalizedNormal * distToPlane;
         var toProjected = projectedPoint - p0;
-        if (!PointInTriangle(tri.Edge1, tri.Edge2, toProjected)) return null;
+
+        if (!PointInTriangle(tri.Edge1, tri.Edge2, toProjected))
+
+            return null;
 
         // Penetration depth: push out along the face normal
         var penetration = -distToPlane + MaxWallSnapDistance; // push slightly past the surface
-        if (penetration <= 0) return null;
+
+        if (penetration <= 0)
+
+            return null;
 
         // Push direction: along the triangle's face normal, but zero out Y to prevent climbing
         var pushDir = new f64Vector3(tri.NormalizedNormal.X, fix64.Zero, tri.NormalizedNormal.Z);
         var pushDirLenSq = f64Vector3.Dot(pushDir, pushDir);
-        if (pushDirLenSq < (fix64)1e-6) return null; // nearly horizontal normal (ceiling), skip
+
+        if (pushDirLenSq < (fix64)1e-6)
+
+            return null; // nearly horizontal normal (ceiling), skip
         pushDir = pushDir / fix64.Sqrt(pushDirLenSq); // normalize horizontal component
 
         var positionDelta = pushDir * penetration;
@@ -155,6 +181,7 @@ public static class TriangleMesh
         //   position.Y - surfaceY <= MaxGroundSnapDistance  => position.Y <= surfaceY + MaxGroundSnapDistance
         // So relative to the triangle's Y range:
         //   wheel Y range = [minY - MaxGroundPenetration, maxY + MaxGroundSnapDistance]
+
         return (
             new f64Vector3(minX - edgeExpand, minY - MaxGroundPenetration, minZ - edgeExpand),
             new f64Vector3(maxX + edgeExpand, maxY + MaxGroundSnapDistance, maxZ + edgeExpand)
@@ -180,6 +207,7 @@ public static class TriangleMesh
         // inside the triangle. Expanding by WallQueryRadius in all XZ directions is
         // conservative but correct regardless of face orientation.
         // Y is not clamped in ResolveWall, so no Y expansion needed beyond the triangle itself.
+
         return (
             new f64Vector3(minX - WallQueryRadius - edgeExpand, minY, minZ - WallQueryRadius - edgeExpand),
             new f64Vector3(maxX + WallQueryRadius + edgeExpand, maxY, maxZ + WallQueryRadius + edgeExpand)
@@ -234,13 +262,17 @@ public static class TriangleMesh
         var d2p = f64Vector3.Dot128(edge2, toPoint);
 
         var denom = d11 * d22 - d12 * d12;
-        if (denom.Abs() < (Fixed128)1e-6f) return false; // degenerate
+
+        if (denom.Abs() < (Fixed128)1e-6f)
+
+            return false; // degenerate
 
         // Equivalent to:
         var u = (d22 * d1p - d12 * d2p) / denom;
         var v = (d11 * d2p - d12 * d1p) / denom;
 
         var inside = u >= EdgeTolerance && v >= EdgeTolerance && (u + v) <= 1 - EdgeTolerance;
+
         return inside;
     }
 
@@ -253,13 +285,17 @@ public static class TriangleMesh
         var d2p = f64Vector3.Dot128(edge2, toPoint);
 
         var denom = d11 * d22 - d12 * d12;
-        if (denom.Abs() < (Fixed128)1e-6f) return "degen";
+
+        if (denom.Abs() < (Fixed128)1e-6f)
+
+            return "degen";
 
         // Equivalent to:
         var u = (d22 * d1p - d12 * d2p) / denom;
         var v = (d11 * d2p - d12 * d1p) / denom;
 
         var inside = u >= EdgeTolerance && v >= EdgeTolerance && (u + v) <= 1 - EdgeTolerance;
+
         return $"{inside} u={u:F3} v={v:F3}";
     }
 }

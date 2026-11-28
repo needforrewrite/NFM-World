@@ -16,104 +16,116 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiOldColumnData
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float OffsetNorm;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiOldColumnData
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float OffsetNorm;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float OffsetNormBeforeResize;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float OffsetNormBeforeResize;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiOldColumnFlags Flags;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiOldColumnFlags Flags;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImRect ClipRect;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiOldColumnData(float offsetNorm = default, float offsetNormBeforeResize = default, ImGuiOldColumnFlags flags = default, ImRect clipRect = default)
-		{
-			OffsetNorm = offsetNorm;
-			OffsetNormBeforeResize = offsetNormBeforeResize;
-			Flags = flags;
-			ClipRect = clipRect;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImRect ClipRect;
 
 
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiOldColumnData(
+            float offsetNorm = default,
+            float offsetNormBeforeResize = default,
+            ImGuiOldColumnFlags flags = default,
+            ImRect clipRect = default
+        )
+        {
+            OffsetNorm = offsetNorm;
+            OffsetNormBeforeResize = offsetNormBeforeResize;
+            Flags = flags;
+            ClipRect = clipRect;
+        }
+    }
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiOldColumnDataPtr : IEquatable<ImGuiOldColumnDataPtr>
-	{
-		public ImGuiOldColumnDataPtr(ImGuiOldColumnData* handle) { Handle = handle; }
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiOldColumnDataPtr : IEquatable<ImGuiOldColumnDataPtr>
+    {
+        public ImGuiOldColumnDataPtr(ImGuiOldColumnData* handle)
+        {
+            Handle = handle;
+        }
 
-		public ImGuiOldColumnData* Handle;
+        public ImGuiOldColumnData* Handle;
 
-		public bool IsNull => Handle == null;
+        public bool IsNull => Handle == null;
 
-		public static ImGuiOldColumnDataPtr Null => new ImGuiOldColumnDataPtr(null);
+        public static ImGuiOldColumnDataPtr Null => new ImGuiOldColumnDataPtr(null);
 
-		public ImGuiOldColumnData this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public ImGuiOldColumnData this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static implicit operator ImGuiOldColumnDataPtr(ImGuiOldColumnData* handle) => new ImGuiOldColumnDataPtr(handle);
+        public static implicit operator ImGuiOldColumnDataPtr(ImGuiOldColumnData* handle) => new ImGuiOldColumnDataPtr(handle);
 
-		public static implicit operator ImGuiOldColumnData*(ImGuiOldColumnDataPtr handle) => handle.Handle;
+        public static implicit operator ImGuiOldColumnData*(ImGuiOldColumnDataPtr handle) => handle.Handle;
 
-		public static bool operator ==(ImGuiOldColumnDataPtr left, ImGuiOldColumnDataPtr right) => left.Handle == right.Handle;
+        public static bool operator ==(ImGuiOldColumnDataPtr left, ImGuiOldColumnDataPtr right) => left.Handle == right.Handle;
 
-		public static bool operator !=(ImGuiOldColumnDataPtr left, ImGuiOldColumnDataPtr right) => left.Handle != right.Handle;
+        public static bool operator !=(ImGuiOldColumnDataPtr left, ImGuiOldColumnDataPtr right) => left.Handle != right.Handle;
 
-		public static bool operator ==(ImGuiOldColumnDataPtr left, ImGuiOldColumnData* right) => left.Handle == right;
+        public static bool operator ==(ImGuiOldColumnDataPtr left, ImGuiOldColumnData* right) => left.Handle == right;
 
-		public static bool operator !=(ImGuiOldColumnDataPtr left, ImGuiOldColumnData* right) => left.Handle != right;
+        public static bool operator !=(ImGuiOldColumnDataPtr left, ImGuiOldColumnData* right) => left.Handle != right;
 
-		public bool Equals(ImGuiOldColumnDataPtr other) => Handle == other.Handle;
+        public bool Equals(ImGuiOldColumnDataPtr other) => Handle == other.Handle;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiOldColumnDataPtr handle && Equals(handle);
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiOldColumnDataPtr handle && Equals(handle);
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiOldColumnDataPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float OffsetNorm => ref Unsafe.AsRef<float>(&Handle->OffsetNorm);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float OffsetNormBeforeResize => ref Unsafe.AsRef<float>(&Handle->OffsetNormBeforeResize);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImGuiOldColumnFlags Flags => ref Unsafe.AsRef<ImGuiOldColumnFlags>(&Handle->Flags);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImRect ClipRect => ref Unsafe.AsRef<ImRect>(&Handle->ClipRect);
-	}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiOldColumnDataPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float OffsetNorm => ref Unsafe.AsRef<float>(&Handle->OffsetNorm);
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float OffsetNormBeforeResize => ref Unsafe.AsRef<float>(&Handle->OffsetNormBeforeResize);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImGuiOldColumnFlags Flags => ref Unsafe.AsRef<ImGuiOldColumnFlags>(&Handle->Flags);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImRect ClipRect => ref Unsafe.AsRef<ImRect>(&Handle->ClipRect);
+    }
 }

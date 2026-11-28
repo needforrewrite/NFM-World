@@ -156,7 +156,9 @@ public static class LobbyView
                                             () => CreatePage(actions),
                                             () => Sx.Show(
                                                 () => lobby.Page.Value == LobbyPage.Match,
-                                                () => MatchPage(actions, (sessionId, slot, position) =>
+                                                () => MatchPage(
+                                                    actions,
+                                                    (sessionId, slot, position) =>
                                                     {
                                                         kickPosition.Value = ClampMenuPosition(position);
                                                         kickTarget.Value = (sessionId, slot.PlayerId, slot.IsBot);
@@ -188,14 +190,17 @@ public static class LobbyView
                     )
                 ),
                 Sx.Show(
-                    () => kickTarget.Value is { } target && lobby.Connected.Value
+                    () => kickTarget.Value is { } target
+                          && lobby.Connected.Value
                           && lobby.ViewedSessionId.Value == target.SessionId
-                          && lobby.Sessions.Value.Any(match => match.Id == target.SessionId && match.CanManage
+                          && lobby.Sessions.Value.Any(match => match.Id == target.SessionId
+                                                               && match.CanManage
                                                                && match.Slots.Any(slot => slot.PlayerId == target.PlayerId)
                           ),
                     () =>
                     {
                         var target = kickTarget.Value.GetValueOrDefault();
+
                         return LobbyPlayerMenu.Build(
                             kickPosition.Value,
                             () => kickTarget.Value = null,
@@ -212,14 +217,17 @@ public static class LobbyView
         );
 
         UiState.LobbySession? InvitableGame(Guid playerId)
-            => lobby.Connected.Value && lobby.CurrentSession.Value is { CanManage: true, EmptySlots: > 0 } game
+            => lobby.Connected.Value
+               && lobby.CurrentSession.Value is { CanManage: true, EmptySlots: > 0 } game
                && lobby.Players.Value.Any(player => player.Id == playerId && !player.IsSelf)
                && game.Slots.All(slot => slot.PlayerId != playerId)
                 ? game : null;
 
         void ActOnPlayer(Action<Guid> action)
         {
-            if (contextPlayer.Value is not { } id) return;
+            if (contextPlayer.Value is not { } id)
+
+                return;
             contextPlayer.Value = null;
             action(id);
         }
@@ -228,6 +236,7 @@ public static class LobbyView
     private static Vector2 ClampMenuPosition(Vector2 position)
     {
         var scale = Math.Max(G.Scale, 0.01f);
+
         return new Vector2(
             Math.Clamp(position.X / scale, 0, Math.Max(0, G.Viewport.X / scale - 170)),
             Math.Clamp(position.Y / scale, 0, Math.Max(0, G.Viewport.Y / scale - 94))
@@ -237,6 +246,7 @@ public static class LobbyView
     private static Node Header(Actions actions)
     {
         var lobby = UiState.Lobby;
+
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
@@ -308,6 +318,7 @@ public static class LobbyView
     private static Node PlayersRail(Action<Guid, Vector2> openContextMenu)
     {
         var lobby = UiState.Lobby;
+
         return Sx.View(
             name: () => "Lobby players",
             style: () => Sx.Styles(
@@ -378,6 +389,7 @@ public static class LobbyView
     private static Node PlayerRow(UiState.LobbyPlayer player, Action<Guid, Vector2> openContextMenu)
     {
         var hovered = new Signal<bool>(false);
+
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column,
@@ -392,7 +404,9 @@ public static class LobbyView
             ),
             onmousedown: e =>
             {
-                if (e.Button != MouseButton.Secondary || player.IsSelf) return;
+                if (e.Button != MouseButton.Secondary || player.IsSelf)
+
+                    return;
                 e.StopPropagation();
                 openContextMenu(player.Id, e.Position);
             },
@@ -454,6 +468,7 @@ public static class LobbyView
     private static Node GamesPanel(Actions actions)
     {
         var lobby = UiState.Lobby;
+
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column,
@@ -586,6 +601,7 @@ public static class LobbyView
 
         // This row is built once and never re-rendered, so the selected check has to live in
         // the style accessor: selection changes without the record changing.
+
         return Sx.View(
             name: () => $"Lobby game {session.Id}",
             style: () => Sx.Styles(
@@ -856,14 +872,20 @@ public static class LobbyView
                 ),
                 Sx.Show(
                     () => showInvites.Value,
-                    () => MatchOverlayView(() => "INVITE PLAYER", InvitePlayers(Session, playerId =>
-                        {
-                            if (Session() is not { CanManage: true, EmptySlots: > 0 } game || !lobby.Connected.Value)
-                                return;
-                            showInvites.Value = false;
-                            actions.InviteGamePlayer(game.Id, playerId);
-                        }
-                    ), () => showInvites.Value = false
+                    () => MatchOverlayView(
+                        () => "INVITE PLAYER",
+                        InvitePlayers(
+                            Session,
+                            playerId =>
+                            {
+                                if (Session() is not { CanManage: true, EmptySlots: > 0 } game || !lobby.Connected.Value)
+
+                                    return;
+                                showInvites.Value = false;
+                                actions.InviteGamePlayer(game.Id, playerId);
+                            }
+                        ),
+                        () => showInvites.Value = false
                     )
                 )
             ]
@@ -970,8 +992,12 @@ public static class LobbyView
             ),
             onmousedown: e =>
             {
-                if (e.Button != MouseButton.Secondary || slot.IsSelf || slot.PlayerId == Guid.Empty
-                    || !UiState.Lobby.Connected.Value || session() is not { CanManage: true } match)
+                if (e.Button != MouseButton.Secondary
+                    || slot.IsSelf
+                    || slot.PlayerId == Guid.Empty
+                    || !UiState.Lobby.Connected.Value
+                    || session() is not { CanManage: true } match)
+
                     return;
                 e.StopPropagation();
                 openKickMenu(match.Id, slot, e.Position);
@@ -1042,6 +1068,7 @@ public static class LobbyView
         IReadOnlyList<UiState.LobbyPlayer> Invitees()
         {
             if (!UiState.Lobby.Connected.Value || session() is not { CanManage: true, EmptySlots: > 0 } match)
+
                 return [];
 
             return [.. UiState.Lobby.Players.Value.Where(player => !player.IsSelf
@@ -1055,12 +1082,14 @@ public static class LobbyView
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 6),
             children: Sx.Show(
                 () => Invitees().Count > 0,
-                () => Sx.For(Invitees, (player, _) => ActionButton(
-                    player.Name,
-                    () => invite(player.Id),
-                    small: true,
-                    name: () => $"Invite {player.Name}"
-                )
+                () => Sx.For(
+                    Invitees,
+                    (player, _) => ActionButton(
+                        player.Name,
+                        () => invite(player.Id),
+                        small: true,
+                        name: () => $"Invite {player.Name}"
+                    )
                 ),
                 () => Sx.Text(
                     style: () => Sx.WrappingText(fontSize: 12, foregroundColor: TextBlue),
@@ -1166,19 +1195,24 @@ public static class LobbyView
     private static string StatusDetail(UiState.LobbySession? session)
     {
         if (session is null)
+
             return "This game is no longer listed.";
 
         if (session.State == SessionState.Finished)
         {
             if (session.FinalStandings.FirstOrDefault() is { Position: 0, Dnf: false } winner)
+
                 return $"Game finished · Winner: {winner.Name}";
+
             return session.FinalStandings.Count == 0 ? "No results were recorded." : "Game finished";
         }
 
         if (session.State == SessionState.Started)
+
             return "Waiting for race stats…";
 
         if (session.State == SessionState.WaitingToLoad)
+
             return "The race is starting. Hang tight.";
 
         return session switch
@@ -1304,6 +1338,7 @@ public static class LobbyView
         {
             1 => "st", 2 => "nd", 3 => "rd", _ => "th"
         };
+
         return $"{position}{suffix}";
     }
 
@@ -1330,6 +1365,7 @@ public static class LobbyView
             text: () => text
         );
         label.Name = name;
+
         return label;
     }
 
@@ -1363,7 +1399,8 @@ public static class LobbyView
                 strokeWidth: 1
             ),
             text: () => percent is { } value ? $"{value}%" : "—"
-        ));
+        )
+        );
 
         return Sx.View(
             name: () => name,
@@ -1380,7 +1417,10 @@ public static class LobbyView
             var top = (int)MathF.Ceiling(position.Y);
             var width = (int)MathF.Floor(position.X + size.X * fraction) - left;
             var height = (int)MathF.Floor(position.Y + size.Y) - top;
-            if (width <= 0 || height <= 0) return;
+
+            if (width <= 0 || height <= 0)
+
+                return;
 
             G.SaveState();
             G.SetColor(fill);
@@ -1488,7 +1528,8 @@ public static class LobbyView
                                         () =>
                                         {
                                             hovered.Value = false;
-                                            if (session() is { } match) previewStage(match.Id);
+                                            if (session() is { } match)
+                                                previewStage(match.Id);
                                         },
                                         () => "Lobby stage preview button"
                                     ),
@@ -1630,6 +1671,7 @@ public static class LobbyView
     private static Node RuleRow(Func<UiState.LobbySession?> session, UiState.LobbySessionSetting setting, Actions actions)
     {
         if (setting.Field is not { Choices.Count: > 0 } field)
+
             return DetailRow(setting.Label, () => setting.Value);
 
         var options = field.Choices.ToArray();
@@ -1643,9 +1685,11 @@ public static class LobbyView
                 actions.SetGameRule(match.Id, field.Name, value);
         }
 
-        return DetailRow(setting.Label, Sx.Show(
-            CanEdit,
-            () => field.IntegerInput
+        return DetailRow(
+            setting.Label,
+            Sx.Show(
+                CanEdit,
+                () => field.IntegerInput
                 ? IntegerRuleInput(field, setting.RawValue ?? setting.Value, SetValue, $"Lobby game rule {field.Name}")
                 : Controls.Dropdown(
                     () => labels,
@@ -1655,8 +1699,9 @@ public static class LobbyView
                     compact: true,
                     name: $"Lobby game rule {field.Name}"
                 ),
-            () => DetailValue(() => setting.Value)
-        ));
+                () => DetailValue(() => setting.Value)
+            )
+        );
     }
 
     private static Node DetailValue(Func<string> value)
@@ -1691,16 +1736,20 @@ public static class LobbyView
     private static int RemainingSeconds(UiState.LobbySession? session)
     {
         var now = UiState.Lobby.NowUnixMs.Value;
+
         if (session is null || session.ClosesAtUnixMs <= 0 || now <= 0)
+
             return -1;
 
         var remaining = session.ClosesAtUnixMs - now;
+
         return remaining <= 0 ? 0 : (int)Math.Ceiling(remaining / 1000.0);
     }
 
     private static string CountdownText(UiState.LobbySession? session)
     {
         var seconds = RemainingSeconds(session);
+
         return seconds switch
         {
             < 0 => "",
@@ -1712,6 +1761,7 @@ public static class LobbyView
     private static string CountdownShort(UiState.LobbySession session)
     {
         var seconds = RemainingSeconds(session);
+
         return seconds switch
         {
             < 0 => "",
@@ -1728,6 +1778,7 @@ public static class LobbyView
     {
         var lobby = UiState.Lobby;
         var showRules = new Signal<bool>(false);
+
         return Sx.View(
             name: () => "Lobby create",
             style: () => Sx.Styles(
@@ -1909,7 +1960,13 @@ public static class LobbyView
                                             FieldLabel("BOTS"),
                                             Controls.Dropdown(
                                                 () => BotCountOptions(lobby.MaxPlayers.Value),
-                                                () => Math.Clamp(lobby.BotCount.Value, 0, Math.Max(0, lobby.MaxPlayers.Value - 1)),
+                                                () => Math.Clamp(
+                                                    lobby.BotCount.Value,
+                                                    0,
+                                                    Math.Max(0, lobby.MaxPlayers.Value
+                                                             - 1
+                                                )
+                                                ),
                                                 index => actions.SetBots(index),
                                                 width: 380,
                                                 name: "Create bots"
@@ -1970,9 +2027,14 @@ public static class LobbyView
         string SelectedStageLabel()
         {
             var selected = lobby.SelectedStage.Value;
-            if (selected.Length == 0) return "No stage selected";
+
+            if (selected.Length == 0)
+
+                return "No stage selected";
             if (lobby.CreateStages.SelectedArchiveStage.Value is { } archive && archive.Id == selected)
+
                 return $"{archive.Label} · Online archive";
+
             return lobby.CreateStages.Stages.Value.FirstOrDefault(option => option.Id == selected)?.Label
                    ?? (selected.StartsWith("archive/", StringComparison.OrdinalIgnoreCase)
                        ? "Public stage " + selected[^8..]
@@ -1981,10 +2043,12 @@ public static class LobbyView
 
         string FieldSummary()
         {
-            var humans = lobby.MaxPlayers.Value - (lobby.SelectedGamemode.Value == DefaultGamemodes.TimeTrial ? 0 : lobby.BotCount
-                .Value);
+            var humans = lobby.MaxPlayers.Value
+                         - (lobby.SelectedGamemode.Value == DefaultGamemodes.TimeTrial ? 0 : lobby.BotCount
+                             .Value);
             humans = Math.Max(1, humans);
             var bots = lobby.SelectedGamemode.Value == DefaultGamemodes.TimeTrial ? 0 : lobby.BotCount.Value;
+
             return bots == 0
                 ? $"{humans} player(s) max"
                 : $"{humans} human(s) + {bots} bot(s)";
@@ -2010,6 +2074,7 @@ public static class LobbyView
     private static Node CreateRulesContent(Actions actions)
     {
         var lobby = UiState.Lobby;
+
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Column,
@@ -2026,23 +2091,32 @@ public static class LobbyView
                         () =>
                         {
                             var name = $"Gamemode config {field.Name}";
+
                             if (field.IntegerInput)
-                                return DetailRow(field.Label, IntegerRuleInput(
-                                    field,
-                                    lobby.GamemodeConfig.Value.GetValueOrDefault(field.Name) ?? field.Choices[0].Value,
-                                    value => actions.SetConfig(field.Name, value),
-                                    name
-                                ));
+
+                                return DetailRow(
+                                    field.Label,
+                                    IntegerRuleInput(
+                                        field,
+                                        lobby.GamemodeConfig.Value.GetValueOrDefault(field.Name) ?? field.Choices[0].Value,
+                                        value => actions.SetConfig(field.Name, value),
+                                        name
+                                    )
+                                );
 
                             var options = field.Choices;
                             var labels = options.Select(option => option.Label).ToArray();
-                            return DetailRow(field.Label, Controls.Dropdown(
-                                () => labels,
-                                () => SelectedOption(options, lobby.GamemodeConfig.Value, field.Name),
-                                index => actions.SetConfig(field.Name, options[index].Value),
-                                width: 380,
-                                name: name
-                            ));
+
+                            return DetailRow(
+                                field.Label,
+                                Controls.Dropdown(
+                                    () => labels,
+                                    () => SelectedOption(options, lobby.GamemodeConfig.Value, field.Name),
+                                    index => actions.SetConfig(field.Name, options[index].Value),
+                                    width: 380,
+                                    name: name
+                                )
+                            );
                         }
                     )
                 ),
@@ -2074,12 +2148,14 @@ public static class LobbyView
             borderRight: 1,
             borderColor: invalid.Value ? Theme.Danger : Border,
             borderRadius: 6
-        ));
+        )
+        );
         input.Name = name;
         input.SetText(currentValue);
         input.TextChanged = text => invalid.Value = text.Length > 0 && !IsAllowed(text);
         input.Submitted = Commit;
         input.Unfocused += () => Commit(input.Text ?? "");
+
         return input;
 
         bool IsAllowed(string text) => field.Choices.Any(choice => choice.Value == text);
@@ -2107,11 +2183,13 @@ public static class LobbyView
     )
     {
         if (!config.TryGetValue(name, out var chosen))
+
             return -1;
 
         for (var i = 0; i < options.Count; i++)
         {
             if (options[i].Value == chosen)
+
                 return i;
         }
 
@@ -2282,7 +2360,9 @@ public static class LobbyView
     private static void Send(Actions actions)
     {
         var message = ChatInput.Value;
+
         if (message.Trim().Length == 0)
+
             return;
         ChatInput.Value = "";
         actions.SendChat(message);
@@ -2303,6 +2383,7 @@ public static class LobbyView
             else if (children is IEnumerable<Node> nodes)
                 foreach (var child in nodes)
                     AddChild(child);
+
             return this;
         }
 

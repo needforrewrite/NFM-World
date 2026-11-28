@@ -22,12 +22,14 @@ public static class EnvelopeSerializer
         sb.Append('{');
 
         // event_id (use first item with an EventId)
+
         foreach (var item in items)
         {
             if (item.EventId is { } eid)
             {
                 AppendJsonString(sb, "event_id", eid.ToString());
                 sb.Append(',');
+
                 break;
             }
         }
@@ -81,6 +83,7 @@ public static class EnvelopeSerializer
         var offset = 0;
         Buffer.BlockCopy(headerBytes, 0, result, offset, headerBytes.Length);
         offset += headerBytes.Length;
+
         foreach (var chunk in payloadChunks)
         {
             Buffer.BlockCopy(chunk, 0, result, offset, chunk.Length);
@@ -129,6 +132,7 @@ public static class EnvelopeSerializer
         }
 
         // Exception
+
         if (evt.Exception is not null)
         {
             sb.Append(",\"exception\":{\"values\":[");
@@ -137,13 +141,16 @@ public static class EnvelopeSerializer
         }
 
         // Tags
+
         if (evt.Tags is { Count: > 0 })
         {
             sb.Append(",\"tags\":{");
             var first = true;
+
             foreach (var (key, value) in evt.Tags)
             {
-                if (!first) sb.Append(',');
+                if (!first)
+                    sb.Append(',');
                 first = false;
                 AppendJsonString(sb, key, value);
             }
@@ -152,13 +159,16 @@ public static class EnvelopeSerializer
         }
 
         // Breadcrumbs
+
         if (evt.Breadcrumbs is { Count: > 0 })
         {
             sb.Append(",\"breadcrumbs\":{\"values\":[");
             var first = true;
+
             foreach (var bc in evt.Breadcrumbs)
             {
-                if (!first) sb.Append(',');
+                if (!first)
+                    sb.Append(',');
                 first = false;
                 SerializeBreadcrumb(sb, bc);
             }
@@ -167,6 +177,7 @@ public static class EnvelopeSerializer
         }
 
         sb.Append('}');
+
         return Utf8.GetBytes(sb.ToString());
     }
 
@@ -209,6 +220,7 @@ public static class EnvelopeSerializer
         }
 
         sb.Append('}');
+
         return Utf8.GetBytes(sb.ToString());
     }
 
@@ -241,6 +253,7 @@ public static class EnvelopeSerializer
         }
 
         sb.Append('}');
+
         return Utf8.GetBytes(sb.ToString());
     }
 
@@ -248,9 +261,11 @@ public static class EnvelopeSerializer
     {
         var current = ex;
         var first = true;
+
         while (current is not null)
         {
-            if (!first) sb.Append(',');
+            if (!first)
+                sb.Append(',');
             first = false;
 
             sb.Append("{\"type\":");
@@ -259,6 +274,7 @@ public static class EnvelopeSerializer
             AppendJsonString(sb, current.Message);
 
             // Stack trace
+
             if (current.StackTrace is not null)
             {
                 sb.Append(",\"stacktrace\":{\"frames\":[");
@@ -293,9 +309,11 @@ public static class EnvelopeSerializer
         {
             sb.Append(",\"data\":{");
             var first = true;
+
             foreach (var (key, value) in bc.Data)
             {
-                if (!first) sb.Append(',');
+                if (!first)
+                    sb.Append(',');
                 first = false;
                 AppendJsonString(sb, key, value);
             }
@@ -310,15 +328,20 @@ public static class EnvelopeSerializer
     {
         var lines = stackTrace.Split('\n');
         var first = true;
+
         // Process in reverse order (Sentry expects innermost frame first in JSON,
         // but CLR stack traces list innermost first already, so we don't reverse)
+
         foreach (var line in lines)
         {
             var trimmed = line.Trim();
+
             if (string.IsNullOrEmpty(trimmed))
+
                 continue;
 
-            if (!first) sb.Append(',');
+            if (!first)
+                sb.Append(',');
             first = false;
 
             // Parse "at Namespace.Method(args) in File:line N"
@@ -331,11 +354,13 @@ public static class EnvelopeSerializer
             var lineno = 0;
 
             var inIndex = methodPart.LastIndexOf(" in ", StringComparison.Ordinal);
+
             if (inIndex > 0)
             {
                 function = methodPart[..inIndex].Trim();
                 var filePart = methodPart[(inIndex + 4)..].Trim();
                 var lineIndex = filePart.LastIndexOf(":line ", StringComparison.Ordinal);
+
                 if (lineIndex > 0)
                 {
                     filename = filePart[..lineIndex].Trim();
@@ -350,6 +375,7 @@ public static class EnvelopeSerializer
             {
                 // Try to extract module from function
                 var dotIndex = function.LastIndexOf('.');
+
                 if (dotIndex > 0)
                 {
                     module = function[..dotIndex];
@@ -360,6 +386,7 @@ public static class EnvelopeSerializer
             AppendJsonString(sb, filename);
             sb.Append(",\"function\":");
             AppendJsonString(sb, function);
+
             if (!string.IsNullOrEmpty(module))
             {
                 sb.Append(",\"module\":");
@@ -394,9 +421,11 @@ public static class EnvelopeSerializer
     public static string EscapeJsonString(string value)
     {
         if (string.IsNullOrEmpty(value))
+
             return string.Empty;
 
         var sb = new StringBuilder(value.Length + 8);
+
         foreach (var c in value)
         {
             switch (c)
@@ -413,6 +442,7 @@ public static class EnvelopeSerializer
                         sb.Append($"\\u{(int)c:X4}");
                     else
                         sb.Append(c);
+
                     break;
             }
         }

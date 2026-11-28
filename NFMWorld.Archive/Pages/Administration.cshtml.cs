@@ -11,24 +11,36 @@ public sealed class AdministrationModel(ArchiveDbContext db) : ArchivePageModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (await ResolveAccountAsync() is null) return RedirectToLogin();
-        if (!IsAdmin) return NotFound();
+        if (await ResolveAccountAsync() is null)
+
+            return RedirectToLogin();
+        if (!IsAdmin)
+
+            return NotFound();
 
         UploadLimitMiB = await ArchiveSettings.ReadUploadLimitMiBAsync(Db, HttpContext.RequestAborted);
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (await ResolveAccountAsync() is null) return RedirectToLogin();
-        if (!IsAdmin) return NotFound();
+        if (await ResolveAccountAsync() is null)
+
+            return RedirectToLogin();
+        if (!IsAdmin)
+
+            return NotFound();
 
         if (UploadLimitMiB is < 1 or > ArchiveSettings.MaxUploadMiB)
             ModelState.AddModelError(
                 nameof(UploadLimitMiB),
                 $"Enter a whole number between 1 and {ArchiveSettings.MaxUploadMiB} MiB."
             );
-        if (!ModelState.IsValid) return Page();
+
+        if (!ModelState.IsValid)
+
+            return Page();
 
         await Db.Settings.Where(setting => setting.Id == ArchiveSettings.SingletonId)
             .ExecuteUpdateAsync(
@@ -37,6 +49,7 @@ public sealed class AdministrationModel(ArchiveDbContext db) : ArchivePageModel(
             );
 
         Message = "Archive settings saved.";
+
         return RedirectToPage();
     }
 }

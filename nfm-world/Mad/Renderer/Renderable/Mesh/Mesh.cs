@@ -88,6 +88,7 @@ public class Mesh : IDisposable
     internal static Prepared Prepare(Rad3d rad)
     {
         var polygons = rad.Polys.Select(static poly => poly.SafeClone()).ToArray();
+
         return new(rad, polygons, BuildData(polygons));
     }
 
@@ -141,6 +142,7 @@ public class Mesh : IDisposable
             (Vector3 point0, Vector3 point1),
             (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)
         >[(int)(LineType.MaxValue + 1)];
+
         for (var i = 0; i < lines.Length; i++)
         {
             lines[i] = new OrderedDictionary<
@@ -157,6 +159,7 @@ public class Mesh : IDisposable
 
             var baseIndex = (uint)data.Count;
             float decalOffset = poly.DecalOffset; // Use the decal offset value from polygon
+
             foreach (var point in poly.Points)
             {
                 var color = poly.Color;
@@ -192,12 +195,15 @@ public class Mesh : IDisposable
         var submeshes = prepared.Submeshes;
         var lines = prepared.Lines;
         Submeshes = new Submesh[submeshes.Length];
+
         for (var i = 0; i < submeshes.Length; i++)
         {
             var (data, indices) = submeshes[i];
             var type = (PolyType)i;
 
-            if (data.Count == 0 || indices.Count == 0) continue;
+            if (data.Count == 0 || indices.Count == 0)
+
+                continue;
 
             Submeshes[i] = new Submesh(
                 type,
@@ -209,9 +215,12 @@ public class Mesh : IDisposable
         }
 
         LineMeshes = new LineMesh[lines.Length];
+
         for (var i = 0; i < lines.Length; i++)
         {
-            if (lines[i] is not { } lineData) continue;
+            if (lines[i] is not { } lineData)
+
+                continue;
             LineMeshes[i] = new LineMesh(this, GameSparker.GraphicsDevice, lineData, (LineType)i);
         }
     }
@@ -299,6 +308,7 @@ public class Mesh : IDisposable
         foreach (var submesh in Submeshes)
         {
             // we care about the order of drawn submeshes only if we dont have an alpha override
+
             if (submesh != null && (submesh.PolyType != PolyType.Finish || finish))
             {
                 queue.AddInstanced(
@@ -315,6 +325,7 @@ public class Mesh : IDisposable
 
         // HideOutlines is handled on the CPU by not submitting line meshes. Other distance
         // behavior remains in the shader because it depends on each line's centroid.
+
         if (lighting?.IsCreateShadowMap != true
             && World.DistantOutlineBehavior != DistantOutlineBehavior.HideOutlines
             && LineMeshes != null)
@@ -341,6 +352,7 @@ public class Mesh : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         ReleaseUnmanagedResources();
+
         if (disposing)
         {
             foreach (var submesh in Submeshes)

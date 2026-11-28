@@ -98,10 +98,12 @@ public partial class StageEditorPhase
     private Node BottomTabButton(BottomTab tab, string label)
     {
         var hovered = new Signal<bool>(false);
+
         return Sx.View(
             style: () =>
             {
                 _ = _uiRevision.Value;
+
                 return Sx.Styles(
                     position: Position.Relative,
                     paddingTop: 6,
@@ -122,6 +124,7 @@ public partial class StageEditorPhase
                 style: () =>
                 {
                     var active = _bottomTab == tab;
+
                     return Sx.TextStyles(
                         fontSize: 10,
                         fontStyle: FontStyle.Bold,
@@ -156,6 +159,7 @@ public partial class StageEditorPhase
                             _ = _uiRevision.Value;
                             IReadOnlyList<(BottomTab Tab, StageEditorTab? Document)> items =
                                 [(Tab: _bottomTab, Document: ActiveTab)];
+
                             return items;
                         },
                         row: (key, _) => PropertySections(key.Tab, key.Document)
@@ -167,6 +171,7 @@ public partial class StageEditorPhase
     private Node PropertySections(BottomTab tab, StageEditorTab? tabDocument)
     {
         if (tabDocument is not { } document)
+
             return Sx.View(style: () => Sx.Styles(display: Display.Contents));
 
         return Sx.View(
@@ -206,7 +211,12 @@ public partial class StageEditorPhase
             250,
             PropertyRow(
                 "Name",
-                EditorField(() => tab.TabName, value => { tab.TabName = value; StagePropertyChanged(); }, () => "Stage name", 180),
+                EditorField(
+                    () => tab.TabName,
+                    value => { tab.TabName = value; StagePropertyChanged(); },
+                    () => "Stage name",
+                    180
+                ),
                 40
             ),
             PropertyRow(
@@ -538,11 +548,14 @@ public partial class StageEditorPhase
         _ = _uiRevision.Value;
         var entries = MusicEntries();
         var current = ActiveTab is { } tab ? MusicTargetPath(tab) : "";
+
         if (current.Length == 0 || entries.Contains(current, StringComparer.OrdinalIgnoreCase))
+
             return entries;
 
         var list = entries.ToList();
         list.Insert(1, current);
+
         return list;
     }
 
@@ -550,9 +563,11 @@ public partial class StageEditorPhase
     {
         var current = MusicTargetPath(tab);
         var entries = MusicDropdownEntries();
+
         for (var i = 0; i < entries.Count; i++)
         {
             if (string.Equals(entries[i], current, StringComparison.OrdinalIgnoreCase))
+
                 return i;
         }
 
@@ -563,6 +578,7 @@ public partial class StageEditorPhase
     private void ImportMusic()
     {
         if (OperatingSystem.IsBrowser())
+
             return;
 
         try
@@ -586,9 +602,11 @@ public partial class StageEditorPhase
     private void ImportedMusic(IReadOnlyList<string> files)
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         string? last = null;
+
         foreach (var file in files)
         {
             if (CopyMusicFile(file) is { } entry)
@@ -596,6 +614,7 @@ public partial class StageEditorPhase
         }
 
         if (last is null)
+
             return;
 
         _musicEntries = null;
@@ -607,9 +626,11 @@ public partial class StageEditorPhase
         try
         {
             var fileName = SanitizeMusicFileName(Path.GetFileName(source));
+
             if (fileName.Length == 0 || !IsMusicFile(fileName))
             {
                 Logging.Warning($"'{source}' is not a supported music file.");
+
                 return null;
             }
 
@@ -624,11 +645,13 @@ public partial class StageEditorPhase
                 input.CopyTo(output);
 
             Logging.Info($"Imported music '{source}' as '{entry}'.");
+
             return entry;
         }
         catch (Exception exception)
         {
             Logging.Warning($"Could not import '{source}': {exception.Message}");
+
             return null;
         }
     }
@@ -644,18 +667,22 @@ public partial class StageEditorPhase
     private async Task PreviewSelectedMusicAsync()
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         var path = MusicTargetPath(tab);
+
         if (string.IsNullOrEmpty(path))
         {
             StopMusicPreview();
+
             return;
         }
 
         if (string.Equals(_previewMusicPath, path, StringComparison.OrdinalIgnoreCase))
         {
             StopMusicPreview();
+
             return;
         }
 
@@ -673,9 +700,11 @@ public partial class StageEditorPhase
         {
             var music = await MusicLoader.LoadAsync(vfsPath, tempo);
             await LoadingWork.NextFrame;
+
             if (_editorDisposed || generation != _musicPreviewGeneration || !ReferenceEquals(ActiveTab, tab))
             {
                 music.Dispose();
+
                 return;
             }
 
@@ -697,6 +726,7 @@ public partial class StageEditorPhase
     private void StopMusicPreview(bool notify = true)
     {
         _musicPreviewGeneration++;
+
         if (_previewMusic is { } music)
         {
             var previous = _musicBeforePreview;
@@ -754,6 +784,7 @@ public partial class StageEditorPhase
     private void SetPhysics(Func<StagePhysics, StagePhysics> change)
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         tab.Physics = change(tab.Physics);
@@ -768,7 +799,15 @@ public partial class StageEditorPhase
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold, foregroundColor: new Color(128, 170, 255)),
+                    style: () => Sx.TextStyles(
+                        fontSize: 10,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: new Color(
+                            128,
+                            170,
+                            255
+                        )
+                    ),
                     layout: () => Sx.Styles(marginBottom: 1),
                     text: () => title
                 ),
@@ -795,6 +834,7 @@ public partial class StageEditorPhase
         // The value is a plain tab field, so the fill/check must re-read it when Touch() bumps
         // _uiRevision - without this the box only updated when the tab switched and rebuilt it.
         var observed = Observe(value);
+
         return Sx.View(
             style: () => Sx.Styles(
                 flexDirection: FlexDirection.Row,
@@ -907,6 +947,7 @@ public partial class StageEditorPhase
     private Color ObservedColor(Func<Color3> read)
     {
         _ = _uiRevision.Value;
+
         return read();
     }
 
@@ -918,7 +959,8 @@ public partial class StageEditorPhase
             value().ToString("0.###", CultureInfo.InvariantCulture),
             text =>
             {
-                if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) && float
+                if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+                    && float
                     .IsFinite(parsed))
                     set(parsed);
             },
@@ -930,7 +972,8 @@ public partial class StageEditorPhase
             value().ToString("0.###", CultureInfo.InvariantCulture),
             text =>
             {
-                if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) && double
+                if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+                    && double
                     .IsFinite(parsed))
                     set(parsed);
             },
@@ -956,6 +999,7 @@ public partial class StageEditorPhase
                 if (string.IsNullOrWhiteSpace(text))
                 {
                     set(null);
+
                     return;
                 }
 
@@ -999,6 +1043,7 @@ public partial class StageEditorPhase
             }
         );
         input.TextStyles = Sx.TextStyles(fontSize: 10);
+
         return input;
     }
 
@@ -1028,6 +1073,7 @@ public partial class StageEditorPhase
     private void StageSkyChanged()
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         tab.HasUnsavedChanges = true;

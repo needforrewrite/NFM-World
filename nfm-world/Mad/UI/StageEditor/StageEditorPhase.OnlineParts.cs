@@ -43,7 +43,9 @@ public partial class StageEditorPhase
                 token
             );
             await LoadingWork.NextFrame;
+
             if (generation != _onlinePartSearchGeneration || _editorDisposed)
+
                 return;
 
             _onlinePartResults = page.Items.Where(item => item.Eligible).ToList();
@@ -58,7 +60,9 @@ public partial class StageEditorPhase
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             await LoadingWork.NextFrame;
+
             if (generation != _onlinePartSearchGeneration || _editorDisposed)
+
                 return;
 
             _onlinePartResults = [];
@@ -69,6 +73,7 @@ public partial class StageEditorPhase
             if (generation == _onlinePartSearchGeneration)
             {
                 await LoadingWork.NextFrame;
+
                 if (generation == _onlinePartSearchGeneration && !_editorDisposed)
                 {
                     _onlinePartSearching = false;
@@ -81,16 +86,20 @@ public partial class StageEditorPhase
     private void DownloadOnlinePart(RemoteAsset asset, bool placeWhenReady = true)
     {
         var reference = OnlinePartReference(asset);
+
         if (_availableParts.GetValueOrDefault(reference) is { } available)
         {
             if (placeWhenReady)
                 BeginPlacement(available);
+
             return;
         }
 
         if (placeWhenReady)
             _onlinePartPlacementRequests.Add(reference);
+
         if (!_onlinePartDownloads.Add(reference))
+
             return;
 
         _onlinePartStatus = "";
@@ -101,6 +110,7 @@ public partial class StageEditorPhase
     private async Task DownloadOnlinePartAsync(RemoteAsset asset, string reference)
     {
         LoadingWork.Operation? loading = null;
+
         try
         {
             using var statusDelayCancellation = CancellationTokenSource.CreateLinkedTokenSource(_editorLoading.Token);
@@ -111,9 +121,11 @@ public partial class StageEditorPhase
                 _editorLoading.Token
             );
             var statusDelay = Task.Delay(250, statusDelayCancellation.Token);
+
             if (await Task.WhenAny(prepare, statusDelay) == statusDelay && !prepare.IsCompleted)
             {
                 await LoadingWork.NextFrame;
+
                 if (!_editorDisposed && !prepare.IsCompleted && _onlinePartDownloads.Contains(reference))
                 {
                     loading = LoadingWork.Begin($"Downloading {asset.Name}...");
@@ -125,18 +137,22 @@ public partial class StageEditorPhase
             statusDelayCancellation.Cancel();
             var result = await prepare;
             await LoadingWork.NextFrame;
+
             if (_editorDisposed)
+
                 return;
 
             if (!result.Ok)
             {
                 _onlinePartStatus = $"Could not download \"{asset.Name}\": {result.Error}";
+
                 return;
             }
 
             if (RadpackReader.TryReadModel(reference, RadpackType.TrackPiece, out var error) is not { } part)
             {
                 _onlinePartStatus = $"The downloaded part could not be read: {error}";
+
                 return;
             }
 
@@ -170,9 +186,11 @@ public partial class StageEditorPhase
     private string CurrentOnlinePartStatus()
     {
         if (_onlinePartSlowDownloads.Count > 1)
+
             return $"Downloading {_onlinePartSlowDownloads.Count} stage parts...";
 
         foreach (var name in _onlinePartSlowDownloads.Values)
+
             return $"Downloading \"{name}\"...";
 
         return _onlinePartStatus;

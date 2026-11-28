@@ -73,6 +73,7 @@ public static partial class World
         get
         {
             var density = FogDensity / (FogDensity + 1f);
+
             return float.IsFinite(density) && density > 0f
                 ? MathF.Log2(MathF.Max(density, 1e-6f))
                 : MathF.Log2(1e-6f);
@@ -140,13 +141,17 @@ public static partial class World
     public static void SetSky(Color3 skyColor)
     {
         Sky = skyColor;
+
         // osky[0] = i;
         // osky[1] = i249;
         // osky[2] = i250;
+
         for (int i251 = 0; i251 < 3; i251++)
         {
             CloudColor[i251] = (short)((Sky[i251] * Clouds[3] + Clouds[i251]) / (Clouds[3] + 1));
+
             // CloudColor[i251] = (short) (CloudColor[i251] + CloudColor[i251] * (Snap[i251] / 100.0F));
+
             if (CloudColor[i251] > 255)
             {
                 CloudColor[i251] = 255;
@@ -162,10 +167,13 @@ public static partial class World
     public static void SetGround(Color3 groundColor)
     {
         GroundColor = groundColor;
+
         for (int i259 = 0; i259 < 3; i259++)
         {
             GroundPolysColor[i259] = (short)((GroundColor[i259] * Texture[3] + Texture[i259]) / (1 + Texture[3]));
+
             // GroundPolysColor[i259] = (int) (GroundPolysColor[i259] + GroundPolysColor[i259] * (Snap[i259] / 100.0F));
+
             if (GroundPolysColor[i259] > 255)
             {
                 GroundPolysColor[i259] = 255;

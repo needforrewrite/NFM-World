@@ -47,6 +47,7 @@ public class ResultEndpointTests
         };
         if (authHeader is not null)
             request.Headers.Authorization = AuthenticationHeaderValue.Parse(authHeader);
+
         return request;
     }
 
@@ -62,6 +63,7 @@ public class ResultEndpointTests
 
             using var scope = factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+
             return db.Users.Single(u => u.UsernameNormalized == name).Id;
         }
 

@@ -19,7 +19,10 @@ public sealed class MouseCursorState
     {
         var free = menuVisible || !lockDuringGameplay;
         Locked = windowFocused && !free;
-        if (!windowFocused) return (true, null);
+
+        if (!windowFocused)
+
+            return (true, null);
 
         if (!free)
         {
@@ -30,12 +33,16 @@ public sealed class MouseCursorState
             }
 
             var center = new Vector2(MathF.Floor(viewport.X / 2), MathF.Floor(viewport.Y / 2));
+
             return (false, position == center ? null : center);
         }
 
-        if (!_hidden) return (true, null);
+        if (!_hidden)
+
+            return (true, null);
         _hidden = false;
         var restored = Vector2.Clamp(_menuPosition, Vector2.Zero, Vector2.Max(Vector2.Zero, viewport - Vector2.One));
+
         return (true, position == restored ? null : restored);
     }
 }

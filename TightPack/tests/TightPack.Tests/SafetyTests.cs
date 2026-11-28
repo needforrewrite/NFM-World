@@ -78,6 +78,7 @@ public sealed class SafetyTests
     {
         var root = new Node { Value = 0 };
         Node current = root;
+
         for (int i = 0; i < 2000; i++)
         {
             current.Next = new Node { Value = i };

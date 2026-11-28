@@ -17,10 +17,14 @@ public static class OpusTrackEncoder
     public static byte[] Encode(DecodeResult decoded, int bitrate = 96000)
     {
         int channels = (int)decoded.Channels;
+
         if (channels is not (1 or 2) || decoded.SampleRate <= 0)
+
             throw new ArgumentException("Unsupported PCM format.", nameof(decoded));
         var pcm = decoded.PcmData.AsSpan(0, decoded.PcmData.Count);
+
         if (pcm.Length == 0 || pcm.Length % (channels * sizeof(short)) != 0)
+
             throw new ArgumentException("PCM must contain complete, non-empty 16-bit sample frames.", nameof(decoded));
 
         // Instantiate the managed encoder directly: the factory may probe a native library, which
@@ -36,6 +40,7 @@ public static class OpusTrackEncoder
         };
 
         var samples = new short[4096 * channels];
+
         while (!pcm.IsEmpty)
         {
             int count = Math.Min(samples.Length, pcm.Length / sizeof(short));
@@ -49,6 +54,7 @@ public static class OpusTrackEncoder
         // the encoder delay or trim padding; correct those fields in the finished pages below.
         Array.Clear(samples);
         long silenceFrames = (long)decoded.SampleRate / 10 + 1;
+
         while (silenceFrames > 0)
         {
             int frames = (int)Math.Min(silenceFrames, samples.Length / channels);
@@ -60,6 +66,7 @@ public static class OpusTrackEncoder
 
         long inputFrames = decoded.PcmData.Count / (channels * sizeof(short));
         long outputFrames = (inputFrames * OpusSampleRate + decoded.SampleRate / 2) / decoded.SampleRate;
+
         return TrimOgg(output, encoder.Lookahead, outputFrames);
     }
 
@@ -70,6 +77,7 @@ public static class OpusTrackEncoder
         int offset = 0;
         int pageIndex = 0;
         long finalGranule = checked(outputFrames + preSkip);
+
         while (offset < length)
         {
             int segments = data[offset + 26];
@@ -79,6 +87,7 @@ public static class OpusTrackEncoder
                 payloadLength += data[offset + 27 + i];
             int pageLength = headerLength + payloadLength;
             var page = data.AsSpan(offset, pageLength);
+
             if (pageIndex == 0)
             {
                 BinaryPrimitives.WriteUInt16LittleEndian(page.Slice(headerLength + 10, 2), checked((ushort)preSkip));
@@ -91,6 +100,7 @@ public static class OpusTrackEncoder
                 page[5] |= 4;
                 BinaryPrimitives.WriteInt64LittleEndian(page.Slice(6, 8), finalGranule);
                 UpdateChecksum(page);
+
                 return data.AsSpan(0, offset + pageLength).ToArray();
             }
 
@@ -105,6 +115,7 @@ public static class OpusTrackEncoder
     {
         page.Slice(22, 4).Clear();
         uint crc = 0;
+
         foreach (byte value in page)
         {
             crc ^= (uint)value << 24;

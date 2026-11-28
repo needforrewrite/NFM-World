@@ -58,7 +58,9 @@ public static class ReplayBrowserView
 
         protected override bool OnPostLayout()
         {
-            if (canNavigate()) _navigation.UpdateFocus(this);
+            if (canNavigate())
+                _navigation.UpdateFocus(this);
+
             return base.OnPostLayout();
         }
     }
@@ -95,6 +97,7 @@ public static class ReplayBrowserView
                 )
             ]
         );
+
         return new InputView(canNavigate ?? (() => true))
         {
             Styles = Sx.Styles(width: 100.Percent(), height: 100.Percent()),
@@ -147,12 +150,14 @@ public static class ReplayBrowserView
             style: () => Sx.Styles(alignItems: Align.Center, justifyContent: Justify.SpaceBetween, flexShrink: 0),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(
-                    fontSize: 32,
-                    fontStyle: FontStyle.Bold,
-                    fontFamily: FontFamily.Adventure,
-                    foregroundColor: Theme.MenuBlue
-                ), text: () => "REPLAYS"
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 32,
+                        fontStyle: FontStyle.Bold,
+                        fontFamily: FontFamily.Adventure,
+                        foregroundColor: Theme.MenuBlue
+                    ),
+                    text: () => "REPLAYS"
                 ),
                 MenuButton.Create(
                     label: () => "BACK",
@@ -201,7 +206,8 @@ public static class ReplayBrowserView
                     )
                 )
             ]
-        ));
+        )
+        );
 
     private static Node SearchBox(ReplayBrowserState state, Actions actions)
     {
@@ -234,6 +240,7 @@ public static class ReplayBrowserView
             onsubmit: _ => actions.Search(state.SearchDraft.Value)
         );
         input.Name = "Replay search";
+
         return input;
     }
 
@@ -251,6 +258,7 @@ public static class ReplayBrowserView
                     text: () => state.Status.Value
                 );
                 status.Name = "Replay status";
+
                 return status;
             }
         );
@@ -357,11 +365,13 @@ public static class ReplayBrowserView
                     ),
                     children:
                     [
-                        Sx.Text(style: () => Sx.TextStyles(
-                            fontSize: 17,
-                            fontStyle: FontStyle.Bold,
-                            foregroundColor: Theme.MenuTextBlue
-                        ), text: () => entry.Time
+                        Sx.Text(
+                            style: () => Sx.TextStyles(
+                                fontSize: 17,
+                                fontStyle: FontStyle.Bold,
+                                foregroundColor: Theme.MenuTextBlue
+                            ),
+                            text: () => entry.Time
                         ),
                         Sx.Text(
                             style: () => Sx.TextStyles(fontSize: 10, foregroundColor: Theme.MenuDim),
@@ -371,17 +381,27 @@ public static class ReplayBrowserView
                 )
             ]
         );
-        return KeyboardNavigation.Bind(node, key =>
+
+        return KeyboardNavigation.Bind(
+            node,
+            key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 state.SelectedId.Value = entry.Id;
-                if (entry.Compatible && !state.Busy.Value) actions.Open(entry.Id);
+                if (entry.Compatible && !state.Busy.Value)
+                    actions.Open(entry.Id);
+
                 return true;
-            }, value =>
+            },
+            value =>
             {
                 focused.Value = value;
-                if (value) state.SelectedId.Value = entry.Id;
-            }, () => state.SelectedId.Value == entry.Id
+                if (value)
+                    state.SelectedId.Value = entry.Id;
+            },
+            () => state.SelectedId.Value == entry.Id
         );
     }
 
@@ -436,7 +456,8 @@ public static class ReplayBrowserView
                             )
                         ),
                         Sx.Show(
-                            when: () => !state.Online.Value && state.Selected is { Compatible: true, Uploadable: true }
+                            when: () => !state.Online.Value
+                                        && state.Selected is { Compatible: true, Uploadable: true }
                                         && !state.Busy.Value,
                             then: () => MenuButton.Create(
                                 label: () => "UPLOAD REPLAY",
@@ -446,8 +467,10 @@ public static class ReplayBrowserView
                             )
                         ),
                         Sx.Show(
-                            when: () => !state.Online.Value && state.Selected is { Deletable: true }
-                                        && !state.Busy.Value && actions.Delete is not null,
+                            when: () => !state.Online.Value
+                                        && state.Selected is { Deletable: true }
+                                        && !state.Busy.Value
+                                        && actions.Delete is not null,
                             then: () => MenuButton.Create(
                                 label: () => "DELETE REPLAY",
                                 onPress: () => state.DeleteCandidate.Value = state.Selected,
@@ -457,7 +480,8 @@ public static class ReplayBrowserView
                             )
                         )
                     ]
-                ))
+                )
+                )
             ]
         );
 
@@ -557,8 +581,11 @@ public static class ReplayBrowserView
                                 ),
                                 key =>
                                 {
-                                    if (key is not (Key.Escape or Key.Enter or Key.Space)) return false;
+                                    if (key is not (Key.Escape or Key.Enter or Key.Space))
+
+                                        return false;
                                     Cancel();
+
                                     return true;
                                 },
                                 _ => { },
@@ -574,28 +601,34 @@ public static class ReplayBrowserView
                                     },
                                     variant: ButtonVariant.Danger,
                                     size: ButtonSize.Sm,
-                                name: () => "Replay delete confirm"
+                                    name: () => "Replay delete confirm"
                                 ),
                                 key =>
                                 {
                                     if (key == Key.Escape)
                                     {
                                         Cancel();
+
                                         return true;
                                     }
 
-                                    if (key is not (Key.Enter or Key.Space)) return false;
+                                    if (key is not (Key.Enter or Key.Space))
+
+                                        return false;
                                     Cancel();
                                     actions.Delete?.Invoke(entry.Id);
+
                                     return true;
                                 },
                                 _ => { }
                             )
                         ]
-                    ))
+                    )
+                    )
                 ]
             )
-        ));
+        )
+        );
     }
 
     private static Node Footer(ReplayBrowserState state, Actions actions)

@@ -47,14 +47,21 @@ public class SignalsDotnetLeakTests
     /// <summary>Length of the pinned scope's observer chain.</summary>
     private static int Observers()
     {
-        if (ScopeValue.GetValue(CurrentScope.GetValue(null)) is not { } scope) return 0;
-        if (scope.GetType().GetProperty("Subject")!.GetValue(scope) is not { } subject) return 0;
-        if (subject.GetType().GetField("root", Private)?.GetValue(subject) is not { } root) return 0;
+        if (ScopeValue.GetValue(CurrentScope.GetValue(null)) is not { } scope)
+
+            return 0;
+        if (scope.GetType().GetProperty("Subject")!.GetValue(scope) is not { } subject)
+
+            return 0;
+        if (subject.GetType().GetField("root", Private)?.GetValue(subject) is not { } root)
+
+            return 0;
 
         var next = root.GetType().GetField("Next", Private)
                    ?? root.GetType().GetField("<Next>k__BackingField", Private);
         object? node = root;
         var count = 0;
+
         while (node is not null && count < 100_000)
         {
             count++;
@@ -78,11 +85,11 @@ public class SignalsDotnetLeakTests
         PinScope();
 
         var mounted = Renderer.Mount(() => Sx.View(
-                style: () => Sx.Styles(width: 100.Percent()),
-                children: Enumerable.Range(0, 4)
-                    .Select(i => (object?)Sx.Text(text: () => $"{value.Value}-{i}"))
-                    .ToArray()
-            )
+            style: () => Sx.Styles(width: 100.Percent()),
+            children: Enumerable.Range(0, 4)
+                .Select(i => (object?)Sx.Text(text: () => $"{value.Value}-{i}"))
+                .ToArray()
+        )
         );
 
         for (var i = 0; i < 200; i++)

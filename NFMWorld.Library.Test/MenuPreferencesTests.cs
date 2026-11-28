@@ -98,11 +98,13 @@ public class MenuPreferencesTests
                 _ =>
                 {
                     reads++;
+
                     return null;
                 },
                 listPaths: () =>
                 {
                     listings++;
+
                     return
                     [
                         "data/music/interface/shift.mp3", "data/music/interface/nested/theme.mod", "data/music/nfm1/stage.mp3"
@@ -140,7 +142,9 @@ public class MenuPreferencesTests
     private static VirtualFS CreateFileSystemWithContent(params (string Path, string Content)[] files)
     {
         using var stream = new MemoryStream();
+
         using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+
             foreach (var (path, content) in files)
             {
                 var entry = archive.CreateEntry(path);
@@ -150,6 +154,7 @@ public class MenuPreferencesTests
 
         var fs = new VirtualFS();
         fs.MountZip(stream.ToArray());
+
         return fs;
     }
 
@@ -161,6 +166,7 @@ public class MenuPreferencesTests
                 archive.CreateEntry(file);
         var fs = new VirtualFS();
         fs.MountZip(stream.ToArray());
+
         return fs;
     }
 }

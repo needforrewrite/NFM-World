@@ -41,6 +41,7 @@ internal sealed class EnetList<T> where T : class, IEnetListLink<T>
                 Tail.Next = item;
 
             Tail = item;
+
             return;
         }
 
@@ -76,9 +77,11 @@ internal sealed class EnetList<T> where T : class, IEnetListLink<T>
     public T? RemoveFirst()
     {
         if (Head is not { } head)
+
             return null;
 
         Remove(head);
+
         return head;
     }
 
@@ -95,6 +98,7 @@ internal sealed class EnetList<T> where T : class, IEnetListLink<T>
             destination.InsertEnd(current);
 
             if (ReferenceEquals(current, last) || next is null)
+
                 break;
 
             current = next;

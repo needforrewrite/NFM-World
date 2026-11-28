@@ -54,6 +54,7 @@ public sealed unsafe class WgpuNativeContext : INativeContext
     public bool TryGetProcAddress(string proc, out nint addr, int? slot = null)
     {
         addr = Lookup(proc);
+
         return addr != IntPtr.Zero;
     }
 

@@ -75,9 +75,11 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
             await Task.Delay(HandshakeRetryDelayMs);
 
             if (generation != Volatile.Read(ref _handshakeGeneration) || HandshakeAccepted)
+
                 return;
 
             if (State != ClientState.Connected)
+
                 return;
 
             SendHandshake();
@@ -86,6 +88,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         await Task.Delay(HandshakeRetryDelayMs);
 
         if (generation != Volatile.Read(ref _handshakeGeneration) || HandshakeAccepted)
+
             return;
 
         // Refuse to talk to a server whose layout cannot be confirmed. An older build ignores the
@@ -104,6 +107,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
     private void HandleHandshake(ReadOnlyMemory<byte> message)
     {
         S2C_Handshake handshake;
+
         try
         {
             handshake = TightPackSerializer.Deserialize<S2C_Handshake>(message.Span);
@@ -111,14 +115,17 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         catch (Exception ex)
         {
             Logging.Warning($"Server sent an unreadable handshake ({message.Length} bytes)", exception: ex);
+
             return;
         }
 
         ServerProtocolVersion = handshake.Version;
+
         if (handshake.Accepted && handshake.Version == Protocol.Version)
         {
             HandshakeAccepted = true;
             HandshakeError = null;
+
             return;
         }
 
@@ -183,6 +190,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         if (ReconnectDisabled
             || _reconnectLoop is { IsCompleted: false }
             || _reconnectCts.IsCancellationRequested)
+
             return;
 
         ReconnectFailed = false;
@@ -192,6 +200,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
     private async Task ReconnectLoopAsync()
     {
         var delay = ReconnectDelay;
+
         for (var attempt = 0; attempt < MaxReconnectAttempts; attempt++)
         {
             try
@@ -206,6 +215,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
             if (await TryConnectAsync())
             {
                 RaiseReconnected();
+
                 return;
             }
 
@@ -227,6 +237,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
             if (await ConnectAsync(_reconnectCts.Token))
             {
                 State = ClientState.Connected;
+
                 return true;
             }
         }
@@ -239,6 +250,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         }
 
         State = ClientState.Disconnected;
+
         return false;
     }
 
@@ -247,6 +259,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
     public IPacketServerToClient[] GetNewPackets()
     {
         var packets = new List<IPacketServerToClient>();
+
         while (_receivedPacketQueue.TryDequeue(out var packet))
         {
             packets.Add(packet);
@@ -260,6 +273,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         if (memory.IsEmpty)
         {
             Logging.Warning("Server sent an empty packet");
+
             return;
         }
 
@@ -268,13 +282,16 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
 
         // Answered here and never queued: it is the transport's own business, and a caller that
         // saw it would have to know to ignore it.
+
         if (opcode == Protocol.ServerHandshakeOpcode)
         {
             HandleHandshake(message);
+
             return;
         }
 
         IPacketServerToClient? packet;
+
         try
         {
             packet = MultiplayerUtils.TryDeserializeS2CPacket(opcode, message);
@@ -282,6 +299,7 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
         catch (Exception ex)
         {
             Logging.Warning($"Server sent an unreadable packet (opcode {opcode})", exception: ex);
+
             return;
         }
 

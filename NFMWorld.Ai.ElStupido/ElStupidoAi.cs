@@ -52,9 +52,11 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
     public override void RunAi()
     {
         if (Car is not { } car)
+
             return;
 
         if (car.Wasted)
+
             return;
 
         var mad = car.CarPhysics;
@@ -70,6 +72,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         FindDrivingTarget(car, rubberbandingFactor, mad, ref random);
 
         if (!grounded)
+
             return;
 
         DetectAndAvoidObstacles(car, mad);
@@ -81,6 +84,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
     {
         var dx = x1 - x2;
         var dz = z1 - z2;
+
         return (dx * dx) + (dz * dz);
     }
 
@@ -90,6 +94,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         diff = ((diff + (fix64)180) % (fix64)360) - (fix64)180;
         if (diff < (fix64)(-180))
             diff += (fix64)360;
+
         return diff;
     }
 
@@ -117,6 +122,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         {
             _avoidanceTimer--;
             _pan = _avoidanceAngle;
+
             return;
         }
 
@@ -126,11 +132,14 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         if (!isStuck)
         {
             _stuckCounter = 0;
+
             return;
         }
 
         _stuckCounter++;
+
         if (_stuckCounter <= 10)
+
             return;
 
         // Sample 90 degrees either side and turn toward the more open one.
@@ -175,6 +184,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         var numNodes = nodes.Count;
 
         if (numNodes == 0)
+
             return;
 
         var checkpointCount = checkpoints.Count;
@@ -198,6 +208,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         var nextCheckpointNodeIndex = checkpointCount > 0
             ? IndexOf(nodes, checkpoints[Math.Min(car.CurrentCheckpoint, checkpointCount - 1)])
             : -1;
+
         for (var i = targetNodeIndex + 1; i <= nextCheckpointNodeIndex; i++)
         {
             var nodeIndex = i;
@@ -205,6 +216,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
                 nodeIndex -= numNodes;
 
             if (nodeIndex < 0 || nodeIndex >= numNodes)
+
                 continue;
 
             var position = nodes[nodeIndex].Position;
@@ -212,10 +224,12 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
             var threshold = (fix64)200 * (mad.Speed * mad.Speed);
 
             if (distanceToNodeSquared >= threshold)
+
                 continue;
 
             _targetNode = nodeIndex;
             targetNodeIndex = nodeIndex;
+
             break;
         }
 
@@ -224,10 +238,12 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         // Walk past non-drivable and already-reached nodes, unless we are sitting on a
         // checkpoint (which must be touched to count).
         var targetNode = nodes[targetNodeIndex];
+
         if (targetNode.Kind != AiNodeKind.CheckPoint)
         {
             // The loop is bounded by node count: a stage made entirely of non-drivable
             // nodes would otherwise spin forever.
+
             for (var hop = 0; hop < numNodes; hop++)
             {
                 targetNode = nodes[targetNodeIndex];
@@ -237,6 +253,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
                     or AiNodeKind.Auto))
                 {
                     targetNodeIndex = NextNode(targetNodeIndex, numNodes) - 1;
+
                     continue;
                 }
 
@@ -247,7 +264,9 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
                     targetNode.Position.Z
                 );
                 var threshold = (fix64)100 * (mad.Speed * mad.Speed);
+
                 if (distanceToTargetSquared >= threshold)
+
                     break;
 
                 targetNodeIndex = NextNode(targetNodeIndex, numNodes) - 1;
@@ -285,11 +304,15 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         for (var i = 0; i < nodesToSkip; i++)
         {
             var kind = CurrentStage.Nodes[targetNodeIndex].Kind;
+
             if (kind is not (AiNodeKind.Auto or AiNodeKind.Road or AiNodeKind.Ramp or AiNodeKind.Halfpipe))
+
                 break;
 
             // Do not skip ramps while low on power.
+
             if (mad.Power < (fix64)80 && kind is AiNodeKind.Ramp or AiNodeKind.Halfpipe)
+
                 break;
 
             targetNodeIndex = NextNode(targetNodeIndex, numNodes) - 1;
@@ -317,6 +340,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
             for (var i = targetNodeIndex + 1; i < numNodes; i++)
             {
                 if (nodes[i].Kind != AiNodeKind.SequenceEnd)
+
                     continue;
 
                 _sequence = new Sequence
@@ -326,6 +350,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
                     CurrentNode = targetNodeIndex,
                     TraversingBackwards = false
                 };
+
                 break;
             }
         }
@@ -333,10 +358,13 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         // A damaged car occasionally detours to a fix road, more often the further back it is.
         var maxMagThreshold = (fix64)mad.Stat.Maxmag * (fix64)0.8;
         var wantFix = (fix64)mad.DamagePoints > maxMagThreshold && random.NextFixed6401() < rubberbandingFactor;
+
         if (!wantFix)
+
             return targetNodeIndex;
 
         var fixRoadNodes = new List<int>();
+
         for (var i = 0; i < numNodes; i++)
         {
             if (nodes[i].Kind is AiNodeKind.FixRoadStart or AiNodeKind.FixRoadEnd)
@@ -344,17 +372,20 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         }
 
         if (fixRoadNodes.Count == 0)
+
             return targetNodeIndex;
 
         var selected = random.Next(0, fixRoadNodes.Count);
         targetNodeIndex = fixRoadNodes[selected];
 
         var kind = nodes[targetNodeIndex].Kind;
+
         if (kind == AiNodeKind.FixRoadStart)
         {
             for (var i = targetNodeIndex + 1; i < numNodes; i++)
             {
                 if (nodes[i].Kind != AiNodeKind.FixRoadEnd)
+
                     continue;
 
                 _sequence = new Sequence
@@ -364,6 +395,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
                     CurrentNode = targetNodeIndex,
                     TraversingBackwards = false
                 };
+
                 break;
             }
         }
@@ -372,6 +404,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
             for (var i = targetNodeIndex - 1; i >= 0; i--)
             {
                 if (nodes[i].Kind != AiNodeKind.FixRoadStart)
+
                     continue;
 
                 _sequence = new Sequence
@@ -381,6 +414,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
                     CurrentNode = i,
                     TraversingBackwards = true
                 };
+
                 break;
             }
         }
@@ -397,32 +431,40 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         var sequence = _sequence!;
 
         if (targetNodeIndex < sequence.StartNode || targetNodeIndex > sequence.EndNode)
+
             return sequence.StartNode;
 
         if (targetNodeIndex != sequence.CurrentNode)
+
             return sequence.StartNode;
 
         if (sequence.TraversingBackwards)
         {
             var previous = targetNodeIndex - 1;
+
             if (previous < sequence.StartNode)
             {
                 _sequence = null;
+
                 return null;
             }
 
             sequence.CurrentNode = previous;
+
             return previous;
         }
 
         var next = targetNodeIndex + 1;
+
         if (next > sequence.EndNode)
         {
             _sequence = null;
+
             return null;
         }
 
         sequence.CurrentNode = next;
+
         return next;
     }
 
@@ -431,6 +473,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         for (var i = 0; i < nodes.Count; i++)
         {
             if (ReferenceEquals(nodes[i], node))
+
                 return i;
         }
 
@@ -477,6 +520,7 @@ public sealed class ElStupidoAi(ClientSidePlayer player, string aiId, BaseClient
         if (mad.Speed <= mad.Stat.Swits.X)
         {
             u.Up = true;
+
             return;
         }
 

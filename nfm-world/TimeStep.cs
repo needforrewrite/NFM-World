@@ -15,6 +15,7 @@ public class TimeStep(float targetDeltaTime)
         // Clamp: after an alt-tab, a breakpoint or a multi-second shader compile, the
         // unclamped frame time would run thousands of ticks in one frame (a freeze).
         var maxFrameTime = targetDeltaTime * 4;
+
         if (frameTime > maxFrameTime)
         {
             frameTime = maxFrameTime;
@@ -24,6 +25,7 @@ public class TimeStep(float targetDeltaTime)
         accumulator += frameTime;
 
         var updateCount = 0;
+
         while (accumulator >= targetDeltaTime)
         {
             updateCount++;

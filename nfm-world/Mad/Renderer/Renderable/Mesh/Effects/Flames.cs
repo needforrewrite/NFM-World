@@ -56,9 +56,12 @@ public class Flames : IDisposable, IImmediateRenderElement
 
         var sparkVertexCount = 0;
         var maxPoints = 0;
+
         foreach (var poly in car.Mesh.Polys)
         {
-            if (poly.PolyType == PolyType.Glass) continue;
+            if (poly.PolyType == PolyType.Glass)
+
+                continue;
             sparkVertexCount += poly.Triangles.Length;
             maxPoints = Math.Max(maxPoints, poly.Points.Length);
         }
@@ -79,6 +82,7 @@ public class Flames : IDisposable, IImmediateRenderElement
             if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
             {
                 _vertexCount = 0;
+
                 if (_embos <= 11)
                 {
                     _car.Mesh.Expand = URandom.Boolean();
@@ -127,6 +131,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                     {
                         var n = _car.Mesh.Polys[i].Points.Length;
                         _pa[i] = URandom.Int(0, n);
+
                         for (_pb[i] = URandom.Int(0, n); _pa[i] == _pb[i]; _pb[i] = URandom.Int(0, n))
                         {
                         }
@@ -145,6 +150,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                     var innerX = new InlineArray3<float>();
                     var innerY = new InlineArray3<float>();
                     var innerZ = new InlineArray3<float>();
+
                     for (var i = 0; i < _car.Mesh.Polys.Length; i++)
                     {
                         var poly = _car.Mesh.Polys[i];
@@ -152,22 +158,26 @@ public class Flames : IDisposable, IImmediateRenderElement
                         var i45 = 1;
                         var i46 = 1;
                         int i47;
+
                         for (i47 = (int)Math.Abs((float)_car.Rotation.Zy.Degrees); i47 > 270; i47 -= 360)
                         {
                         }
 
                         i47 = Math.Abs(i47);
+
                         if (i47 > 90)
                         {
                             i45 = -1;
                         }
 
                         int i48;
+
                         for (i48 = (int)Math.Abs((float)_car.Rotation.Xy.Degrees); i48 > 270; i48 -= 360)
                         {
                         }
 
                         i48 = Math.Abs(i48);
+
                         if (i48 > 90)
                         {
                             i46 = -1;
@@ -224,6 +234,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                         innerX[1] = poly.Points[_pb[i]].X;
                         innerY[1] = poly.Points[_pb[i]].Y;
                         innerZ[1] = poly.Points[_pb[i]].Z;
+
                         while (Math.Abs(innerX[0] - innerX[1]) > 100)
                         {
                             if (innerX[1] > innerX[0])
@@ -295,8 +306,10 @@ public class Flames : IDisposable, IImmediateRenderElement
         short Channel(int i)
         {
             var div = World.FlameSnapDiv[i];
-            if (div <= 0f) div = 1f;
+            if (div <= 0f)
+                div = 1f;
             var value = (int)(color[i] + color[i] * (World.Snap[i] / (100f * div)));
+
             return (short)Math.Clamp(value, 0, 255);
         }
 
@@ -311,9 +324,12 @@ public class Flames : IDisposable, IImmediateRenderElement
             (short)Math.Clamp((int)ember.G, 0, 255),
             (short)Math.Clamp((int)ember.B, 0, 255)
         );
+
         foreach (var poly in _car.Mesh.Polys)
         {
-            if (poly.PolyType == PolyType.Glass || !URandom.Boolean()) continue;
+            if (poly.PolyType == PolyType.Glass || !URandom.Boolean())
+
+                continue;
             for (var i = 0; i < poly.Points.Length; i++)
                 _sparkPoints[i] = poly.Points[i]
                                   + new Vector3(
@@ -330,7 +346,9 @@ public class Flames : IDisposable, IImmediateRenderElement
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (!_car.VisuallyWasted || _vertexCount == 0) return;
+        if (!_car.VisuallyWasted || _vertexCount == 0)
+
+            return;
 
         if (_dirty)
         {

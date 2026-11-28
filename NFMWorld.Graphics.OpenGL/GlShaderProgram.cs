@@ -128,6 +128,7 @@ internal sealed class GlShaderProgram : IDisposable
         // link both unnecessary - which is the entire point, given that one program in this tree costs
         // minutes to link. A miss falls through to the normal path and the result is saved after.
         var restored = cache?.TryLoad(vertex, pixel);
+
         if (restored is { } program)
         {
             Handle = program;
@@ -138,6 +139,7 @@ internal sealed class GlShaderProgram : IDisposable
             // object already created must still be deleted or it outlives the context.
             var vertexShader = 0u;
             var pixelShader = 0u;
+
             try
             {
                 vertexShader = Compile(ShaderType.VertexShader, vertex.GlslEs, "vertex");
@@ -149,8 +151,10 @@ internal sealed class GlShaderProgram : IDisposable
                 // The program keeps the compiled result; the shader objects are only needed until the
                 // link. Deleting them here still leaves the program usable - the linked program is a
                 // separate object in GL.
-                if (vertexShader != 0) _gl.DeleteShader(vertexShader);
-                if (pixelShader != 0) _gl.DeleteShader(pixelShader);
+                if (vertexShader != 0)
+                    _gl.DeleteShader(vertexShader);
+                if (pixelShader != 0)
+                    _gl.DeleteShader(pixelShader);
             }
 
             cache?.TrySave(Handle, vertex, pixel);
@@ -169,12 +173,14 @@ internal sealed class GlShaderProgram : IDisposable
         _gl.CompileShader(shader);
 
         var status = _gl.GetShader(shader, GLEnum.CompileStatus);
+
         if (status == 0)
         {
             // The full info log, not just a status: an ES 3.0 compile failure is usually a
             // precision or qualifier problem, and the log names the line.
             var log = _gl.GetShaderInfoLog(shader);
             _gl.DeleteShader(shader);
+
             throw new InvalidOperationException($"{what} shader failed to compile:\n{log}");
         }
 
@@ -189,12 +195,14 @@ internal sealed class GlShaderProgram : IDisposable
         _gl.LinkProgram(program);
 
         var status = _gl.GetProgram(program, GLEnum.LinkStatus);
+
         if (status == 0)
         {
             // The link is the step that catches a varying mismatch, which is the one failure mode
             // the ES dialect adds over desktop GL - see the shader compiler's HarmonizeVaryingNames.
             var log = _gl.GetProgramInfoLog(program);
             _gl.DeleteProgram(program);
+
             throw new InvalidOperationException($"program failed to link:\n{log}");
         }
 
@@ -213,10 +221,12 @@ internal sealed class GlShaderProgram : IDisposable
     private GlUniformBlock? ResolveUniformBlock(ShaderReflection reflection)
     {
         if (reflection.Uniforms.Count == 0)
+
             return null;
 
         var blockName = "_Global";
         var index = _gl.GetUniformBlockIndex(Handle, blockName);
+
         if (index == InvalidIndex)
         {
             throw new InvalidOperationException(
@@ -238,6 +248,7 @@ internal sealed class GlShaderProgram : IDisposable
         // Reading a member by glGetUniformLocation would work too, but that resolves through the
         // default block and is not what glGetActiveUniforms describes.
         var offsets = new Dictionary<string, int>();
+
         if (active > 0)
         {
             var indices = new uint[active];
@@ -245,6 +256,7 @@ internal sealed class GlShaderProgram : IDisposable
 
             // The array-taking overloads are the raw-pointer ones, so both the index list and the
             // result list have to be pinned across the pair of calls.
+
             unsafe
             {
                 fixed (uint* indexPointer = indices)
@@ -281,6 +293,7 @@ internal sealed class GlShaderProgram : IDisposable
         var locations = new int[reflection.Textures.Count];
         for (var i = 0; i < reflection.Textures.Count; i++)
             locations[i] = _gl.GetUniformLocation(Handle, reflection.Textures[i].Name);
+
         return locations;
     }
 
@@ -299,6 +312,7 @@ internal sealed class GlShaderProgram : IDisposable
     {
         var count = 0;
         var active = _gl.GetProgram(Handle, GLEnum.ActiveUniforms);
+
         for (var i = 0u; i < active; i++)
         {
             _gl.GetActiveUniform(Handle, i, out _, out var type);
@@ -323,7 +337,9 @@ internal sealed class GlShaderProgram : IDisposable
         for (var i = 0u; i < count; i++)
         {
             var name = _gl.GetActiveAttrib(Handle, i, out _, out var type);
+
             if (string.IsNullOrEmpty(name))
+
                 continue;
 
             var location = _gl.GetAttribLocation(Handle, name);
@@ -377,9 +393,11 @@ internal sealed class GlShaderProgram : IDisposable
     private static string MemberName(string reported, string blockName)
     {
         if (string.IsNullOrEmpty(reported))
+
             return "";
 
         var prefix = blockName + ".";
+
         return reported.StartsWith(prefix, StringComparison.Ordinal)
             ? reported[prefix.Length..]
             : reported;

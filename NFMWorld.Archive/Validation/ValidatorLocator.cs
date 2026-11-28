@@ -33,7 +33,9 @@ public static class ValidatorLocator
                     "net11.0",
                     executable
                 );
+
                 if (File.Exists(candidate))
+
                     return candidate;
             }
         }

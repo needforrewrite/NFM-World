@@ -37,6 +37,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts?.Token ?? CancellationToken.None);
 
         HttpListenerWebSocketContext? wsCtx = null;
+
         try
         {
             wsCtx = await ctx.AcceptWebSocketAsync(null);
@@ -44,6 +45,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         catch (Exception ex)
         {
             Logging.Error($"Failed to accept WebSocket connection from {ctx.Request.RemoteEndPoint}", exception: ex);
+
             return;
         }
 
@@ -55,6 +57,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
 
         // The caller discards this task, so anything thrown here would vanish and leave the
         // socket open and never read: the client's handshake would simply time out.
+
         try
         {
             var started = Stopwatch.GetTimestamp();
@@ -78,6 +81,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         _clients.TryRemove(id, out _);
         ForgetConnection(id);
         Logging.Info($"WS client disconnected - ID: {id}");
+
         try
         {
             ClientDisconnected?.Invoke(this, id);
@@ -106,13 +110,18 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
             while (client.Socket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 var result = await client.Socket.ReceiveAsync(buffer, ct);
-                if (result.MessageType == WebSocketMessageType.Close) break;
+
+                if (result.MessageType == WebSocketMessageType.Close)
+
+                    break;
 
                 ms.Write(buffer, 0, result.Count);
+
                 if (ms.Length > MaxMessageBytes)
                 {
                     Logging.Warning($"WS client {client.Id} sent a message over {MaxMessageBytes} bytes; closing");
                     await client.Socket.CloseAsync(WebSocketCloseStatus.MessageTooBig, "message too big", ct);
+
                     break;
                 }
 
@@ -140,6 +149,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
     public override void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable)
     {
         var data = span.ToArray();
+
         foreach (var id in clientIndices)
         {
             if (_clients.TryGetValue(id, out var client))
@@ -170,6 +180,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
             if (Volatile.Read(ref _queued) >= MaxQueuedSends)
             {
                 Logging.Warning($"WS client {Id} is not reading; dropping a packet");
+
                 return;
             }
 
@@ -181,6 +192,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
         private Task Chain(Func<byte[]?, Task> operation, byte[]? data)
         {
             Interlocked.Increment(ref _queued);
+
             lock (_sendLock)
             {
                 return _pending = _pending
@@ -188,6 +200,7 @@ public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTranspor
                         _ =>
                         {
                             Interlocked.Decrement(ref _queued);
+
                             return operation(data);
                         },
                         CancellationToken.None,

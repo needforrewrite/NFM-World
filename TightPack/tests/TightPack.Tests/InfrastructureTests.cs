@@ -149,6 +149,7 @@ public sealed class StreamAndSequenceTests
         {
             var next = new Segment(memory) { RunningIndex = RunningIndex + Memory.Length };
             Next = next;
+
             return next;
         }
     }

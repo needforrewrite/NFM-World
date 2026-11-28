@@ -19,15 +19,19 @@
         public GlyphRanges(params uint[] glyphs)
         {
             int length = glyphs.Length;
+
             if (glyphs[length - 1] != '\0')
             {
                 length += 1;
             }
+
             this.glyphs = (uint*)Marshal.AllocHGlobal(sizeof(uint) * length);
+
             for (int i = 0; i < glyphs.Length; i++)
             {
                 this.glyphs[i] = glyphs[i];
             }
+
             this.glyphs[length - 1] = '\0';
         }
 
@@ -38,15 +42,19 @@
         public GlyphRanges(ReadOnlySpan<uint> glyphs)
         {
             int length = glyphs.Length;
+
             if (glyphs[length - 1] != '\0')
             {
                 length += 1;
             }
+
             this.glyphs = (uint*)Marshal.AllocHGlobal(sizeof(uint) * length);
+
             for (int i = 0; i < glyphs.Length; i++)
             {
                 this.glyphs[i] = glyphs[i];
             }
+
             this.glyphs[length - 1] = '\0';
         }
 
@@ -165,6 +173,7 @@
         public ImGuiFontBuilder SetOption(Action<ImFontConfigPtr> action)
         {
             action(config);
+
             return this;
         }
 
@@ -176,6 +185,7 @@
         {
             font = fontAtlas.AddFontDefault(config);
             config.MergeMode = true;
+
             return this;
         }
 
@@ -206,6 +216,7 @@
         public ImGuiFontBuilder AddFontFromFileTTF(string path, float size, GlyphRanges glyphRanges)
         {
             ranges.Add(glyphRanges);
+
             return AddFontFromFileTTF(path, size, glyphRanges.GetRanges());
         }
 
@@ -225,6 +236,7 @@
         {
             var fullpath = Path.GetFullPath(path);
             bool exists = File.Exists(fullpath);
+
             if (!exists)
             {
                 throw new FileNotFoundException($"Font file not found: {fullpath}");
@@ -232,6 +244,7 @@
 
             FontBlob blob = new(File.ReadAllBytes(fullpath));
             blobs.Add(blob);
+
             return AddFontFromMemoryTTF(blob.Data, blob.Length, size, pGlyphRanges);
         }
 
@@ -246,12 +259,15 @@
         {
             var fullpath = Path.GetFullPath(path);
             bool exists = File.Exists(fullpath);
+
             if (!exists)
             {
                 throw new FileNotFoundException($"Font file not found: {fullpath}");
             }
+
             FontBlob blob = new(File.ReadAllBytes(fullpath));
             blobs.Add(blob);
+
             return AddFontFromMemoryTTF(blob.Data, blob.Length, size);
         }
 
@@ -265,12 +281,14 @@
         /// <exception cref="FileNotFoundException">Thrown if the embedded resource is not found.</exception>
         public ImGuiFontBuilder AddFontFromEmbeddedResource(Assembly assembly, string path, float size)
         {
-            using var stream = assembly.GetManifestResourceStream(path) ?? throw new FileNotFoundException($"Embedded resource not found: {path}");
+            using var stream = assembly.GetManifestResourceStream(path)
+                               ?? throw new FileNotFoundException($"Embedded resource not found: {path}");
             byte[] buffer = new byte[stream.Length];
             stream.Read(buffer, 0, buffer.Length);
 
             FontBlob blob = new(buffer);
             blobs.Add(blob);
+
             return AddFontFromMemoryTTF(blob.Data, blob.Length, size);
         }
 
@@ -282,7 +300,12 @@
         /// <param name="size">The desired font size.</param>
         /// <param name="glyphRanges">The glyph ranges as a read-only span.</param>
         /// <returns>The current <see cref="ImGuiFontBuilder"/> instance for method chaining.</returns>
-        public ImGuiFontBuilder AddFontFromEmbeddedResource(Assembly assembly, string path, float size, ReadOnlySpan<uint> glyphRanges)
+        public ImGuiFontBuilder AddFontFromEmbeddedResource(
+            Assembly assembly,
+            string path,
+            float size,
+            ReadOnlySpan<uint> glyphRanges
+        )
         {
             return AddFontFromEmbeddedResource(assembly, path, size, new GlyphRanges(glyphRanges));
         }
@@ -304,6 +327,7 @@
         public ImGuiFontBuilder AddFontFromEmbeddedResource(Assembly assembly, string path, float size, GlyphRanges glyphRanges)
         {
             ranges.Add(glyphRanges);
+
             return AddFontFromEmbeddedResource(assembly, path, size, glyphRanges.GetRanges());
         }
 
@@ -323,10 +347,12 @@
         /// </remarks>
         public ImGuiFontBuilder AddFontFromEmbeddedResource(Assembly assembly, string path, float size, uint* pGlyphRanges)
         {
-            var stream = assembly.GetManifestResourceStream(path) ?? throw new FileNotFoundException($"Embedded resource not found: {path}");
+            var stream = assembly.GetManifestResourceStream(path)
+                         ?? throw new FileNotFoundException($"Embedded resource not found: {path}");
             byte[] buffer = new byte[stream.Length];
             stream.Read(buffer, 0, buffer.Length);
             FontBlob blob = new(buffer);
+
             return AddFontFromMemoryTTF(blob.Data, blob.Length, size, pGlyphRanges);
         }
 
@@ -343,6 +369,7 @@
             // This was to avoid an unnecessary copy, and is perhaps not a good API (a future version will redesign it).
             font = fontAtlas.AddFontFromMemoryTTF(fontData, fontDataSize, size, config);
             config.MergeMode = true;
+
             return this;
         }
 
@@ -388,6 +415,7 @@
             ranges.Add(glyphRanges);
             FontBlob blob = new(fontData);
             blobs.Add(blob);
+
             return AddFontFromMemoryTTF(blob.Data, blob.Length, size, glyphRanges.GetRanges());
         }
 
@@ -407,6 +435,7 @@
         public ImGuiFontBuilder AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float size, GlyphRanges glyphRanges)
         {
             ranges.Add(glyphRanges);
+
             return AddFontFromMemoryTTF(fontData, fontDataSize, size, glyphRanges.GetRanges());
         }
 
@@ -439,6 +468,7 @@
         public ImFontPtr Build()
         {
             //fontAtlas.Build();
+
             return Font;
         }
 

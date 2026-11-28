@@ -75,6 +75,7 @@ public class Dust : IDisposable, IImmediateRenderElement
     )
     {
         var noDust = false;
+
         if (tilt > 5 && wheelidx is 0 or 2)
         {
             noDust = true;
@@ -86,6 +87,7 @@ public class Dust : IDisposable, IImmediateRenderElement
         }
 
         var dist = (float)((Math.Sqrt(scx * scx + scz * scz) - 40.0) / 160.0);
+
         if (dist > 1.0F)
         {
             dist = 1.0F;
@@ -94,6 +96,7 @@ public class Dust : IDisposable, IImmediateRenderElement
         if (dist > 0.2 && !noDust)
         {
             _ust++;
+
             if (_ust == PuffCapacity)
             {
                 _ust = 0;
@@ -114,6 +117,7 @@ public class Dust : IDisposable, IImmediateRenderElement
     public void GameTick(BackendStage? stage)
     {
         _puffCount = 0;
+
         for (var dust = 0; dust < PuffCapacity; dust++)
         {
             if (Stg[dust] != 0)
@@ -133,12 +137,14 @@ public class Dust : IDisposable, IImmediateRenderElement
             {
                 var sx = (fix64)Sx[dust];
                 var sz = (fix64)Sz[dust];
+
                 foreach (var tracker in stage.RetrievePointCollidables(sx, sz))
                 {
                     if (tracker.TryGetValue(out ShapeRoad boxRoad))
                     {
                         var x = boxRoad.GameObjectPosition.X + boxRoad.TrackersPosition.X;
                         var z = boxRoad.GameObjectPosition.Z + boxRoad.TrackersPosition.Z;
+
                         if (fix64.Abs(sx - x) < boxRoad.Radius.X && fix64.Abs(sz - z) < boxRoad.Radius.Z)
                         {
                             _sbln[dust] = tracker.SurfaceType switch
@@ -148,6 +154,7 @@ public class Dust : IDisposable, IImmediateRenderElement
                                 SurfaceType.OffRoad => 0.45F,
                                 _ => _sbln[dust]
                             };
+
                             break;
                         }
                     }
@@ -155,6 +162,7 @@ public class Dust : IDisposable, IImmediateRenderElement
             }
 
             var f = 0.1f + URandom.Single();
+
             if (f > 1.0F)
             {
                 f = 1.0F;
@@ -162,6 +170,7 @@ public class Dust : IDisposable, IImmediateRenderElement
 
             Scx[dust] = (Scx[dust] * f);
             Scz[dust] = (Scz[dust] * f);
+
             for (var i216 = 0; i216 < CornersPerPuff; i216++)
             {
                 _smag[dust, i216] = Osmag[dust] * URandom.Single() * 50.0F;
@@ -170,12 +179,14 @@ public class Dust : IDisposable, IImmediateRenderElement
             for (var vert = 0; vert < CornersPerPuff; vert++)
             {
                 var lastVert = vert - 1;
+
                 if (lastVert == -1)
                 {
                     lastVert = CornersPerPuff - 1;
                 }
 
                 var nextVert = vert + 1;
+
                 if (nextVert == CornersPerPuff)
                 {
                     nextVert = 0;
@@ -204,6 +215,7 @@ public class Dust : IDisposable, IImmediateRenderElement
 
         Sx[dust] += Scx[dust] / (Stg[dust] + 1);
         Sz[dust] += Scz[dust] / (Stg[dust] + 1);
+
         for (var vert = 0; vert < 7; vert++)
         {
             _smag[dust, vert] += 5.0F + URandom.Single() * 15.0F;
@@ -223,13 +235,17 @@ public class Dust : IDisposable, IImmediateRenderElement
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (_puffCount == 0) return;
+        if (_puffCount == 0)
+
+            return;
 
         // Offset each corner in view space so the puff faces the rendered camera.
+
         for (var i = 0; i < _puffCount; i++)
         {
             var puff = _puffs[i];
             var center = Vector3.Transform(puff.Center, camera.ViewMatrix);
+
             for (var corner = 0; corner < CornersPerPuff; corner++)
             {
                 var index = i * CornersPerPuff + corner;
@@ -257,9 +273,11 @@ public class Dust : IDisposable, IImmediateRenderElement
     {
         var indices = new ushort[PuffCapacity * TrianglesPerPuff * 3];
         var index = 0;
+
         for (var puff = 0; puff < PuffCapacity; puff++)
         {
             var first = puff * CornersPerPuff;
+
             for (var corner = 1; corner < CornersPerPuff - 1; corner++)
             {
                 indices[index++] = (ushort)first;

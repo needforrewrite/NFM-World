@@ -31,6 +31,7 @@ public static class MeshDamage
         var wheel = car.CollisionWheels[wheelIdx];
 
         damageFactor *= (float)stat.Dammult;
+
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -46,14 +47,15 @@ public static class MeshDamage
             for (var i = 0; i < visual.Mesh.Polys.Length; i++)
             {
                 var breakFactor = 0.0f;
+
                 for (var j = 0; j < visual.Mesh.Polys[i].Points.Length; j++)
                 {
                     if (UMath.Py(
-                            (float)wheel.Position.X,
-                            visual.Mesh.Polys[i].Points[j].X, // x
-                            (float)wheel.Position.Z,
-                            visual.Mesh.Polys[i].Points[j].Z // z
-                        )
+                        (float)wheel.Position.X,
+                        visual.Mesh.Polys[i].Points[j].X, // x
+                        (float)wheel.Position.Z,
+                        visual.Mesh.Polys[i].Points[j].Z // z
+                    )
                         < stat.Clrad)
                     {
                         breakFactor = damageFactor / 20.0f * Random.Single();
@@ -76,6 +78,7 @@ public static class MeshDamage
                     if (visual.Mesh.Polys[i].PolyType != PolyType.Glass)
                     {
                         visual.Mesh.Polys[i].Color.ToHSB(out var hue, out var saturation, out var brightness);
+
                         if (visual.Bfase[i] > 20 && saturation > 0.25)
                         {
                             saturation = 0.25f;
@@ -135,6 +138,7 @@ public static class MeshDamage
         var wheel = car.CollisionWheels[wheelIdx];
 
         damageFactor *= (float)stat.Dammult;
+
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -151,6 +155,7 @@ public static class MeshDamage
             var flipXy = 0;
             var zy = visual.Rotation.Zy.Degrees;
             var xy = visual.Rotation.Xy.Degrees;
+
             for ( /**/; zy < 360; zy += 360)
             {
             }
@@ -192,14 +197,15 @@ public static class MeshDamage
                 for (var i = 0; i < visual.Mesh.Polys.Length; i++)
                 {
                     var breakFactor = 0.0f;
+
                     for (var j = 0; j < visual.Mesh.Polys[i].Points.Length; j++)
                     {
                         if (UMath.Py(
-                                (float)wheel.Position.X,
-                                visual.Mesh.Polys[i].Points[j].X, // x
-                                (float)wheel.Position.Z,
-                                visual.Mesh.Polys[i].Points[j].Z // z
-                            )
+                            (float)wheel.Position.X,
+                            visual.Mesh.Polys[i].Points[j].X, // x
+                            (float)wheel.Position.Z,
+                            visual.Mesh.Polys[i].Points[j].Z // z
+                        )
                             < stat.Clrad)
                         {
                             breakFactor = damageFactor / 20.0f * Random.Single();
@@ -218,6 +224,7 @@ public static class MeshDamage
                         if (visual.Mesh.Polys[i].PolyType != PolyType.Glass)
                         {
                             visual.Mesh.Polys[i].Color.ToHSB(out var hue, out var saturation, out var brightness);
+
                             if (visual.Bfase[i] > 20 && saturation > 0.25)
                             {
                                 saturation = 0.25f;
@@ -269,12 +276,15 @@ public static class MeshDamage
                 {
                     var totalDmg = 0f;
                     var damagedPts = 1;
+
                     for (var i = 0; i < visual.Mesh.Polys.Length; i++)
                     {
                         var polyDmg = 0.0f;
+
                         for (var j = 0; j < visual.Mesh.Polys[i].Points.Length; j++)
                         {
                             polyDmg = damageFactor / 15.0f * Random.Single();
+
                             if ((
                                     Math.Abs(visual.Mesh.Polys[i].Points[j].Y /* y */ - stat.Flipy - squash) < stat.Msquash * 3
                                     || visual.Mesh.Polys[i].Points[j].Y /* y */ < stat.Flipy + squash
@@ -322,6 +332,7 @@ public static class MeshDamage
         var wheel = car.CollisionWheels[wheelIdx];
 
         damageFactor *= (float)stat.Dammult;
+
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -337,14 +348,15 @@ public static class MeshDamage
             for (var i = 0; i < visual.Mesh.Polys.Length; i++)
             {
                 var breakFactor = 0.0f;
+
                 for (var j = 0; j < visual.Mesh.Polys[i].Points.Length; j++)
                 {
                     if (UMath.Py(
-                            (float)wheel.Position.X,
-                            visual.Mesh.Polys[i].Points[j].X, // x
-                            (float)wheel.Position.Z,
-                            visual.Mesh.Polys[i].Points[j].Z // z
-                        )
+                        (float)wheel.Position.X,
+                        visual.Mesh.Polys[i].Points[j].X, // x
+                        (float)wheel.Position.Z,
+                        visual.Mesh.Polys[i].Points[j].Z // z
+                    )
                         < stat.Clrad)
                     {
                         breakFactor = damageFactor / 20.0f * Random.Single();
@@ -367,6 +379,7 @@ public static class MeshDamage
                     if (visual.Mesh.Polys[i].PolyType != PolyType.Glass)
                     {
                         visual.Mesh.Polys[i].Color.ToHSB(out var hue, out var saturation, out var brightness);
+
                         if (visual.Bfase[i] > 20 && saturation > 0.25)
                         {
                             saturation = 0.25f;

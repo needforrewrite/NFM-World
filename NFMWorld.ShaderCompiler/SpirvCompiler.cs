@@ -40,12 +40,15 @@ public sealed unsafe class SpirvCompiler : IDisposable
         // `VSMain` - the bundle compiled, the reflection had zero inputs, and the generated HLSL
         // was a stub.) Checking the name against the source is the only place this is visible,
         // because by the time the SPIR-V exists there is nothing left to compare against.
+
         if (!DeclaresEntryPoint(source, entryPoint))
+
             return (null, $"{fileName}: no function named '{entryPoint}' is defined in this source.");
 
 
         var compiler = _shaderc.CompilerInitialize();
         var options = _shaderc.CompileOptionsInitialize();
+
         try
         {
             _shaderc.CompileOptionsSetSourceLanguage(options, SourceLanguage.Hlsl);
@@ -98,9 +101,11 @@ public sealed unsafe class SpirvCompiler : IDisposable
             try
             {
                 var status = _shaderc.ResultGetCompilationStatus(result);
+
                 if (status != CompilationStatus.Success)
                 {
                     var msg = _shaderc.ResultGetErrorMessageS(result) ?? status.ToString();
+
                     return (null, $"{fileName} [{entryPoint}]: {status}\n{msg}");
                 }
 
@@ -108,6 +113,7 @@ public sealed unsafe class SpirvCompiler : IDisposable
                 var bytes = new byte[length];
                 var src = _shaderc.ResultGetBytes(result);
                 new ReadOnlySpan<byte>(src, length).CopyTo(bytes);
+
                 return (bytes, null);
             }
             finally
@@ -133,6 +139,7 @@ public sealed unsafe class SpirvCompiler : IDisposable
         foreach (Match match in EntryPointRegex.Matches(source))
         {
             if (match.Groups[1].Value == entryPoint)
+
                 return true;
         }
 
@@ -163,6 +170,7 @@ public sealed unsafe class SpirvCompiler : IDisposable
         var text = IncludeResolver(requested);
 
         var result = (IncludeResult*)NativeMemory.Alloc((nuint)sizeof(IncludeResult));
+
         if (text is null)
         {
             // Null content signals "not found"; glslang turns it into a compile error.
@@ -171,6 +179,7 @@ public sealed unsafe class SpirvCompiler : IDisposable
             result->Content = null;
             result->ContentLength = 0;
             result->UserData = null;
+
             return result;
         }
 
@@ -196,9 +205,13 @@ public sealed unsafe class SpirvCompiler : IDisposable
     /// </summary>
     private unsafe void ReleaseInclude(void* userData, IncludeResult* result)
     {
-        if (result is null) return;
-        if (result->SourceName is not null) NativeMemory.Free(result->SourceName);
-        if (result->Content is not null) NativeMemory.Free(result->Content);
+        if (result is null)
+
+            return;
+        if (result->SourceName is not null)
+            NativeMemory.Free(result->SourceName);
+        if (result->Content is not null)
+            NativeMemory.Free(result->Content);
         NativeMemory.Free(result);
     }
 

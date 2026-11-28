@@ -47,6 +47,7 @@ public class TextInputKeyTests
     {
         var input = new TextInput { Name = "input" };
         input.Focus();
+
         foreach (var c in initial)
         {
             input.DispatchKeyTyped(new KeyboardTypingEvent(c));
@@ -395,6 +396,7 @@ public class TextInputKeyTests
         };
         root.AddChild(input);
         root.LayoutAndRender(new Vector2(width, height));
+
         return root;
     }
 

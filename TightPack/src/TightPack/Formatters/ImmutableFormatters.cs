@@ -18,11 +18,13 @@ public sealed class ImmutableArrayFormatter<T> : TightPackFormatter<ImmutableArr
         if (value.IsDefault)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < value.Length; i++)
         {
             T item = value[i];
@@ -35,17 +37,20 @@ public sealed class ImmutableArrayFormatter<T> : TightPackFormatter<ImmutableArr
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = default;
+
             return;
         }
 
         if (length == 0)
         {
             value = ImmutableArray<T>.Empty;
+
             return;
         }
 
         var items = new T[length];
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;

@@ -19,7 +19,8 @@ public class TightPackSerializationException : Exception
     public static void ThrowNotRegistered(Type type) => throw NotRegistered(type);
 
     public static TightPackSerializationException NotRegistered(Type type) =>
-        new($"{type.FullName} has no registered formatter. Mark it [TightPackable], register one with " +
+        new($"{type.FullName} has no registered formatter. Mark it [TightPackable], register one with "
+            +
             "TightPackFormatterProvider.Register, or apply [TightPackCustomFormatter].");
 
     [DoesNotReturn]
@@ -39,7 +40,8 @@ public class TightPackSerializationException : Exception
     [DoesNotReturn]
     public static void ThrowInvalidMemberCount(Type type, int expected, int actual) =>
         throw new TightPackSerializationException(
-            $"{type.FullName} expects {expected} member(s) but the payload declares {actual}. " +
+            $"{type.FullName} expects {expected} member(s) but the payload declares {actual}. "
+            +
             "Add members at the end, or use GenerateType.VersionTolerant for schema evolution."
         );
 
@@ -76,7 +78,8 @@ public class TightPackSerializationException : Exception
     [DoesNotReturn]
     public static void ThrowInvalidLayout(Type type, int expected, int actual) =>
         throw new TightPackSerializationException(
-            $"TightPack's layout proof for {type.FullName} expected {expected} byte(s) but the runtime reports {actual}. " +
+            $"TightPack's layout proof for {type.FullName} expected {expected} byte(s) but the runtime reports {actual}. "
+            +
             "This is a bug in the layout analyzer, not in your code."
         );
 

@@ -38,6 +38,7 @@ public sealed class SentryUploader : IDisposable
         // The browser cannot start threads at all (Thread.Start throws), and there would be nothing
         // to upload from a page to this endpoint anyway - so the loop is simply never started there
         // and Enqueue's writes go into the channel unread.
+
         if (!OperatingSystem.IsBrowser())
         {
             _uploadThread = new Thread(UploadLoop)
@@ -55,9 +56,11 @@ public sealed class SentryUploader : IDisposable
     public void Enqueue(SentryEnvelopeItem item)
     {
         if (_disposed)
+
             return;
 
         // Debounce: coalesce same-type items within the debounce window
+
         if (_options.DebounceWindow > TimeSpan.Zero)
         {
             var now = DateTimeOffset.UtcNow;
@@ -70,6 +73,7 @@ public sealed class SentryUploader : IDisposable
                 {
                     if (_options.Debug)
                         Debug.WriteLine($"[Sentry] Debounced {item.ItemType} event");
+
                     return;
                 }
             }
@@ -128,7 +132,9 @@ public sealed class SentryUploader : IDisposable
             while (!ct.IsCancellationRequested)
             {
                 var batch = ReadBatch(reader, ct);
+
                 if (batch.Count == 0)
+
                     break; // Channel completed
 
                 ProcessBatch(batch, ct);
@@ -146,6 +152,7 @@ public sealed class SentryUploader : IDisposable
         finally
         {
             // Drain any remaining items after channel completion
+
             try
             {
                 while (_channel.Reader.TryRead(out var item))
@@ -166,31 +173,39 @@ public sealed class SentryUploader : IDisposable
         var batch = new List<SentryEnvelopeItem>(_options.MaxBatchSize);
 
         // Wait for the first item
+
         if (!reader.TryRead(out var first))
         {
             // Try to wait asynchronously
             var waitTask = reader.WaitToReadAsync(ct).AsTask();
             waitTask.Wait(ct);
+
             if (!reader.TryRead(out first))
+
                 return _emptyBatch.ToList(); // Channel completed
         }
 
         batch.Add(first);
 
         // Drain any immediately available items up to MaxBatchSize
+
         while (batch.Count < _options.MaxBatchSize && reader.TryRead(out var item))
         {
             batch.Add(item);
         }
 
         // If batch is not full, wait for MaxBatchDelay for more items
+
         if (batch.Count < _options.MaxBatchSize)
         {
             var deadline = DateTimeOffset.UtcNow + _options.MaxBatchDelay;
+
             while (DateTimeOffset.UtcNow < deadline && batch.Count < _options.MaxBatchSize)
             {
                 var remaining = deadline - DateTimeOffset.UtcNow;
+
                 if (remaining <= TimeSpan.Zero)
+
                     break;
 
                 if (reader.TryRead(out var item))
@@ -211,6 +226,7 @@ public sealed class SentryUploader : IDisposable
     private void ProcessBatch(List<SentryEnvelopeItem> batch, CancellationToken ct)
     {
         if (batch.Count == 0)
+
             return;
 
         try
@@ -219,6 +235,7 @@ public sealed class SentryUploader : IDisposable
             {
                 if (_options.Debug)
                     Debug.WriteLine("[Sentry] No valid DSN configured, dropping events");
+
                 return;
             }
 
@@ -254,6 +271,7 @@ public sealed class SentryUploader : IDisposable
     public void Dispose()
     {
         if (_disposed)
+
             return;
         _disposed = true;
 

@@ -17,7 +17,9 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
 
     public CollisionDebugMesh(IReadOnlyList<Rad3dBoxDef> boxes)
     {
-        if (boxes.Count < 1) return;
+        if (boxes.Count < 1)
+
+            return;
 
         #region Debug boxes
 
@@ -94,6 +96,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
                 var edgeColor = normalColor;
 
                 // If this box is selected, override all colors with yellow
+
                 if (isSelected)
                 {
                     edgeColor = selectedColor;
@@ -106,15 +109,20 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
                     bool isFront = p0.Z > center.Z && p1.Z > center.Z;
                     bool isBack = p0.Z < center.Z && p1.Z < center.Z;
 
-                    if (isLeft && leftSolid) edgeColor = solidSideColor;
-                    else if (isRight && rightSolid) edgeColor = solidSideColor;
-                    else if (isFront && frontSolid) edgeColor = solidSideColor;
-                    else if (isBack && backSolid) edgeColor = solidSideColor;
+                    if (isLeft && leftSolid)
+                        edgeColor = solidSideColor;
+                    else if (isRight && rightSolid)
+                        edgeColor = solidSideColor;
+                    else if (isFront && frontSolid)
+                        edgeColor = solidSideColor;
+                    else if (isBack && backSolid)
+                        edgeColor = solidSideColor;
                 }
 
                 AddLine(p0, p1, edgeColor, edgeColor == solidSideColor || isSelected ? 2f : 1f);
 
                 // Add flat representation if applicable
+
                 if (isFlat && !isVertical)
                 {
                     var flatP0 = new Vector3(p0.X, center.Y, p0.Z);
@@ -173,8 +181,12 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
     /// </summary>
     public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting)
     {
-        if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
-        if (lineInstanceBuffer == null || lineVertexBuffer == null || lineIndexBuffer == null) return;
+        if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers)
+
+            return;
+        if (lineInstanceBuffer == null || lineVertexBuffer == null || lineIndexBuffer == null)
+
+            return;
 
         cb.UpdateBuffer(lineInstanceBuffer, MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]));
 
@@ -226,9 +238,13 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
 
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
-        if (pass.IsShadow || !GameSparker.devRenderTrackers) return;
+        if (pass.IsShadow || !GameSparker.devRenderTrackers)
 
-        if (lineVertexBuffer == null || lineIndexBuffer == null || lineInstanceBuffer == null) return;
+            return;
+
+        if (lineVertexBuffer == null || lineIndexBuffer == null || lineInstanceBuffer == null)
+
+            return;
 
         queue.AddImmediate(SortKey.Create(RenderBucket.CollisionDebugMesh), this);
     }

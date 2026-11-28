@@ -33,6 +33,7 @@ public class ScrollViewTests
         scroll.AddChild(new View { Styles = Sx.Styles(height: 500, flexShrink: 0) });
         root.AddChild(scroll);
         root.LayoutAndRender(new Vector2(200, 100));
+
         return (root, scroll);
     }
 

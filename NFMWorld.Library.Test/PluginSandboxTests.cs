@@ -227,6 +227,7 @@ public class PluginSandboxTests
         // The getter throws when unset, so a previous value cannot be captured. Every other test
         // method that needs a backend installs its own, so leaving the dummy is fine.
         IBackend.Backend = new DummyBackend();
+
         try
         {
             var target = _hostile.GetType("NFMWorld.Gamemode.Hostile.HostileGamemode", throwOnError: true)!

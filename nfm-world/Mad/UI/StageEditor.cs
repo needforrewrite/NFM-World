@@ -247,6 +247,7 @@ public class StageEditorTab
     public int GetNextPieceId()
     {
         int maxId = -1;
+
         foreach (var piece in ScenePieces)
         {
             if (piece.Id > maxId)
@@ -489,6 +490,7 @@ public partial class StageEditorPhase : BasePhase
         _availableParts.Clear();
 
         // Add all stage parts from the loaded collections
+
         foreach (var part in BackendGameSparker.stage_parts)
         {
             _availableParts.TryAdd(part);
@@ -509,7 +511,9 @@ public partial class StageEditorPhase : BasePhase
 
     private void CloseTab(int index)
     {
-        if (index < 0 || index >= _tabs.Count) return;
+        if (index < 0 || index >= _tabs.Count)
+
+            return;
 
         var tab = _tabs[index];
 
@@ -550,6 +554,7 @@ public partial class StageEditorPhase : BasePhase
         _testDriveLaunched = false;
 
         // The garage and race reset World for their own copy of the stage; put this document back.
+
         if (returningFromTestDrive && ActiveTab is not null)
         {
             ApplyTabWorldValuesToWorld();
@@ -561,9 +566,12 @@ public partial class StageEditorPhase : BasePhase
         // clears them - without this the last gameplay frame's cascades linger for the shadow-map
         // debug overlay and anything else that samples them.
         var cascadeCb = _graphicsDevice.AcquireCommandBuffer();
+
         foreach (var shadowTarget in GameSparker.ShadowRenderTargets)
         {
-            if (shadowTarget is null) continue;
+            if (shadowTarget is null)
+
+                continue;
             cascadeCb.SetRenderTarget(shadowTarget);
             cascadeCb.SetViewport(
                 new NFMWorld.Graphics.Viewport(0, 0, GameSparker.ShadowResolution, GameSparker.ShadowResolution)
@@ -610,15 +618,19 @@ public partial class StageEditorPhase : BasePhase
         StopMusicPreview(notify: false);
 
         // A test drive pushed the garage/race above us; the documents have to survive that.
+
         if (_preserveTabsOnExit)
+
             return;
 
         // Restore walls to all stages before exiting so they appear in gameplay
+
         foreach (var tab in _tabs)
         {
             if (tab.Stage != null && tab.StageWalls.Count > 0)
             {
                 var wallPart = BackendGameSparker.GetStagePart("nfmm/thewall");
+
                 if (wallPart.Rad != null)
                 {
                     foreach (var wall in tab.StageWalls)
@@ -637,6 +649,7 @@ public partial class StageEditorPhase : BasePhase
                                 case WallDirection.Right:
                                     position = new f64Vector3(o, World.Ground, q * 4800 + p);
                                     rotation = f64Euler.Identity;
+
                                     break;
                                 case WallDirection.Left:
                                     position = new f64Vector3(o, World.Ground, q * 4800 + p);
@@ -645,6 +658,7 @@ public partial class StageEditorPhase : BasePhase
                                         f64AngleSingle.ZeroAngle,
                                         f64AngleSingle.ZeroAngle
                                     );
+
                                     break;
                                 case WallDirection.Top:
                                     position = new f64Vector3(q * 4800 + p, World.Ground, o);
@@ -653,6 +667,7 @@ public partial class StageEditorPhase : BasePhase
                                         f64AngleSingle.ZeroAngle,
                                         f64AngleSingle.ZeroAngle
                                     );
+
                                     break;
                                 case WallDirection.Bottom:
                                     position = new f64Vector3(q * 4800 + p, World.Ground, o);
@@ -661,10 +676,12 @@ public partial class StageEditorPhase : BasePhase
                                         f64AngleSingle.ZeroAngle,
                                         f64AngleSingle.ZeroAngle
                                     );
+
                                     break;
                                 default:
                                     position = f64Vector3.Zero;
                                     rotation = f64Euler.Identity;
+
                                     break;
                             }
 
@@ -693,7 +710,9 @@ public partial class StageEditorPhase : BasePhase
     {
         base.Dispose(disposing);
 
-        if (!disposing) return;
+        if (!disposing)
+
+            return;
 
         _editorDisposed = true;
         _editorLoading.Cancel();

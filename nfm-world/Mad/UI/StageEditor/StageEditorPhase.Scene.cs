@@ -6,7 +6,9 @@ public partial class StageEditorPhase
 {
     private void RecreateScene()
     {
-        if (ActiveTab?.Stage == null || ActiveTab?.StageRenderer == null) return;
+        if (ActiveTab?.Stage == null || ActiveTab?.StageRenderer == null)
+
+            return;
 
         // Create scene with the stage renderer and all current wall meshes
         var sceneObjects = new List<GameObject> { ActiveTab.StageRenderer };
@@ -32,17 +34,23 @@ public partial class StageEditorPhase
 
     private async Task RebuildClientRendererAsync()
     {
-        if (ActiveTab is not { Stage: not null } tab || _editorDisposed) return;
-        if (_rendererRequests.TryGetValue(tab, out var previous)) previous.Cancel();
+        if (ActiveTab is not { Stage: not null } tab || _editorDisposed)
+
+            return;
+        if (_rendererRequests.TryGetValue(tab, out var previous))
+            previous.Cancel();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_editorLoading.Token);
         _rendererRequests[tab] = cancellation;
         using var loading = LoadingWork.Begin("Preparing editor scene...");
         ClientStageRenderer? next = null;
+
         try
         {
             next = await ClientStageRenderer.CreateAsync(tab.Stage, cancellation.Token, generateEnvironment: false);
             await LoadingWork.NextFrame;
-            while (!_editorDisposed && _tabs.Contains(tab)
+
+            while (!_editorDisposed
+                   && _tabs.Contains(tab)
                    && (!ReferenceEquals(ActiveTab, tab) || !ReferenceEquals(GameSparker.CurrentPhase, this)))
             {
                 cancellation.Token.ThrowIfCancellationRequested();
@@ -50,8 +58,12 @@ public partial class StageEditorPhase
             }
 
             cancellation.Token.ThrowIfCancellationRequested();
-            if (_editorDisposed || !_tabs.Contains(tab)) return;
+
+            if (_editorDisposed || !_tabs.Contains(tab))
+
+                return;
             var old = tab.StageRenderer;
+
             if (old is not null)
             {
                 next.polys = old.polys;
@@ -69,8 +81,10 @@ public partial class StageEditorPhase
             ApplyTabWorldValuesToWorld();
             RecreateEnvironment();
             RecreateScene();
-            if (_autoUpdateWalls && HasPlaceableStageGeometry()) AutoGenerateStageBordersFromGeometry();
-            else RebuildAllWalls();
+            if (_autoUpdateWalls && HasPlaceableStageGeometry())
+                AutoGenerateStageBordersFromGeometry();
+            else
+                RebuildAllWalls();
             Touch();
         }
         catch (OperationCanceledException)
@@ -84,17 +98,22 @@ public partial class StageEditorPhase
         {
             await LoadingWork.NextFrame;
             next?.Dispose();
-            if (_rendererRequests.GetValueOrDefault(tab) == cancellation) _rendererRequests.Remove(tab);
+            if (_rendererRequests.GetValueOrDefault(tab) == cancellation)
+                _rendererRequests.Remove(tab);
         }
     }
 
     private void ApplyTabWorldValuesToWorld()
     {
-        if (ActiveTab == null) return;
+        if (ActiveTab == null)
+
+            return;
         World.SetSky(ActiveTab.SkyColor);
         World.Fog = ActiveTab.FogColor;
         World.GroundColor = ActiveTab.GroundColor;
+
         // Derives GroundPolysColor, so it has to run before the explicit polys colour below.
+
         if (ActiveTab.Texture is { Length: 4 } texture)
         {
             World.SetTexture(texture);
@@ -112,6 +131,7 @@ public partial class StageEditorPhase
             World.GroundPolysColor = ActiveTab.PolysColor;
         World.HasClouds = ActiveTab.CloudsEnabled;
         World.DrawClouds = ActiveTab.CloudsEnabled;
+
         if (ActiveTab.CloudsEnabled)
         {
             World.Clouds =
@@ -142,14 +162,17 @@ public partial class StageEditorPhase
 
     private void RecreateEnvironment()
     {
-        if (ActiveTab?.StageRenderer is not { } renderer) return;
+        if (ActiveTab?.StageRenderer is not { } renderer)
+
+            return;
 
         RecreateSky();
         RecreateGround();
 
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
-            if (_autoGeneratePolys) RecreatePolys();
+            if (_autoGeneratePolys)
+                RecreatePolys();
             // else: preserve existing polys (don't touch) so manually-generated polys from the
             //        Properties dialog survive across piece placements when auto-generate is off.
         }
@@ -164,7 +187,9 @@ public partial class StageEditorPhase
     /// <summary>The ground quad bakes its colour into the vertex buffer, so it has to be rebuilt.</summary>
     private void RecreateGround()
     {
-        if (ActiveTab?.StageRenderer is not { } renderer) return;
+        if (ActiveTab?.StageRenderer is not { } renderer)
+
+            return;
 
         renderer.ground?.Dispose();
         renderer.ground = new Ground(GameSparker.GraphicsDevice);
@@ -173,7 +198,9 @@ public partial class StageEditorPhase
     /// <summary>The polys mesh bakes the ground/polys colours, so a colour or texture edit rebuilds it.</summary>
     private void RecreatePolys()
     {
-        if (ActiveTab?.StageRenderer is not { } renderer || ActiveTab.Stage is null) return;
+        if (ActiveTab?.StageRenderer is not { } renderer || ActiveTab.Stage is null)
+
+            return;
 
         var tab = ActiveTab;
         var settings = Environment.GenerationSettings.Capture();
@@ -190,7 +217,9 @@ public partial class StageEditorPhase
     /// <summary>The sky gradient bakes the sky and fog colours at construction.</summary>
     private void RecreateSky()
     {
-        if (ActiveTab?.StageRenderer is not { } renderer) return;
+        if (ActiveTab?.StageRenderer is not { } renderer)
+
+            return;
 
         renderer.sky?.Dispose();
         renderer.sky = new Sky(GameSparker.GraphicsDevice);
@@ -199,7 +228,9 @@ public partial class StageEditorPhase
     /// <summary>Clouds and mountains only: their sliders change per tick, unlike polys.</summary>
     private void RecreateScenery()
     {
-        if (ActiveTab?.StageRenderer is not { } renderer) return;
+        if (ActiveTab?.StageRenderer is not { } renderer)
+
+            return;
 
         var tab = ActiveTab;
         var settings = Environment.GenerationSettings.Capture();
@@ -230,14 +261,17 @@ public partial class StageEditorPhase
     )
     {
         var key = (tab, part);
-        if (_environmentRequests.TryGetValue(key, out var previous)) previous.Cancel();
+        if (_environmentRequests.TryGetValue(key, out var previous))
+            previous.Cancel();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_editorLoading.Token);
         _environmentRequests[key] = cancellation;
         using var loading = LoadingWork.Begin("Preparing scenery...");
+
         try
         {
             await _environmentGate.WaitAsync(cancellation.Token);
             EnvironmentMeshData? polygons;
+
             try
             {
                 polygons = await Task.Run(
@@ -252,23 +286,30 @@ public partial class StageEditorPhase
 
             await LoadingWork.NextFrame;
             cancellation.Token.ThrowIfCancellationRequested();
-            if (_editorDisposed || !ReferenceEquals(tab.StageRenderer, renderer)) return;
+
+            if (_editorDisposed || !ReferenceEquals(tab.StageRenderer, renderer))
+
+                return;
+
             switch (part)
             {
                 case 0:
                     var polys = polygons is null ? null : new GroundPolys(_graphicsDevice, polygons);
                     renderer.polys?.Dispose();
                     renderer.polys = polys;
+
                     break;
                 case 1:
                     var clouds = polygons is null ? null : new GroundPolys(_graphicsDevice, polygons, applyFog: false);
                     renderer.clouds?.Dispose();
                     renderer.clouds = clouds;
+
                     break;
                 case 2:
                     var mountains = polygons is null ? null : new Mountains(_graphicsDevice, polygons);
                     renderer.mountains?.Dispose();
                     renderer.mountains = mountains;
+
                     break;
             }
         }
@@ -282,13 +323,16 @@ public partial class StageEditorPhase
         finally
         {
             await LoadingWork.NextFrame;
-            if (_environmentRequests.GetValueOrDefault(key) == cancellation) _environmentRequests.Remove(key);
+            if (_environmentRequests.GetValueOrDefault(key) == cancellation)
+                _environmentRequests.Remove(key);
         }
     }
 
     private void UpdateCameraPosition()
     {
-        if (ActiveTab == null) return;
+        if (ActiveTab == null)
+
+            return;
 
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene)
         {
@@ -306,7 +350,8 @@ public partial class StageEditorPhase
             activeCamera = perspectiveCamera;
             activeCamera.Near = 50f;
             activeCamera.Far = 1_000_000f;
-            if (ActiveTab.Scene != null) ActiveTab.Scene.ActiveCamera = activeCamera;
+            if (ActiveTab.Scene != null)
+                ActiveTab.Scene.ActiveCamera = activeCamera;
             activeCamera.PositionWithoutInterpolation = ActiveTab.CameraPosition;
             activeCamera.LookAtWithoutInterpolation = ActiveTab.CameraPosition + lookDirection;
             activeCamera.UpWithoutInterpolation = -Vector3.UnitY;
@@ -318,7 +363,8 @@ public partial class StageEditorPhase
             // Keep top-down rendering visible at very large zoom levels.
             activeCamera.Near = MathF.Max(1f, ActiveTab.TopDownHeight * 0.001f);
             activeCamera.Far = MathF.Max(1_000_000f, ActiveTab.TopDownHeight * 8f + 1_000_000f);
-            if (ActiveTab.Scene != null) ActiveTab.Scene.ActiveCamera = activeCamera;
+            if (ActiveTab.Scene != null)
+                ActiveTab.Scene.ActiveCamera = activeCamera;
             activeCamera.PositionWithoutInterpolation = new Vector3(
                 ActiveTab.TopDownPanPosition.X,
                 -ActiveTab.TopDownHeight,
@@ -330,6 +376,7 @@ public partial class StageEditorPhase
                 ActiveTab.TopDownPanPosition.Z
             );
             activeCamera.UpWithoutInterpolation = Vector3.UnitZ;
+
             if (ActiveTab.TopDownOrtho)
             {
                 // Match the visible world area that perspective would show at this height.

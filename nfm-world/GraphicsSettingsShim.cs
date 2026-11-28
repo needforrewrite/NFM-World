@@ -59,8 +59,11 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain,
     {
         get
         {
-            if (!PreferMultiSampling) return 0;
+            if (!PreferMultiSampling)
+
+                return 0;
             var requested = GraphicsDevice.PresentationParameters.MultiSampleCount;
+
             return requested <= 1 ? 0 : requested;
         }
     }
@@ -99,12 +102,14 @@ public sealed class GraphicsSettingsShim(SdlWindow window, ISwapchain swapchain,
         if (window.BorderlessDesktop)
         {
             window.RefreshBorderlessDesktop();
+
             return;
         }
 
         if (window.RequestedFullscreen && !OperatingSystem.IsBrowser())
         {
             window.SetFullscreenResolution(PreferredBackBufferWidth, PreferredBackBufferHeight);
+
             return;
         }
 

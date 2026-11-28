@@ -323,6 +323,7 @@ public class HLSLRoot : HLSLNode
     public IEnumerable<HLSLStatement> Statements()
     {
         var statement = Statement;
+
         while (statement != null)
         {
             yield return statement;
@@ -623,6 +624,7 @@ public class HLSLTree
             node.FileName = fileName;
             node.Line = line;
             node.NodeType = nodeInfo.Type;
+
             return (T)node;
         }
 
@@ -632,9 +634,11 @@ public class HLSLTree
     public HLSLFunction? FindFunction(string name)
     {
         var statement = _root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Function && statement is HLSLFunction fn && fn.Name == name)
+
                 return fn;
             statement = statement.NextStatement;
         }
@@ -646,18 +650,23 @@ public class HLSLTree
     {
         bufferOut = null;
         var statement = _root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Declaration && statement is HLSLDeclaration decl && decl.Name == name)
+
                 return decl;
+
             if (statement.NodeType == HLSLNodeType.Buffer && statement is HLSLBuffer buffer)
             {
                 var field = buffer.Field;
+
                 while (field != null)
                 {
                     if (field.Name == name)
                     {
                         bufferOut = buffer;
+
                         return field;
                     }
 
@@ -679,9 +688,11 @@ public class HLSLTree
     public HLSLStruct? FindGlobalStruct(string name)
     {
         var statement = _root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Struct && statement is HLSLStruct s && s.Name == name)
+
                 return s;
             statement = statement.NextStatement;
         }
@@ -692,9 +703,11 @@ public class HLSLTree
     public HLSLTechnique? FindTechnique(string name)
     {
         var statement = _root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Technique && statement is HLSLTechnique t && t.Name == name)
+
                 return t;
             statement = statement.NextStatement;
         }
@@ -707,9 +720,11 @@ public class HLSLTree
     public HLSLPipeline? FindNextPipeline(HLSLPipeline? current)
     {
         var statement = current != null ? (HLSLStatement)current : _root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Pipeline && statement is HLSLPipeline p)
+
                 return p;
             statement = statement.NextStatement;
         }
@@ -720,9 +735,11 @@ public class HLSLTree
     public HLSLPipeline? FindPipeline(string name)
     {
         var statement = _root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Pipeline && statement is HLSLPipeline p && p.Name == name)
+
                 return p;
             statement = statement.NextStatement;
         }
@@ -733,9 +750,11 @@ public class HLSLTree
     public HLSLBuffer? FindBuffer(string name)
     {
         var statement = _root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Buffer && statement is HLSLBuffer b && b.Name == name)
+
                 return b;
             statement = statement.NextStatement;
         }
@@ -746,65 +765,88 @@ public class HLSLTree
     public bool GetExpressionValue(HLSLExpression? expression, out int value)
     {
         value = 0;
-        if (expression == null) return false;
+
+        if (expression == null)
+
+            return false;
 
         if ((expression.ExpressionType.Flags & (int)HLSLTypeFlags.Const) == 0)
+
             return false;
         if (expression.ExpressionType.BaseType != HLSLBaseType.Int && expression.ExpressionType.BaseType != HLSLBaseType.Bool)
+
             return false;
         if (expression.ExpressionType.Array)
+
             return false;
 
         if (expression.NodeType == HLSLNodeType.BinaryExpression && expression is HLSLBinaryExpression bin)
         {
             if (!GetExpressionValue(bin.Expression1, out var v1) || !GetExpressionValue(bin.Expression2, out var v2))
+
                 return false;
+
             switch (bin.BinaryOp)
             {
                 case HLSLBinaryOp.And:
                     value = (v1 != 0 && v2 != 0) ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.Or:
                     value = (v1 != 0 || v2 != 0) ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.Add:
                     value = v1 + v2;
+
                     return true;
                 case HLSLBinaryOp.Sub:
                     value = v1 - v2;
+
                     return true;
                 case HLSLBinaryOp.Mul:
                     value = v1 * v2;
+
                     return true;
                 case HLSLBinaryOp.Div:
                     value = v1 / v2;
+
                     return true;
                 case HLSLBinaryOp.Less:
                     value = v1 < v2 ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.Greater:
                     value = v1 > v2 ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.LessEqual:
                     value = v1 <= v2 ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.GreaterEqual:
                     value = v1 >= v2 ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.Equal:
                     value = v1 == v2 ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.NotEqual:
                     value = v1 != v2 ? 1 : 0;
+
                     return true;
                 case HLSLBinaryOp.BitAnd:
                     value = v1 & v2;
+
                     return true;
                 case HLSLBinaryOp.BitOr:
                     value = v1 | v2;
+
                     return true;
                 case HLSLBinaryOp.BitXor:
                     value = v1 ^ v2;
+
                     return true;
                 default: return false;
             }
@@ -813,18 +855,23 @@ public class HLSLTree
         if (expression.NodeType == HLSLNodeType.UnaryExpression && expression is HLSLUnaryExpression un)
         {
             if (!GetExpressionValue(un.Expression, out value))
+
                 return false;
+
             switch (un.UnaryOp)
             {
                 case HLSLUnaryOp.Negative:
                     value = -value;
+
                     return true;
                 case HLSLUnaryOp.Positive: return true;
                 case HLSLUnaryOp.Not:
                     value = value == 0 ? 1 : 0;
+
                     return true;
                 case HLSLUnaryOp.BitNot:
                     value = ~value;
+
                     return true;
                 default: return false;
             }
@@ -833,8 +880,11 @@ public class HLSLTree
         if (expression.NodeType == HLSLNodeType.IdentifierExpression && expression is HLSLIdentifierExpression id)
         {
             var decl = FindGlobalDeclaration(id.Name!);
+
             if (decl == null || (decl.Type.Flags & (int)HLSLTypeFlags.Const) == 0)
+
                 return false;
+
             return GetExpressionValue(decl.Assignment, out value);
         }
 
@@ -843,12 +893,14 @@ public class HLSLTree
             if (lit.ExpressionType.BaseType == HLSLBaseType.Int)
             {
                 value = lit.IValue;
+
                 return true;
             }
 
             if (lit.ExpressionType.BaseType == HLSLBaseType.Bool)
             {
                 value = lit.BValue ? 1 : 0;
+
                 return true;
             }
         }
@@ -860,6 +912,7 @@ public class HLSLTree
     {
         var visitor = new NeedsFunctionVisitor { Name = name };
         visitor.VisitRoot(_root);
+
         return visitor.Result;
     }
 
@@ -870,7 +923,8 @@ public class HLSLTree
 
         public override void VisitTopLevelStatement(HLSLStatement node)
         {
-            if (!node.Hidden) base.VisitTopLevelStatement(node);
+            if (!node.Hidden)
+                base.VisitTopLevelStatement(node);
         }
 
         public override void VisitFunctionCall(HLSLFunctionCall node)
@@ -965,6 +1019,7 @@ public class HLSLTreeVisitor
     public virtual void VisitRoot(HLSLRoot root)
     {
         var statement = root.Statement;
+
         while (statement != null)
         {
             VisitTopLevelStatement(statement);
@@ -1013,13 +1068,16 @@ public class HLSLTreeVisitor
     public virtual void VisitDeclaration(HLSLDeclaration node)
     {
         VisitType(node.Type);
-        if (node.Assignment != null) VisitExpression(node.Assignment);
-        if (node.NextDeclaration != null) VisitDeclaration(node.NextDeclaration);
+        if (node.Assignment != null)
+            VisitExpression(node.Assignment);
+        if (node.NextDeclaration != null)
+            VisitDeclaration(node.NextDeclaration);
     }
 
     public virtual void VisitStruct(HLSLStruct node)
     {
         var field = node.Field;
+
         while (field != null)
         {
             VisitStructField(field);
@@ -1032,6 +1090,7 @@ public class HLSLTreeVisitor
     public virtual void VisitBuffer(HLSLBuffer node)
     {
         var field = node.Field;
+
         while (field != null)
         {
             VisitDeclaration(field);
@@ -1043,6 +1102,7 @@ public class HLSLTreeVisitor
     {
         VisitType(node.ReturnType);
         var arg = node.Argument;
+
         while (arg != null)
         {
             VisitArgument(arg);
@@ -1055,17 +1115,20 @@ public class HLSLTreeVisitor
     public virtual void VisitArgument(HLSLArgument node)
     {
         VisitType(node.Type);
-        if (node.DefaultValue != null) VisitExpression(node.DefaultValue);
+        if (node.DefaultValue != null)
+            VisitExpression(node.DefaultValue);
     }
 
     public virtual void VisitExpressionStatement(HLSLExpressionStatement node)
     {
-        if (node.Expression != null) VisitExpression(node.Expression);
+        if (node.Expression != null)
+            VisitExpression(node.Expression);
     }
 
     public virtual void VisitExpression(HLSLExpression node)
     {
         VisitType(node.ExpressionType);
+
         switch (node.NodeType)
         {
             case HLSLNodeType.UnaryExpression: VisitUnaryExpression((HLSLUnaryExpression)node); break;
@@ -1084,7 +1147,8 @@ public class HLSLTreeVisitor
 
     public virtual void VisitReturnStatement(HLSLReturnStatement node)
     {
-        if (node.Expression != null) VisitExpression(node.Expression);
+        if (node.Expression != null)
+            VisitExpression(node.Expression);
     }
 
     public virtual void VisitDiscardStatement(HLSLDiscardStatement node)
@@ -1101,16 +1165,21 @@ public class HLSLTreeVisitor
 
     public virtual void VisitIfStatement(HLSLIfStatement node)
     {
-        if (node.Condition != null) VisitExpression(node.Condition);
+        if (node.Condition != null)
+            VisitExpression(node.Condition);
         VisitStatements(node.Statement);
-        if (node.ElseStatement != null) VisitStatements(node.ElseStatement);
+        if (node.ElseStatement != null)
+            VisitStatements(node.ElseStatement);
     }
 
     public virtual void VisitForStatement(HLSLForStatement node)
     {
-        if (node.Initialization != null) VisitDeclaration(node.Initialization);
-        if (node.Condition != null) VisitExpression(node.Condition);
-        if (node.Increment != null) VisitExpression(node.Increment);
+        if (node.Initialization != null)
+            VisitDeclaration(node.Initialization);
+        if (node.Condition != null)
+            VisitExpression(node.Condition);
+        if (node.Increment != null)
+            VisitExpression(node.Increment);
         VisitStatements(node.Statement);
     }
 
@@ -1118,26 +1187,33 @@ public class HLSLTreeVisitor
 
     public virtual void VisitUnaryExpression(HLSLUnaryExpression node)
     {
-        if (node.Expression != null) VisitExpression(node.Expression);
+        if (node.Expression != null)
+            VisitExpression(node.Expression);
     }
 
     public virtual void VisitBinaryExpression(HLSLBinaryExpression node)
     {
-        if (node.Expression1 != null) VisitExpression(node.Expression1);
-        if (node.Expression2 != null) VisitExpression(node.Expression2);
+        if (node.Expression1 != null)
+            VisitExpression(node.Expression1);
+        if (node.Expression2 != null)
+            VisitExpression(node.Expression2);
     }
 
     public virtual void VisitConditionalExpression(HLSLConditionalExpression node)
     {
-        if (node.Condition != null) VisitExpression(node.Condition);
-        if (node.FalseExpression != null) VisitExpression(node.FalseExpression);
-        if (node.TrueExpression != null) VisitExpression(node.TrueExpression);
+        if (node.Condition != null)
+            VisitExpression(node.Condition);
+        if (node.FalseExpression != null)
+            VisitExpression(node.FalseExpression);
+        if (node.TrueExpression != null)
+            VisitExpression(node.TrueExpression);
     }
 
     public virtual void VisitCastingExpression(HLSLCastingExpression node)
     {
         VisitType(node.Type);
-        if (node.Expression != null) VisitExpression(node.Expression);
+        if (node.Expression != null)
+            VisitExpression(node.Expression);
     }
 
     public virtual void VisitLiteralExpression(HLSLLiteralExpression node)
@@ -1151,6 +1227,7 @@ public class HLSLTreeVisitor
     public virtual void VisitConstructorExpression(HLSLConstructorExpression node)
     {
         var arg = node.Argument;
+
         while (arg != null)
         {
             VisitExpression(arg);
@@ -1160,18 +1237,22 @@ public class HLSLTreeVisitor
 
     public virtual void VisitMemberAccess(HLSLMemberAccess node)
     {
-        if (node.Object != null) VisitExpression(node.Object);
+        if (node.Object != null)
+            VisitExpression(node.Object);
     }
 
     public virtual void VisitArrayAccess(HLSLArrayAccess node)
     {
-        if (node.Array != null) VisitExpression(node.Array);
-        if (node.Index != null) VisitExpression(node.Index);
+        if (node.Array != null)
+            VisitExpression(node.Array);
+        if (node.Index != null)
+            VisitExpression(node.Index);
     }
 
     public virtual void VisitFunctionCall(HLSLFunctionCall node)
     {
         var arg = node.Argument;
+
         while (arg != null)
         {
             VisitExpression(arg);
@@ -1186,6 +1267,7 @@ public class HLSLTreeVisitor
     public virtual void VisitSamplerState(HLSLSamplerState node)
     {
         var sa = node.StateAssignments;
+
         while (sa != null)
         {
             VisitStateAssignment(sa);
@@ -1196,6 +1278,7 @@ public class HLSLTreeVisitor
     public virtual void VisitPass(HLSLPass node)
     {
         var sa = node.StateAssignments;
+
         while (sa != null)
         {
             VisitStateAssignment(sa);
@@ -1206,6 +1289,7 @@ public class HLSLTreeVisitor
     public virtual void VisitTechnique(HLSLTechnique node)
     {
         var pass = node.Passes;
+
         while (pass != null)
         {
             VisitPass(pass);
@@ -1220,9 +1304,11 @@ public class HLSLTreeVisitor
     public virtual void VisitFunctions(HLSLRoot root)
     {
         var st = root.Statement;
+
         while (st != null)
         {
-            if (st.NodeType == HLSLNodeType.Function) VisitFunction((HLSLFunction)st);
+            if (st.NodeType == HLSLNodeType.Function)
+                VisitFunction((HLSLFunction)st);
             st = st.NextStatement;
         }
     }
@@ -1230,9 +1316,11 @@ public class HLSLTreeVisitor
     public virtual void VisitParameters(HLSLRoot root)
     {
         var st = root.Statement;
+
         while (st != null)
         {
-            if (st.NodeType == HLSLNodeType.Declaration) VisitDeclaration((HLSLDeclaration)st);
+            if (st.NodeType == HLSLNodeType.Declaration)
+                VisitDeclaration((HLSLDeclaration)st);
             st = st.NextStatement;
         }
     }
@@ -1248,26 +1336,31 @@ public static class HLSLTreeOperations
         new ResetHiddenFlagVisitor().VisitRoot(root);
 
         var entry = tree.FindFunction(entryName0);
-        if (entry != null) new MarkVisibleStatementsVisitor(tree).VisitFunction(entry);
+        if (entry != null)
+            new MarkVisibleStatementsVisitor(tree).VisitFunction(entry);
 
         if (entryName1 != null)
         {
             entry = tree.FindFunction(entryName1);
-            if (entry != null) new MarkVisibleStatementsVisitor(tree).VisitFunction(entry);
+            if (entry != null)
+                new MarkVisibleStatementsVisitor(tree).VisitFunction(entry);
         }
 
         // Mark buffers visible if any field is visible
         var statement = root.Statement;
+
         while (statement != null)
         {
             if (statement.NodeType == HLSLNodeType.Buffer && statement is HLSLBuffer buffer)
             {
                 var field = buffer.Field;
+
                 while (field != null)
                 {
                     if (!field.Hidden)
                     {
                         buffer.Hidden = false;
+
                         break;
                     }
 
@@ -1289,6 +1382,7 @@ public static class HLSLTreeOperations
         HLSLStatement? other = null, lastOther = null;
 
         var statement = root.Statement;
+
         while (statement != null)
         {
             var next = statement.NextStatement;
@@ -1336,9 +1430,13 @@ public static class HLSLTreeOperations
 
         void Chain(HLSLStatement? head, HLSLStatement? tail)
         {
-            if (head == null) return;
-            if (first == null) first = head;
-            else last!.NextStatement = head;
+            if (head == null)
+
+                return;
+            if (first == null)
+                first = head;
+            else
+                last!.NextStatement = head;
 
             last = tail;
         }
@@ -1356,7 +1454,8 @@ public static class HLSLTreeOperations
         public override void VisitTopLevelStatement(HLSLStatement statement)
         {
             statement.Hidden = true;
-            if (statement.NodeType == HLSLNodeType.Buffer) VisitBuffer((HLSLBuffer)statement);
+            if (statement.NodeType == HLSLNodeType.Buffer)
+                VisitBuffer((HLSLBuffer)statement);
         }
 
         public override void VisitDeclaration(HLSLDeclaration node) => node.Hidden = true;
@@ -1369,7 +1468,8 @@ public static class HLSLTreeOperations
         {
             node.Hidden = false;
             base.VisitFunction(node);
-            if (node.Forward != null) VisitFunction(node.Forward);
+            if (node.Forward != null)
+                VisitFunction(node.Forward);
         }
 
         public override void VisitFunctionCall(HLSLFunctionCall node)
@@ -1382,9 +1482,11 @@ public static class HLSLTreeOperations
         public override void VisitIdentifierExpression(HLSLIdentifierExpression node)
         {
             base.VisitIdentifierExpression(node);
+
             if (node.Global)
             {
                 var decl = tree.FindGlobalDeclaration(node.Name!);
+
                 if (decl is { Hidden: true })
                 {
                     decl.Hidden = false;
@@ -1398,6 +1500,7 @@ public static class HLSLTreeOperations
             if (type.BaseType == HLSLBaseType.UserDefined)
             {
                 var s = tree.FindGlobalStruct(type.TypeName!);
+
                 if (s != null)
                 {
                     s.Hidden = false;

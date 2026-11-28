@@ -23,6 +23,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToUInt16(Span[Index..(Index + sizeof(ushort))]);
         Index += sizeof(ushort);
+
         return value;
     }
 
@@ -30,6 +31,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToUInt32(Span[Index..(Index + sizeof(uint))]);
         Index += sizeof(uint);
+
         return value;
     }
 
@@ -37,6 +39,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToUInt64(Span[Index..(Index + sizeof(ulong))]);
         Index += sizeof(ulong);
+
         return value;
     }
 
@@ -44,6 +47,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToInt16(Span[Index..(Index + sizeof(short))]);
         Index += sizeof(short);
+
         return value;
     }
 
@@ -51,6 +55,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToInt32(Span[Index..(Index + sizeof(int))]);
         Index += sizeof(int);
+
         return value;
     }
 
@@ -58,6 +63,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToInt64(Span[Index..(Index + sizeof(long))]);
         Index += sizeof(long);
+
         return value;
     }
 
@@ -65,6 +71,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToSingle(Span[Index..(Index + sizeof(float))]);
         Index += sizeof(float);
+
         return value;
     }
 
@@ -72,6 +79,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = BitConverter.ToDouble(Span[Index..(Index + sizeof(double))]);
         Index += sizeof(double);
+
         return value;
     }
 
@@ -80,6 +88,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
         int length = ReadInt32();
         string result = new string(MemoryMarshal.Cast<byte, char>(Span.Slice(Index, length * 2)));
         Index += length * 2;
+
         return result;
     }
 
@@ -88,6 +97,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
         int length = ReadInt32();
         var result = MemoryMarshal.Cast<byte, char>(Span.Slice(Index, length * 2));
         Index += length * 2;
+
         return result;
     }
 
@@ -100,6 +110,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     {
         var value = MemoryMarshal.Read<T>(Span[Index..(Index + sizeof(T))]);
         Index += sizeof(T);
+
         return value;
     }
 }

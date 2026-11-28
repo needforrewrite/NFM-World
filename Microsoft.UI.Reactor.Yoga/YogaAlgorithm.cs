@@ -97,15 +97,15 @@ internal static class YogaAlgorithm
         }
 
         if (CalculateLayoutInternal(
-                node,
+            node,
             width,
             height,
             ownerDirection,
-                widthSizingMode,
+            widthSizingMode,
             heightSizingMode,
-                availableWidth,
+            availableWidth,
             availableHeight,
-                true,
+            true,
             0,
             s_currentGenerationCount
         ))
@@ -142,9 +142,12 @@ internal static class YogaAlgorithm
         float ownerHeight
     )
     {
-        return (!node.Style.ResolvesAgainstOwnerWidth() ||
-                YogaFloat.InexactEquals(cachedMeasurement.OwnerWidth, ownerWidth)) &&
-               (!node.Style.ResolvesAgainstOwnerHeight() ||
+        return (!node.Style.ResolvesAgainstOwnerWidth()
+                ||
+                YogaFloat.InexactEquals(cachedMeasurement.OwnerWidth, ownerWidth))
+               &&
+               (!node.Style.ResolvesAgainstOwnerHeight()
+                ||
                 YogaFloat.InexactEquals(cachedMeasurement.OwnerHeight, ownerHeight));
     }
 
@@ -163,7 +166,9 @@ internal static class YogaAlgorithm
     )
     {
         // SECURITY (TASK-081): bound recursion depth.
+
         if (depth >= MaxLayoutDepth)
+
             throw new InvalidOperationException(
                 $"Yoga layout recursion exceeded {MaxLayoutDepth} levels — likely a tree cycle or malformed layout."
             );
@@ -171,8 +176,10 @@ internal static class YogaAlgorithm
         depth++;
 
         bool needToVisitNode =
-            (node.IsDirty && layout.GenerationCount != generationCount) ||
-            layout.ConfigVersion != node.Config.Version ||
+            (node.IsDirty && layout.GenerationCount != generationCount)
+            ||
+            layout.ConfigVersion != node.Config.Version
+            ||
             layout.LastOwnerDirection != ownerDirection;
 
         if (needToVisitNode)
@@ -197,20 +204,21 @@ internal static class YogaAlgorithm
             float marginAxisColumn = node.Style.ComputeMarginForAxis(FlexDirection.Column, ownerWidth);
 
             if (CacheHelper.CanUseCachedMeasurement(
-                    widthSizingMode,
+                widthSizingMode,
                 availableWidth,
                 heightSizingMode,
                 availableHeight,
-                    layout.CachedLayout.WidthSizingMode,
+                layout.CachedLayout.WidthSizingMode,
                 layout.CachedLayout.AvailableWidth,
-                    layout.CachedLayout.HeightSizingMode,
+                layout.CachedLayout.HeightSizingMode,
                 layout.CachedLayout.AvailableHeight,
-                    layout.CachedLayout.ComputedWidth,
+                layout.CachedLayout.ComputedWidth,
                 layout.CachedLayout.ComputedHeight,
-                    marginAxisRow,
+                marginAxisRow,
                 marginAxisColumn,
                 node.Config
-            ) &&
+            )
+                &&
                 IsCachedForOwnerSize(node, in layout.CachedLayout, ownerWidth, ownerHeight))
             {
                 cachedResults = layout.CachedLayout;
@@ -221,24 +229,26 @@ internal static class YogaAlgorithm
                 for (int i = 0; i < (int)layout.NextCachedMeasurementsIndex; i++)
                 {
                     if (CacheHelper.CanUseCachedMeasurement(
-                            widthSizingMode,
+                        widthSizingMode,
                         availableWidth,
                         heightSizingMode,
                         availableHeight,
-                            layout.CachedMeasurements[i].WidthSizingMode,
+                        layout.CachedMeasurements[i].WidthSizingMode,
                         layout.CachedMeasurements[i].AvailableWidth,
-                            layout.CachedMeasurements[i].HeightSizingMode,
+                        layout.CachedMeasurements[i].HeightSizingMode,
                         layout.CachedMeasurements[i].AvailableHeight,
-                            layout.CachedMeasurements[i].ComputedWidth,
+                        layout.CachedMeasurements[i].ComputedWidth,
                         layout.CachedMeasurements[i].ComputedHeight,
-                            marginAxisRow,
+                        marginAxisRow,
                         marginAxisColumn,
                         node.Config
-                    ) &&
+                    )
+                        &&
                         IsCachedForOwnerSize(node, in layout.CachedMeasurements[i], ownerWidth, ownerHeight))
                     {
                         cachedResults = layout.CachedMeasurements[i];
                         cachedIndex = i;
+
                         break;
                     }
                 }
@@ -246,10 +256,14 @@ internal static class YogaAlgorithm
         }
         else if (performLayout)
         {
-            if (YogaFloat.InexactEquals(layout.CachedLayout.AvailableWidth, availableWidth) &&
-                YogaFloat.InexactEquals(layout.CachedLayout.AvailableHeight, availableHeight) &&
-                layout.CachedLayout.WidthSizingMode == widthSizingMode &&
-                layout.CachedLayout.HeightSizingMode == heightSizingMode &&
+            if (YogaFloat.InexactEquals(layout.CachedLayout.AvailableWidth, availableWidth)
+                &&
+                YogaFloat.InexactEquals(layout.CachedLayout.AvailableHeight, availableHeight)
+                &&
+                layout.CachedLayout.WidthSizingMode == widthSizingMode
+                &&
+                layout.CachedLayout.HeightSizingMode == heightSizingMode
+                &&
                 IsCachedForOwnerSize(node, in layout.CachedLayout, ownerWidth, ownerHeight))
             {
                 cachedResults = layout.CachedLayout;
@@ -260,14 +274,19 @@ internal static class YogaAlgorithm
         {
             for (int i = 0; i < (int)layout.NextCachedMeasurementsIndex; i++)
             {
-                if (YogaFloat.InexactEquals(layout.CachedMeasurements[i].AvailableWidth, availableWidth) &&
-                    YogaFloat.InexactEquals(layout.CachedMeasurements[i].AvailableHeight, availableHeight) &&
-                    layout.CachedMeasurements[i].WidthSizingMode == widthSizingMode &&
-                    layout.CachedMeasurements[i].HeightSizingMode == heightSizingMode &&
+                if (YogaFloat.InexactEquals(layout.CachedMeasurements[i].AvailableWidth, availableWidth)
+                    &&
+                    YogaFloat.InexactEquals(layout.CachedMeasurements[i].AvailableHeight, availableHeight)
+                    &&
+                    layout.CachedMeasurements[i].WidthSizingMode == widthSizingMode
+                    &&
+                    layout.CachedMeasurements[i].HeightSizingMode == heightSizingMode
+                    &&
                     IsCachedForOwnerSize(node, in layout.CachedMeasurements[i], ownerWidth, ownerHeight))
                 {
                     cachedResults = layout.CachedMeasurements[i];
                     cachedIndex = i;
+
                     break;
                 }
             }
@@ -344,6 +363,7 @@ internal static class YogaAlgorithm
         }
 
         layout.GenerationCount = generationCount;
+
         return needToVisitNode || cachedResults == null;
     }
 
@@ -420,10 +440,12 @@ internal static class YogaAlgorithm
                 ownerHeight
             );
             CleanupContentsNodesRecursively(node);
+
             return;
         }
 
         int childCount = node.GetLayoutChildCount();
+
         if (childCount == 0)
         {
             MeasureNodeWithoutChildren(
@@ -437,12 +459,15 @@ internal static class YogaAlgorithm
                 ownerHeight
             );
             CleanupContentsNodesRecursively(node);
+
             return;
         }
 
         // If we're not being asked to perform a full layout we can skip the algorithm
         // if we already know the size
-        if (!performLayout &&
+
+        if (!performLayout
+            &&
             MeasureNodeWithFixedSize(
                 node,
                 direction,
@@ -455,6 +480,7 @@ internal static class YogaAlgorithm
             ))
         {
             CleanupContentsNodesRecursively(node);
+
             return;
         }
 
@@ -612,6 +638,7 @@ internal static class YogaAlgorithm
 
             // STEP 5: RESOLVING FLEXIBLE LENGTHS ON MAIN AXIS
             bool sizeBasedOnContent = false;
+
             if (sizingModeMainDim != SizingMode.StretchFit)
             {
                 var nodeStyle = node.Style;
@@ -638,10 +665,15 @@ internal static class YogaAlgorithm
                 else
                 {
                     bool useLegacyStretchBehaviour = node.HasErrata(YogaErrata.StretchFlexBasis);
-                    if (!useLegacyStretchBehaviour &&
-                        ((YogaFloat.IsDefined(flexLine.Layout.TotalFlexGrowFactors) &&
-                          flexLine.Layout.TotalFlexGrowFactors == 0) ||
-                         (YogaFloat.IsDefined(node.ResolveFlexGrow()) &&
+
+                    if (!useLegacyStretchBehaviour
+                        &&
+                        ((YogaFloat.IsDefined(flexLine.Layout.TotalFlexGrowFactors)
+                          &&
+                          flexLine.Layout.TotalFlexGrowFactors == 0)
+                         ||
+                         (YogaFloat.IsDefined(node.ResolveFlexGrow())
+                          &&
                           node.ResolveFlexGrow() == 0)))
                     {
                         availableInnerMainDim = flexLine.SizeConsumed;
@@ -705,6 +737,7 @@ internal static class YogaAlgorithm
             );
 
             float containerCrossAxis = availableInnerCrossDim;
+
             if (sizingModeCrossDim == SizingMode.MaxContent || sizingModeCrossDim == SizingMode.FitContent)
             {
                 containerCrossAxis =
@@ -715,7 +748,8 @@ internal static class YogaAlgorithm
                         flexLine.Layout.CrossDim + paddingAndBorderAxisCross,
                         crossAxisOwnerSize,
                         ownerWidth
-                    ) -
+                    )
+                    -
                     paddingAndBorderAxisCross;
             }
 
@@ -732,11 +766,13 @@ internal static class YogaAlgorithm
                         flexLine.Layout.CrossDim + paddingAndBorderAxisCross,
                         crossAxisOwnerSize,
                         ownerWidth
-                    ) -
+                    )
+                    -
                     paddingAndBorderAxisCross;
             }
 
             // STEP 7: CROSS-AXIS ALIGNMENT
+
             if (performLayout)
             {
                 for (int ci = 0; ci < flexLine.ItemsInFlow.Count; ci++)
@@ -746,8 +782,10 @@ internal static class YogaAlgorithm
 
                     var alignItem = AlignHelper.ResolveChildAlignment(node, child);
 
-                    if (alignItem == FlexAlign.Stretch &&
-                        !child.Style.FlexStartMarginIsAuto(crossAxis, direction) &&
+                    if (alignItem == FlexAlign.Stretch
+                        &&
+                        !child.Style.FlexStartMarginIsAuto(crossAxis, direction)
+                        &&
                         !child.Style.FlexEndMarginIsAuto(crossAxis, direction))
                     {
                         if (!child.HasDefiniteLength(FlexDirectionHelper.Dimension(crossAxis), availableInnerCrossDim))
@@ -755,7 +793,8 @@ internal static class YogaAlgorithm
                             float childMainSize = child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(mainAxis));
                             var childStyle = child.Style;
                             float childCrossSize = YogaFloat.IsDefined(childStyle.AspectRatio)
-                                ? child.Style.ComputeMarginForAxis(crossAxis, availableInnerWidth) +
+                                ? child.Style.ComputeMarginForAxis(crossAxis, availableInnerWidth)
+                                  +
                                   (isMainAxisRow
                                       ? childMainSize / childStyle.AspectRatio
                                       : childMainSize * childStyle.AspectRatio)
@@ -815,10 +854,12 @@ internal static class YogaAlgorithm
                     }
                     else
                     {
-                        float remainingCrossDim = containerCrossAxis -
+                        float remainingCrossDim = containerCrossAxis
+                                                  -
                             child.DimensionWithMargin(crossAxis, availableInnerWidth);
 
-                        if (child.Style.FlexStartMarginIsAuto(crossAxis, direction) &&
+                        if (child.Style.FlexStartMarginIsAuto(crossAxis, direction)
+                            &&
                             child.Style.FlexEndMarginIsAuto(crossAxis, direction))
                         {
                             leadingCrossDim += YogaFloat.MaxOrDefined(0.0f, remainingCrossDim / 2);
@@ -846,8 +887,10 @@ internal static class YogaAlgorithm
                     }
 
                     child.SetLayoutPosition(
-                        child.Layout.GetPosition(FlexDirectionHelper.FlexStartEdge(crossAxis)) +
-                            totalLineCrossDim + leadingCrossDim,
+                        child.Layout.GetPosition(FlexDirectionHelper.FlexStartEdge(crossAxis))
+                        +
+                            totalLineCrossDim
+                        + leadingCrossDim,
                         FlexDirectionHelper.FlexStartEdge(crossAxis)
                     );
                 }
@@ -861,6 +904,7 @@ internal static class YogaAlgorithm
         }
 
         // STEP 8: MULTI-LINE CONTENT ALIGNMENT
+
         if (performLayout && (isNodeFlexWrap || isNodeBaselineLayout))
         {
             float leadPerLine = 0;
@@ -885,7 +929,8 @@ internal static class YogaAlgorithm
                 unclampedCrossDim,
                 crossAxisOwnerSize,
                 ownerWidth
-            ) -
+            )
+                                  -
                 paddingAndBorderAxisCross;
 
             float remainingAlignContentDim = innerCrossDim - totalLineCrossDim;
@@ -898,31 +943,40 @@ internal static class YogaAlgorithm
             {
                 case FlexAlign.FlexEnd:
                     currentLead += remainingAlignContentDim;
+
                     break;
                 case FlexAlign.Center:
                     currentLead += remainingAlignContentDim / 2;
+
                     break;
                 case FlexAlign.Stretch:
                     extraSpacePerLine = remainingAlignContentDim / (float)lineCount;
+
                     break;
                 case FlexAlign.SpaceAround:
                     currentLead += remainingAlignContentDim / (2 * (float)lineCount);
                     leadPerLine = remainingAlignContentDim / (float)lineCount;
+
                     break;
                 case FlexAlign.SpaceEvenly:
                     currentLead += remainingAlignContentDim / (float)(lineCount + 1);
                     leadPerLine = remainingAlignContentDim / (float)(lineCount + 1);
+
                     break;
                 case FlexAlign.SpaceBetween:
                     if (lineCount > 1)
                         leadPerLine = remainingAlignContentDim / (float)(lineCount - 1);
+
                     break;
                 default:
+
                     // Start, End, Auto, FlexStart, Baseline: No-Op
+
                     break;
             }
 
             int endIdx = 0;
+
             for (int i = 0; i < lineCount; i++)
             {
                 int startIdx = endIdx;
@@ -932,29 +986,41 @@ internal static class YogaAlgorithm
                 float maxAscentForCurrentLine = 0;
                 float maxDescentForCurrentLine = 0;
                 int iter = startIdx;
+
                 for (; iter < layoutChildren.Count; iter++)
                 {
                     var child = layoutChildren[iter];
-                    if (child.Style.Display == YogaDisplay.None) continue;
+
+                    if (child.Style.Display == YogaDisplay.None)
+
+                        continue;
+
                     if (child.Style.PositionType != FlexPositionType.Absolute)
                     {
-                        if (child.LineIndex != i) break;
+                        if (child.LineIndex != i)
+
+                            break;
+
                         if (child.IsLayoutDimensionDefined(crossAxis))
                         {
                             lineHeight = YogaFloat.MaxOrDefined(
                                 lineHeight,
-                                child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(crossAxis)) +
+                                child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(crossAxis))
+                                +
                                 child.Style.ComputeMarginForAxis(crossAxis, availableInnerWidth)
                             );
                         }
 
                         if (AlignHelper.ResolveChildAlignment(node, child) == FlexAlign.Baseline)
                         {
-                            float ascent = BaselineHelper.CalculateBaseline(child) +
+                            float ascent = BaselineHelper.CalculateBaseline(child)
+                                           +
                                 child.Style.ComputeFlexStartMargin(FlexDirection.Column, direction, availableInnerWidth);
                             float descent =
-                                child.Layout.GetMeasuredDimension(YogaDimension.Height) +
-                                child.Style.ComputeMarginForAxis(FlexDirection.Column, availableInnerWidth) - ascent;
+                                child.Layout.GetMeasuredDimension(YogaDimension.Height)
+                                +
+                                child.Style.ComputeMarginForAxis(FlexDirection.Column, availableInnerWidth)
+                                - ascent;
                             maxAscentForCurrentLine = YogaFloat.MaxOrDefined(maxAscentForCurrentLine, ascent);
                             maxDescentForCurrentLine = YogaFloat.MaxOrDefined(maxDescentForCurrentLine, descent);
                             lineHeight = YogaFloat.MaxOrDefined(lineHeight, maxAscentForCurrentLine + maxDescentForCurrentLine);
@@ -969,28 +1035,38 @@ internal static class YogaAlgorithm
                 for (iter = startIdx; iter < endIdx; iter++)
                 {
                     var child = layoutChildren[iter];
-                    if (child.Style.Display == YogaDisplay.None) continue;
+
+                    if (child.Style.Display == YogaDisplay.None)
+
+                        continue;
+
                     if (child.Style.PositionType != FlexPositionType.Absolute)
                     {
                         switch (AlignHelper.ResolveChildAlignment(node, child))
                         {
                             case FlexAlign.Start:
                             case FlexAlign.End:
+
                                 // Not yet implemented
+
                                 break;
                             case FlexAlign.FlexStart:
                                 child.SetLayoutPosition(
                                     currentLead + child.Style.ComputeFlexStartPosition(crossAxis, direction, availableInnerWidth),
                                     FlexDirectionHelper.FlexStartEdge(crossAxis)
                                 );
+
                                 break;
                             case FlexAlign.FlexEnd:
                                 child.SetLayoutPosition(
-                                    currentLead + lineHeight -
-                                    child.Style.ComputeFlexEndMargin(crossAxis, direction, availableInnerWidth) -
+                                    currentLead + lineHeight
+                                    -
+                                    child.Style.ComputeFlexEndMargin(crossAxis, direction, availableInnerWidth)
+                                    -
                                     child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(crossAxis)),
                                     FlexDirectionHelper.FlexStartEdge(crossAxis)
                                 );
+
                                 break;
                             case FlexAlign.Center:
                             {
@@ -1001,6 +1077,7 @@ internal static class YogaAlgorithm
                                     currentLead + (lineHeight - childDimHeight) / 2,
                                     FlexDirectionHelper.FlexStartEdge(crossAxis)
                                 );
+
                                 break;
                             }
                             case FlexAlign.Stretch:
@@ -1008,18 +1085,22 @@ internal static class YogaAlgorithm
                                     currentLead + child.Style.ComputeFlexStartMargin(crossAxis, direction, availableInnerWidth),
                                     FlexDirectionHelper.FlexStartEdge(crossAxis)
                                 );
+
                                 if (!child.HasDefiniteLength(FlexDirectionHelper.Dimension(crossAxis), availableInnerCrossDim))
                                 {
                                     float cw = isMainAxisRow
-                                        ? (child.Layout.GetMeasuredDimension(YogaDimension.Width) +
+                                        ? (child.Layout.GetMeasuredDimension(YogaDimension.Width)
+                                           +
                                            child.Style.ComputeMarginForAxis(mainAxis, availableInnerWidth))
                                         : leadPerLine + lineHeight;
                                     float ch = !isMainAxisRow
-                                        ? (child.Layout.GetMeasuredDimension(YogaDimension.Height) +
+                                        ? (child.Layout.GetMeasuredDimension(YogaDimension.Height)
+                                           +
                                            child.Style.ComputeMarginForAxis(crossAxis, availableInnerWidth))
                                         : leadPerLine + lineHeight;
 
-                                    if (!(YogaFloat.InexactEquals(cw, child.Layout.GetMeasuredDimension(YogaDimension.Width)) &&
+                                    if (!(YogaFloat.InexactEquals(cw, child.Layout.GetMeasuredDimension(YogaDimension.Width))
+                                          &&
                                           YogaFloat.InexactEquals(ch, child.Layout.GetMeasuredDimension(YogaDimension.Height))))
                                     {
                                         CalculateLayoutInternal(
@@ -1041,13 +1122,17 @@ internal static class YogaAlgorithm
                                 break;
                             case FlexAlign.Baseline:
                                 child.SetLayoutPosition(
-                                    currentLead + maxAscentForCurrentLine -
-                                    BaselineHelper.CalculateBaseline(child) +
+                                    currentLead + maxAscentForCurrentLine
+                                    -
+                                    BaselineHelper.CalculateBaseline(child)
+                                    +
                                     child.Style.ComputeFlexStartPosition(FlexDirection.Column, direction, availableInnerCrossDim),
                                     YogaPhysicalEdge.Top
                                 );
+
                                 break;
                             default:
+
                                 break;
                         }
                     }
@@ -1081,7 +1166,8 @@ internal static class YogaAlgorithm
             YogaDimension.Height
         );
 
-        if (sizingModeMainDim == SizingMode.MaxContent ||
+        if (sizingModeMainDim == SizingMode.MaxContent
+            ||
             (node.Style.Overflow != YogaOverflow.Scroll && sizingModeMainDim == SizingMode.FitContent))
         {
             node.SetLayoutMeasuredDimension(
@@ -1117,7 +1203,8 @@ internal static class YogaAlgorithm
             );
         }
 
-        if (sizingModeCrossDim == SizingMode.MaxContent ||
+        if (sizingModeCrossDim == SizingMode.MaxContent
+            ||
             (node.Style.Overflow != YogaOverflow.Scroll && sizingModeCrossDim == SizingMode.FitContent))
         {
             node.SetLayoutMeasuredDimension(
@@ -1154,6 +1241,7 @@ internal static class YogaAlgorithm
         }
 
         // Wrap-reverse: reverse cross positions
+
         if (performLayout && node.Style.FlexWrap == FlexWrap.WrapReverse)
         {
             foreach (var child in node.GetLayoutChildren())
@@ -1161,8 +1249,10 @@ internal static class YogaAlgorithm
                 if (child.Style.PositionType != FlexPositionType.Absolute)
                 {
                     child.SetLayoutPosition(
-                        node.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(crossAxis)) -
-                        child.Layout.GetPosition(FlexDirectionHelper.FlexStartEdge(crossAxis)) -
+                        node.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(crossAxis))
+                        -
+                        child.Layout.GetPosition(FlexDirectionHelper.FlexStartEdge(crossAxis))
+                        -
                         child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(crossAxis)),
                         FlexDirectionHelper.FlexStartEdge(crossAxis)
                     );
@@ -1180,8 +1270,10 @@ internal static class YogaAlgorithm
             {
                 foreach (var child in node.GetLayoutChildren())
                 {
-                    if (child.Style.Display == YogaDisplay.None ||
+                    if (child.Style.Display == YogaDisplay.None
+                        ||
                         child.Style.PositionType == FlexPositionType.Absolute)
+
                         continue;
                     if (needsMainTrailingPos)
                         TrailingPositionHelper.SetChildTrailingPosition(node, child, mainAxis);
@@ -1191,8 +1283,11 @@ internal static class YogaAlgorithm
             }
 
             // STEP 11: SIZING AND POSITIONING ABSOLUTE CHILDREN
-            if (node.Style.PositionType != FlexPositionType.Static ||
-                node.AlwaysFormsContainingBlock || depth == 1)
+
+            if (node.Style.PositionType != FlexPositionType.Static
+                ||
+                node.AlwaysFormsContainingBlock
+                || depth == 1)
             {
                 LayoutAbsoluteDescendants(
                     node,
@@ -1244,8 +1339,10 @@ internal static class YogaAlgorithm
             case SizingMode.FitContent:
                 if (YogaFloat.IsDefined(maxSize) && size > maxSize)
                     size = maxSize;
+
                 break;
             case SizingMode.MaxContent:
+
                 if (YogaFloat.IsDefined(maxSize))
                 {
                     mode = SizingMode.FitContent;
@@ -1300,8 +1397,10 @@ internal static class YogaAlgorithm
 
         if (useResolvedFlexBasis)
         {
-            if (YogaFloat.IsUndefined(child.Layout.ComputedFlexBasis) ||
-                (child.Config.IsExperimentalFeatureEnabled(YogaExperimentalFeature.WebFlexBasis) &&
+            if (YogaFloat.IsUndefined(child.Layout.ComputedFlexBasis)
+                ||
+                (child.Config.IsExperimentalFeatureEnabled(YogaExperimentalFeature.WebFlexBasis)
+                 &&
                  child.Layout.ComputedFlexBasisGeneration != generationCount))
             {
                 float paddingAndBorder = BoundAxisHelper.PaddingAndBorderForAxis(child, mainAxis, direction, ownerWidth);
@@ -1349,6 +1448,7 @@ internal static class YogaAlgorithm
             }
 
             var childStyle = child.Style;
+
             if (YogaFloat.IsDefined(childStyle.AspectRatio))
             {
                 if (!isMainAxisRow && childWidthSizingMode == SizingMode.StretchFit)
@@ -1366,12 +1466,15 @@ internal static class YogaAlgorithm
             // Cross axis stretch
             bool hasExactWidth = YogaFloat.IsDefined(width) && widthMode == SizingMode.StretchFit;
             bool childWidthStretch =
-                AlignHelper.ResolveChildAlignment(node, child) == FlexAlign.Stretch &&
+                AlignHelper.ResolveChildAlignment(node, child) == FlexAlign.Stretch
+                &&
                 childWidthSizingMode != SizingMode.StretchFit;
+
             if (!isMainAxisRow && !isRowStyleDimDefined && hasExactWidth && childWidthStretch)
             {
                 childWidth = width;
                 childWidthSizingMode = SizingMode.StretchFit;
+
                 if (YogaFloat.IsDefined(childStyle.AspectRatio))
                 {
                     childHeight = (childWidth - marginRow) / childStyle.AspectRatio;
@@ -1381,12 +1484,15 @@ internal static class YogaAlgorithm
 
             bool hasExactHeight = YogaFloat.IsDefined(height) && heightMode == SizingMode.StretchFit;
             bool childHeightStretch =
-                AlignHelper.ResolveChildAlignment(node, child) == FlexAlign.Stretch &&
+                AlignHelper.ResolveChildAlignment(node, child) == FlexAlign.Stretch
+                &&
                 childHeightSizingMode != SizingMode.StretchFit;
+
             if (isMainAxisRow && !isColumnStyleDimDefined && hasExactHeight && childHeightStretch)
             {
                 childHeight = height;
                 childHeightSizingMode = SizingMode.StretchFit;
+
                 if (YogaFloat.IsDefined(childStyle.AspectRatio))
                 {
                     childWidth = (childHeight - marginColumn) * childStyle.AspectRatio;
@@ -1395,7 +1501,9 @@ internal static class YogaAlgorithm
             }
 
             // Overflow scroll logic
-            if ((!isMainAxisRow && node.Style.Overflow == YogaOverflow.Scroll) ||
+
+            if ((!isMainAxisRow && node.Style.Overflow == YogaOverflow.Scroll)
+                ||
                 node.Style.Overflow != YogaOverflow.Scroll)
             {
                 if (YogaFloat.IsUndefined(childWidth) && YogaFloat.IsDefined(width))
@@ -1406,9 +1514,11 @@ internal static class YogaAlgorithm
             }
 
             bool applyHeightFitContent = isMainAxisRow || node.Style.Overflow != YogaOverflow.Scroll;
+
             if (fixFlexBasisFitContent)
             {
-                applyHeightFitContent = isMainAxisRow ||
+                applyHeightFitContent = isMainAxisRow
+                                        ||
                     (child.HasMeasureFunc && node.Style.Overflow != YogaOverflow.Scroll);
             }
 
@@ -1481,16 +1591,24 @@ internal static class YogaAlgorithm
         float ownerHeight
     )
     {
-        if (widthSizingMode == SizingMode.MaxContent) availableWidth = float.NaN;
-        if (heightSizingMode == SizingMode.MaxContent) availableHeight = float.NaN;
+        if (widthSizingMode == SizingMode.MaxContent)
+            availableWidth = float.NaN;
+        if (heightSizingMode == SizingMode.MaxContent)
+            availableHeight = float.NaN;
 
         var layout = node.Layout;
         float paddingAndBorderAxisRow =
-            layout.GetPadding(YogaPhysicalEdge.Left) + layout.GetPadding(YogaPhysicalEdge.Right) +
-            layout.GetBorder(YogaPhysicalEdge.Left) + layout.GetBorder(YogaPhysicalEdge.Right);
+            layout.GetPadding(YogaPhysicalEdge.Left)
+            + layout.GetPadding(YogaPhysicalEdge.Right)
+            +
+            layout.GetBorder(YogaPhysicalEdge.Left)
+            + layout.GetBorder(YogaPhysicalEdge.Right);
         float paddingAndBorderAxisColumn =
-            layout.GetPadding(YogaPhysicalEdge.Top) + layout.GetPadding(YogaPhysicalEdge.Bottom) +
-            layout.GetBorder(YogaPhysicalEdge.Top) + layout.GetBorder(YogaPhysicalEdge.Bottom);
+            layout.GetPadding(YogaPhysicalEdge.Top)
+            + layout.GetPadding(YogaPhysicalEdge.Bottom)
+            +
+            layout.GetBorder(YogaPhysicalEdge.Top)
+            + layout.GetBorder(YogaPhysicalEdge.Bottom);
 
         float innerWidth = YogaFloat.IsUndefined(availableWidth)
             ? availableWidth
@@ -1566,10 +1684,14 @@ internal static class YogaAlgorithm
         var layout = node.Layout;
 
         float w = availableWidth;
+
         if (widthSizingMode == SizingMode.MaxContent || widthSizingMode == SizingMode.FitContent)
         {
-            w = layout.GetPadding(YogaPhysicalEdge.Left) + layout.GetPadding(YogaPhysicalEdge.Right) +
-                layout.GetBorder(YogaPhysicalEdge.Left) + layout.GetBorder(YogaPhysicalEdge.Right);
+            w = layout.GetPadding(YogaPhysicalEdge.Left)
+                + layout.GetPadding(YogaPhysicalEdge.Right)
+                +
+                layout.GetBorder(YogaPhysicalEdge.Left)
+                + layout.GetBorder(YogaPhysicalEdge.Right);
         }
 
         node.SetLayoutMeasuredDimension(
@@ -1578,10 +1700,14 @@ internal static class YogaAlgorithm
         );
 
         float h = availableHeight;
+
         if (heightSizingMode == SizingMode.MaxContent || heightSizingMode == SizingMode.FitContent)
         {
-            h = layout.GetPadding(YogaPhysicalEdge.Top) + layout.GetPadding(YogaPhysicalEdge.Bottom) +
-                layout.GetBorder(YogaPhysicalEdge.Top) + layout.GetBorder(YogaPhysicalEdge.Bottom);
+            h = layout.GetPadding(YogaPhysicalEdge.Top)
+                + layout.GetPadding(YogaPhysicalEdge.Bottom)
+                +
+                layout.GetBorder(YogaPhysicalEdge.Top)
+                + layout.GetBorder(YogaPhysicalEdge.Bottom);
         }
 
         node.SetLayoutMeasuredDimension(
@@ -1595,7 +1721,8 @@ internal static class YogaAlgorithm
     // ──────────────────────────────────────────────────────────────────────
 
     private static bool IsFixedSize(float dim, SizingMode sizingMode)
-        => sizingMode == SizingMode.StretchFit ||
+        => sizingMode == SizingMode.StretchFit
+           ||
            (YogaFloat.IsDefined(dim) && sizingMode == SizingMode.FitContent && dim <= 0.0f);
 
     private static bool MeasureNodeWithFixedSize(
@@ -1628,13 +1755,17 @@ internal static class YogaAlgorithm
                     node,
                     FlexDirection.Column,
                     direction,
-                    YogaFloat.IsUndefined(availableHeight) || (heightSizingMode == SizingMode.FitContent && availableHeight < 0.0f)
+                    YogaFloat.IsUndefined(availableHeight)
+                    || (heightSizingMode == SizingMode.FitContent
+                        && availableHeight
+                        < 0.0f)
                         ? 0.0f : availableHeight,
                     ownerHeight,
                     ownerWidth
                 ),
                 YogaDimension.Height
             );
+
             return true;
         }
 
@@ -1770,11 +1901,14 @@ internal static class YogaAlgorithm
             {
                 if (child.IsNodeFlexible())
                 {
-                    if (singleFlexChild != null ||
-                        YogaFloat.InexactEquals(child.ResolveFlexGrow(), 0.0f) ||
+                    if (singleFlexChild != null
+                        ||
+                        YogaFloat.InexactEquals(child.ResolveFlexGrow(), 0.0f)
+                        ||
                         YogaFloat.InexactEquals(child.ResolveFlexShrink(), 0.0f))
                     {
                         singleFlexChild = null;
+
                         break;
                     }
                     else
@@ -1788,11 +1922,13 @@ internal static class YogaAlgorithm
         foreach (var child in children)
         {
             child.ProcessDimensions();
+
             if (child.Style.Display == YogaDisplay.None)
             {
                 ZeroOutLayoutRecursively(child);
                 child.HasNewLayout = true;
                 child.SetDirty(false);
+
                 continue;
             }
 
@@ -1803,6 +1939,7 @@ internal static class YogaAlgorithm
             }
 
             if (child.Style.PositionType == FlexPositionType.Absolute)
+
                 continue;
 
             if (child == singleFlexChild)
@@ -1828,11 +1965,13 @@ internal static class YogaAlgorithm
             }
 
             totalOuterFlexBasis +=
-                YogaFloat.UnwrapOrDefault(child.Layout.ComputedFlexBasis) +
+                YogaFloat.UnwrapOrDefault(child.Layout.ComputedFlexBasis)
+                +
                 child.Style.ComputeMarginForAxis(mainAxis, availableInnerWidth);
         }
 
         FlexLineHelper.ReturnList(children);
+
         return totalOuterFlexBasis;
     }
 
@@ -1873,11 +2012,15 @@ internal static class YogaAlgorithm
             if (flexLine.Layout.RemainingFreeSpace < 0)
             {
                 flexShrinkScaledFactor = -currentLineChild.ResolveFlexShrink() * childFlexBasis;
+
                 if (YogaFloat.IsDefined(flexShrinkScaledFactor) && flexShrinkScaledFactor != 0)
                 {
-                    baseMainSize = childFlexBasis +
-                        flexLine.Layout.RemainingFreeSpace /
-                        flexLine.Layout.TotalFlexShrinkScaledFactors *
+                    baseMainSize = childFlexBasis
+                                   +
+                        flexLine.Layout.RemainingFreeSpace
+                                   /
+                        flexLine.Layout.TotalFlexShrinkScaledFactors
+                                   *
                         flexShrinkScaledFactor;
                     boundMainSize = BoundAxisHelper.BoundAxis(
                         currentLineChild,
@@ -1887,25 +2030,34 @@ internal static class YogaAlgorithm
                         availableInnerMainDim,
                         availableInnerWidth
                     );
-                    if (YogaFloat.IsDefined(baseMainSize) && YogaFloat.IsDefined(boundMainSize) &&
+
+                    if (YogaFloat.IsDefined(baseMainSize)
+                        && YogaFloat.IsDefined(boundMainSize)
+                        &&
                         baseMainSize != boundMainSize)
                     {
                         deltaFreeSpace += boundMainSize - childFlexBasis;
                         flexLine.Layout.TotalFlexShrinkScaledFactors -=
-                            (-currentLineChild.ResolveFlexShrink() *
+                            (-currentLineChild.ResolveFlexShrink()
+                             *
                              YogaFloat.UnwrapOrDefault(currentLineChild.Layout.ComputedFlexBasis));
                     }
                 }
             }
-            else if (YogaFloat.IsDefined(flexLine.Layout.RemainingFreeSpace) &&
+            else if (YogaFloat.IsDefined(flexLine.Layout.RemainingFreeSpace)
+                     &&
                      flexLine.Layout.RemainingFreeSpace > 0)
             {
                 flexGrowFactor = currentLineChild.ResolveFlexGrow();
+
                 if (YogaFloat.IsDefined(flexGrowFactor) && flexGrowFactor != 0)
                 {
-                    baseMainSize = childFlexBasis +
-                        flexLine.Layout.RemainingFreeSpace /
-                        flexLine.Layout.TotalFlexGrowFactors * flexGrowFactor;
+                    baseMainSize = childFlexBasis
+                                   +
+                        flexLine.Layout.RemainingFreeSpace
+                                   /
+                        flexLine.Layout.TotalFlexGrowFactors
+                                   * flexGrowFactor;
                     boundMainSize = BoundAxisHelper.BoundAxis(
                         currentLineChild,
                         mainAxis,
@@ -1914,7 +2066,10 @@ internal static class YogaAlgorithm
                         availableInnerMainDim,
                         availableInnerWidth
                     );
-                    if (YogaFloat.IsDefined(baseMainSize) && YogaFloat.IsDefined(boundMainSize) &&
+
+                    if (YogaFloat.IsDefined(baseMainSize)
+                        && YogaFloat.IsDefined(boundMainSize)
+                        &&
                         baseMainSize != boundMainSize)
                     {
                         deltaFreeSpace += boundMainSize - childFlexBasis;
@@ -1974,17 +2129,22 @@ internal static class YogaAlgorithm
             );
             float updatedMainSize = childFlexBasis;
 
-            if (YogaFloat.IsDefined(flexLine.Layout.RemainingFreeSpace) &&
+            if (YogaFloat.IsDefined(flexLine.Layout.RemainingFreeSpace)
+                &&
                 flexLine.Layout.RemainingFreeSpace < 0)
             {
                 flexShrinkScaledFactor = -currentLineChild.ResolveFlexShrink() * childFlexBasis;
+
                 if (flexShrinkScaledFactor != 0)
                 {
                     float childSize;
+
                     // facebook/yoga#2038: after the first pass freezes items the shrink total
                     // can be a small positive residual instead of 0, and dividing by it gives
                     // astronomically large sizes.
-                    if (YogaFloat.IsDefined(flexLine.Layout.TotalFlexShrinkScaledFactors) &&
+
+                    if (YogaFloat.IsDefined(flexLine.Layout.TotalFlexShrinkScaledFactors)
+                        &&
                         flexLine.Layout.TotalFlexShrinkScaledFactors >= 0)
                     {
                         // No shrink capacity left: every shrinkable item froze at its lower
@@ -1996,9 +2156,12 @@ internal static class YogaAlgorithm
                     }
                     else
                     {
-                        childSize = childFlexBasis +
-                            (flexLine.Layout.RemainingFreeSpace /
-                             flexLine.Layout.TotalFlexShrinkScaledFactors) *
+                        childSize = childFlexBasis
+                                    +
+                            (flexLine.Layout.RemainingFreeSpace
+                             /
+                             flexLine.Layout.TotalFlexShrinkScaledFactors)
+                                    *
                             flexShrinkScaledFactor;
                     }
 
@@ -2012,19 +2175,24 @@ internal static class YogaAlgorithm
                     );
                 }
             }
-            else if (YogaFloat.IsDefined(flexLine.Layout.RemainingFreeSpace) &&
+            else if (YogaFloat.IsDefined(flexLine.Layout.RemainingFreeSpace)
+                     &&
                      flexLine.Layout.RemainingFreeSpace > 0)
             {
                 flexGrowFactor = currentLineChild.ResolveFlexGrow();
+
                 if (!float.IsNaN(flexGrowFactor) && flexGrowFactor != 0)
                 {
                     updatedMainSize = BoundAxisHelper.BoundAxis(
                         currentLineChild,
                         mainAxis,
                         direction,
-                        childFlexBasis +
-                            flexLine.Layout.RemainingFreeSpace /
-                            flexLine.Layout.TotalFlexGrowFactors * flexGrowFactor,
+                        childFlexBasis
+                        +
+                            flexLine.Layout.RemainingFreeSpace
+                        /
+                            flexLine.Layout.TotalFlexGrowFactors
+                        * flexGrowFactor,
                         availableInnerMainDim,
                         availableInnerWidth
                     );
@@ -2042,6 +2210,7 @@ internal static class YogaAlgorithm
             SizingMode childMainSizingMode = SizingMode.StretchFit;
 
             var childStyle = currentLineChild.Style;
+
             if (YogaFloat.IsDefined(childStyle.AspectRatio))
             {
                 childCrossSize = isMainAxisRow
@@ -2051,12 +2220,18 @@ internal static class YogaAlgorithm
                 childCrossSize += marginCross;
             }
             else if (
-                !float.IsNaN(availableInnerCrossDim) &&
-                !currentLineChild.HasDefiniteLength(FlexDirectionHelper.Dimension(crossAxis), availableInnerCrossDim) &&
-                sizingModeCrossDim == SizingMode.StretchFit &&
-                !(isNodeFlexWrap && mainAxisOverflows) &&
-                AlignHelper.ResolveChildAlignment(node, currentLineChild) == FlexAlign.Stretch &&
-                !currentLineChild.Style.FlexStartMarginIsAuto(crossAxis, direction) &&
+                !float.IsNaN(availableInnerCrossDim)
+                &&
+                !currentLineChild.HasDefiniteLength(FlexDirectionHelper.Dimension(crossAxis), availableInnerCrossDim)
+                &&
+                sizingModeCrossDim == SizingMode.StretchFit
+                &&
+                !(isNodeFlexWrap && mainAxisOverflows)
+                &&
+                AlignHelper.ResolveChildAlignment(node, currentLineChild) == FlexAlign.Stretch
+                &&
+                !currentLineChild.Style.FlexStartMarginIsAuto(crossAxis, direction)
+                &&
                 !currentLineChild.Style.FlexEndMarginIsAuto(crossAxis, direction))
             {
                 childCrossSize = availableInnerCrossDim;
@@ -2076,9 +2251,11 @@ internal static class YogaAlgorithm
                     FlexDirectionHelper.Dimension(crossAxis),
                     availableInnerCrossDim,
                     availableInnerWidth
-                ) + marginCross;
+                )
+                                 + marginCross;
                 bool isLoosePercentageMeasurement =
-                    currentLineChild.ProcessedDimensions[(int)FlexDirectionHelper.Dimension(crossAxis)].IsPercent &&
+                    currentLineChild.ProcessedDimensions[(int)FlexDirectionHelper.Dimension(crossAxis)].IsPercent
+                    &&
                     sizingModeCrossDim != SizingMode.StretchFit;
                 childCrossSizingMode =
                     YogaFloat.IsUndefined(childCrossSize) || isLoosePercentageMeasurement
@@ -2106,9 +2283,12 @@ internal static class YogaAlgorithm
             );
 
             bool requiresStretchLayout =
-                !currentLineChild.HasDefiniteLength(FlexDirectionHelper.Dimension(crossAxis), availableInnerCrossDim) &&
-                AlignHelper.ResolveChildAlignment(node, currentLineChild) == FlexAlign.Stretch &&
-                !currentLineChild.Style.FlexStartMarginIsAuto(crossAxis, direction) &&
+                !currentLineChild.HasDefiniteLength(FlexDirectionHelper.Dimension(crossAxis), availableInnerCrossDim)
+                &&
+                AlignHelper.ResolveChildAlignment(node, currentLineChild) == FlexAlign.Stretch
+                &&
+                !currentLineChild.Style.FlexStartMarginIsAuto(crossAxis, direction)
+                &&
                 !currentLineChild.Style.FlexEndMarginIsAuto(crossAxis, direction);
 
             float childWidth = isMainAxisRow ? childMainSize : childCrossSize;
@@ -2233,7 +2413,8 @@ internal static class YogaAlgorithm
 
         if (sizingModeMainDim == SizingMode.FitContent && flexLine.Layout.RemainingFreeSpace > 0)
         {
-            if (style.MinDimensions[(int)FlexDirectionHelper.Dimension(mainAxis)].IsDefined &&
+            if (style.MinDimensions[(int)FlexDirectionHelper.Dimension(mainAxis)].IsDefined
+                &&
                 YogaFloat.IsDefined(style.ResolvedMinDimension(
                     direction,
                     FlexDirectionHelper.Dimension(mainAxis),
@@ -2248,8 +2429,10 @@ internal static class YogaAlgorithm
                         FlexDirectionHelper.Dimension(mainAxis),
                         mainAxisOwnerSize,
                         ownerWidth
-                    ) -
-                    leadingPaddingAndBorderMain - trailingPaddingAndBorderMain;
+                    )
+                    -
+                    leadingPaddingAndBorderMain
+                    - trailingPaddingAndBorderMain;
                 float occupiedSpaceByChildNodes = availableInnerMainDim - flexLine.Layout.RemainingFreeSpace;
                 flexLine.Layout.RemainingFreeSpace = YogaFloat.MaxOrDefined(
                     0.0f,
@@ -2274,24 +2457,31 @@ internal static class YogaAlgorithm
             {
                 case FlexJustify.Center:
                     leadingMainDim = flexLine.Layout.RemainingFreeSpace / 2;
+
                     break;
                 case FlexJustify.FlexEnd:
                     leadingMainDim = flexLine.Layout.RemainingFreeSpace;
+
                     break;
                 case FlexJustify.SpaceBetween:
                     if (flexLine.ItemsInFlow.Count > 1)
                         betweenMainDim += flexLine.Layout.RemainingFreeSpace / (float)(flexLine.ItemsInFlow.Count - 1);
+
                     break;
                 case FlexJustify.SpaceEvenly:
                     leadingMainDim = flexLine.Layout.RemainingFreeSpace / (float)(flexLine.ItemsInFlow.Count + 1);
                     betweenMainDim += leadingMainDim;
+
                     break;
                 case FlexJustify.SpaceAround:
                     leadingMainDim = 0.5f * flexLine.Layout.RemainingFreeSpace / (float)flexLine.ItemsInFlow.Count;
                     betweenMainDim += leadingMainDim * 2;
+
                     break;
                 default:
+
                     // Start, End, Auto, FlexStart, Stretch: No-Op
+
                     break;
             }
         }
@@ -2308,7 +2498,8 @@ internal static class YogaAlgorithm
             var child = flexLine.ItemsInFlow[ci];
             var childLayout = child.Layout;
 
-            if (child.Style.FlexStartMarginIsAuto(mainAxis, direction) &&
+            if (child.Style.FlexStartMarginIsAuto(mainAxis, direction)
+                &&
                 flexLine.Layout.RemainingFreeSpace > 0.0f)
             {
                 flexLine.Layout.MainDim += flexLine.Layout.RemainingFreeSpace / (float)flexLine.NumberOfAutoMargins;
@@ -2325,17 +2516,20 @@ internal static class YogaAlgorithm
             if (ci != flexLine.ItemsInFlow.Count - 1)
                 flexLine.Layout.MainDim += betweenMainDim;
 
-            if (child.Style.FlexEndMarginIsAuto(mainAxis, direction) &&
+            if (child.Style.FlexEndMarginIsAuto(mainAxis, direction)
+                &&
                 flexLine.Layout.RemainingFreeSpace > 0.0f)
             {
                 flexLine.Layout.MainDim += flexLine.Layout.RemainingFreeSpace / (float)flexLine.NumberOfAutoMargins;
             }
 
             bool canSkipFlex = !performLayout && sizingModeCrossDim == SizingMode.StretchFit;
+
             if (canSkipFlex)
             {
                 flexLine.Layout.MainDim +=
-                    child.Style.ComputeMarginForAxis(mainAxis, availableInnerWidth) +
+                    child.Style.ComputeMarginForAxis(mainAxis, availableInnerWidth)
+                    +
                     YogaFloat.UnwrapOrDefault(childLayout.ComputedFlexBasis);
                 flexLine.Layout.CrossDim = availableInnerCrossDim;
             }
@@ -2345,11 +2539,14 @@ internal static class YogaAlgorithm
 
                 if (isNodeBaselineLayout)
                 {
-                    float ascent = BaselineHelper.CalculateBaseline(child) +
+                    float ascent = BaselineHelper.CalculateBaseline(child)
+                                   +
                         child.Style.ComputeFlexStartMargin(FlexDirection.Column, direction, availableInnerWidth);
                     float descent =
-                        child.Layout.GetMeasuredDimension(YogaDimension.Height) +
-                        child.Style.ComputeMarginForAxis(FlexDirection.Column, availableInnerWidth) - ascent;
+                        child.Layout.GetMeasuredDimension(YogaDimension.Height)
+                        +
+                        child.Style.ComputeMarginForAxis(FlexDirection.Column, availableInnerWidth)
+                        - ascent;
                     maxAscentForCurrentLine = YogaFloat.MaxOrDefined(maxAscentForCurrentLine, ascent);
                     maxDescentForCurrentLine = YogaFloat.MaxOrDefined(maxDescentForCurrentLine, descent);
                 }
@@ -2381,7 +2578,8 @@ internal static class YogaAlgorithm
         float containingBlockWidth
     )
     {
-        float position = child.Style.ComputeFlexStartMargin(axis, direction, containingBlockWidth) +
+        float position = child.Style.ComputeFlexStartMargin(axis, direction, containingBlockWidth)
+                         +
             parent.Layout.GetBorder(FlexDirectionHelper.FlexStartEdge(axis));
 
         if (!child.HasErrata(YogaErrata.AbsolutePositionWithoutInsetsExcludesPadding))
@@ -2398,7 +2596,8 @@ internal static class YogaAlgorithm
         float containingBlockWidth
     )
     {
-        float flexEndPosition = parent.Layout.GetBorder(FlexDirectionHelper.FlexEndEdge(axis)) +
+        float flexEndPosition = parent.Layout.GetBorder(FlexDirectionHelper.FlexEndEdge(axis))
+                                +
             child.Style.ComputeFlexEndMargin(axis, direction, containingBlockWidth);
 
         if (!child.HasErrata(YogaErrata.AbsolutePositionWithoutInsetsExcludesPadding))
@@ -2419,8 +2618,10 @@ internal static class YogaAlgorithm
     )
     {
         float parentContentBoxSize =
-            parent.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis)) -
-            parent.Layout.GetBorder(FlexDirectionHelper.FlexStartEdge(axis)) -
+            parent.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis))
+            -
+            parent.Layout.GetBorder(FlexDirectionHelper.FlexStartEdge(axis))
+            -
             parent.Layout.GetBorder(FlexDirectionHelper.FlexEndEdge(axis));
 
         if (!child.HasErrata(YogaErrata.AbsolutePositionWithoutInsetsExcludesPadding))
@@ -2430,11 +2631,14 @@ internal static class YogaAlgorithm
         }
 
         float childOuterSize =
-            child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis)) +
+            child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis))
+            +
             child.Style.ComputeMarginForAxis(axis, containingBlockWidth);
 
-        float position = (parentContentBoxSize - childOuterSize) / 2.0f +
-            parent.Layout.GetBorder(FlexDirectionHelper.FlexStartEdge(axis)) +
+        float position = (parentContentBoxSize - childOuterSize) / 2.0f
+                         +
+            parent.Layout.GetBorder(FlexDirectionHelper.FlexStartEdge(axis))
+                         +
             child.Style.ComputeFlexStartMargin(axis, direction, containingBlockWidth);
 
         if (!child.HasErrata(YogaErrata.AbsolutePositionWithoutInsetsExcludesPadding))
@@ -2456,6 +2660,7 @@ internal static class YogaAlgorithm
     )
     {
         var justify = parent.Style.JustifyContent;
+
         switch (justify)
         {
             case FlexJustify.Start:
@@ -2464,15 +2669,18 @@ internal static class YogaAlgorithm
             case FlexJustify.FlexStart:
             case FlexJustify.SpaceBetween:
                 SetFlexStartLayoutPosition(parent, child, direction, mainAxis, containingBlockWidth);
+
                 break;
             case FlexJustify.End:
             case FlexJustify.FlexEnd:
                 SetFlexEndLayoutPosition(parent, child, direction, mainAxis, containingBlockWidth);
+
                 break;
             case FlexJustify.Center:
             case FlexJustify.SpaceAround:
             case FlexJustify.SpaceEvenly:
                 SetCenterLayoutPosition(parent, child, direction, mainAxis, containingBlockWidth);
+
                 break;
         }
     }
@@ -2487,6 +2695,7 @@ internal static class YogaAlgorithm
     {
         var itemAlign = AlignHelper.ResolveChildAlignment(parent, child);
         var parentWrap = parent.Style.FlexWrap;
+
         if (parentWrap == FlexWrap.WrapReverse)
         {
             if (itemAlign == FlexAlign.FlexEnd)
@@ -2506,13 +2715,16 @@ internal static class YogaAlgorithm
             case FlexAlign.Stretch:
             case FlexAlign.SpaceEvenly:
                 SetFlexStartLayoutPosition(parent, child, direction, crossAxis, containingBlockWidth);
+
                 break;
             case FlexAlign.End:
             case FlexAlign.FlexEnd:
                 SetFlexEndLayoutPosition(parent, child, direction, crossAxis, containingBlockWidth);
+
                 break;
             case FlexAlign.Center:
                 SetCenterLayoutPosition(parent, child, direction, crossAxis, containingBlockWidth);
+
                 break;
         }
     }
@@ -2531,12 +2743,15 @@ internal static class YogaAlgorithm
         bool isAxisRow = FlexDirectionHelper.IsRow(axis);
         float containingBlockSize = isAxisRow ? containingBlockWidth : containingBlockHeight;
 
-        if (child.Style.IsInlineStartPositionDefined(axis, direction) &&
+        if (child.Style.IsInlineStartPositionDefined(axis, direction)
+            &&
             !child.Style.IsInlineStartPositionAuto(axis, direction))
         {
             float positionRelativeToInlineStart =
-                child.Style.ComputeInlineStartPosition(axis, direction, containingBlockSize) +
-                containingNode.Style.ComputeInlineStartBorder(axis, direction) +
+                child.Style.ComputeInlineStartPosition(axis, direction, containingBlockSize)
+                +
+                containingNode.Style.ComputeInlineStartBorder(axis, direction)
+                +
                 child.Style.ComputeInlineStartMargin(axis, direction, containingBlockSize);
             float positionRelativeToFlexStart =
                 FlexDirectionHelper.InlineStartEdge(axis, direction) != FlexDirectionHelper.FlexStartEdge(axis)
@@ -2544,14 +2759,19 @@ internal static class YogaAlgorithm
                     : positionRelativeToInlineStart;
             child.SetLayoutPosition(positionRelativeToFlexStart, FlexDirectionHelper.FlexStartEdge(axis));
         }
-        else if (child.Style.IsInlineEndPositionDefined(axis, direction) &&
+        else if (child.Style.IsInlineEndPositionDefined(axis, direction)
+                 &&
                  !child.Style.IsInlineEndPositionAuto(axis, direction))
         {
             float positionRelativeToInlineStart =
-                containingNode.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis)) -
-                child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis)) -
-                containingNode.Style.ComputeInlineEndBorder(axis, direction) -
-                child.Style.ComputeInlineEndMargin(axis, direction, containingBlockSize) -
+                containingNode.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis))
+                -
+                child.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis))
+                -
+                containingNode.Style.ComputeInlineEndBorder(axis, direction)
+                -
+                child.Style.ComputeInlineEndMargin(axis, direction, containingBlockSize)
+                -
                 child.Style.ComputeInlineEndPosition(axis, direction, containingBlockSize);
             float positionRelativeToFlexStart =
                 FlexDirectionHelper.InlineStartEdge(axis, direction) != FlexDirectionHelper.FlexStartEdge(axis)
@@ -2604,16 +2824,23 @@ internal static class YogaAlgorithm
         }
         else
         {
-            if (child.Style.IsFlexStartPositionDefined(FlexDirection.Row, direction) &&
-                child.Style.IsFlexEndPositionDefined(FlexDirection.Row, direction) &&
-                !child.Style.IsFlexStartPositionAuto(FlexDirection.Row, direction) &&
+            if (child.Style.IsFlexStartPositionDefined(FlexDirection.Row, direction)
+                &&
+                child.Style.IsFlexEndPositionDefined(FlexDirection.Row, direction)
+                &&
+                !child.Style.IsFlexStartPositionAuto(FlexDirection.Row, direction)
+                &&
                 !child.Style.IsFlexEndPositionAuto(FlexDirection.Row, direction))
             {
                 childWidth =
-                    containingNode.Layout.GetMeasuredDimension(YogaDimension.Width) -
-                    (containingNode.Style.ComputeFlexStartBorder(FlexDirection.Row, direction) +
-                     containingNode.Style.ComputeFlexEndBorder(FlexDirection.Row, direction)) -
-                    (child.Style.ComputeFlexStartPosition(FlexDirection.Row, direction, containingBlockWidth) +
+                    containingNode.Layout.GetMeasuredDimension(YogaDimension.Width)
+                    -
+                    (containingNode.Style.ComputeFlexStartBorder(FlexDirection.Row, direction)
+                     +
+                     containingNode.Style.ComputeFlexEndBorder(FlexDirection.Row, direction))
+                    -
+                    (child.Style.ComputeFlexStartPosition(FlexDirection.Row, direction, containingBlockWidth)
+                     +
                      child.Style.ComputeFlexEndPosition(FlexDirection.Row, direction, containingBlockWidth));
                 childWidth = BoundAxisHelper.BoundAxis(
                     child,
@@ -2633,16 +2860,23 @@ internal static class YogaAlgorithm
         }
         else
         {
-            if (child.Style.IsFlexStartPositionDefined(FlexDirection.Column, direction) &&
-                child.Style.IsFlexEndPositionDefined(FlexDirection.Column, direction) &&
-                !child.Style.IsFlexStartPositionAuto(FlexDirection.Column, direction) &&
+            if (child.Style.IsFlexStartPositionDefined(FlexDirection.Column, direction)
+                &&
+                child.Style.IsFlexEndPositionDefined(FlexDirection.Column, direction)
+                &&
+                !child.Style.IsFlexStartPositionAuto(FlexDirection.Column, direction)
+                &&
                 !child.Style.IsFlexEndPositionAuto(FlexDirection.Column, direction))
             {
                 childHeight =
-                    containingNode.Layout.GetMeasuredDimension(YogaDimension.Height) -
-                    (containingNode.Style.ComputeFlexStartBorder(FlexDirection.Column, direction) +
-                     containingNode.Style.ComputeFlexEndBorder(FlexDirection.Column, direction)) -
-                    (child.Style.ComputeFlexStartPosition(FlexDirection.Column, direction, containingBlockHeight) +
+                    containingNode.Layout.GetMeasuredDimension(YogaDimension.Height)
+                    -
+                    (containingNode.Style.ComputeFlexStartBorder(FlexDirection.Column, direction)
+                     +
+                     containingNode.Style.ComputeFlexEndBorder(FlexDirection.Column, direction))
+                    -
+                    (child.Style.ComputeFlexStartPosition(FlexDirection.Column, direction, containingBlockHeight)
+                     +
                      child.Style.ComputeFlexEndPosition(FlexDirection.Column, direction, containingBlockHeight));
                 childHeight = BoundAxisHelper.BoundAxis(
                     child,
@@ -2656,6 +2890,7 @@ internal static class YogaAlgorithm
         }
 
         // Aspect ratio
+
         if (YogaFloat.IsUndefined(childWidth) ^ YogaFloat.IsUndefined(childHeight))
         {
             if (YogaFloat.IsDefined(child.Style.AspectRatio))
@@ -2668,14 +2903,19 @@ internal static class YogaAlgorithm
         }
 
         // If still missing dimension(s), measure content
+
         if (YogaFloat.IsUndefined(childWidth) || YogaFloat.IsUndefined(childHeight))
         {
             childWidthSizingMode = YogaFloat.IsUndefined(childWidth) ? SizingMode.MaxContent : SizingMode.StretchFit;
             childHeightSizingMode = YogaFloat.IsUndefined(childHeight) ? SizingMode.MaxContent : SizingMode.StretchFit;
 
-            if (!isMainAxisRow && YogaFloat.IsUndefined(childWidth) &&
-                widthMode != SizingMode.MaxContent &&
-                YogaFloat.IsDefined(containingBlockWidth) && containingBlockWidth > 0)
+            if (!isMainAxisRow
+                && YogaFloat.IsUndefined(childWidth)
+                &&
+                widthMode != SizingMode.MaxContent
+                &&
+                YogaFloat.IsDefined(containingBlockWidth)
+                && containingBlockWidth > 0)
             {
                 childWidth = containingBlockWidth;
                 childWidthSizingMode = SizingMode.FitContent;
@@ -2695,9 +2935,11 @@ internal static class YogaAlgorithm
                 generationCount
             );
 
-            childWidth = child.Layout.GetMeasuredDimension(YogaDimension.Width) +
+            childWidth = child.Layout.GetMeasuredDimension(YogaDimension.Width)
+                         +
                 child.Style.ComputeMarginForAxis(FlexDirection.Row, containingBlockWidth);
-            childHeight = child.Layout.GetMeasuredDimension(YogaDimension.Height) +
+            childHeight = child.Layout.GetMeasuredDimension(YogaDimension.Height)
+                          +
                 child.Style.ComputeMarginForAxis(FlexDirection.Column, containingBlockWidth);
         }
 
@@ -2755,6 +2997,7 @@ internal static class YogaAlgorithm
         foreach (var child in currentNode.GetLayoutChildren())
         {
             if (child.Style.Display == YogaDisplay.None)
+
                 continue;
 
             if (child.Style.PositionType == FlexPositionType.Absolute)
@@ -2762,11 +3005,13 @@ internal static class YogaAlgorithm
                 bool absoluteErrata = currentNode.HasErrata(YogaErrata.AbsolutePercentAgainstInnerSize);
                 float containingBlockWidth = absoluteErrata
                     ? containingNodeAvailableInnerWidth
-                    : containingNode.Layout.GetMeasuredDimension(YogaDimension.Width) -
+                    : containingNode.Layout.GetMeasuredDimension(YogaDimension.Width)
+                      -
                       containingNode.Style.ComputeBorderForAxis(FlexDirection.Row);
                 float containingBlockHeight = absoluteErrata
                     ? containingNodeAvailableInnerHeight
-                    : containingNode.Layout.GetMeasuredDimension(YogaDimension.Height) -
+                    : containingNode.Layout.GetMeasuredDimension(YogaDimension.Height)
+                      -
                       containingNode.Style.ComputeBorderForAxis(FlexDirection.Column);
 
                 LayoutAbsoluteChild(
@@ -2823,15 +3068,18 @@ internal static class YogaAlgorithm
                 child.SetLayoutPosition(childLeftOffsetFromParent, YogaPhysicalEdge.Left);
                 child.SetLayoutPosition(childTopOffsetFromParent, YogaPhysicalEdge.Top);
             }
-            else if (child.Style.PositionType == FlexPositionType.Static &&
+            else if (child.Style.PositionType == FlexPositionType.Static
+                     &&
                      !child.AlwaysFormsContainingBlock)
             {
                 var childDirection = child.ResolveDirection(currentNodeDirection);
                 float childLeftOffsetFromContainingBlock =
-                    currentNodeLeftOffsetFromContainingBlock +
+                    currentNodeLeftOffsetFromContainingBlock
+                    +
                     child.Layout.GetPosition(YogaPhysicalEdge.Left);
                 float childTopOffsetFromContainingBlock =
-                    currentNodeTopOffsetFromContainingBlock +
+                    currentNodeTopOffsetFromContainingBlock
+                    +
                     child.Layout.GetPosition(YogaPhysicalEdge.Top);
 
                 hasNewLayout = LayoutAbsoluteDescendants(
@@ -2845,7 +3093,8 @@ internal static class YogaAlgorithm
                     childTopOffsetFromContainingBlock,
                     containingNodeAvailableInnerWidth,
                     containingNodeAvailableInnerHeight
-                ) || hasNewLayout;
+                )
+                               || hasNewLayout;
 
                 if (hasNewLayout)
                     child.HasNewLayout = hasNewLayout;

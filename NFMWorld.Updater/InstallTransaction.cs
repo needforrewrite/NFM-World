@@ -18,24 +18,33 @@ internal static class InstallTransaction
         var changes = new List<Change>();
         // Refuse case/normalization-only renames across versions, including parent directories.
         var names = new PackagePaths();
-        foreach (var path in old.Files.Keys.Concat(next.Files.Keys).Distinct(StringComparer.Ordinal)) names.Add(path, false);
+        foreach (var path in old.Files.Keys.Concat(next.Files.Keys).Distinct(StringComparer.Ordinal))
+            names.Add(path, false);
+
         foreach (var (name, incoming) in next.Files)
         {
             var path = InstallLayout.CheckedPath(root, name);
             old.Files.TryGetValue(name, out var previous);
             var actual = ExistingHash(path);
+
             if (actual is not null && (previous is null || (actual != previous && actual != incoming)))
+
                 throw new InvalidDataException($"Update would overwrite a local file: {name}");
-            if (actual != incoming) changes.Add(new(name, actual, incoming));
+            if (actual != incoming)
+                changes.Add(new(name, actual, incoming));
         }
 
         foreach (var (name, previous) in old.Files)
         {
-            if (next.Files.ContainsKey(name)) continue;
-            if (ExistingHash(InstallLayout.CheckedPath(root, name)) == previous) changes.Add(new(name, previous, null));
+            if (next.Files.ContainsKey(name))
+
+                continue;
+            if (ExistingHash(InstallLayout.CheckedPath(root, name)) == previous)
+                changes.Add(new(name, previous, null));
         }
 
         var app = InstallLayout.Apphost(old.Rid);
+
         if (changes.FindIndex(c => c.Path == app) is var index && index >= 0)
         {
             var change = changes[index];
@@ -51,24 +60,30 @@ internal static class InstallTransaction
         );
 
         var workspace = InstallLayout.CheckedPath(root, InstallLayout.Workspace, true);
+
         if (InstallLayout
-            .Attributes(workspace) is not null) throw new IOException($"Move the existing update workspace aside: {workspace}");
+            .Attributes(workspace) is not null)
+
+            throw new IOException($"Move the existing update workspace aside: {workspace}");
         Directory.CreateDirectory(workspace);
         var journal = InstallLayout.CheckedPath(root, InstallLayout.Journal);
         var applied = new List<Change>();
         var createdDirs = new List<string>();
         var keepWorkspace = false;
+
         try
         {
             foreach (var change in changes)
             {
                 var live = VerifyLive(change, change.Before);
-                if (change.Before is not null) Copy(live, WorkspaceFile("backup", change.Path), change.Before);
-                if (change.After is not null) Copy(
-                    InstallLayout.CheckedPath(stage, change.Path),
-                    WorkspaceFile("new", change.Path),
-                    change.After
-                );
+                if (change.Before is not null)
+                    Copy(live, WorkspaceFile("backup", change.Path), change.Before);
+                if (change.After is not null)
+                    Copy(
+                        InstallLayout.CheckedPath(stage, change.Path),
+                        WorkspaceFile("new", change.Path),
+                        change.After
+                    );
             }
 
             var entries = changes.Select(c => new JournalEntry(c.Path, c.Before is not null)).ToArray();
@@ -76,7 +91,11 @@ internal static class InstallTransaction
                 new UpdateJournal(old.Tag, next.Tag, entries),
                 UpdateJson.Default.UpdateJournal
             );
-            if (recovery.Length > InstallLayout.MaxJournal) throw new InvalidDataException("Update journal is too large.");
+
+            if (recovery.Length > InstallLayout.MaxJournal)
+
+                throw new InvalidDataException("Update journal is too large.");
+
             using (var file = new FileStream(journal, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
                 file.Write(recovery);
@@ -86,11 +105,14 @@ internal static class InstallTransaction
             log(
                 $"Recovery if interrupted: use {journal}. Restore files from backup, remove only entries with hadOriginal=false, then move the workspace aside."
             );
+
             foreach (var change in changes)
             {
                 beforeWrite?.Invoke(change.Path);
                 var live = VerifyLive(change, change.Before);
-                if (change.After is null) File.Delete(live);
+
+                if (change.After is null)
+                    File.Delete(live);
                 else
                 {
                     EnsureParents(change.Path);
@@ -109,7 +131,9 @@ internal static class InstallTransaction
                 {
                     var change = applied[i];
                     var live = VerifyLive(change, change.After);
-                    if (change.Before is null) File.Delete(live);
+
+                    if (change.Before is null)
+                        File.Delete(live);
                     else
                     {
                         var backup = WorkspaceFile("backup", change.Path);
@@ -122,13 +146,15 @@ internal static class InstallTransaction
                 for (var i = createdDirs.Count - 1; i >= 0; i--)
                 {
                     var dir = InstallLayout.CheckedPath(root, createdDirs[i], true);
-                    if (!Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir);
+                    if (!Directory.EnumerateFileSystemEntries(dir).Any())
+                        Directory.Delete(dir);
                 }
             }
             catch (Exception ex)
             {
                 keepWorkspace = true;
                 log(ex.ToString());
+
                 throw new IOException($"Update rollback failed. Recover from {journal} before starting the game.", ex);
             }
 
@@ -158,7 +184,11 @@ internal static class InstallTransaction
         string VerifyLive(Change change, string? expected)
         {
             var path = InstallLayout.CheckedPath(root, change.Path);
-            if (ExistingHash(path) != expected) throw new IOException($"File changed during update: {change.Path}");
+
+            if (ExistingHash(path) != expected)
+
+                throw new IOException($"File changed during update: {change.Path}");
+
             return path;
         }
 
@@ -168,7 +198,10 @@ internal static class InstallTransaction
             {
                 var relative = path[..i];
                 var directory = InstallLayout.CheckedPath(root, relative, true);
-                if (InstallLayout.Attributes(directory) is not null) continue;
+
+                if (InstallLayout.Attributes(directory) is not null)
+
+                    continue;
                 Directory.CreateDirectory(directory);
                 createdDirs.Add(relative);
             }
@@ -180,6 +213,7 @@ internal static class InstallTransaction
     private static void Copy(string source, string target, string expected)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+
         using (var file = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None))
         {
             using var input = File.OpenRead(source);
@@ -187,7 +221,10 @@ internal static class InstallTransaction
             file.Flush(flushToDisk: true);
         }
 
-        if (InstallLayout.Hash(target) != expected) throw new IOException($"File changed while staging: {source}");
-        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(target, File.GetUnixFileMode(source) & (UnixFileMode)511);
+        if (InstallLayout.Hash(target) != expected)
+
+            throw new IOException($"File changed while staging: {source}");
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(target, File.GetUnixFileMode(source) & (UnixFileMode)511);
     }
 }

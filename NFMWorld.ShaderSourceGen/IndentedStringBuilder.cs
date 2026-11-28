@@ -233,6 +233,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
         {
             var first = true;
             string? line;
+
             while ((line = reader.ReadLine()) != null)
             {
                 if (first)
@@ -451,6 +452,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
                 provider is not CultureInfo || provider.GetFormat(typeof(ICustomFormatter)) is null,
                 "Expected CultureInfo to not provide a custom formatter"
             );
+
             return
                 provider.GetType() != typeof(CultureInfo)
                 && // optimization to avoid GetFormat in the majority case
@@ -481,6 +483,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             {
                 // If there's a custom formatter, always use it.
                 AppendCustomFormatter(value, format: null);
+
                 return;
             }
 
@@ -533,6 +536,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             {
                 // If there's a custom formatter, always use it.
                 AppendCustomFormatter(value, format);
+
                 return;
             }
 
@@ -600,6 +604,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
                 int start = _stringBuilder.Length;
                 AppendFormatted(value, format);
                 int paddingRequired = -alignment - (_stringBuilder.Length - start);
+
                 if (paddingRequired > 0)
                 {
                     _stringBuilder.Append(' ', paddingRequired);
@@ -626,7 +631,9 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             AppendFormatted(handler.Text, alignment);
             handler.Clear();
 #else
+
             // .NET 8.0 doesn't expose handler.Text, hacky workaround
+
             if (alignment == 0)
             {
                 _stringBuilder.Append(
@@ -666,6 +673,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
             else
             {
                 bool leftAlign = false;
+
                 if (alignment < 0)
                 {
                     leftAlign = true;
@@ -673,6 +681,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
                 }
 
                 int paddingRequired = alignment - value.Length;
+
                 if (paddingRequired <= 0)
                 {
                     _stringBuilder.Append(value);
@@ -824,6 +833,7 @@ public class IndentedStringBuilder(byte indentSize = 4, int indent = 0)
         result._stringBuilder.Append(_stringBuilder);
         result._indent = _indent;
         result._indentPending = _indentPending;
+
         return result;
     }
 

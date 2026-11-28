@@ -36,6 +36,7 @@ internal struct CloneCollection<T> : IDisposable
             else
             {
                 var i = 0;
+
                 foreach (var item in source)
                 {
                     array[i++] = item;
@@ -50,6 +51,7 @@ internal struct CloneCollection<T> : IDisposable
             var array = ArrayPool<T>.Shared.Rent(16);
 
             var i = 0;
+
             foreach (var item in source)
             {
                 TryEnsureCapacity(ref array, i);

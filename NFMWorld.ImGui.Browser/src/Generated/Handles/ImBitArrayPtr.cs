@@ -15,30 +15,36 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public readonly partial struct ImBitArrayPtr : IEquatable<ImBitArrayPtr>
-	{
-		public ImBitArrayPtr(nint handle) { Handle = handle; }
-		public nint Handle { get; }
-		public bool IsNull => Handle == 0;
-		public static ImBitArrayPtr Null => new ImBitArrayPtr(0);
-		public static implicit operator ImBitArrayPtr(nint handle) => new ImBitArrayPtr(handle);
-		public static bool operator ==(ImBitArrayPtr left, ImBitArrayPtr right) => left.Handle == right.Handle;
-		public static bool operator !=(ImBitArrayPtr left, ImBitArrayPtr right) => left.Handle != right.Handle;
-		public static bool operator ==(ImBitArrayPtr left, nint right) => left.Handle == right;
-		public static bool operator !=(ImBitArrayPtr left, nint right) => left.Handle != right;
-		public bool Equals(ImBitArrayPtr other) => Handle == other.Handle;
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImBitArrayPtr handle && Equals(handle);
-		/// <inheritdoc/>
-		public override int GetHashCode() => Handle.GetHashCode();
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImBitArrayPtr [0x{0}]", Handle.ToString("X"));
-		#endif
-	}
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public readonly partial struct ImBitArrayPtr : IEquatable<ImBitArrayPtr>
+    {
+        public ImBitArrayPtr(nint handle)
+        {
+            Handle = handle;
+        }
+
+        public nint Handle { get; }
+        public bool IsNull => Handle == 0;
+        public static ImBitArrayPtr Null => new ImBitArrayPtr(0);
+        public static implicit operator ImBitArrayPtr(nint handle) => new ImBitArrayPtr(handle);
+        public static bool operator ==(ImBitArrayPtr left, ImBitArrayPtr right) => left.Handle == right.Handle;
+        public static bool operator !=(ImBitArrayPtr left, ImBitArrayPtr right) => left.Handle != right.Handle;
+        public static bool operator ==(ImBitArrayPtr left, nint right) => left.Handle == right;
+        public static bool operator !=(ImBitArrayPtr left, nint right) => left.Handle != right;
+        public bool Equals(ImBitArrayPtr other) => Handle == other.Handle;
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImBitArrayPtr handle && Equals(handle);
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => Handle.GetHashCode();
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImBitArrayPtr [0x{0}]", Handle.ToString("X"));
+#endif
+    }
 }

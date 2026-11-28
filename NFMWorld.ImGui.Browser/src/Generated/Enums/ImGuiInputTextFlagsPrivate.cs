@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiInputTextFlagsPrivate : int
-	{
-		/// <summary>
-		/// For internal use by InputTextMultiline()<br/>
-		/// </summary>
-		Multiline = unchecked(67108864),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiInputTextFlagsPrivate : int
+    {
+        /// <summary>
+        /// For internal use by InputTextMultiline()<br/>
+        /// </summary>
+        Multiline = unchecked(67108864),
 
-		/// <summary>
-		/// For internal use by TempInputText(), will skip calling ItemAdd(). Require bounding-box to strictly match.<br/>
-		/// </summary>
-		MergedItem = unchecked(134217728),
+        /// <summary>
+        /// For internal use by TempInputText(), will skip calling ItemAdd(). Require bounding-box to strictly match.<br/>
+        /// </summary>
+        MergedItem = unchecked(134217728),
 
-		/// <summary>
-		/// For internal use by InputScalar() and TempInputScalar()<br/>
-		/// </summary>
-		LocalizeDecimalPoint = unchecked(268435456),
-	}
+        /// <summary>
+        /// For internal use by InputScalar() and TempInputScalar()<br/>
+        /// </summary>
+        LocalizeDecimalPoint = unchecked(268435456),
+    }
 }

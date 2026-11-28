@@ -90,19 +90,25 @@ public static class CarPaint
         try
         {
             var fs = fileSystem ?? TheVFS.VFS;
+
             if (!fs.FileExists(SavePath))
+
                 return;
 
             var model = JsonSerializer.Deserialize<CarPaintFile>(fs.ReadAllText(SavePath));
+
             if (model?.Cars is null)
+
                 return;
 
             foreach (var (carId, slots) in model.Cars)
             {
                 if (string.IsNullOrWhiteSpace(carId) || slots is null)
+
                     continue;
 
                 var bySlot = new Dictionary<string, Color3>();
+
                 foreach (var (slotKey, rgb) in slots)
                 {
                     if (int.TryParse(slotKey, out var slot) && slot >= 0 && slot < SlotCount)
@@ -123,6 +129,7 @@ public static class CarPaint
     public static IReadOnlyList<CarColorSlot> Slots(Rad3d rad)
     {
         var result = new List<CarColorSlot>(SlotCount);
+
         for (var slot = 0; slot < SlotCount; slot++)
         {
             if (LiveColor(rad, slot) is { } color)
@@ -136,6 +143,7 @@ public static class CarPaint
     public static void Set(string carId, int slot, Color3 color, VirtualFS? fileSystem = null)
     {
         if (slot < 0 || slot >= SlotCount)
+
             return;
 
         lock (Gate)
@@ -159,7 +167,9 @@ public static class CarPaint
         lock (Gate)
         {
             EnsureLoaded();
+
             if (!Overrides.Remove(Key(carId)))
+
                 return;
 
             _version++;
@@ -174,10 +184,12 @@ public static class CarPaint
         lock (Gate)
         {
             if (!_dirty)
+
                 return;
 
             _lastSave = Environment.TickCount64;
             var model = new CarPaintFile();
+
             foreach (var (carId, slots) in Overrides)
             {
                 var values = new Dictionary<string, int>();
@@ -217,7 +229,9 @@ public static class CarPaint
             var colors = new Color3?[SlotCount];
             if (Overrides.TryGetValue(Key(carId), out var slots))
                 for (var slot = 0; slot < SlotCount; slot++)
-                    if (slots.TryGetValue(slot.ToString(), out var color)) colors[slot] = color;
+                    if (slots.TryGetValue(slot.ToString(), out var color))
+                        colors[slot] = color;
+
             return colors;
         }
     }
@@ -232,9 +246,12 @@ public static class CarPaint
         {
             States.TryGetValue(source, out var state);
             var polys = source.Polys.ToArray();
+
             for (var i = 0; i < polys.Length; i++)
             {
-                if (polys[i].ColNum is not { } slot || slot < 0 || slot >= SlotCount) continue;
+                if (polys[i].ColNum is not { } slot || slot < 0 || slot >= SlotCount)
+
+                    continue;
                 var color = colors is not null && slot < colors.Count && colors[slot] is { } chosen
                     ? ClampColor(chosen) : state?.Base[slot] ?? polys[i].Color;
                 polys[i] = polys[i] with { Color = color };
@@ -256,6 +273,7 @@ public static class CarPaint
                 source.RechargedStats
             );
             CarWheels.CopyTo(source, instance, wheels);
+
             return instance;
         }
     }
@@ -268,7 +286,9 @@ public static class CarPaint
             EnsureLoaded();
             var state = States.GetOrCreateValue(rad);
             CarWheels.Apply(rad, CarWheels.Get(carId));
+
             if (state.Version == _version)
+
                 return;
 
             if (!state.Captured)
@@ -280,6 +300,7 @@ public static class CarPaint
 
             Overrides.TryGetValue(Key(carId), out var overrides);
             var polys = rad.Polys;
+
             for (var slot = 0; slot < SlotCount; slot++)
             {
                 Color3? target = overrides is not null && overrides.TryGetValue(slot.ToString(), out var chosen)
@@ -287,6 +308,7 @@ public static class CarPaint
                     : state.Base[slot];
 
                 if (target is null)
+
                     continue;
 
                 for (var i = 0; i < polys.Length; i++)
@@ -314,7 +336,9 @@ public static class CarPaint
     private static Color3? LiveColor(Rad3d rad, int slot)
     {
         foreach (var poly in rad.Polys)
+
             if (poly.ColNum == slot)
+
                 return poly.Color;
 
         return null;

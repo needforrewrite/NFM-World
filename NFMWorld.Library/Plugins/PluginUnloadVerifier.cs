@@ -66,15 +66,18 @@ public static class PluginUnloadVerifier
         }
 
         if (ready.Count == 0)
+
             return;
 
         Collect();
 
         // Entries are already dropped, so a leak is reported once rather than on every
         // frame that follows - the server's tick loop would otherwise log it endlessly.
+
         foreach (var pending in ready)
         {
             if (!pending.Assembly.IsAlive)
+
                 continue;
 
             const string message =
@@ -82,6 +85,7 @@ public static class PluginUnloadVerifier
                 + "something the run left behind still references it, so its load context can never unload.";
 
 #if DEBUG
+
             throw new InvalidOperationException($"Plugin '{pending.PluginId}' {message}");
 #else
             Logging.Error($"Plugin '{pending.PluginId}' {message}");

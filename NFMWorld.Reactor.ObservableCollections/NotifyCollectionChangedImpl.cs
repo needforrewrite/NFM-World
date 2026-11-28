@@ -35,11 +35,14 @@ internal sealed class NotifyCollectionChangedImpl<T> : INotifyCollectionChanged<
 
     private void OnCollectionChanged(in NotifyCollectionChangedEventArgs<T> args)
     {
-        if (CollectionChanged == null && PropertyChanged == null) return;
+        if (CollectionChanged == null && PropertyChanged == null)
+
+            return;
 
         switch (args.Action)
         {
             case NotifyCollectionChangedAction.Add:
+
                 if (args.IsSingleItem)
                 {
                     eventDispatcher.Post(
@@ -75,6 +78,7 @@ internal sealed class NotifyCollectionChangedImpl<T> : INotifyCollectionChanged<
 
                 break;
             case NotifyCollectionChangedAction.Remove:
+
                 if (args.IsSingleItem)
                 {
                     eventDispatcher.Post(
@@ -111,6 +115,7 @@ internal sealed class NotifyCollectionChangedImpl<T> : INotifyCollectionChanged<
                 break;
             case NotifyCollectionChangedAction.Reset:
                 eventDispatcher.Post(_resetArgs);
+
                 break;
             case NotifyCollectionChangedAction.Replace:
                 eventDispatcher.Post(
@@ -127,6 +132,7 @@ internal sealed class NotifyCollectionChangedImpl<T> : INotifyCollectionChanged<
                         IsInvokePropertyChanged = false
                     }
                 );
+
                 break;
             case NotifyCollectionChangedAction.Move:
                 eventDispatcher.Post(
@@ -143,6 +149,7 @@ internal sealed class NotifyCollectionChangedImpl<T> : INotifyCollectionChanged<
                         IsInvokePropertyChanged = false
                     }
                 );
+
                 break;
         }
     }

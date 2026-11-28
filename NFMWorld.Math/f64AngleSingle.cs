@@ -117,11 +117,13 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
             if (degrees < 0)
             {
                 fix64 degreesfloor = fix64.Ceiling(degrees);
+
                 return (degrees - degreesfloor) * 60;
             }
             else
             {
                 fix64 degreesfloor = fix64.Floor(degrees);
+
                 return (degrees - degreesfloor) * 60;
             }
         }
@@ -249,6 +251,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     public static f64AngleSingle Wrap(f64AngleSingle value)
     {
         value.Wrap();
+
         return value;
     }
 
@@ -260,6 +263,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     public static f64AngleSingle WrapPositive(f64AngleSingle value)
     {
         value.WrapPositive();
+
         return value;
     }
 
@@ -272,6 +276,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     public static f64AngleSingle Min(f64AngleSingle left, f64AngleSingle right)
     {
         if (left.Radians < right.Radians)
+
             return left;
 
         return right;
@@ -286,6 +291,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     public static f64AngleSingle Max(f64AngleSingle left, f64AngleSingle right)
     {
         if (left.Radians > right.Radians)
+
             return left;
 
         return right;
@@ -508,17 +514,21 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     public readonly int CompareTo(object? other)
     {
         if (other == null)
+
             return 1;
 
         if (other is not f64AngleSingle single)
+
             throw new ArgumentException("Argument must be of type Angle.", nameof(other));
 
         fix64 degrees = single.Degrees;
 
         if (Degrees > degrees)
+
             return 1;
 
         if (Degrees < degrees)
+
             return -1;
 
         return 0;
@@ -540,9 +550,11 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     public readonly int CompareTo(f64AngleSingle other)
     {
         if (this.Degrees > other.Degrees)
+
             return 1;
 
         if (this.Degrees < other.Degrees)
+
             return -1;
 
         return 0;
@@ -587,6 +599,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
         var handler = new DefaultInterpolatedStringHandler(1, 1, formatProvider);
         handler.AppendFormatted(Radians * fix64.RadToDeg, format ?? "0.##");
         handler.AppendLiteral("°");
+
         return handler.ToStringAndClear();
     }
 
@@ -601,6 +614,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
         var handler = new MemoryExtensions.TryWriteInterpolatedStringHandler(1, 1, destination, provider, out _);
         handler.AppendFormatted(Radians * fix64.RadToDeg, format1);
         handler.AppendLiteral("°");
+
         return destination.TryWrite(ref handler, out charsWritten);
     }
 

@@ -10,9 +10,11 @@ public struct Random(long seed)
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(n, 0, "n must be positive");
 
         if ((n & -n) == n) // i.e., n is a power of 2
+
             return (int)((n * Next(31)) >> 31);
 
         long bits, val;
+
         do
         {
             bits = Next(31);

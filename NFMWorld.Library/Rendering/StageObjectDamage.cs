@@ -8,16 +8,20 @@ public static class StageObjectDamage
 {
     public static Rad3dPoly[] Deform(StageObject obj)
     {
-        if (obj.Damage == 0 || obj.Durability == 0) return obj.Rad.Polys;
+        if (obj.Damage == 0 || obj.Durability == 0)
+
+            return obj.Rad.Polys;
         var fraction = Math.Clamp((float)obj.Damage / obj.Durability, 0, 1);
         var amplitude = Math.Clamp(obj.MaxRadius * 0.12f, 8, 120);
         var inverseRotation = Matrix.Transpose(Matrix.CreateFromEuler((Euler)obj.Rotation));
         var push = Vector3.TransformNormal((Vector3)obj.Deformation / obj.Durability, inverseRotation) * amplitude;
         var result = new Rad3dPoly[obj.Rad.Polys.Length];
+
         for (var i = 0; i < result.Length; i++)
         {
             var original = obj.Rad.Polys[i];
             var points = new Vector3[original.Points.Length];
+
             for (var j = 0; j < points.Length; j++)
             {
                 var point = original.Points[j];
@@ -29,6 +33,7 @@ public static class StageObjectDamage
                 float Noise()
                 {
                     seed = unchecked(seed * 1664525u + 1013904223u);
+
                     return (seed >> 8) / 16777215f;
                 }
 

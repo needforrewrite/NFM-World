@@ -23,6 +23,7 @@ public class TimeTrialEndpointTests
         var register = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration("racer"));
         var token = (await register.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
         return client;
     }
 
@@ -36,6 +37,7 @@ public class TimeTrialEndpointTests
         form.Add(new StringContent(carHash), "carHash");
         form.Add(new StringContent("nfmm/road"), "stageName");
         form.Add(new StringContent("nfmm/radicalone"), "carName");
+
         return form;
     }
 
@@ -90,6 +92,7 @@ public class TimeTrialEndpointTests
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+
         foreach (var (name, ticks, version) in new[]
                  {
                      ("current", 2000, NFMWorldLibrary.Files.SavedTimeTrial.CURRENT_VERSION),
@@ -144,6 +147,7 @@ public class TimeTrialEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
         var published = new DateTimeOffset(2026, 11, 12, 10, 30, 0, TimeSpan.Zero);
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();

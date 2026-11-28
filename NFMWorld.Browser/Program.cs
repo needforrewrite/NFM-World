@@ -49,33 +49,42 @@ public static partial class Program
         // Opened on the first fetch or track listing. The read itself is
         // synchronous (see BrowserHttp) because zip parsing is, and the game is paused meanwhile.
         MusicFetch? fetch = null;
-        BrowserBoot.MountMusic(path =>
+        BrowserBoot.MountMusic(
+            path =>
             {
                 try
                 {
                     fetch ??= MusicFetch.Open(musicUrl);
-                    if (fetch is null) return null;
+
+                    if (fetch is null)
+
+                        return null;
 
                     var entryPath = path.Replace('\\', '/').TrimStart('/');
                     if (!entryPath.StartsWith("data/", StringComparison.Ordinal))
                         entryPath = "data/" + entryPath;
+
                     return fetch.ReadEntry(entryPath);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"[nfmw] music fetch failed for {path}: {e.Message}");
+
                     return null;
                 }
-            }, () =>
+            },
+            () =>
             {
                 try
                 {
                     fetch ??= MusicFetch.Open(musicUrl);
+
                     return fetch?.Paths ?? [];
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"[nfmw] music listing failed: {e.Message}");
+
                     return [];
                 }
             }
@@ -127,7 +136,9 @@ public static partial class Program
     [JSExport]
     public static void SetPreviewAsset(string? mode, string? hash, string? archiveUrl)
     {
-        if (_game is null || _preview is null) return;
+        if (_game is null || _preview is null)
+
+            return;
         if (NFMWorld.Gameplay.ArchivePreviewRequest.Parse(mode, hash, archiveUrl) is { } request)
             _nextPreview = request;
     }
@@ -174,7 +185,9 @@ public static partial class Program
             // SDL still owns the window and the events: its emscripten video backend creates the
             // canvas's surface and feeds the input plumbing the game already speaks.
             Step("SDL_Init");
+
             if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
+
                 throw new InvalidOperationException($"SDL_Init failed: {SDL_GetError()}");
 
             // The page reports whether it had a WebGPU device to give us, and that answer decides
@@ -206,7 +219,9 @@ public static partial class Program
                 // this call. See WgpuNativeContext.
                 Step("WgpuNativeContext.AcquireDevice");
                 device = WgpuNativeContext.AcquireDevice();
+
                 if (device == 0)
+
                     throw new InvalidOperationException("The page reported a WebGPU device but none was parked for the module.");
                 Console.WriteLine($"[nfmw] webgpu device {device:x}");
 
@@ -242,6 +257,7 @@ public static partial class Program
             // A preview loads one archive asset from its own bytes, so it needs neither the model
             // tables nor the plugin loader; only error_mesh is shared, since a stage whose piece
             // fails to resolve still falls back to it.
+
             if (_preview is null)
             {
                 Step("BackendGameSparker.Load");
@@ -275,11 +291,15 @@ public static partial class Program
             // and the original failure never prints. The type and message are read directly and
             // the stack is walked by hand, none of which formats anything.
             Console.WriteLine($"[nfmw] boot failed: {ex.GetType().FullName}: {ex.Message}");
+
             for (var frame = ex.StackTrace; frame != null;)
             {
                 var nl = frame.IndexOf('\n');
                 Console.WriteLine("[nfmw]   " + (nl < 0 ? frame : frame[..nl]).TrimEnd('\r'));
-                if (nl < 0) break;
+
+                if (nl < 0)
+
+                    break;
                 frame = frame[(nl + 1)..];
             }
         }
@@ -306,15 +326,20 @@ public static partial class Program
             // which for a framework exception is a resource key and no frames at all. Record it
             // once in full, then let it through: the page's loop keeps calling this, so repeating
             // the dump every frame would bury the first one.
+
             if (!_frameFailureLogged)
             {
                 _frameFailureLogged = true;
                 Console.WriteLine($"[nfmw] frame failed: {ex.GetType().FullName}: {ex.Message}");
+
                 for (var frame = ex.StackTrace; frame != null;)
                 {
                     var nl = frame.IndexOf('\n');
                     Console.WriteLine("[nfmw]   " + (nl < 0 ? frame : frame[..nl]).TrimEnd('\r'));
-                    if (nl < 0) break;
+
+                    if (nl < 0)
+
+                        break;
                     frame = frame[(nl + 1)..];
                 }
             }
@@ -338,7 +363,9 @@ public static partial class Program
     [JSExport]
     public static void Resize(int width, int height)
     {
-        if (width <= 0 || height <= 0) return;
+        if (width <= 0 || height <= 0)
+
+            return;
         _game?.Window.SetSize(width, height);
     }
 
@@ -351,7 +378,8 @@ public static partial class Program
     [JSExport]
     public static void SetBootSize(int width, int height)
     {
-        if (width > 0 && height > 0) _bootSize = (width, height);
+        if (width > 0 && height > 0)
+            _bootSize = (width, height);
     }
 
     /// <summary>

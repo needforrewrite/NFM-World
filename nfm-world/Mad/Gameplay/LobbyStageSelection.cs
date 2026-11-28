@@ -36,10 +36,10 @@ internal static class LobbyStageSelection
         => items
             .Where(item => item.Eligible && item.ContentHash.Length > 0)
             .Select(item => new StageOption(
-                    RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
-                    string.IsNullOrWhiteSpace(item.Name) ? ShortHash(item.ContentHash) : item.Name,
-                    item.AuthorByline
-                )
+                RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
+                string.IsNullOrWhiteSpace(item.Name) ? ShortHash(item.ContentHash) : item.Name,
+                item.AuthorByline
+            )
             )
             .ToArray();
 
@@ -63,7 +63,8 @@ internal static class LobbyStageSelection
     {
         state.OnlineSource.Value = true;
         var selected = state.Selected.Value;
-        if (state.SelectedArchiveStage.Value is { } archive && archive.Id == selected
+        if (state.SelectedArchiveStage.Value is { } archive
+            && archive.Id == selected
             && remote.All(option => option.Id != selected))
             remote = [archive, .. remote];
         Show(state, remote);
@@ -101,6 +102,7 @@ internal static class LobbyStageSelection
         {
             state.Restriction.Value = "";
             state.ConfirmEnabled.Value = false;
+
             return false;
         }
 
@@ -108,11 +110,13 @@ internal static class LobbyStageSelection
         {
             state.Restriction.Value = "";
             state.ConfirmEnabled.Value = true;
+
             return true;
         }
 
         state.Restriction.Value = LocalStageRestriction;
         state.ConfirmEnabled.Value = false;
+
         return false;
     }
 
@@ -130,6 +134,7 @@ internal static class LobbyStageSelection
     private static StageOption OptionFor(string stageId, IReadOnlyDictionary<string, string> names)
     {
         var slash = stageId.LastIndexOf('/');
+
         return new StageOption(
             stageId,
             names.TryGetValue(stageId, out var name) ? name : slash < 0 ? stageId : stageId[(slash + 1)..],
@@ -140,6 +145,7 @@ internal static class LobbyStageSelection
     private static string CollectionOf(string stageId)
     {
         var slash = stageId.IndexOf('/');
+
         return slash < 0 ? "stages" : stageId[..slash];
     }
 }

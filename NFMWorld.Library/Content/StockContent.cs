@@ -29,7 +29,9 @@ public static class StockCatalog
     public static IReadOnlyList<StockPackage> Build(string shippedRoot, bool includeTextStages = false)
     {
         var packages = new List<StockPackage>();
+
         if (!Directory.Exists(shippedRoot))
+
             return packages;
 
         AddModelDirectory(packages, shippedRoot, "data/models/nfmm/cars", AssetKind.Car);
@@ -44,6 +46,7 @@ public static class StockCatalog
         AddRadpackStages(packages, shippedRoot);
         if (includeTextStages)
             AddTextStages(packages, shippedRoot);
+
         return packages;
     }
 
@@ -52,30 +55,41 @@ public static class StockCatalog
         if (kind == AssetKind.Car)
         {
             var prefix = id.Split('/')[0];
+
             if (prefix is not ("nfmm" or "world" or "elo" or "football"))
+
                 return null;
             var cars = new List<StockPackage>();
             AddModelDirectory(cars, shippedRoot, $"data/models/{prefix}/cars", AssetKind.Car);
+
             return cars.FirstOrDefault(package => package.Id == id);
         }
 
         if (kind != AssetKind.Stage)
+
             return null;
         var directory = Path.Combine(shippedRoot, "data", "stages");
+
         if (!Directory.Exists(directory))
+
             return null;
         var file = Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
             .Where(path => Path.GetExtension(path) is ".radpack" or ".txt")
             .OrderBy(path => Path.GetExtension(path) == ".radpack" ? 0 : 1)
             .FirstOrDefault(path => Path.ChangeExtension(Path.GetRelativePath(directory, path), null).Replace('\\', '/') == id);
+
         if (file is null)
+
             return null;
         var stage = Path.GetExtension(file) == ".radpack"
             ? (ReadPackage(file, RadpackType.Track) as RadpackStage)?.Stage
             : StageLoader.FromLines(id, File.ReadLines(file));
+
         if (stage is null)
+
             return null;
         var bytes = PackageStage(id, stage);
+
         return new StockPackage(id, kind, bytes, HashOf(bytes), bytes.Length);
     }
 
@@ -103,6 +117,7 @@ public static class StockCatalog
             },
             writer
         );
+
         return writer.WrittenSpan.ToArray();
     }
 
@@ -122,13 +137,17 @@ public static class StockCatalog
         var canonical = PackageStage(id, stage);
         var copy = ((RadpackTrack)RadpackSerializer.Deserialize(canonical, int.MaxValue, int.MaxValue)).Stage;
         var packagedMusic = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+
         foreach (var path in new[] { stage.musicPath, stage.remasteredMusicPath }.Where(path => !string.IsNullOrEmpty(path))
             .Distinct())
         {
             if (!music.TryGetValue(path, out var replacement))
+
                 throw new InvalidDataException($"No replacement music was provided for '{path}'.");
             ValidateMusicPath(replacement.Path);
+
             if (!packagedMusic.TryAdd(replacement.Path, replacement.Bytes))
+
                 throw new InvalidDataException($"Multiple soundtracks use the packaged path '{replacement.Path}'.");
         }
 
@@ -136,19 +155,23 @@ public static class StockCatalog
             copy.musicPath = music[stage.musicPath].Path;
         if (!string.IsNullOrEmpty(stage.remasteredMusicPath))
             copy.remasteredMusicPath = music[stage.remasteredMusicPath].Path;
+
         return SerializeStage(id, copy, packagedMusic);
     }
 
     private static Dictionary<string, byte[]> ReadStageMusic(StageLoader stage, bool enforceSizeLimit)
     {
         var music = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+
         foreach (var path in new[] { stage.musicPath, stage.remasteredMusicPath }.Where(path => !string.IsNullOrEmpty(path))
             .Distinct())
         {
             ValidateMusicPath(path);
+
             if (stage.EmbeddedMusic?.TryGetValue(path, out var embedded) == true)
             {
                 music.Add(path, embedded);
+
                 continue;
             }
 
@@ -156,9 +179,11 @@ public static class StockCatalog
             using var bytes = new MemoryStream();
             var buffer = new byte[81920];
             int read;
+
             while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
             {
                 if (enforceSizeLimit && bytes.Length + read > RadpackLimits.MaxCompressedBytes)
+
                     throw new InvalidDataException($"Music '{path}' exceeds the package size limit.");
                 bytes.Write(buffer, 0, read);
             }
@@ -172,8 +197,13 @@ public static class StockCatalog
     private static void ValidateMusicPath(string path)
     {
         var normalized = path.Replace('\\', '/');
-        if (string.IsNullOrEmpty(path) || normalized.StartsWith('/') || normalized.Contains(':') || normalized.Split('/')
+
+        if (string.IsNullOrEmpty(path)
+            || normalized.StartsWith('/')
+            || normalized.Contains(':')
+            || normalized.Split('/')
             .Contains(".."))
+
             throw new InvalidDataException($"Music '{path}' must be a relative path under data/music.");
     }
 
@@ -185,6 +215,7 @@ public static class StockCatalog
             : new RadpackTrackWithMusic { Metadata = metadata, Stage = stage, Music = music };
         var writer = new ArrayBufferWriter<byte>();
         RadpackSerializer.Serialize(package, writer);
+
         return writer.WrittenSpan.ToArray();
     }
 
@@ -193,10 +224,13 @@ public static class StockCatalog
     private static void AddModelDirectory(List<StockPackage> packages, string root, string relative, AssetKind kind)
     {
         var directory = Path.Combine(root, relative.Replace('/', Path.DirectorySeparatorChar));
+
         if (!Directory.Exists(directory))
+
             return;
 
         var prefix = relative["data/models/".Length..].Split('/')[0];
+
         foreach (var file in Directory.EnumerateFiles(directory).OrderBy(f => f, StringComparer.Ordinal))
         {
             var name = Path.GetFileNameWithoutExtension(file);
@@ -211,6 +245,7 @@ public static class StockCatalog
                     : RadParser.ParseRad(File.ReadAllText(file), id);
 
                 if (rad is null)
+
                     continue;
 
                 // Identity is the canonical package, not the loose file, so a stock file edited in
@@ -231,10 +266,13 @@ public static class StockCatalog
     private static void AddTextStages(List<StockPackage> packages, string root)
     {
         if (BackendGameSparker.stage_parts.Count == 0)
+
             return;
 
         var directory = Path.Combine(root, "data", "stages");
+
         if (!Directory.Exists(directory))
+
             return;
 
         foreach (var file in Directory.EnumerateFiles(directory, "*.txt", SearchOption.AllDirectories)
@@ -242,6 +280,7 @@ public static class StockCatalog
         {
             var id = Path.GetRelativePath(directory, file).Replace('\\', '/');
             id = id[..id.LastIndexOf('.')];
+
             try
             {
                 var stage = StageLoader.FromLines(id, File.ReadLines(file));
@@ -259,6 +298,7 @@ public static class StockCatalog
     {
         var fs = new NFMWorld.PhysicsFS.VirtualFS();
         fs.MountDirectory(Path.GetDirectoryName(file)!);
+
         return RadpackReader.Read(
             fs,
             Path.GetFileName(file),
@@ -271,7 +311,9 @@ public static class StockCatalog
     private static void AddRadpackStages(List<StockPackage> packages, string root)
     {
         var directory = Path.Combine(root, "data", "stages");
+
         if (!Directory.Exists(directory))
+
             return;
 
         foreach (var file in Directory.EnumerateFiles(directory, "*.radpack", SearchOption.AllDirectories)
@@ -281,7 +323,9 @@ public static class StockCatalog
             {
                 var id = Path.GetRelativePath(directory, file).Replace('\\', '/');
                 id = id[..id.LastIndexOf('.')];
+
                 if (ReadPackage(file, RadpackType.Track) is not RadpackStage track)
+
                     continue;
 
                 var writer = new ArrayBufferWriter<byte>();

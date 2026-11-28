@@ -26,7 +26,8 @@ namespace NFMWorld.Archive.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AuthAudit", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Clans",
@@ -43,7 +44,8 @@ namespace NFMWorld.Archive.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Clans", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Matches",
@@ -63,7 +65,8 @@ namespace NFMWorld.Archive.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Matches", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "OauthPending",
@@ -79,7 +82,8 @@ namespace NFMWorld.Archive.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_OauthPending", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Users",
@@ -98,7 +102,8 @@ namespace NFMWorld.Archive.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Assets",
@@ -126,8 +131,10 @@ namespace NFMWorld.Archive.Migrations
                         column: x => x.OwnerId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                });
+                        onDelete: ReferentialAction.SetNull
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "ClanMembers",
@@ -147,14 +154,17 @@ namespace NFMWorld.Archive.Migrations
                         column: x => x.ClanId,
                         principalTable: "Clans",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Cascade
+                    );
                     table.ForeignKey(
                         name: "FK_ClanMembers_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "ExternalLogins",
@@ -174,8 +184,10 @@ namespace NFMWorld.Archive.Migrations
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "MatchParticipants",
@@ -197,14 +209,17 @@ namespace NFMWorld.Archive.Migrations
                         column: x => x.MatchId,
                         principalTable: "Matches",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Cascade
+                    );
                     table.ForeignKey(
                         name: "FK_MatchParticipants_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                });
+                        onDelete: ReferentialAction.SetNull
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Ratings",
@@ -228,8 +243,10 @@ namespace NFMWorld.Archive.Migrations
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Sessions",
@@ -254,8 +271,10 @@ namespace NFMWorld.Archive.Migrations
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "TimeTrials",
@@ -282,151 +301,184 @@ namespace NFMWorld.Archive.Migrations
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assets_ContentHash",
                 table: "Assets",
-                column: "ContentHash");
+                column: "ContentHash"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assets_OwnerId",
                 table: "Assets",
-                column: "OwnerId");
+                column: "OwnerId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assets_Type_OwnerId",
                 table: "Assets",
-                columns: new[] { "Type", "OwnerId" });
+                columns: new[] { "Type", "OwnerId" }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuthAudit_Timestamp",
                 table: "AuthAudit",
-                column: "Timestamp");
+                column: "Timestamp"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_ClanMembers_ClanId",
                 table: "ClanMembers",
-                column: "ClanId");
+                column: "ClanId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_ClanMembers_UserId",
                 table: "ClanMembers",
                 column: "UserId",
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Clans_NameNormalized",
                 table: "Clans",
                 column: "NameNormalized",
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExternalLogins_Provider_ProviderUserId",
                 table: "ExternalLogins",
                 columns: new[] { "Provider", "ProviderUserId" },
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExternalLogins_UserId",
                 table: "ExternalLogins",
-                column: "UserId");
+                column: "UserId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchParticipants_MatchId_UserId",
                 table: "MatchParticipants",
-                columns: new[] { "MatchId", "UserId" });
+                columns: new[] { "MatchId", "UserId" }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchParticipants_UserId",
                 table: "MatchParticipants",
-                column: "UserId");
+                column: "UserId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Matches_MatchKey",
                 table: "Matches",
                 column: "MatchKey",
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Matches_ResultServerId",
                 table: "Matches",
-                column: "ResultServerId");
+                column: "ResultServerId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Ratings_UserId_Gamemode",
                 table: "Ratings",
                 columns: new[] { "UserId", "Gamemode" },
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sessions_TokenHash",
                 table: "Sessions",
                 column: "TokenHash",
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sessions_UserId",
                 table: "Sessions",
-                column: "UserId");
+                column: "UserId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_TimeTrials_StageHash_CarHash_TotalTicks",
                 table: "TimeTrials",
-                columns: new[] { "StageHash", "CarHash", "TotalTicks" });
+                columns: new[] { "StageHash", "CarHash", "TotalTicks" }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_TimeTrials_UserId_StageHash_CarHash",
                 table: "TimeTrials",
                 columns: new[] { "UserId", "StageHash", "CarHash" },
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_UsernameNormalized",
                 table: "Users",
                 column: "UsernameNormalized",
-                unique: true);
+                unique: true
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Assets");
+                name: "Assets"
+            );
 
             migrationBuilder.DropTable(
-                name: "AuthAudit");
+                name: "AuthAudit"
+            );
 
             migrationBuilder.DropTable(
-                name: "ClanMembers");
+                name: "ClanMembers"
+            );
 
             migrationBuilder.DropTable(
-                name: "ExternalLogins");
+                name: "ExternalLogins"
+            );
 
             migrationBuilder.DropTable(
-                name: "MatchParticipants");
+                name: "MatchParticipants"
+            );
 
             migrationBuilder.DropTable(
-                name: "OauthPending");
+                name: "OauthPending"
+            );
 
             migrationBuilder.DropTable(
-                name: "Ratings");
+                name: "Ratings"
+            );
 
             migrationBuilder.DropTable(
-                name: "Sessions");
+                name: "Sessions"
+            );
 
             migrationBuilder.DropTable(
-                name: "TimeTrials");
+                name: "TimeTrials"
+            );
 
             migrationBuilder.DropTable(
-                name: "Clans");
+                name: "Clans"
+            );
 
             migrationBuilder.DropTable(
-                name: "Matches");
+                name: "Matches"
+            );
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "Users"
+            );
         }
     }
 }

@@ -16,13 +16,16 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
         Position();
         Anchor(HudAnchor.TopRight);
         Status();
-        if (!Race.TimeTrial && Race.Racers.Count > 1) Opponents();
-        if (Race.Opponents == 0 && Race.LapSplits.Count > 1) Chronometer();
+        if (!Race.TimeTrial && Race.Racers.Count > 1)
+            Opponents();
+        if (Race.Opponents == 0 && Race.LapSplits.Count > 1)
+            Chronometer();
         Anchor(HudAnchor.Top);
         Arrow();
         Anchor(HudAnchor.BottomLeft);
         Radar();
-        if (Race.MusicTrack is { } track) TrackVisor(track);
+        if (Race.MusicTrack is { } track)
+            TrackVisor(track);
         Anchor(HudAnchor.BottomRight);
         Speedometer();
     }
@@ -47,6 +50,7 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
         var pos = Race.HasPosition ? Race.Position : 0;
         if (!Race.TimeTrial)
             TextRight($"{Race.Wasted} / {Race.Opponents}", 120, 36, 13, white, FontFamily.Digital7, false);
+
         if (pos > 0)
         {
             TextRight($"{pos}", 104, 80, 52, accent, FontFamily.Digital7);
@@ -74,6 +78,7 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
 
         // Power: phy's 12-arc dial, its 16px hub clipped out of every segment.
         var power = Math.Clamp(Race.PowerFraction, 0, 1);
+
         for (var i = 0; i < PowerSegments.Length; i++)
         {
             if (i * 20 < power * 240)
@@ -107,10 +112,16 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
         var accent = Snap(50, 204, 255, 220);
         var white = Snap(250, 250, 250, 220);
         var row = 0;
+
         foreach (var racer in Race.Racers)
         {
-            if (racer.Wasted) continue;
-            if (row >= maxRows) break;
+            if (racer.Wasted)
+
+                continue;
+
+            if (row >= maxRows)
+
+                break;
             var y = 58 + 30 * row;
             RoundedRect(Snap(0, 0, 0, 100), 684, y, 111, 25, 8);
             if (racer.LockSlot is > 0 and <= 10)
@@ -134,7 +145,9 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
 
     private void Arrow()
     {
-        if (Race.ArrowAngle is not { } angle) return;
+        if (Race.ArrowAngle is not { } angle)
+
+            return;
         var accent = Snap(50, 204, 255, 220);
         var white = Snap(250, 250, 250, 220);
         RoundedRect(Snap(0, 0, 0, 100), 320, 6, 160, 42, 10);
@@ -149,6 +162,7 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
             ArcFill(Snap(50, 204, 255, 150), 439, 24, 35, 12, -185 + i * 21, 14);
 
         var lit = (int)(-angle / 360f * 16f);
+
         for (var i = -1; i <= 1; i++)
         {
             var seg = ((lit + i) % 17 + 17) % 17;
@@ -162,7 +176,9 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
 
     private void Radar()
     {
-        if (Race.ClientPosition is null) return;
+        if (Race.ClientPosition is null)
+
+            return;
         var side = S(172);
         var x = X(6);
         var y = Y(290);
@@ -192,6 +208,7 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
         Line(Snap(50, 50, 50), 713, 65, 713, 65 + h - 1);
 
         var cumulative = 0;
+
         for (var i = 0; i < rows; i++)
         {
             cumulative += splits[i];
@@ -215,21 +232,27 @@ internal sealed class Digital7Hud(IHudData race) : GadgetHud(race)
         // The LED bar graph: 24 columns, 2px wide, taller at the top of the range.
         var speed = Math.Clamp(MathF.Abs(Race.SpeedFraction ?? 0), 0, 1);
         var lit = speed * 94;
+
         for (var i = 0; i + 4 <= lit; i += 4)
         {
             float h;
-            if (i > 38 && i <= 72) h = 17 + (i - 36) / 32f * 12f;
-            else h = i > 70 ? 30 : 17;
+            if (i > 38 && i <= 72)
+                h = 17 + (i - 36) / 32f * 12f;
+            else
+                h = i > 70 ? 30 : 17;
             Rect(accent, 685 + i, 402 - h, 2, h);
         }
 
         Rect(accent, 685, 403, 94, 2);
 
         // Boost arrows over the graph when past the top.
+
         if (Race.SpeedFraction > 1f)
         {
             var orange = Snap(250, 20, 20, 220);
+
             for (var i = 0; i < 2; i++)
+
             for (var j = 0; j < 5; j++)
             {
                 Line(orange, 784 + j, 376 + i * 6 - j, 784 + j, 380 + i * 6 - j);

@@ -17,6 +17,7 @@ var options = builder.Configuration.GetSection("Archive").Get<ArchiveOptions>() 
 // does not depend on the directory the process happened to start in.
 if (!string.IsNullOrWhiteSpace(options.ValidatorPath))
     options.ValidatorPath = Path.GetFullPath(options.ValidatorPath, builder.Environment.ContentRootPath);
+
 if (!string.IsNullOrWhiteSpace(options.ValidatorWorkingDirectory))
 {
     options.ValidatorWorkingDirectory = Path.GetFullPath(
@@ -27,6 +28,7 @@ if (!string.IsNullOrWhiteSpace(options.ValidatorWorkingDirectory))
 
 // Development can use the validator built beside this project; a deployed archive must still set
 // Archive:ValidatorPath explicitly, so an empty path keeps uploads refused there.
+
 if (string.IsNullOrWhiteSpace(options.ValidatorPath)
     && builder.Environment.IsDevelopment()
     && ValidatorLocator.FindBesideRepository(builder.Environment.ContentRootPath) is { } localValidator)
@@ -83,6 +85,7 @@ static void ApplyCrossOrigin(CorsPolicyBuilder policy, string? configured)
 var app = builder.Build();
 
 if (RoleCommand.TryParse(args, out var roleArgs))
+
     return await RoleCommand.RunAsync(roleArgs, options, app.Logger, CancellationToken.None);
 
 if (string.IsNullOrWhiteSpace(options.ValidatorPath) || !File.Exists(options.ValidatorPath))
@@ -95,6 +98,7 @@ if (string.IsNullOrWhiteSpace(options.ValidatorPath) || !File.Exists(options.Val
 
 // A misconfigured challenge refuses every visitor with the same message a failed challenge
 // shows, so it has to be visible in the startup log rather than only at the login form.
+
 if (TurnstileVerifier.FindConfigurationProblem(builder.Configuration, app.Environment) is { } turnstileProblem)
 {
     app.Logger.LogWarning(
@@ -139,6 +143,7 @@ app.MapPost(
             await sessions.RevokeAsync(cookie, ct);
 
         http.Response.Cookies.Delete("nfmw_session");
+
         return Results.Redirect("/account/login");
     }
 );
@@ -151,6 +156,7 @@ app.MapModerationEndpoints();
 app.MapRazorPages();
 
 // WAL is a per-database setting, so it is applied once at startup rather than per connection.
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -186,6 +192,7 @@ app.UseStaticFiles();
 app.UseCors();
 
 app.Run();
+
 return 0;
 
 /// <summary>Entry point marker so integration tests can host the real app.</summary>

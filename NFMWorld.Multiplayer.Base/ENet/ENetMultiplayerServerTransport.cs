@@ -62,6 +62,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 if (_server.CheckEvents(out var netEvent) <= 0)
                 {
                     if (_server.Service(15, out netEvent) <= 0)
+
                         break;
 
                     polled = true;
@@ -69,6 +70,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
 
                 // One bad event (a malformed packet, or a handler that throws) must not end
                 // the receive thread for every client on the host.
+
                 try
                 {
                     HandleEvent(netEvent);
@@ -80,16 +82,19 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
             }
 
             // Send queued packets
+
             while (_sendPacketQueue.TryDequeue(out var sendPacket))
             {
                 if (!_connectedClients.TryGetValue(sendPacket.Peer, out var peer))
                 {
                     sendPacket.Packet?.Dispose();
+
                     continue;
                 }
 
                 // A null packet is a deferred close, ordered behind everything queued before it:
                 // a refusal written just ahead of the disconnect still goes out.
+
                 if (sendPacket.Packet is { } packet)
                 {
                     peer.Send(0, ref packet);
@@ -115,6 +120,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
         switch (netEvent.Type)
         {
             case EventType.None:
+
                 break;
 
             case EventType.Connect:
@@ -123,6 +129,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 ClientConnecting?.Invoke(this, netEvent.Peer.ID);
                 ClientConnected?.Invoke(this, netEvent.Peer.ID);
                 _connectedClients.TryAdd(netEvent.Peer.ID, netEvent.Peer);
+
                 break;
 
             case EventType.Disconnect:
@@ -131,6 +138,7 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 ForgetConnection(netEvent.Peer.ID);
                 ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
                 _connectedClients.TryRemove(netEvent.Peer.ID, out _);
+
                 break;
 
             case EventType.Timeout:
@@ -139,9 +147,11 @@ public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
                 ForgetConnection(netEvent.Peer.ID);
                 ClientDisconnected?.Invoke(this, netEvent.Peer.ID);
                 _connectedClients.TryRemove(netEvent.Peer.ID, out _);
+
                 break;
 
             case EventType.Receive:
+
                 try
                 {
                     ReceivePacket(netEvent.Peer.ID, netEvent.Packet.Memory);

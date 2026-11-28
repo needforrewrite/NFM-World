@@ -16,389 +16,480 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// Font runtime data for a given size<br/>
-	/// Important: pointers to ImFontBaked are only valid for the current frame.<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImFontBaked
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<float> IndexAdvanceX;
+    /// <summary>
+    /// Font runtime data for a given size<br/>
+    /// Important: pointers to ImFontBaked are only valid for the current frame.<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImFontBaked
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<float> IndexAdvanceX;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float FallbackAdvanceX;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float FallbackAdvanceX;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float Size;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float Size;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float RasterizerDensity;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float RasterizerDensity;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<ushort> IndexLookup;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<ushort> IndexLookup;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<ImFontGlyph> Glyphs;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<ImFontGlyph> Glyphs;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int FallbackGlyphIndex;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int FallbackGlyphIndex;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float Ascent;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float Ascent;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float Descent;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float Descent;
 
-		public uint RawBits0;
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int LastUsedFrame;
+        public uint RawBits0;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint BakedId;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int LastUsedFrame;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImFont* ContainerFont;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint BakedId;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void* FontLoaderDatas;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImFont* ContainerFont;
 
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImFontBaked(ImVector<float> indexAdvanceX = default, float fallbackAdvanceX = default, float size = default, float rasterizerDensity = default, ImVector<ushort> indexLookup = default, ImVector<ImFontGlyph> glyphs = default, int fallbackGlyphIndex = default, float ascent = default, float descent = default, uint metricsTotalSurface = default, uint wantDestroy = default, uint loadNoFallback = default, uint loadNoRenderOnLayout = default, int lastUsedFrame = default, uint bakedId = default, ImFontPtr containerFont = default, void* fontLoaderDatas = default)
-		{
-			IndexAdvanceX = indexAdvanceX;
-			FallbackAdvanceX = fallbackAdvanceX;
-			Size = size;
-			RasterizerDensity = rasterizerDensity;
-			IndexLookup = indexLookup;
-			Glyphs = glyphs;
-			FallbackGlyphIndex = fallbackGlyphIndex;
-			Ascent = ascent;
-			Descent = descent;
-			MetricsTotalSurface = metricsTotalSurface;
-			WantDestroy = wantDestroy;
-			LoadNoFallback = loadNoFallback;
-			LoadNoRenderOnLayout = loadNoRenderOnLayout;
-			LastUsedFrame = lastUsedFrame;
-			BakedId = bakedId;
-			ContainerFont = containerFont;
-			FontLoaderDatas = fontLoaderDatas;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void* FontLoaderDatas;
 
 
-		public uint MetricsTotalSurface { get => Bitfield.Get(RawBits0, 0, 26); set => Bitfield.Set(ref RawBits0, value, 0, 26); }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImFontBaked(
+            ImVector<float> indexAdvanceX = default,
+            float fallbackAdvanceX = default,
+            float size = default,
+            float rasterizerDensity = default,
+            ImVector<ushort> indexLookup = default,
+            ImVector<ImFontGlyph> glyphs = default,
+            int fallbackGlyphIndex = default,
+            float ascent = default,
+            float descent = default,
+            uint metricsTotalSurface = default,
+            uint wantDestroy = default,
+            uint loadNoFallback = default,
+            uint loadNoRenderOnLayout = default,
+            int lastUsedFrame = default,
+            uint bakedId = default,
+            ImFontPtr containerFont = default,
+            void* fontLoaderDatas = default
+        )
+        {
+            IndexAdvanceX = indexAdvanceX;
+            FallbackAdvanceX = fallbackAdvanceX;
+            Size = size;
+            RasterizerDensity = rasterizerDensity;
+            IndexLookup = indexLookup;
+            Glyphs = glyphs;
+            FallbackGlyphIndex = fallbackGlyphIndex;
+            Ascent = ascent;
+            Descent = descent;
+            MetricsTotalSurface = metricsTotalSurface;
+            WantDestroy = wantDestroy;
+            LoadNoFallback = loadNoFallback;
+            LoadNoRenderOnLayout = loadNoRenderOnLayout;
+            LastUsedFrame = lastUsedFrame;
+            BakedId = bakedId;
+            ContainerFont = containerFont;
+            FontLoaderDatas = fontLoaderDatas;
+        }
 
-		public uint WantDestroy { get => Bitfield.Get(RawBits0, 26, 1); set => Bitfield.Set(ref RawBits0, value, 26, 1); }
 
-		public uint LoadNoFallback { get => Bitfield.Get(RawBits0, 27, 1); set => Bitfield.Set(ref RawBits0, value, 27, 1); }
+        public uint MetricsTotalSurface
+        {
+            get => Bitfield.Get(RawBits0, 0, 26);
+            set => Bitfield.Set(ref RawBits0, value, 0, 26);
+        }
 
-		public uint LoadNoRenderOnLayout { get => Bitfield.Get(RawBits0, 28, 1); set => Bitfield.Set(ref RawBits0, value, 28, 1); }
+        public uint WantDestroy
+        {
+            get => Bitfield.Get(RawBits0, 26, 1);
+            set => Bitfield.Set(ref RawBits0, value, 26, 1);
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void ClearOutputData()
-		{
-			fixed (ImFontBaked* @this = &this)
-			{
-				ImGui.ClearOutputDataNative(@this);
-			}
-		}
+        public uint LoadNoFallback
+        {
+            get => Bitfield.Get(RawBits0, 27, 1);
+            set => Bitfield.Set(ref RawBits0, value, 27, 1);
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			fixed (ImFontBaked* @this = &this)
-			{
-				ImGui.DestroyNative(@this);
-			}
-		}
+        public uint LoadNoRenderOnLayout
+        {
+            get => Bitfield.Get(RawBits0, 28, 1);
+            set => Bitfield.Set(ref RawBits0, value, 28, 1);
+        }
 
-		/// <summary>
-		/// Return U+FFFD glyph if requested glyph doesn't exists.<br/>
-		/// </summary>
-		public unsafe ImFontGlyph* FindGlyph(uint c)
-		{
-			fixed (ImFontBaked* @this = &this)
-			{
-				ImFontGlyph* ret = ImGui.FindGlyphNative(@this, c);
-				return ret;
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void ClearOutputData()
+        {
+            fixed (ImFontBaked* @this = &this)
+            {
+                ImGui.ClearOutputDataNative(@this);
+            }
+        }
 
-		/// <summary>
-		/// Return NULL if glyph doesn't exist<br/>
-		/// </summary>
-		public unsafe ImFontGlyph* FindGlyphNoFallback(uint c)
-		{
-			fixed (ImFontBaked* @this = &this)
-			{
-				ImFontGlyph* ret = ImGui.FindGlyphNoFallbackNative(@this, c);
-				return ret;
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            fixed (ImFontBaked* @this = &this)
+            {
+                ImGui.DestroyNative(@this);
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe float GetCharAdvance(uint c)
-		{
-			fixed (ImFontBaked* @this = &this)
-			{
-				float ret = ImGui.GetCharAdvanceNative(@this, c);
-				return ret;
-			}
-		}
+        /// <summary>
+        /// Return U+FFFD glyph if requested glyph doesn't exists.<br/>
+        /// </summary>
+        public unsafe ImFontGlyph* FindGlyph(uint c)
+        {
+            fixed (ImFontBaked* @this = &this)
+            {
+                ImFontGlyph* ret = ImGui.FindGlyphNative(@this, c);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe bool IsGlyphLoaded(uint c)
-		{
-			fixed (ImFontBaked* @this = &this)
-			{
-				byte ret = ImGui.IsGlyphLoadedNative(@this, c);
-				return ret != 0;
-			}
-		}
+                return ret;
+            }
+        }
 
-	}
+        /// <summary>
+        /// Return NULL if glyph doesn't exist<br/>
+        /// </summary>
+        public unsafe ImFontGlyph* FindGlyphNoFallback(uint c)
+        {
+            fixed (ImFontBaked* @this = &this)
+            {
+                ImFontGlyph* ret = ImGui.FindGlyphNoFallbackNative(@this, c);
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImFontBakedPtr : IEquatable<ImFontBakedPtr>
-	{
-		public ImFontBakedPtr(ImFontBaked* handle) { Handle = handle; }
+                return ret;
+            }
+        }
 
-		public ImFontBaked* Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe float GetCharAdvance(uint c)
+        {
+            fixed (ImFontBaked* @this = &this)
+            {
+                float ret = ImGui.GetCharAdvanceNative(@this, c);
 
-		public bool IsNull => Handle == null;
+                return ret;
+            }
+        }
 
-		public static ImFontBakedPtr Null => new ImFontBakedPtr(null);
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe bool IsGlyphLoaded(uint c)
+        {
+            fixed (ImFontBaked* @this = &this)
+            {
+                byte ret = ImGui.IsGlyphLoadedNative(@this, c);
 
-		public ImFontBaked this[int index] { get => Handle[index]; set => Handle[index] = value; }
+                return ret != 0;
+            }
+        }
+    }
 
-		public static implicit operator ImFontBakedPtr(ImFontBaked* handle) => new ImFontBakedPtr(handle);
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImFontBakedPtr : IEquatable<ImFontBakedPtr>
+    {
+        public ImFontBakedPtr(ImFontBaked* handle)
+        {
+            Handle = handle;
+        }
 
-		public static implicit operator ImFontBaked*(ImFontBakedPtr handle) => handle.Handle;
+        public ImFontBaked* Handle;
 
-		public static bool operator ==(ImFontBakedPtr left, ImFontBakedPtr right) => left.Handle == right.Handle;
+        public bool IsNull => Handle == null;
 
-		public static bool operator !=(ImFontBakedPtr left, ImFontBakedPtr right) => left.Handle != right.Handle;
+        public static ImFontBakedPtr Null => new ImFontBakedPtr(null);
 
-		public static bool operator ==(ImFontBakedPtr left, ImFontBaked* right) => left.Handle == right;
+        public ImFontBaked this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static bool operator !=(ImFontBakedPtr left, ImFontBaked* right) => left.Handle != right;
+        public static implicit operator ImFontBakedPtr(ImFontBaked* handle) => new ImFontBakedPtr(handle);
 
-		public bool Equals(ImFontBakedPtr other) => Handle == other.Handle;
+        public static implicit operator ImFontBaked*(ImFontBakedPtr handle) => handle.Handle;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImFontBakedPtr handle && Equals(handle);
+        public static bool operator ==(ImFontBakedPtr left, ImFontBakedPtr right) => left.Handle == right.Handle;
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        public static bool operator !=(ImFontBakedPtr left, ImFontBakedPtr right) => left.Handle != right.Handle;
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImFontBakedPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<float> IndexAdvanceX => ref Unsafe.AsRef<ImVector<float>>(&Handle->IndexAdvanceX);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float FallbackAdvanceX => ref Unsafe.AsRef<float>(&Handle->FallbackAdvanceX);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float Size => ref Unsafe.AsRef<float>(&Handle->Size);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float RasterizerDensity => ref Unsafe.AsRef<float>(&Handle->RasterizerDensity);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<ushort> IndexLookup => ref Unsafe.AsRef<ImVector<ushort>>(&Handle->IndexLookup);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<ImFontGlyph> Glyphs => ref Unsafe.AsRef<ImVector<ImFontGlyph>>(&Handle->Glyphs);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref int FallbackGlyphIndex => ref Unsafe.AsRef<int>(&Handle->FallbackGlyphIndex);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float Ascent => ref Unsafe.AsRef<float>(&Handle->Ascent);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float Descent => ref Unsafe.AsRef<float>(&Handle->Descent);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint MetricsTotalSurface { get => Handle->MetricsTotalSurface; set => Handle->MetricsTotalSurface = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint WantDestroy { get => Handle->WantDestroy; set => Handle->WantDestroy = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint LoadNoFallback { get => Handle->LoadNoFallback; set => Handle->LoadNoFallback = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint LoadNoRenderOnLayout { get => Handle->LoadNoRenderOnLayout; set => Handle->LoadNoRenderOnLayout = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref int LastUsedFrame => ref Unsafe.AsRef<int>(&Handle->LastUsedFrame);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref uint BakedId => ref Unsafe.AsRef<uint>(&Handle->BakedId);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImFontPtr ContainerFont => ref Unsafe.AsRef<ImFontPtr>(&Handle->ContainerFont);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public void* FontLoaderDatas { get => Handle->FontLoaderDatas; set => Handle->FontLoaderDatas = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void ClearOutputData()
-		{
-			ImGui.ClearOutputDataNative(Handle);
-		}
+        public static bool operator ==(ImFontBakedPtr left, ImFontBaked* right) => left.Handle == right;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			ImGui.DestroyNative(Handle);
-		}
+        public static bool operator !=(ImFontBakedPtr left, ImFontBaked* right) => left.Handle != right;
 
-		/// <summary>
-		/// Return U+FFFD glyph if requested glyph doesn't exists.<br/>
-		/// </summary>
-		public unsafe ImFontGlyph* FindGlyph(uint c)
-		{
-			ImFontGlyph* ret = ImGui.FindGlyphNative(Handle, c);
-			return ret;
-		}
+        public bool Equals(ImFontBakedPtr other) => Handle == other.Handle;
 
-		/// <summary>
-		/// Return NULL if glyph doesn't exist<br/>
-		/// </summary>
-		public unsafe ImFontGlyph* FindGlyphNoFallback(uint c)
-		{
-			ImFontGlyph* ret = ImGui.FindGlyphNoFallbackNative(Handle, c);
-			return ret;
-		}
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImFontBakedPtr handle && Equals(handle);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe float GetCharAdvance(uint c)
-		{
-			float ret = ImGui.GetCharAdvanceNative(Handle, c);
-			return ret;
-		}
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe bool IsGlyphLoaded(uint c)
-		{
-			byte ret = ImGui.IsGlyphLoadedNative(Handle, c);
-			return ret != 0;
-		}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImFontBakedPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<float> IndexAdvanceX => ref Unsafe.AsRef<ImVector<float>>(&Handle->IndexAdvanceX);
 
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float FallbackAdvanceX => ref Unsafe.AsRef<float>(&Handle->FallbackAdvanceX);
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImFontBakedPtrPtr : IEquatable<ImFontBakedPtrPtr>
-	{
-		public ImFontBakedPtrPtr(ImFontBaked** handle) { Handle = handle; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float Size => ref Unsafe.AsRef<float>(&Handle->Size);
 
-		public ImFontBaked** Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float RasterizerDensity => ref Unsafe.AsRef<float>(&Handle->RasterizerDensity);
 
-		public bool IsNull => Handle == null;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<ushort> IndexLookup => ref Unsafe.AsRef<ImVector<ushort>>(&Handle->IndexLookup);
 
-		public static ImFontBakedPtrPtr Null => new ImFontBakedPtrPtr(null);
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<ImFontGlyph> Glyphs => ref Unsafe.AsRef<ImVector<ImFontGlyph>>(&Handle->Glyphs);
 
-		public ImFontBaked* this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref int FallbackGlyphIndex => ref Unsafe.AsRef<int>(&Handle->FallbackGlyphIndex);
 
-		public static implicit operator ImFontBakedPtrPtr(ImFontBaked** handle) => new ImFontBakedPtrPtr(handle);
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float Ascent => ref Unsafe.AsRef<float>(&Handle->Ascent);
 
-		public static implicit operator ImFontBaked**(ImFontBakedPtrPtr handle) => handle.Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float Descent => ref Unsafe.AsRef<float>(&Handle->Descent);
 
-		public static bool operator ==(ImFontBakedPtrPtr left, ImFontBakedPtrPtr right) => left.Handle == right.Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint MetricsTotalSurface
+        {
+            get => Handle->MetricsTotalSurface;
+            set => Handle->MetricsTotalSurface = value;
+        }
 
-		public static bool operator !=(ImFontBakedPtrPtr left, ImFontBakedPtrPtr right) => left.Handle != right.Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint WantDestroy
+        {
+            get => Handle->WantDestroy;
+            set => Handle->WantDestroy = value;
+        }
 
-		public static bool operator ==(ImFontBakedPtrPtr left, ImFontBaked** right) => left.Handle == right;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint LoadNoFallback
+        {
+            get => Handle->LoadNoFallback;
+            set => Handle->LoadNoFallback = value;
+        }
 
-		public static bool operator !=(ImFontBakedPtrPtr left, ImFontBaked** right) => left.Handle != right;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint LoadNoRenderOnLayout
+        {
+            get => Handle->LoadNoRenderOnLayout;
+            set => Handle->LoadNoRenderOnLayout = value;
+        }
 
-		public bool Equals(ImFontBakedPtrPtr other) => Handle == other.Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref int LastUsedFrame => ref Unsafe.AsRef<int>(&Handle->LastUsedFrame);
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImFontBakedPtrPtr handle && Equals(handle);
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref uint BakedId => ref Unsafe.AsRef<uint>(&Handle->BakedId);
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImFontPtr ContainerFont => ref Unsafe.AsRef<ImFontPtr>(&Handle->ContainerFont);
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImFontBakedPtrPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public void* FontLoaderDatas
+        {
+            get => Handle->FontLoaderDatas;
+            set => Handle->FontLoaderDatas = value;
+        }
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void ClearOutputData()
+        {
+            ImGui.ClearOutputDataNative(Handle);
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            ImGui.DestroyNative(Handle);
+        }
+
+        /// <summary>
+        /// Return U+FFFD glyph if requested glyph doesn't exists.<br/>
+        /// </summary>
+        public unsafe ImFontGlyph* FindGlyph(uint c)
+        {
+            ImFontGlyph* ret = ImGui.FindGlyphNative(Handle, c);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// Return NULL if glyph doesn't exist<br/>
+        /// </summary>
+        public unsafe ImFontGlyph* FindGlyphNoFallback(uint c)
+        {
+            ImFontGlyph* ret = ImGui.FindGlyphNoFallbackNative(Handle, c);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe float GetCharAdvance(uint c)
+        {
+            float ret = ImGui.GetCharAdvanceNative(Handle, c);
+
+            return ret;
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe bool IsGlyphLoaded(uint c)
+        {
+            byte ret = ImGui.IsGlyphLoadedNative(Handle, c);
+
+            return ret != 0;
+        }
+    }
+
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImFontBakedPtrPtr : IEquatable<ImFontBakedPtrPtr>
+    {
+        public ImFontBakedPtrPtr(ImFontBaked** handle)
+        {
+            Handle = handle;
+        }
+
+        public ImFontBaked** Handle;
+
+        public bool IsNull => Handle == null;
+
+        public static ImFontBakedPtrPtr Null => new ImFontBakedPtrPtr(null);
+
+        public ImFontBaked* this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
+
+        public static implicit operator ImFontBakedPtrPtr(ImFontBaked** handle) => new ImFontBakedPtrPtr(handle);
+
+        public static implicit operator ImFontBaked**(ImFontBakedPtrPtr handle) => handle.Handle;
+
+        public static bool operator ==(ImFontBakedPtrPtr left, ImFontBakedPtrPtr right) => left.Handle == right.Handle;
+
+        public static bool operator !=(ImFontBakedPtrPtr left, ImFontBakedPtrPtr right) => left.Handle != right.Handle;
+
+        public static bool operator ==(ImFontBakedPtrPtr left, ImFontBaked** right) => left.Handle == right;
+
+        public static bool operator !=(ImFontBakedPtrPtr left, ImFontBaked** right) => left.Handle != right;
+
+        public bool Equals(ImFontBakedPtrPtr other) => Handle == other.Handle;
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImFontBakedPtrPtr handle && Equals(handle);
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImFontBakedPtrPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+    }
 }

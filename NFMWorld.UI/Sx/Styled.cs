@@ -40,18 +40,18 @@ public struct StyledStyle()
 /// <summary>A styled <see cref="View"/> factory.</summary>
 public delegate View
     StyledView(
-    Func<Styles>? style = null,
-    string? name = null,
-    Action<MouseEvent>? onmousedown = null,
-    params object?[] children
-);
+        Func<Styles>? style = null,
+        string? name = null,
+        Action<MouseEvent>? onmousedown = null,
+        params object?[] children
+    );
 
 /// <summary>A styled <see cref="Text"/> factory.</summary>
 public delegate Text StyledText(
     Func<TextStyles>? style = null,
     Func<string?>? text = null,
     params object?[] children
-);
+    );
 
 public static class Styled
 {

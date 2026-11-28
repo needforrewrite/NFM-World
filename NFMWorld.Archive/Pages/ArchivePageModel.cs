@@ -28,6 +28,7 @@ public abstract class ArchivePageModel(ArchiveDbContext db) : PageModel
     protected async Task<User?> ResolveAccountAsync()
     {
         if (Account is not null)
+
             return Account;
 
         Account = await HttpContext.GetUserAsync(Db, HttpContext.RequestAborted);
@@ -41,6 +42,7 @@ public abstract class ArchivePageModel(ArchiveDbContext db) : PageModel
                 ? requested + HttpContext.RequestServices.GetRequiredService<ArchiveOptions>().DeletionGracePeriod
                 : null
         );
+
         return Account;
     }
 

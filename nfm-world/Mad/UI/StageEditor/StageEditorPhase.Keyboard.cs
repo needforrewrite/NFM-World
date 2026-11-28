@@ -26,31 +26,41 @@ public partial class StageEditorPhase
         if (key == Key.Escape && _openEditorMenu.Value is not null)
         {
             _openEditorMenu.Value = null;
+
             return;
         }
 
         if (key == Key.Escape && _publish.IsOpen)
         {
             _publish.Close();
+
             return;
         }
 
-        if (imguiWantsKeyboard || UiWantsKeyboard() || EditorModalOpen()) return;
-        if (!_isOpen) return;
+        if (imguiWantsKeyboard || UiWantsKeyboard() || EditorModalOpen())
+
+            return;
+        if (!_isOpen)
+
+            return;
 
         // In placement mode
+
         if (_pendingPlacementPartIndex >= 0)
         {
             // Q/E rotate the pending piece by 45°. Q is also the camera-down key so we handle rotation first and skip the camera binding.
+
             if (key == Key.E)
             {
                 _pendingPlacementYaw = (_pendingPlacementYaw + 45f) % 360f;
+
                 return;
             }
 
             if (key == Key.Q)
             {
                 _pendingPlacementYaw = ((_pendingPlacementYaw - 45f) % 360f + 360f) % 360f;
+
                 return;
             }
 
@@ -58,48 +68,60 @@ public partial class StageEditorPhase
             {
                 // Reset rotation
                 _pendingPlacementYaw = 0f;
+
                 return;
             }
 
             if (key == Key.G)
             {
                 _gridSnapEnabled = !_gridSnapEnabled;
+
                 return;
             }
         }
 
         // Camera movement
+
         switch (_isCtrlPressed ? (Key)0 : key)
         {
             case Key.W:
                 _moveForward = true;
+
                 break;
             case Key.S:
                 _moveBackward = true;
+
                 break;
             case Key.A:
                 _moveLeft = true;
+
                 break;
             case Key.D:
                 _moveRight = true;
+
                 break;
             case Key.Space:
                 _moveUp = true;
+
                 break;
             case Key.Q:
                 _moveDown = true;
+
                 break;
             case Key.LShiftKey:
             case Key.RShiftKey:
                 _isShiftPressed = true;
+
                 break;
             case Key.LControlKey:
             case Key.RControlKey:
                 _isCtrlPressed = true;
+
                 break;
         }
 
         // Handle keyboard shortcuts here
+
         if (key == Key.Delete && ActiveTab != null)
         {
             // Build the set of IDs to delete (multi-selection or single)
@@ -108,20 +130,29 @@ public partial class StageEditorPhase
             if (idsToDelete.Length > 0)
             {
                 PushUndoSnapshot();
+
                 foreach (var deleteId in idsToDelete)
                 {
                     var piece = ActiveTab.ScenePieces.GetValueOrDefault(deleteId);
-                    if (piece == null) continue;
+
+                    if (piece == null)
+
+                        continue;
+
                     if (ActiveTab.Stage != null)
+
                         for (int i = 0; i < ActiveTab.Stage.Pieces.Count; i++)
+
                             if (ActiveTab.Stage.Pieces[i] == piece.Obj)
                             {
                                 ActiveTab.Stage.Pieces.RemoveAt(i);
+
                                 break;
                             }
 
                     ActiveTab.ScenePieces.Remove(piece);
-                    foreach (var grp in ActiveTab.HierarchyGroups) grp.PieceIds.Remove(piece.Id);
+                    foreach (var grp in ActiveTab.HierarchyGroups)
+                        grp.PieceIds.Remove(piece.Id);
                 }
 
                 ActiveTab.SelectedPieceIds.Clear();
@@ -133,13 +164,15 @@ public partial class StageEditorPhase
 
         if (key == Key.S && _isCtrlPressed)
         {
-            if (ActiveTab?.Stage != null) SaveStage();
+            if (ActiveTab?.Stage != null)
+                SaveStage();
         }
 
         if (key == Key.C && _isCtrlPressed && ActiveTab != null)
         {
             // Copy all selected pieces (or primary if no multi-selection)
             var ids = ActiveTab.SelectedPieceIds;
+
             if (ids.Count > 0)
             {
                 var pieces = ActiveTab.ScenePieces.Where(p => ids.Contains(p.Id)).ToList();
@@ -150,16 +183,16 @@ public partial class StageEditorPhase
                     (fix64)(pieces.Average(p => (double)p.Position.Z))
                 );
                 _clipboard = pieces.Select(p => new ClipboardPiece(
-                        p.Rad,
-                        new f64Vector3(p.Position.X - centroid.X, p.Position.Y - centroid.Y, p.Position.Z - centroid.Z),
-                        p.Rotation,
-                        p.PiecePlacement.Type,
-                        p.PiecePlacement.NodeKind,
-                        p.PiecePlacement.IsSpecial,
-                        p.PiecePlacement.PileSeed,
-                        p.PiecePlacement.PileWidth,
-                        p.PiecePlacement.PileHeight
-                    )
+                    p.Rad,
+                    new f64Vector3(p.Position.X - centroid.X, p.Position.Y - centroid.Y, p.Position.Z - centroid.Z),
+                    p.Rotation,
+                    p.PiecePlacement.Type,
+                    p.PiecePlacement.NodeKind,
+                    p.PiecePlacement.IsSpecial,
+                    p.PiecePlacement.PileSeed,
+                    p.PiecePlacement.PileWidth,
+                    p.PiecePlacement.PileHeight
+                )
                 ).ToList();
             }
         }
@@ -176,10 +209,12 @@ public partial class StageEditorPhase
                 : MathF.Max(200f, clearance);
             var primaryPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
             f64Vector3 pasteOrigin;
+
             if (primaryPiece != null)
             {
                 float ox = (float)primaryPiece.Position.X + pasteOffsetXZ;
                 float oz = (float)primaryPiece.Position.Z + pasteOffsetXZ;
+
                 if (_gridSnapEnabled && _gridSnapSize > 0f)
                 {
                     ox = MathF.Round(ox / _gridSnapSize) * _gridSnapSize;
@@ -194,11 +229,13 @@ public partial class StageEditorPhase
             }
 
             int lastId = -1;
+
             foreach (var clip in _clipboard)
             {
                 float wx = (float)pasteOrigin.X + (float)clip.RelativePosition.X;
                 float wy = (float)pasteOrigin.Y + (float)clip.RelativePosition.Y;
                 float wz = (float)pasteOrigin.Z + (float)clip.RelativePosition.Z;
+
                 if (_gridSnapEnabled && _gridSnapSize > 0f)
                 {
                     wx = MathF.Round(wx / _gridSnapSize) * _gridSnapSize;
@@ -233,7 +270,8 @@ public partial class StageEditorPhase
                 lastId = instance.Id;
             }
 
-            if (lastId >= 0) ActiveTab.ActivePieceId = lastId;
+            if (lastId >= 0)
+                ActiveTab.ActivePieceId = lastId;
             ActiveTab.HasUnsavedChanges = true;
             RebuildClientRenderer();
         }
@@ -262,36 +300,48 @@ public partial class StageEditorPhase
     {
         // Releases clear held state even when the UI took the keyboard: a key held while a
         // field gained focus must not leave the camera moving.
-        if (!_isOpen) return;
+
+        if (!_isOpen)
+
+            return;
 
         // Camera movement
+
         switch (key)
         {
             case Key.W:
                 _moveForward = false;
+
                 break;
             case Key.S:
                 _moveBackward = false;
+
                 break;
             case Key.A:
                 _moveLeft = false;
+
                 break;
             case Key.D:
                 _moveRight = false;
+
                 break;
             case Key.Space:
                 _moveUp = false;
+
                 break;
             case Key.Q:
                 _moveDown = false;
+
                 break;
             case Key.LShiftKey:
             case Key.RShiftKey:
                 _isShiftPressed = false;
+
                 break;
             case Key.LControlKey:
             case Key.RControlKey:
                 _isCtrlPressed = false;
+
                 break;
         }
     }

@@ -16,141 +16,143 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// [Internal] Key+Value for ImGuiStorage<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiStoragePair
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		[StructLayout(LayoutKind.Explicit)]
-		public partial struct ImGuiStoragePairUnion
-		{
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public int ValI;
+    /// <summary>
+    /// [Internal] Key+Value for ImGuiStorage<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiStoragePair
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        [StructLayout(LayoutKind.Explicit)]
+        public partial struct ImGuiStoragePairUnion
+        {
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public int ValI;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public float ValF;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public float ValF;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public unsafe void* ValP;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public unsafe void* ValP;
 
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			public unsafe ImGuiStoragePairUnion(int valI = default, float valF = default, void* valP = default)
-			{
-				ValI = valI;
-				ValF = valF;
-				ValP = valP;
-			}
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            public unsafe ImGuiStoragePairUnion(int valI = default, float valF = default, void* valP = default)
+            {
+                ValI = valI;
+                ValF = valF;
+                ValP = valP;
+            }
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint Key;
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiStoragePairUnion Union;
 
 
-		}
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint Key;
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiStoragePairUnion Union;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiStoragePair(uint key = default, ImGuiStoragePairUnion union = default)
+        {
+            Key = key;
+            Union = union;
+        }
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiStoragePair(uint key = default, ImGuiStoragePairUnion union = default)
-		{
-			Key = key;
-			Union = union;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            fixed (ImGuiStoragePair* @this = &this)
+            {
+                ImGui.DestroyNative(@this);
+            }
+        }
+    }
 
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiStoragePairPtr : IEquatable<ImGuiStoragePairPtr>
+    {
+        public ImGuiStoragePairPtr(ImGuiStoragePair* handle)
+        {
+            Handle = handle;
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			fixed (ImGuiStoragePair* @this = &this)
-			{
-				ImGui.DestroyNative(@this);
-			}
-		}
+        public ImGuiStoragePair* Handle;
 
-	}
+        public bool IsNull => Handle == null;
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiStoragePairPtr : IEquatable<ImGuiStoragePairPtr>
-	{
-		public ImGuiStoragePairPtr(ImGuiStoragePair* handle) { Handle = handle; }
+        public static ImGuiStoragePairPtr Null => new ImGuiStoragePairPtr(null);
 
-		public ImGuiStoragePair* Handle;
+        public ImGuiStoragePair this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public bool IsNull => Handle == null;
+        public static implicit operator ImGuiStoragePairPtr(ImGuiStoragePair* handle) => new ImGuiStoragePairPtr(handle);
 
-		public static ImGuiStoragePairPtr Null => new ImGuiStoragePairPtr(null);
+        public static implicit operator ImGuiStoragePair*(ImGuiStoragePairPtr handle) => handle.Handle;
 
-		public ImGuiStoragePair this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public static bool operator ==(ImGuiStoragePairPtr left, ImGuiStoragePairPtr right) => left.Handle == right.Handle;
 
-		public static implicit operator ImGuiStoragePairPtr(ImGuiStoragePair* handle) => new ImGuiStoragePairPtr(handle);
+        public static bool operator !=(ImGuiStoragePairPtr left, ImGuiStoragePairPtr right) => left.Handle != right.Handle;
 
-		public static implicit operator ImGuiStoragePair*(ImGuiStoragePairPtr handle) => handle.Handle;
+        public static bool operator ==(ImGuiStoragePairPtr left, ImGuiStoragePair* right) => left.Handle == right;
 
-		public static bool operator ==(ImGuiStoragePairPtr left, ImGuiStoragePairPtr right) => left.Handle == right.Handle;
+        public static bool operator !=(ImGuiStoragePairPtr left, ImGuiStoragePair* right) => left.Handle != right;
 
-		public static bool operator !=(ImGuiStoragePairPtr left, ImGuiStoragePairPtr right) => left.Handle != right.Handle;
+        public bool Equals(ImGuiStoragePairPtr other) => Handle == other.Handle;
 
-		public static bool operator ==(ImGuiStoragePairPtr left, ImGuiStoragePair* right) => left.Handle == right;
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiStoragePairPtr handle && Equals(handle);
 
-		public static bool operator !=(ImGuiStoragePairPtr left, ImGuiStoragePair* right) => left.Handle != right;
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		public bool Equals(ImGuiStoragePairPtr other) => Handle == other.Handle;
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiStoragePairPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref uint Key => ref Unsafe.AsRef<uint>(&Handle->Key);
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiStoragePairPtr handle && Equals(handle);
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImGuiStoragePair.ImGuiStoragePairUnion Union => ref Unsafe.AsRef<ImGuiStoragePair
+            .ImGuiStoragePairUnion>(&Handle->Union);
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
-
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiStoragePairPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref uint Key => ref Unsafe.AsRef<uint>(&Handle->Key);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImGuiStoragePair.ImGuiStoragePairUnion Union => ref Unsafe.AsRef<ImGuiStoragePair.ImGuiStoragePairUnion>(&Handle->Union);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			ImGui.DestroyNative(Handle);
-		}
-
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            ImGui.DestroyNative(Handle);
+        }
+    }
 }

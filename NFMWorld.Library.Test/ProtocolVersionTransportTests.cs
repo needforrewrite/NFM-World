@@ -27,6 +27,7 @@ public class ProtocolVersionTransportTests
         using var writer = new ArrayPoolBufferWriter<byte>();
         writer.Write(packet.Opcode);
         packet.Write(writer);
+
         return writer.WrittenSpan.ToArray();
     }
 
@@ -64,6 +65,7 @@ public class ProtocolVersionTransportTests
             var wire = new Wire(port, listener);
             wire.Server.Start();
             _ = Task.Run(wire.AcceptLoopAsync);
+
             return wire;
         }
 
@@ -72,6 +74,7 @@ public class ProtocolVersionTransportTests
             while (!_cts.IsCancellationRequested)
             {
                 HttpListenerContext ctx;
+
                 try
                 {
                     ctx = await _listener.GetContextAsync();
@@ -91,6 +94,7 @@ public class ProtocolVersionTransportTests
         {
             var socket = new ClientWebSocket();
             await socket.ConnectAsync(new Uri($"ws://localhost:{port}/game"), CancellationToken.None);
+
             return socket;
         }
 
@@ -115,14 +119,19 @@ public class ProtocolVersionTransportTests
             while (true)
             {
                 var result = await socket.ReceiveAsync(buffer, timeout.Token);
+
                 if (result.MessageType == WebSocketMessageType.Close)
+
                     throw new AssertFailedException("the socket closed before the answer arrived");
 
                 ms.Write(buffer, 0, result.Count);
+
                 if (!result.EndOfMessage)
+
                     continue;
 
                 var frame = ms.ToArray();
+
                 return MultiplayerUtils.TryDeserializeS2CPacket((sbyte)frame[0], frame[1..])
                        ?? throw new AssertFailedException($"unknown opcode {frame[0]} in the server's answer");
             }
@@ -198,6 +207,7 @@ public class ProtocolVersionTransportTests
                 await WaitForAsync(() =>
                     {
                         lock (wire.Received)
+
                             return wire.Received.Exists(e => e.Packet is C2S_Authenticate);
                     }
                 ),
@@ -213,9 +223,11 @@ public class ProtocolVersionTransportTests
     private static async Task<bool> WaitForAsync(Func<bool> condition, int milliseconds = 5000)
     {
         var deadline = Environment.TickCount64 + milliseconds;
+
         while (Environment.TickCount64 < deadline)
         {
             if (condition())
+
                 return true;
             await Task.Delay(10);
         }

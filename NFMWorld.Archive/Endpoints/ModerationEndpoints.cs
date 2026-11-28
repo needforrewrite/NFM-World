@@ -39,9 +39,11 @@ public static class ModerationEndpoints
         // the actor's own standing.
         moderation.MapPost(
             "/events",
-            async (HttpRequest request, ArchiveDbContext db, TrustedServerAuth auth, ModerationService service, CancellationToken ct) =>
+            async (HttpRequest request, ArchiveDbContext db, TrustedServerAuth auth, ModerationService service,
+                CancellationToken ct) =>
             {
                 byte[] body;
+
                 try
                 {
                     body = await TrustedServerAuth.ReadBodyAsync(request, MaxBodyBytes, ct);
@@ -52,10 +54,13 @@ public static class ModerationEndpoints
                 }
 
                 var error = auth.Verify("POST", "/moderation/events", body, request.Headers.Authorization, out _);
+
                 if (error is not null)
+
                     return Results.Json(new { error }, statusCode: StatusCodes.Status401Unauthorized);
 
                 ModerationEventRequest? payload;
+
                 try
                 {
                     payload = JsonSerializer.Deserialize<ModerationEventRequest>(body, JsonOptions);
@@ -66,10 +71,13 @@ public static class ModerationEndpoints
                 }
 
                 if (payload is null)
+
                     return Results.BadRequest(new { error = "Malformed moderation event." });
 
                 var actor = await db.Users.FirstOrDefaultAsync(u => u.Id == payload.ActorAccountId, ct);
+
                 if (actor is null)
+
                     return Results.Json(new { error = "Unknown actor." }, statusCode: StatusCodes.Status403Forbidden);
 
                 var duration = payload.DurationSeconds is { } seconds ? TimeSpan.FromSeconds(seconds) : (TimeSpan?)null;
@@ -79,6 +87,7 @@ public static class ModerationEndpoints
                     request.HttpContext,
                     ct
                 );
+
                 return Results.Json(new { ok = outcome.Ok, error = outcome.Error });
             }
         );
@@ -87,12 +96,16 @@ public static class ModerationEndpoints
         // 404 for an unknown target), so a caller can branch on the status.
         moderation.MapPost(
             "/actions",
-            async (ModerationActionRequest request, ArchiveDbContext db, ModerationService service, HttpContext http, CancellationToken ct) =>
+            async (ModerationActionRequest request, ArchiveDbContext db, ModerationService service, HttpContext http,
+                CancellationToken ct) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
                 if (!user.IsModerator)
+
                     return Results.Json(new { error = "Staff only." }, statusCode: StatusCodes.Status403Forbidden);
 
                 var outcome = await service.ApplyAsync(
@@ -109,6 +122,7 @@ public static class ModerationEndpoints
                 );
 
                 if (!outcome.Ok)
+
                     return Refusal(outcome.Error);
 
                 return Results.Json(new { ok = true, error = (string?)null });
@@ -121,9 +135,12 @@ public static class ModerationEndpoints
             async (string? query, int? after, int? limit, ArchiveDbContext db, HttpContext http, CancellationToken ct) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
                 if (!user.IsModerator)
+
                     return Results.Json(new { error = "Staff only." }, statusCode: StatusCodes.Status403Forbidden);
 
                 var take = Math.Clamp(limit ?? 50, 1, MaxListLimit);
@@ -180,9 +197,12 @@ public static class ModerationEndpoints
             async (int? targetUserId, int? after, int? limit, ArchiveDbContext db, HttpContext http, CancellationToken ct) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
                 if (!user.IsModerator)
+
                     return Results.Json(new { error = "Staff only." }, statusCode: StatusCodes.Status403Forbidden);
 
                 var take = Math.Clamp(limit ?? 50, 1, MaxListLimit);
@@ -233,12 +253,16 @@ public static class ModerationEndpoints
             async (int id, ArchiveDbContext db, HttpContext http, CancellationToken ct) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
                 if (!user.IsModerator)
+
                     return Results.Json(new { error = "Staff only." }, statusCode: StatusCodes.Status403Forbidden);
 
                 var found = await AssetModeration.SetTakedownAsync(db, id, isTakedown: true, user, http, ct);
+
                 return found ? Results.Ok(new { ok = true }) : Results.NotFound();
             }
         );
@@ -248,12 +272,16 @@ public static class ModerationEndpoints
             async (int id, ArchiveDbContext db, HttpContext http, CancellationToken ct) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
                 if (!user.IsModerator)
+
                     return Results.Json(new { error = "Staff only." }, statusCode: StatusCodes.Status403Forbidden);
 
                 var found = await AssetModeration.SetTakedownAsync(db, id, isTakedown: false, user, http, ct);
+
                 return found ? Results.Ok(new { ok = true }) : Results.NotFound();
             }
         );
@@ -263,11 +291,13 @@ public static class ModerationEndpoints
     private static IResult Refusal(string? error)
     {
         if (error is not { Length: > 0 })
+
             return Results.Json(new { ok = false, error = "The action was refused." }, statusCode: StatusCodes
                 .Status403Forbidden
             );
 
         if (error.Contains("No such account"))
+
             return Results.Json(new { ok = false, error }, statusCode: StatusCodes.Status404NotFound);
 
         return Results.Json(new { ok = false, error }, statusCode: StatusCodes.Status403Forbidden);

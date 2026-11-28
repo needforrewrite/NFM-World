@@ -92,6 +92,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
         else
         {
             Sprk++;
+
             if (Sprk == 4)
             {
                 Srx = ((float)_visual.Position.X + scx);
@@ -121,9 +122,11 @@ public class Sparks : IDisposable, IImmediateRenderElement
     {
         _vertexCount = 0;
         _triangleCount = 0;
+
         if (Sprk != 0)
         {
             var i = (int)(Math.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz) / 10.0);
+
             if (i > 5)
             {
                 if (i > 33)
@@ -132,6 +135,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 }
 
                 var i241 = 0;
+
                 for (var i242 = 0; i242 < 100; i242++)
                 {
                     if (_rtg[i242] == 0)
@@ -152,6 +156,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
         if (_sparkCount == 0)
         {
             // Fast exit if no sparks are active
+
             return;
         }
 
@@ -191,12 +196,14 @@ public class Sparks : IDisposable, IImmediateRenderElement
                     }
 
                     var i243 = MathF.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz);
-                    if (float.IsNaN(i243) || float.IsInfinity(i243)) i243 = 1.0F;
+                    if (float.IsNaN(i243) || float.IsInfinity(i243))
+                        i243 = 1.0F;
                     i243 = Math.Clamp(i243, 1, 100); // prevent division by zero
 
                     var f = 0.2F + 0.4F * URandom.Single();
                     var f244 = URandom.Single() * URandom.Single() * URandom.Single();
                     var f245 = 1.0F;
+
                     if (URandom.Boolean())
                     {
                         if (URandom.Boolean())
@@ -244,6 +251,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 if (lineLenSq < 0.01f)
                 {
                     // Console.WriteLine("Degenerate line!!!");
+
                     continue;
                 }
 
@@ -253,6 +261,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, default, default, color, 0f, verts, inds);
 
                 // Bounds guard: prevent writing past pre-allocated arrays
+
                 if (_vertexCount + LineMeshHelpers.VerticesPerLine > _lineVertices.Length
                     || _triangleCount * 3 + LineMeshHelpers.IndicesPerLine > _lineIndices.Length)
                 {
@@ -275,6 +284,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 _vrx[i] *= 0.8F;
                 _vry[i] *= 0.8F;
                 _vrz[i] *= 0.8F;
+
                 if (_rtg[i] == 9)
                 {
                     _rtg[i] = 0;
@@ -297,7 +307,9 @@ public class Sparks : IDisposable, IImmediateRenderElement
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (_vertexCount == 0 || _triangleCount == 0) return;
+        if (_vertexCount == 0 || _triangleCount == 0)
+
+            return;
 
         if (_dirty)
         {
@@ -351,6 +363,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
         {
             var uploadedVerts = _lineVertices.AsSpan(0, _vertexCount);
             int blackCount = 0;
+
             for (int vi = 0; vi < uploadedVerts.Length; vi++)
             {
                 if (uploadedVerts[vi].Color == default)

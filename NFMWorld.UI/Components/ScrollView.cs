@@ -15,16 +15,28 @@ public class ScrollView : View
     {
         base.OnMousePressed(e);
         _dragging = false;
-        if (e.Button != MouseButton.Primary || Styles.Overflow != Overflow.Scroll) return;
+
+        if (e.Button != MouseButton.Primary || Styles.Overflow != Overflow.Scroll)
+
+            return;
         var origin = LayoutPaddingPosition;
         var size = LayoutPaddingSize;
-        if (ScrollableHeight > 0 && e.Position.X >= origin.X + size.X - 6
-            && e.Position.X <= origin.X + size.X && e.Position.Y >= origin.Y && e.Position.Y <= origin.Y + size.Y)
+
+        if (ScrollableHeight > 0
+            && e.Position.X >= origin.X + size.X - 6
+            && e.Position.X <= origin.X + size.X
+            && e.Position.Y >= origin.Y
+            && e.Position.Y <= origin.Y + size.Y)
             _horizontal = false;
-        else if (ScrollableWidth > 0 && e.Position.Y >= origin.Y + size.Y - 6
-                 && e.Position.Y <= origin.Y + size.Y && e.Position.X >= origin.X && e.Position.X <= origin.X + size.X)
+        else if (ScrollableWidth > 0
+                 && e.Position.Y >= origin.Y + size.Y - 6
+                 && e.Position.Y <= origin.Y + size.Y
+                 && e.Position.X >= origin.X
+                 && e.Position.X <= origin.X + size.X)
             _horizontal = true;
-        else return;
+        else
+
+            return;
 
         var (start, track, extent, offset) = ScrollbarMetrics();
         var thumb = Math.Max(track * track / (track + extent), 20f);
@@ -40,9 +52,12 @@ public class ScrollView : View
 
     protected override void OnMouseDragged(MouseDragEvent e)
     {
-        if (!e.Buttons.HasFlag(MouseButtons.Primary) || e.DragStart != _dragStart) _dragging = false;
-        if (_dragging) DragScrollbar(e.Position);
-        else base.OnMouseDragged(e);
+        if (!e.Buttons.HasFlag(MouseButtons.Primary) || e.DragStart != _dragStart)
+            _dragging = false;
+        if (_dragging)
+            DragScrollbar(e.Position);
+        else
+            base.OnMouseDragged(e);
     }
 
     protected override void OnMouseReleased(MouseEvent e)
@@ -59,12 +74,20 @@ public class ScrollView : View
     private void DragScrollbar(Vector2 position)
     {
         var (start, track, extent, _) = ScrollbarMetrics();
-        if (extent <= 0 || track <= 0) return;
+
+        if (extent <= 0 || track <= 0)
+
+            return;
         var travel = track - Math.Max(track * track / (track + extent), 20f);
-        if (travel <= 0) return;
+
+        if (travel <= 0)
+
+            return;
         var cursor = _horizontal ? position.X : position.Y;
         var offset = Math.Clamp((cursor - start - _grabOffset) / travel, 0, 1) * extent;
-        if (_horizontal) ScrollLeft = offset;
-        else ScrollTop = offset;
+        if (_horizontal)
+            ScrollLeft = offset;
+        else
+            ScrollTop = offset;
     }
 }

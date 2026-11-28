@@ -51,7 +51,9 @@ public static class ShaderBuild
         // Read the entry points before stripping: the `technique` blocks are where they are written
         // down, and Strip removes exactly those blocks.
         var techniques = TechniqueParser.Parse(source, path);
+
         if (techniques.Count == 0)
+
             throw new InvalidOperationException($"{path}: no technique is declared - nothing to compile.");
 
         var stripped = TechniqueParser.Strip(source);
@@ -68,6 +70,7 @@ public static class ShaderBuild
         string? ResolveInclude(string target)
         {
             string key;
+
             try
             {
                 key = Path.GetFullPath(Path.Combine(shaderDir, target));
@@ -76,11 +79,13 @@ public static class ShaderBuild
             {
                 // A malformed include target is not an exception the caller can act on; returning
                 // null makes glslang report it as the unresolved include it is, in its own message.
+
                 return null;
             }
 
             if (!includeCache.TryGetValue(key, out var text))
                 includeCache[key] = text = File.Exists(key) ? File.ReadAllText(key).Replace("\r\n", "\n") : null;
+
             return text;
         }
 
@@ -121,7 +126,9 @@ public static class ShaderBuild
                      })
             {
                 var (spirv, error) = spirvCompiler.Compile(stripped, path, stage, entry, defines);
+
                 if (spirv is null)
+
                     throw new InvalidOperationException(
                         $"{path} [technique {technique.Name}]: {stage} stage HLSL->SPIR-V failed.\n{error}"
                     );
@@ -177,6 +184,7 @@ public static class ShaderBuild
                     // Translated before being applied, so a translator that dies mid-way cannot leave
                     // one stage of a technique with WGSL and its sibling without.
                     var translations = new Dictionary<ShaderStage, (string Desktop, string Browser)>(compiled.Count);
+
                     foreach (var (stage, value) in compiled)
                     {
                         var reflection = stages.First(s => s.Stage == stage);
@@ -257,8 +265,11 @@ public static class ShaderBuild
         int IndexOf<T>(IReadOnlyList<T> list, Func<T, string> nameOf, string name)
         {
             for (var i = 0; i < list.Count; i++)
+
                 if (nameOf(list[i]) == name)
+
                     return i;
+
             return -1;
         }
 
@@ -297,6 +308,7 @@ public static class ShaderBuild
         var inputs = new List<VertexInputDesc>();
 
         var location = 0;
+
         foreach (var input in declared)
         {
             if (present.Contains(location))
@@ -334,6 +346,7 @@ public static class ShaderBuild
         foreach (var path in Directory.EnumerateFiles(directory, "*.fx").OrderBy(p => p, StringComparer.Ordinal))
         {
             IReadOnlyList<CompiledBundle> bundles;
+
             try
             {
                 bundles = CompileFile(path, log);
@@ -341,6 +354,7 @@ public static class ShaderBuild
             catch (Exception e) when (e is InvalidOperationException or IOException)
             {
                 errors.AppendLine(e.Message);
+
                 continue;
             }
 
@@ -358,6 +372,7 @@ public static class ShaderBuild
         }
 
         if (errors.Length > 0)
+
             throw new InvalidOperationException(errors.ToString().TrimEnd());
 
         return written;

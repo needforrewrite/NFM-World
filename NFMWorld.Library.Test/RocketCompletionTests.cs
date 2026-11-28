@@ -39,6 +39,7 @@ public class RocketCompletionTests
         var stage = new BackendStage("rocket-test", new StageLoader { nlaps = laps });
         for (var i = 0; i < checkpoints; i++)
             stage.Checkpoints.Add(CreateCheckpoint(100_000 + i * 20_000));
+
         return stage;
     }
 
@@ -79,6 +80,7 @@ public class RocketCompletionTests
         )!;
         server.Begin();
         server.StartRace();
+
         return (factory, server, context);
     }
 
@@ -92,6 +94,7 @@ public class RocketCompletionTests
     {
         var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes()
             .Single(t => t.Name == name);
+
         return TightPackSerializer.SerializeUntyped(type.BaseType!, Activator.CreateInstance(type, args));
     }
 
@@ -118,6 +121,7 @@ public class RocketCompletionTests
     public void RocketRace_FinishingTheFinalLap_EndsWithTheStandardStandings()
     {
         var (factory, server, context) = CreateRace(laps: 2, checkpoints: 2, Alice, Bob);
+
         try
         {
             StartRacing(server);
@@ -144,6 +148,7 @@ public class RocketCompletionTests
     public void RocketRace_ASkippedCheckpointIsRefused()
     {
         var (factory, server, context) = CreateRace(laps: 2, checkpoints: 3, Alice);
+
         try
         {
             StartRacing(server);

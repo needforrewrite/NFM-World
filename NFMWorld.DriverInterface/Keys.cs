@@ -1204,7 +1204,11 @@ public readonly partial struct Keys : IEquatable<Keys>, IComparable<Keys>
     public int CompareTo(Keys other)
     {
         var lowBitsComparison = _lowBits.CompareTo(other._lowBits);
-        if (lowBitsComparison != 0) return lowBitsComparison;
+
+        if (lowBitsComparison != 0)
+
+            return lowBitsComparison;
+
         return _highBits.CompareTo(other._highBits);
     }
 

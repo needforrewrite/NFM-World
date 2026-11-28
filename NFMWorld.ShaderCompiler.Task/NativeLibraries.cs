@@ -21,13 +21,17 @@ internal static class NativeLibraries
         lock (Gate)
         {
             if (_done)
+
                 return;
 
             var directory = Path.GetDirectoryName(typeof(NativeLibraries).Assembly.Location);
+
             if (string.IsNullOrEmpty(directory))
+
                 throw new InvalidOperationException("The shader compiler task assembly has no location.");
 
             if (PathResolver.Default is not DefaultPathResolver resolver)
+
                 throw new InvalidOperationException("Silk.NET's default native library resolver is not configurable.");
 
             resolver.Resolvers.Insert(
@@ -50,13 +54,17 @@ internal static class NativeLibraries
                 : OperatingSystem.IsLinux()
                     ? ".so"
                     : null;
+
         if (extension is null)
+
             throw new PlatformNotSupportedException("The shader compiler native libraries are not available on this platform.");
 
         var prefix = extension == ".dll" ? "" : "lib";
         var shaderc = $"{prefix}shaderc_shared{extension}";
         var spirvCross = $"{prefix}spirv-cross{extension}";
+
         // Silk.NET requests the platform-specific filenames, not just the library stems.
+
         return
         [
             (shaderc, shaderc),

@@ -72,7 +72,9 @@ public static class SettingsView
 
         public void Release()
         {
-            if (!_held) return;
+            if (!_held)
+
+                return;
             _held = false;
             _releasedAt = System.Diagnostics.Stopwatch.GetTimestamp();
         }
@@ -89,6 +91,7 @@ public static class SettingsView
                 && !_held
                 && System.Diagnostics.Stopwatch.GetElapsedTime(_releasedAt).TotalSeconds >= 0.14)
                 Pressed.Value = false;
+
             return base.OnPostLayout();
         }
     }
@@ -109,8 +112,11 @@ public static class SettingsView
 
         public void HandleRepeatedKey(Key key, in Keys keys)
         {
-            if (capturing()) return;
-            if (!handleKey(key)) GameSparker.UiRenderer?.HandleKeyPressed(key, keys);
+            if (capturing())
+
+                return;
+            if (!handleKey(key))
+                GameSparker.UiRenderer?.HandleKeyPressed(key, keys);
         }
 
         public bool PreviewActive => previewActive();
@@ -129,6 +135,7 @@ public static class SettingsView
             var changed = base.OnPostLayout();
             if (!stagePickerActive() && !GameSparker.devConsole.IsOpen())
                 navigation.UpdateFocus(this, scrollIntoView: false);
+
             return changed;
         }
     }
@@ -140,44 +147,71 @@ public static class SettingsView
 
     private static UiState.RaceState? FindMenuHudPreview(Node? node)
     {
-        if (node is null || node is Component { IsDisplayed: false }) return null;
-        if (node is InputView settings) return settings.MenuHudPreview;
+        if (node is null || node is Component { IsDisplayed: false })
+
+            return null;
+        if (node is InputView settings)
+
+            return settings.MenuHudPreview;
+
         foreach (var child in node.VisualChildren)
+
             if (FindMenuHudPreview(child) is { } preview)
+
                 return preview;
+
         return null;
     }
 
     private static bool FindPreview(Node? node, bool scene = false, bool hud = false)
     {
-        if (node is null || node is Component { IsDisplayed: false }) return false;
+        if (node is null || node is Component { IsDisplayed: false })
+
+            return false;
         if (node is InputView settings)
+
             return hud ? settings.HudPreviewActive : scene ? settings.ScenePreviewActive : settings.PreviewActive;
+
         return node.VisualChildren.Any(child => FindPreview(child, scene, hud));
     }
 
     public static bool HandleKeyPressed(Node? node, Key key)
     {
-        if (node is null || node is Component { IsDisplayed: false }) return false;
-        if (node is InputView settings) return settings.HandleKey(key);
+        if (node is null || node is Component { IsDisplayed: false })
+
+            return false;
+        if (node is InputView settings)
+
+            return settings.HandleKey(key);
+
         foreach (var child in node.VisualChildren)
+
             if (HandleKeyPressed(child, key))
+
                 return true;
+
         return false;
     }
 
     public static bool HandleKeyRepeated(Node? node, Key key, in Keys keys)
     {
-        if (node is null || node is Component { IsDisplayed: false }) return false;
+        if (node is null || node is Component { IsDisplayed: false })
+
+            return false;
+
         if (node is InputView settings)
         {
             settings.HandleRepeatedKey(key, keys);
+
             return true;
         }
 
         foreach (var child in node.VisualChildren)
+
             if (HandleKeyRepeated(child, key, keys))
+
                 return true;
+
         return false;
     }
 
@@ -274,16 +308,22 @@ public static class SettingsView
         bool HandleKey(Key key)
         {
             if (stagePicker.Value is { } picker)
+
                 return picker.HandleKey(key);
+
             if (capturing.Value is { } action)
             {
                 capturing.Value = null;
                 if (key != Key.Escape && key != Key.None)
                     Set("keyBinding", (int)key, action);
+
                 return true;
             }
 
-            if (root is not null && navigation.HandleKey(root, key)) return true;
+            if (root is not null && navigation.HandleKey(root, key))
+
+                return true;
+
             if (confirm.Value is not null || restartRequired.Value)
             {
                 if (key == Key.Escape)
@@ -299,30 +339,39 @@ public static class SettingsView
 
             if (cameraPresetEditor.Value)
             {
-                if (key == Key.Escape) cameraPresetEditor.Value = false;
+                if (key == Key.Escape)
+                    cameraPresetEditor.Value = false;
+
                 return key == Key.Escape;
             }
 
-            if (key != Key.Escape) return false;
+            if (key != Key.Escape)
+
+                return false;
+
             if (hudPreview.Value)
             {
                 hudPreview.Value = false;
+
                 return true;
             }
 
             if (menuPreview.Value)
             {
                 menuPreview.Value = false;
+
                 return true;
             }
 
             if (cameraPreview.Value)
             {
                 cameraPreview.Value = false;
+
                 return true;
             }
 
             Cancel();
+
             return true;
         }
 
@@ -348,11 +397,13 @@ public static class SettingsView
                     "Could not save settings",
                     "The configuration file could not be saved. Check the console for the error and try again."
                 );
+
                 return;
             }
 
             original = SettingsMenu.SaveConfigToString();
             applied.Value = true;
+
             if (needsRestart)
             {
                 closeAfterRestartPrompt = close;
@@ -565,6 +616,7 @@ public static class SettingsView
                 )
             )
         );
+
         return root;
     }
 
@@ -671,14 +723,18 @@ public static class SettingsView
                 )
             )
         );
+
         return KeyboardNavigation.Bind(
             feedback,
             key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 feedback.Press();
                 onPress();
                 feedback.Release();
+
                 return true;
             },
             value => focused.Value = value
@@ -721,21 +777,23 @@ public static class SettingsView
         var scroll = new ScrollView
         {
             Styles = Sx.Styles(
-            flexDirection: FlexDirection.Column,
-            flexGrow: 1,
-            flexShrink: 1,
-            minHeight: 0,
-            overflow: Overflow.Scroll,
-            paddingTop: 12,
-            paddingLeft: 20,
-            paddingRight: 20,
-            paddingBottom: 12
-        )
+                flexDirection: FlexDirection.Column,
+                flexGrow: 1,
+                flexShrink: 1,
+                minHeight: 0,
+                overflow: Overflow.Scroll,
+                paddingTop: 12,
+                paddingLeft: 20,
+                paddingRight: 20,
+                paddingBottom: 12
+            )
         };
         scroll.AddChild(Sx.View(
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, flexShrink: 0, width: 100.Percent()),
             children: children
-        ));
+        )
+        );
+
         return scroll;
     }
 
@@ -1253,12 +1311,15 @@ public static class SettingsView
     private static Node MenuStageButton(Signal<SettingsSnapshot?> config, Action chooseStage)
     {
         var names = MenuPreferences.GetStageNames(NFMWorldLibrary.TheVFS.VFS);
+
         return Button.Create(
             label: () =>
             {
                 var stage = config.Value?.MenuStage ?? MenuPreferences.LastPlayedStage;
+
                 return stage == MenuPreferences.LastPlayedStage ? "Last played stage"
-                    : names.GetValueOrDefault(stage) ?? (NFMWorldLibrary.Radpack.RadpackReader.IsArchiveId(stage)
+                    : names.GetValueOrDefault(stage)
+                      ?? (NFMWorldLibrary.Radpack.RadpackReader.IsArchiveId(stage)
                         ? "Public stage " + stage[^8..] : stage);
             },
             onPress: chooseStage,
@@ -1284,8 +1345,10 @@ public static class SettingsView
         index =>
         {
             var items = choices();
-            if (index == 0) select(defaultValue);
-            else if (index > 0 && index <= items.Count) select(items[index - 1]);
+            if (index == 0)
+                select(defaultValue);
+            else if (index > 0 && index <= items.Count)
+                select(items[index - 1]);
         }
     );
 
@@ -1372,19 +1435,23 @@ public static class SettingsView
         index =>
         {
             var presets = config.Value?.CameraPresets;
+
             if (config.Value?.ModifiedCameraPreset is not null)
             {
                 if (index == 0)
                 {
                     SettingsMenu.SelectModifiedCameraPreset();
                     refresh();
+
                     return;
                 }
 
                 index--;
             }
 
-            if (presets is null || index < 0 || index >= presets.Count) return;
+            if (presets is null || index < 0 || index >= presets.Count)
+
+                return;
             SettingsMenu.SelectCameraPreset(presets[index].Name);
             refresh();
         },
@@ -1512,7 +1579,9 @@ public static class SettingsView
                                             "Remove Preset",
                                             () =>
                                             {
-                                                if (target.Value is not { } preset) return;
+                                                if (target.Value is not { } preset)
+
+                                                    return;
                                                 SettingsMenu.RemoveCameraPreset(preset);
                                                 target.Value = null;
                                                 name.Value = "";
@@ -1784,12 +1853,16 @@ public static class SettingsView
         node.MousePressed = _ => onPress();
         node.MouseEntered = _ => hovered.Value = true;
         node.MouseLeft = _ => hovered.Value = false;
+
         return KeyboardNavigation.Bind(
             node,
             key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 onPress();
+
                 return true;
             },
             value => focused.Value = value
@@ -1809,12 +1882,16 @@ public static class SettingsView
                 borderColor: focused.Value ? Blue : Theme.SurfaceBorder
             )
         );
+
         return KeyboardNavigation.Bind(
             node,
             key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 onPress();
+
                 return true;
             },
             value => focused.Value = value
@@ -1900,6 +1977,7 @@ public static class SettingsView
     private static string KeyCodeToName(int code)
     {
         if (code == 0)
+
             return "None";
 
         var name = code switch
@@ -1924,12 +2002,16 @@ public static class SettingsView
         };
 
         if (name is not null)
+
             return name;
         if (code is >= 65 and <= 90)
+
             return ((char)code).ToString();
         if (code is >= 48 and <= 57)
+
             return ((char)code).ToString();
         if (code is >= 96 and <= 105)
+
             return $"NumPad{code - 96}";
 
         return $"Key(0x{code:x})";

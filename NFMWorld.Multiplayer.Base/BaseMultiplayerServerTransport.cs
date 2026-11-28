@@ -65,9 +65,11 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
     protected void ReceivePacket(uint clientIndex, ReadOnlyMemory<byte> memory)
     {
         // An empty datagram has no opcode; remote input, so it must not throw here.
+
         if (memory.IsEmpty)
         {
             Logging.Warning($"Client {clientIndex} sent an empty packet");
+
             return;
         }
 
@@ -76,9 +78,11 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
 
         // The version is settled before anything else is looked at, so no handler ever sees a
         // packet from a build whose layout it does not share.
+
         if (opcode == Protocol.ClientHandshakeOpcode)
         {
             HandleHandshake(clientIndex, message);
+
             return;
         }
 
@@ -89,10 +93,12 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
                 clientIndex,
                 "This connection did not declare its protocol version. Update the game and try again."
             );
+
             return;
         }
 
         IPacketClientToServer? packet;
+
         try
         {
             packet = MultiplayerUtils.TryDeserializeC2SPacket(opcode, message);
@@ -100,12 +106,14 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
         catch (Exception ex)
         {
             Logging.Warning($"Client {clientIndex} sent an unreadable packet (opcode {opcode})", exception: ex);
+
             return;
         }
 
         if (packet is { } p)
         {
             // A throwing handler must not take down the receive thread for every client.
+
             try
             {
                 PacketReceived?.Invoke(this, (clientIndex, p));
@@ -124,6 +132,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
     private void HandleHandshake(uint clientIndex, ReadOnlyMemory<byte> message)
     {
         int version;
+
         try
         {
             version = TightPackSerializer.Deserialize<C2S_Handshake>(message.Span).Version;
@@ -132,6 +141,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
         {
             Logging.Warning($"Client {clientIndex} sent an unreadable handshake", exception: ex);
             RefuseProtocol(clientIndex, "This connection sent an unreadable handshake.");
+
             return;
         }
 
@@ -145,6 +155,7 @@ public abstract class BaseMultiplayerServerTransport : IMultiplayerServerTranspo
                 $"This server uses protocol version{Protocol.Version} and your build uses protocol version{version}. "
                 + "Update the game and try again."
             );
+
             return;
         }
 

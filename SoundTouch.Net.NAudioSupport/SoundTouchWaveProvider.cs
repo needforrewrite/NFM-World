@@ -45,8 +45,10 @@ namespace SoundTouch.Net.NAudioSupport
             _sourceProvider = sourceProvider ?? throw new ArgumentNullException(nameof(sourceProvider));
 
             if (sourceProvider.WaveFormat.Encoding != WaveFormatEncoding.IeeeFloat)
+
                 throw new ArgumentException(Strings.Argument_WaveFormatIeeeFloat, nameof(sourceProvider));
             if (sourceProvider.WaveFormat.BitsPerSample != 32)
+
                 throw new ArgumentException(Strings.Argument_WaveFormat32BitsPerSample, nameof(sourceProvider));
 
             int sampleRate = sourceProvider.WaveFormat.SampleRate;
@@ -83,6 +85,7 @@ namespace SoundTouch.Net.NAudioSupport
                 lock (SyncLock)
                 {
                     if (DoubleUtil.AreClose(_processor.Tempo, value))
+
                         return;
 
                     _processor.Tempo = value;
@@ -102,6 +105,7 @@ namespace SoundTouch.Net.NAudioSupport
                 lock (SyncLock)
                 {
                     if (DoubleUtil.AreClose(_processor.Pitch, value))
+
                         return;
 
                     _processor.Pitch = value;
@@ -122,6 +126,7 @@ namespace SoundTouch.Net.NAudioSupport
                 lock (SyncLock)
                 {
                     if (DoubleUtil.AreClose(_processor.Rate, value))
+
                         return;
 
                     _processor.Rate = value;
@@ -141,6 +146,7 @@ namespace SoundTouch.Net.NAudioSupport
                 lock (SyncLock)
                 {
                     if (DoubleUtil.AreClose(_processor.TempoChange, value))
+
                         return;
 
                     _processor.TempoChange = value;
@@ -160,6 +166,7 @@ namespace SoundTouch.Net.NAudioSupport
                 lock (SyncLock)
                 {
                     if (DoubleUtil.AreClose(_processor.PitchOctaves, value))
+
                         return;
 
                     _processor.PitchOctaves = value;
@@ -179,6 +186,7 @@ namespace SoundTouch.Net.NAudioSupport
                 lock (SyncLock)
                 {
                     if (DoubleUtil.AreClose(_processor.PitchSemiTones, value))
+
                         return;
 
                     _processor.PitchSemiTones = value;
@@ -198,6 +206,7 @@ namespace SoundTouch.Net.NAudioSupport
                 lock (SyncLock)
                 {
                     if (DoubleUtil.AreClose(_processor.RateChange, value))
+
                         return;
 
                     _processor.RateChange = value;
@@ -245,9 +254,11 @@ namespace SoundTouch.Net.NAudioSupport
                     // Iterate until enough samples are available for output:
                     // - read samples from input stream
                     // - put samples to SoundTouch processor.
+
                     while (_processor.AvailableSamples < samplesRequired)
                     {
                         int bytes;
+
                         try
                         {
                             bytes = _sourceProvider.Read(_buffer);
@@ -260,6 +271,7 @@ namespace SoundTouch.Net.NAudioSupport
                         if (bytes == 0)
                         {
                             // end of stream. flush final samples from SoundTouch buffers to output.
+
                             if (!IsFlushed)
                             {
                                 IsFlushed = true;
@@ -288,6 +300,7 @@ namespace SoundTouch.Net.NAudioSupport
                 UnobservedException(this, eventArgs);
 
                 if (!eventArgs.IsObserved)
+
                     throw;
 
                 return 0;

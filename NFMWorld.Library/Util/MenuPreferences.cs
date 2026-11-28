@@ -49,11 +49,17 @@ public static class MenuPreferences
     public static IReadOnlyDictionary<string, string> GetStageNames(VirtualFS fs)
     {
         var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var path in StageFiles(fs))
         {
-            if (!path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+
+                continue;
             var id = StageIdOf(path);
-            if (names.ContainsKey(id)) continue;
+
+            if (names.ContainsKey(id))
+
+                continue;
 
             if (GetStageName(fs, path) is { } name)
                 names[id] = name;
@@ -68,15 +74,22 @@ public static class MenuPreferences
         {
             using var stream = fs.OpenRead(path);
             using var reader = new StreamReader(stream);
+
             while (reader.ReadLine() is { } raw)
             {
                 // Mirrors StageLoader: the directive may sit behind a "ds:"/"?" editor prefix.
                 var line = raw.Trim();
-                if (line.StartsWith("ds:")) line = line[3..];
-                if (line.StartsWith('?')) line = line[1..];
-                if (!line.StartsWith("name(")) continue;
+                if (line.StartsWith("ds:"))
+                    line = line[3..];
+                if (line.StartsWith('?'))
+                    line = line[1..];
+
+                if (!line.StartsWith("name("))
+
+                    continue;
 
                 if (Utility.GetString("name(", line, 0).Trim() is { Length: > 0 } name)
+
                     return name.Replace('|', ',');
             }
         }

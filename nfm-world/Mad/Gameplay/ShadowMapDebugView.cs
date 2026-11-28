@@ -41,17 +41,28 @@ internal static class ShadowMapDebugView
     public static void Capture(ICommandBuffer cb)
     {
         // Before the counters, so a backend that cannot read back does not consume a capture slot.
-        if (!GameSparker.GraphicsDevice.SupportsTextureReadback) return;
+
+        if (!GameSparker.GraphicsDevice.SupportsTextureReadback)
+
+            return;
 
         var targets = GameSparker.ShadowRenderTargets;
-        if (targets.Count == 0) return;
 
-        if (_framesSinceCapture++ < CaptureIntervalFrames) return;
+        if (targets.Count == 0)
+
+            return;
+
+        if (_framesSinceCapture++ < CaptureIntervalFrames)
+
+            return;
         _framesSinceCapture = 0;
 
         var cascade = _nextCascade % targets.Count;
         _nextCascade++;
-        if (targets[cascade] is not { } target) return;
+
+        if (targets[cascade] is not { } target)
+
+            return;
 
         var resolution = GameSparker.ShadowResolution;
         var byteCount = resolution * resolution * sizeof(float);
@@ -71,9 +82,11 @@ internal static class ShadowMapDebugView
         // white clear (depth 1.0), so "lit" reads as white and geometry shows as a grey silhouette.
         var depths = MemoryMarshal.Cast<byte, float>(_readbackScratch.AsSpan(0, byteCount));
         var step = Math.Max(1, resolution / PreviewSize);
+
         for (var y = 0; y < PreviewSize; y++)
         {
             var row = (y * step) * resolution;
+
             for (var x = 0; x < PreviewSize; x++)
             {
                 var source = row + x * step;
@@ -104,13 +117,17 @@ internal static class ShadowMapDebugView
             }
 
             ImGui.End();
+
             return;
         }
 
-        if (!_bound) return;
+        if (!_bound)
+
+            return;
 
         var windowSize = new Vector2(PreviewSize + 24, PreviewSize + 64);
         ImGui.SetNextWindowSize(windowSize, ImGuiCond.Once);
+
         if (ImGui.Begin("Shadow cascades"))
         {
             ImGui.TextDisabled(
@@ -131,12 +148,15 @@ internal static class ShadowMapDebugView
 
     private static void EnsureTexture()
     {
-        if (_previewTexture is not null) return;
+        if (_previewTexture is not null)
+
+            return;
 
         _previewTexture = GameSparker.GraphicsDevice.CreateTexture(
             new TextureDesc(PreviewSize, PreviewSize, TextureFormat.Rgba8),
             PreviewPixels
         );
+
         if (GameSparker.Game.ImguiRenderer is { } imgui)
         {
             _previewRef = imgui.BindTexture(_previewTexture);
@@ -147,7 +167,9 @@ internal static class ShadowMapDebugView
     /// <summary>Releases the preview texture. Called from <see cref="WorldGame.Dispose"/> - it is held in a static, so nothing else would ever dispose it and the backend's leak tracker would flag it at shutdown.</summary>
     public static void Dispose()
     {
-        if (_previewTexture is null) return;
+        if (_previewTexture is null)
+
+            return;
 
         if (_bound && GameSparker.Game.ImguiRenderer is { } imgui)
             imgui.UnbindTexture(_previewRef);

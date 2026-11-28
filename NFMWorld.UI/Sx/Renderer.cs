@@ -49,6 +49,7 @@ public static class Renderer
 
                 // Anything the root created before it had a mounting scope belongs to this one.
                 node.AdoptPendingScope(scope);
+
                 return node;
             }
         );

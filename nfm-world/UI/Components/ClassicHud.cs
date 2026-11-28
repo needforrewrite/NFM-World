@@ -24,21 +24,28 @@ public sealed class ClassicHud(IHudData race) : Component
         var now = Stopwatch.GetTimestamp();
         var dt = Math.Clamp((float)Stopwatch.GetElapsedTime(_lastFrame, now).TotalSeconds, 0, 0.1f);
         _lastFrame = now;
-        if (!Race.Paused) _clock += dt;
+        if (!Race.Paused)
+            _clock += dt;
         var scale = MathF.Min(size.X / 960, size.Y / 540) * HudScaleSettings.ClassicDefault * SettingsMenu.HudScale;
-        if (scale <= 0) return;
+
+        if (scale <= 0)
+
+            return;
         var bounds = HudSafeZone.Bounds(position, size);
         position = new Vector2(bounds.X, bounds.Y);
         size = new Vector2(bounds.Width, bounds.Height);
 
         if (_svgSnap != World.Snap)
         {
-            if (_damage is not null) _damage = HudImages.TryLoad("data/images/damage.hud.svg", SnapMultiplier(), 225);
-            if (_power is not null) _power = HudImages.TryLoad("data/images/power.hud.svg", SnapMultiplier(), 225);
+            if (_damage is not null)
+                _damage = HudImages.TryLoad("data/images/damage.hud.svg", SnapMultiplier(), 225);
+            if (_power is not null)
+                _power = HudImages.TryLoad("data/images/power.hud.svg", SnapMultiplier(), 225);
             _svgSnap = World.Snap;
         }
 
         G.SaveState();
+
         try
         {
             var left = position.X;
@@ -46,6 +53,7 @@ public sealed class ClassicHud(IHudData race) : Component
             var right = position.X + size.X;
             if (Race.TotalLaps > 0)
                 Text($"LAP: {Race.Lap} / {Race.TotalLaps}", left + 14 * scale, top + 5 * scale, scale, adventure: true);
+
             if (!Race.TimeTrial)
             {
                 Text(
@@ -57,7 +65,9 @@ public sealed class ClassicHud(IHudData race) : Component
                 );
             }
 
-            if (Race.HasPosition) PositionReadout(left + 30 * scale, top + 18 * scale, scale);
+            if (Race.HasPosition)
+                PositionReadout(left + 30 * scale, top + 18 * scale, scale);
+
             if (Race.TimeTrial)
             {
                 var timerY = top + (Race.HasPosition ? 49 : 30) * scale;
@@ -68,6 +78,7 @@ public sealed class ClassicHud(IHudData race) : Component
             var speedX = left + size.X / 2;
             var speedY = top + size.Y - 55 * scale;
             var speed = Race.SpeedKmh;
+
             if (Race.IsPreview || SettingsMenu.HudClassicMeters)
             {
                 Digits($"{speed}", speedX, speedY, 30 * scale, center: true);
@@ -84,11 +95,19 @@ public sealed class ClassicHud(IHudData race) : Component
                 var opponentScale = scale * 0.62f;
                 var opponentRight = right - 8 * scale;
                 var y = top + 80 * scale;
+
                 foreach (var racer in Race.Racers)
                 {
-                    if (racer.Wasted) continue;
+                    if (racer.Wasted)
+
+                        continue;
+
                     // No partial rows: stop once the row plus its bar would not fit above the HUD's bottom margin.
-                    if (y + 29 * opponentScale > top + size.Y - 30 * scale) break;
+
+                    if (y + 29 * opponentScale > top + size.Y - 30 * scale)
+
+                        break;
+
                     if (racer.IsClient)
                     {
                         G.SetColor(Snap(new Color(90, 195, 255, 60)));
@@ -163,11 +182,14 @@ public sealed class ClassicHud(IHudData race) : Component
     private Color DamageColor(float damage, bool blink = true)
     {
         var amount = (int)(98 * damage);
+
         if (blink && amount > 70 && SettingsMenu.HudFlash)
         {
             var period = (168 - amount * 1.5f) / 30;
             var phase = _clock % period;
+
             if (phase < 10f / 30 && (int)(phase * 30) % 2 == 0)
+
                 return Snap(RaceMeterColors.Damage(damage, highlighted: true));
         }
 
@@ -187,17 +209,21 @@ public sealed class ClassicHud(IHudData race) : Component
                 center: true,
                 color: new Color(20, 20, 120)
             );
+
             return;
         }
 
         var angle = Race.ArrowAngle ?? (Race.IsPreview ? 0f : (float?)null);
+
         if (angle is not { } target)
         {
             _hadArrow = false;
+
             return;
         }
 
-        if (!_hadArrow) _arrowAngle = target;
+        if (!_hadArrow)
+            _arrowAngle = target;
         _hadArrow = true;
         _arrowAngle += Math.Clamp(target - _arrowAngle, -300 * dt, 300 * dt);
         var center = position.X + size.X / 2;
@@ -211,7 +237,10 @@ public sealed class ClassicHud(IHudData race) : Component
                 center: true,
                 color: new Color(20, 20, 120)
             );
-        if (!Race.IsPreview && !Race.ArrowAtCars && MathF.Abs(_arrowAngle) <= 7) return;
+
+        if (!Race.IsPreview && !Race.ArrowAtCars && MathF.Abs(_arrowAngle) <= 7)
+
+            return;
 
         // xtGraphics.arrow: rotate its seven X/Z vertices, then project at y=-90.
         ReadOnlySpan<float> xs = [0, -35, -15, -15, 15, 15, 35];
@@ -221,6 +250,7 @@ public sealed class ClassicHud(IHudData race) : Component
         var radians = _arrowAngle * (MathF.PI / 180);
         var sin = MathF.Sin(radians);
         var cos = MathF.Cos(radians);
+
         for (var i = 0; i < xs.Length; i++)
         {
             var x = xs[i] * cos + zs[i] * sin;
@@ -295,7 +325,8 @@ public sealed class ClassicHud(IHudData race) : Component
         G.SetFont(new Font(adventure ? FontFamily.Adventure : FontFamily.DroidSans, FontStyle.Bold, 11 * scale));
         G.SetColor(Snap(color ?? new Color(0, 0, 0)));
         var metrics = G.GetFontMetrics();
-        if (center) x -= metrics.MeasureText(text).X / 2f;
+        if (center)
+            x -= metrics.MeasureText(text).X / 2f;
         G.DrawStringOutlined(text, (int)x, (int)(y + metrics.LineHeight), Snap(new Color(220, 245, 255, 170)), 0.5f * scale);
     }
 
@@ -304,7 +335,8 @@ public sealed class ClassicHud(IHudData race) : Component
         G.SetFont(new Font(FontFamily.Adventure, FontStyle.Bold, fontSize));
         G.SetColor(Snap(25, 35, 145));
         var metrics = G.GetFontMetrics();
-        if (center) x -= metrics.MeasureText(text).X / 2;
+        if (center)
+            x -= metrics.MeasureText(text).X / 2;
         G.DrawStringOutlined(text, (int)x, (int)(y + metrics.LineHeight), Snap(220, 245, 255), fontSize / 18);
     }
 

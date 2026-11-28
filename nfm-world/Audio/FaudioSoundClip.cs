@@ -71,18 +71,23 @@ public sealed class FaudioSoundClip : ISoundClip
     public ISoundClip CreateSpatialInstance(bool followPosition = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
         return new FaudioSoundClip(this, followPosition);
     }
 
     public void SetPosition(Vector3 position)
     {
-        if (!SpatialAudio.Finite(position)) return;
+        if (!SpatialAudio.Finite(position))
+
+            return;
         _position = position;
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         StopVoice();
     }
@@ -94,31 +99,42 @@ public sealed class FaudioSoundClip : ISoundClip
 
     private void StartVoice(bool loop)
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         // Voices are single-use once their buffer has played out, so every start builds a fresh
         // one - matching the old per-Play SoundEffectInstance.
         StopVoice();
         _loop = loop;
         _playPosition = _position;
-        if (_spatial && !loop && SpatialAudio.Gain(_playPosition) <= 0) return;
+
+        if (_spatial && !loop && SpatialAudio.Gain(_playPosition) <= 0)
+
+            return;
 
         var engine = FaudioEngine.Instance;
+
         if (engine is null)
+
             return; // no audio device - play silently rather than failing
 
         _voice = engine.CreateSourceVoice(_sampleRate, _channels);
+
         if (_voice == IntPtr.Zero || _pcm.Length == 0)
         {
             StopVoice();
+
             return;
         }
 
         // Pinned per voice, not per clip: the previous voice still reads this array while it fades
         // out, so it keeps its own pin and this one can be freed when this voice is destroyed.
         _pcmHandle = GCHandle.Alloc(_pcm, GCHandleType.Pinned);
+
         if (!TrySubmitBuffer(loop))
         {
             StopVoice();
+
             return;
         }
 
@@ -159,7 +175,9 @@ public sealed class FaudioSoundClip : ISoundClip
     private void StopVoice(bool fade = true)
     {
         Pool.Remove(this);
+
         if (_voice == IntPtr.Zero)
+
             return;
 
         var voice = _voice;
@@ -170,6 +188,7 @@ public sealed class FaudioSoundClip : ISoundClip
         // Destroying the voice is what makes FAudio stop reading pAudioData, so this voice's pin is
         // only released once it is gone. A restart may already own a new voice and pin by then.
         var engine = FaudioEngine.Instance;
+
         if (engine is not null && fade)
             engine.FadeOutAndDestroy(voice, () => ReleasePcm(pin));
         else
@@ -181,7 +200,9 @@ public sealed class FaudioSoundClip : ISoundClip
 
     private void ApplySpatial(float? volume = null)
     {
-        if (_voice == IntPtr.Zero) return;
+        if (_voice == IntPtr.Zero)
+
+            return;
         var position = _loop || _followPosition ? _position : _playPosition;
         if (_spatial)
             FaudioEngine.Instance?.ApplySpatial(
@@ -222,11 +243,16 @@ public sealed class FaudioSoundClip : ISoundClip
 
     public static void SetAllPaused(bool paused)
     {
-        if (_paused == paused) return;
+        if (_paused == paused)
+
+            return;
         _paused = paused;
+
         foreach (var clip in Pool)
         {
-            if (clip._voice == IntPtr.Zero) continue;
+            if (clip._voice == IntPtr.Zero)
+
+                continue;
             if (paused)
                 FAudio.FAudioSourceVoice_Stop(clip._voice, 0, 0);
             else

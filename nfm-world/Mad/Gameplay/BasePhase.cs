@@ -260,6 +260,7 @@ public abstract class BasePhase : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         ReleaseUnmanagedResources();
+
         if (disposing)
         {
         }

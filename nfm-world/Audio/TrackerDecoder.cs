@@ -33,6 +33,7 @@ public static unsafe class TrackerDecoder
         stream.CopyTo(memoryStream);
         using var arr = SafeArrayPool<byte>.Shared.Rent((int)memoryStream.Length);
         memoryStream.GetReadOnlySequence().CopyTo(arr);
+
         return Decode(arr);
     }
 
@@ -93,6 +94,7 @@ public static unsafe class TrackerDecoder
                     );
 
                     if (framesRead == 0)
+
                         break; // end of module
 
                     totalFramesRead += framesRead;
@@ -105,6 +107,7 @@ public static unsafe class TrackerDecoder
 
             // Convert float [-1.0, 1.0] to 16-bit PCM
             var pcmData = SafeArrayPool<byte>.Shared.Rent(actualFloatSamples * 2);
+
             try
             {
                 for (int i = 0; i < actualFloatSamples; i++)
@@ -120,6 +123,7 @@ public static unsafe class TrackerDecoder
             catch
             {
                 pcmData.Dispose();
+
                 throw;
             }
         }
@@ -138,6 +142,7 @@ public static unsafe class TrackerDecoder
     public static bool IsTrackerFormat(string extension)
     {
         var ext = extension.TrimStart('.').ToLowerInvariant();
+
         return ext is "mod" or "xm" or "it" or "s3m" or "mptm" or "stm" or "nst"
             or "mtm" or "669" or "amf" or "ams" or "dbm" or "digi"
             or "dmf" or "dsm" or "far" or "gdm" or "ice" or "imf"

@@ -13,35 +13,35 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiTreeNodeFlagsPrivate : int
-	{
-		/// <summary>
-		/// Don't claim nav focus when interacting with this item (#8551)<br/>
-		/// </summary>
-		NoNavFocus = unchecked(134217728),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiTreeNodeFlagsPrivate : int
+    {
+        /// <summary>
+        /// Don't claim nav focus when interacting with this item (#8551)<br/>
+        /// </summary>
+        NoNavFocus = unchecked(134217728),
 
-		/// <summary>
-		/// FIXME-WIP: Hard-coded for CollapsingHeader()<br/>
-		/// </summary>
-		ClipLabelForTrailingButton = unchecked(268435456),
+        /// <summary>
+        /// FIXME-WIP: Hard-coded for CollapsingHeader()<br/>
+        /// </summary>
+        ClipLabelForTrailingButton = unchecked(268435456),
 
-		/// <summary>
-		/// FIXME-WIP: Turn Down arrow into an Up arrow, for reversed trees (#6517)<br/>
-		/// </summary>
-		UpsideDownArrow = unchecked(536870912),
+        /// <summary>
+        /// FIXME-WIP: Turn Down arrow into an Up arrow, for reversed trees (#6517)<br/>
+        /// </summary>
+        UpsideDownArrow = unchecked(536870912),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		OpenOnMask = unchecked(192),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        OpenOnMask = unchecked(192),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		DrawLinesMask = unchecked(1835008),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        DrawLinesMask = unchecked(1835008),
+    }
 }

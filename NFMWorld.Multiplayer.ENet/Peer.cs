@@ -206,6 +206,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
     public int Send(byte channelId, ref Packet packet)
     {
         if (State != PeerState.Connected || channelId >= ChannelCount || packet.Length > Host.MaximumPacketSize)
+
             return -1;
 
         var channel = Channels![channelId];
@@ -225,6 +226,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
             ushort startSequenceNumber;
 
             if (fragmentCount > MaximumFragmentCount)
+
                 return -1;
 
             if ((packet.Flags & (PacketFlags.Reliable | PacketFlags.UnreliableFragmented)) == PacketFlags.UnreliableFragmented
@@ -302,6 +304,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
         }
 
         if (QueueOutgoingCommand(command, packet.Content, 0, (ushort)packet.Length) is null)
+
             return -1;
 
         if ((packet.Flags & PacketFlags.Instant) != 0)
@@ -315,6 +318,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
         channelId = 0;
 
         if (DispatchedCommands.IsEmpty)
+
             return default;
 
         var incomingCommand = DispatchedCommands.RemoveFirst()!;
@@ -439,6 +443,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
     public void Ping()
     {
         if (State != PeerState.Connected)
+
             return;
 
         var command = new ProtocolCommand
@@ -464,6 +469,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
     public void DisconnectNow(uint data)
     {
         if (State == PeerState.Disconnected)
+
             return;
 
         if (State != PeerState.Zombie && State != PeerState.Disconnecting)
@@ -488,6 +494,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
     public void Disconnect(uint data)
     {
         if (State is PeerState.Disconnecting or PeerState.Disconnected or PeerState.AcknowledgingDisconnect or PeerState.Zombie)
+
             return;
 
         ResetQueues();
@@ -543,6 +550,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
 
             if (reliableWindow >= currentWindow + PeerConstants.FreeReliableWindows - 1
                 && reliableWindow <= currentWindow + PeerConstants.FreeReliableWindows)
+
                 return null;
         }
 
@@ -608,10 +616,12 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
         {
             case CommandType.SendUnreliable:
                 command.UnreliableSequenceNumber = outgoingCommand.UnreliableSequenceNumber;
+
                 break;
 
             case CommandType.SendUnsequenced:
                 command.UnsequencedGroup = OutgoingUnsequencedGroup;
+
                 break;
         }
 
@@ -660,6 +670,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
             current = current.Next;
 
             if (ReferenceEquals(incomingCommand, exclude))
+
                 continue;
 
             queue.Remove(incomingCommand);
@@ -724,6 +735,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                     reliableWindow += PeerConstants.ReliableWindows;
 
                 if (reliableWindow >= currentWindow && reliableWindow < currentWindow + PeerConstants.FreeReliableWindows - 1)
+
                     break;
 
                 dropped = current.Next;
@@ -762,6 +774,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
 
             if (incomingCommand.FragmentsRemaining > 0
                 || incomingCommand.ReliableSequenceNumber != unchecked((ushort)(channel.IncomingReliableSequenceNumber + 1)))
+
                 break;
 
             channel.IncomingReliableSequenceNumber = incomingCommand.ReliableSequenceNumber;
@@ -774,6 +787,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
         }
 
         if (current == queue.Begin)
+
             return;
 
         channel.IncomingUnreliableSequenceNumber = 0;
@@ -788,6 +802,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
     private void MarkNeedsDispatch()
     {
         if (NeedsDispatch)
+
             return;
 
         Host.DispatchQueue.InsertEnd(this);
@@ -807,6 +822,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
         uint reliableSequenceNumber = 0;
 
         if (State == PeerState.DisconnectLater)
+
             return Discard(fragmentCount);
 
         if (command.Type != CommandType.SendUnsequenced)
@@ -819,6 +835,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                 reliableWindow += PeerConstants.ReliableWindows;
 
             if (reliableWindow < currentWindow || reliableWindow >= currentWindow + PeerConstants.FreeReliableWindows - 1)
+
                 return Discard(fragmentCount);
         }
 
@@ -830,6 +847,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
             case CommandType.SendReliable:
             {
                 if (reliableSequenceNumber == channel.IncomingReliableSequenceNumber)
+
                     return Discard(fragmentCount);
 
                 var node = channel.IncomingReliableCommands.Tail;
@@ -843,6 +861,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                         if (incomingCommand.ReliableSequenceNumber < channel.IncomingReliableSequenceNumber)
                         {
                             node = incomingCommand.Previous;
+
                             continue;
                         }
                     }
@@ -854,6 +873,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                     if (incomingCommand.ReliableSequenceNumber <= reliableSequenceNumber)
                     {
                         if (incomingCommand.ReliableSequenceNumber < reliableSequenceNumber)
+
                             break;
 
                         return Discard(fragmentCount);
@@ -863,6 +883,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                 }
 
                 currentCommand = node;
+
                 break;
             }
 
@@ -875,6 +896,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
 
                 if (reliableSequenceNumber == channel.IncomingReliableSequenceNumber
                     && unreliableSequenceNumber <= channel.IncomingUnreliableSequenceNumber)
+
                     return Discard(fragmentCount);
 
                 var node = channel.IncomingUnreliableCommands.Tail;
@@ -888,6 +910,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                         if (incomingCommand.ReliableSequenceNumber < channel.IncomingReliableSequenceNumber)
                         {
                             node = incomingCommand.Previous;
+
                             continue;
                         }
                     }
@@ -897,17 +920,20 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                     }
 
                     if (incomingCommand.ReliableSequenceNumber < reliableSequenceNumber)
+
                         break;
 
                     if (incomingCommand.ReliableSequenceNumber > reliableSequenceNumber)
                     {
                         node = incomingCommand.Previous;
+
                         continue;
                     }
 
                     if (incomingCommand.UnreliableSequenceNumber <= unreliableSequenceNumber)
                     {
                         if (incomingCommand.UnreliableSequenceNumber < unreliableSequenceNumber)
+
                             break;
 
                         return Discard(fragmentCount);
@@ -917,18 +943,22 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                 }
 
                 currentCommand = node;
+
                 break;
             }
 
             case CommandType.SendUnsequenced:
                 currentCommand = null;
+
                 break;
 
             default:
+
                 return Discard(fragmentCount);
         }
 
         if (TotalWaitingData >= Host.MaximumWaitingData)
+
             return null;
         var packet = new Packet.PacketData
         {
@@ -955,6 +985,7 @@ internal sealed class PeerImpl : IEnetListLink<PeerImpl>
                 incoming.Fragments = new uint[(fragmentCount + 31) / 32];
 
             if (incoming.Fragments is null)
+
                 return null;
         }
 
@@ -1025,11 +1056,8 @@ public struct Peer
     public object? Data
     {
         readonly get => Impl?.Data;
-        set
-        {
-            if (Impl is not null)
-                Impl.Data = value;
-        }
+        set { if (Impl is not null)
+            Impl.Data = value; }
     }
 
     public readonly void ConfigureThrottle(uint interval, uint acceleration, uint deceleration, uint threshold) =>
@@ -1038,6 +1066,7 @@ public struct Peer
     public bool Send(byte channelId, ref Packet packet)
     {
         if (Impl is null)
+
             return false;
 
         return Impl.Send(channelId, ref packet) == 0;
@@ -1049,10 +1078,12 @@ public struct Peer
         {
             channelId = 0;
             packet = default;
+
             return false;
         }
 
         packet = Impl.Receive(out channelId);
+
         return packet.IsSet;
     }
 

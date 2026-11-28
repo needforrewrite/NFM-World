@@ -27,23 +27,27 @@ public class DebugCameraWindow
 
     public void Render()
     {
-        if (!_isOpen) return;
+        if (!_isOpen)
+
+            return;
 
         ImGui.SetNextWindowSize(new Vector2(300, 205), ImGuiCond.Always);
 
         bool isOpen = _isOpen;
+
         if (ImGui.Begin(
-                "Debug Camera Settings",
-                ref isOpen,
-                ImGuiWindowFlags.NoResize
-                | ImGuiWindowFlags.NoNavInputs
-                | ImGuiWindowFlags.NoScrollbar
-                | ImGuiWindowFlags.NoScrollWithMouse
-            ))
+            "Debug Camera Settings",
+            ref isOpen,
+            ImGuiWindowFlags.NoResize
+            | ImGuiWindowFlags.NoNavInputs
+            | ImGuiWindowFlags.NoScrollbar
+            | ImGuiWindowFlags.NoScrollWithMouse
+        ))
         {
             ImGui.Spacing();
 
             ImGui.Text("Field of View:");
+
             if (ImGui.SliderFloat("##FOV", ref _fov, CameraPreset.MinFov, CameraPreset.MaxFov, "%.1f°"))
             {
                 CameraSettings.Fov = _fov;
@@ -55,6 +59,7 @@ public class DebugCameraWindow
 
             // Follow Y Offset
             ImGui.Text("Follow Y Offset:");
+
             if (ImGui.SliderInt("##FollowY", ref _followY, CameraPreset.MinFollowY, CameraPreset.MaxFollowY))
             {
                 FollowCamera.FollowYOffset = _followY;
@@ -64,6 +69,7 @@ public class DebugCameraWindow
 
             // Follow Z Offset
             ImGui.Text("Follow Z Offset:");
+
             if (ImGui.SliderInt("##FollowZ", ref _followZ, CameraPreset.MinFollowZ, CameraPreset.MaxFollowZ))
             {
                 FollowCamera.FollowZOffset = _followZ;
@@ -74,6 +80,7 @@ public class DebugCameraWindow
             ImGui.Spacing();
 
             // Reset button
+
             if (ImGui.Button("Reset to Defaults", new Vector2(-1, 0)))
             {
                 _fov = 90.0f;

@@ -24,6 +24,7 @@ public sealed class LoginThrottle
             if (!_attempts.TryGetValue(key, out var queue))
             {
                 retryAfter = TimeSpan.Zero;
+
                 return false;
             }
 
@@ -34,10 +35,12 @@ public sealed class LoginThrottle
             if (queue.Count < MaxAttempts)
             {
                 retryAfter = TimeSpan.Zero;
+
                 return false;
             }
 
             retryAfter = queue.Peek() + Window - DateTimeOffset.UtcNow;
+
             return true;
         }
     }

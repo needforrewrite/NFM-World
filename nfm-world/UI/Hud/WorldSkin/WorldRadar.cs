@@ -23,10 +23,14 @@ internal sealed class WorldRadar : Component
     protected override void RenderContent(Vector2 position, Vector2 size)
     {
         var w = MathF.Min(size.X, size.Y);
-        if (w <= 0) return;
+
+        if (w <= 0)
+
+            return;
         var scale = w / Size;
 
         G.SaveState();
+
         try
         {
             G.IntersectScissor(position.X, position.Y, w, w, w / 2);
@@ -62,7 +66,7 @@ internal sealed class WorldRadar : Component
             client.Z,
             sin,
             cos,
-                x + center,
+            x + center,
             y + center,
             w,
             Range
@@ -71,6 +75,7 @@ internal sealed class WorldRadar : Component
             G.SetColor(new Color(185, 211, 255, 150));
             G.SetStrokeWidth(MathF.Max(1, 1.5f * scale));
             var checkpoints = _race.Checkpoints;
+
             for (var i = 0; i < checkpoints.Count; i++)
             {
                 var a = ToRadar(checkpoints[i].X, checkpoints[i].Z);
@@ -89,7 +94,9 @@ internal sealed class WorldRadar : Component
 
         foreach (var marker in _race.Markers)
         {
-            if (marker.Wasted || marker.IsClient) continue;
+            if (marker.Wasted || marker.IsClient)
+
+                continue;
             var p = ToRadar(marker.X, marker.Z);
             G.SetColor(new Color(244, 90, 70));
             var r = 3 * scale;

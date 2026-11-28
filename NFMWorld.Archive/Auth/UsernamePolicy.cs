@@ -16,12 +16,14 @@ public static class UsernamePolicy
         if (string.IsNullOrWhiteSpace(username))
         {
             error = "Username is required.";
+
             return false;
         }
 
         if (username.Length < MinLength || username.Length > MaxLength)
         {
             error = $"Username must be {MinLength}-{MaxLength} characters.";
+
             return false;
         }
 
@@ -30,19 +32,23 @@ public static class UsernamePolicy
             if (char.IsControl(c))
             {
                 error = "Username contains invalid characters.";
+
                 return false;
             }
 
             // Anything that renders as a space, including non-breaking and zero-width forms,
             // is refused so two accounts cannot look identical.
+
             if (char.IsWhiteSpace(c) || char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.Format)
             {
                 error = "Username cannot contain spaces.";
+
                 return false;
             }
         }
 
         error = "";
+
         return true;
     }
 
@@ -56,6 +62,7 @@ public static class UsernamePolicy
         var builder = new StringBuilder(normalized.Length);
         foreach (var c in normalized)
             builder.Append(char.ToLowerInvariant(c));
+
         return builder.ToString();
     }
 }
@@ -73,22 +80,26 @@ public static class PasswordPolicy
         if (string.IsNullOrEmpty(password) || password.Length < MinLength)
         {
             error = $"Password must be at least {MinLength} characters.";
+
             return false;
         }
 
         if (password.Length > 256)
         {
             error = "Password is too long.";
+
             return false;
         }
 
         if (password.Any(char.IsWhiteSpace))
         {
             error = "Password cannot contain spaces.";
+
             return false;
         }
 
         error = "";
+
         return true;
     }
 }

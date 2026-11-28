@@ -55,13 +55,16 @@ public sealed class FaudioEngine : IDisposable
             lock (Gate)
             {
                 if (_instance is { _disposed: false })
+
                     return _instance;
 
                 if (_attempted)
+
                     return null;
 
                 _attempted = true;
                 _instance = TryCreate();
+
                 return _instance;
             }
         }
@@ -79,19 +82,23 @@ public sealed class FaudioEngine : IDisposable
         // behaviour for a game, but it also means a broken native deployment would otherwise be
         // invisible, so each reason is logged rather than discarded.
         IntPtr audio;
+
         try
         {
             // Flags: 0 means FAUDIO_COMMIT_NOW - operation sets take effect immediately, so
             // callers never need an explicit FAudio_CommitOperationSet. Matches what FNA passes.
+
             if (FAudio.FAudioCreate(out audio, 0, FAudio.FAUDIO_DEFAULT_PROCESSOR) != 0)
             {
                 Logging.Warning("FAudio refused to initialise - the game will run without sound.");
+
                 return null;
             }
         }
         catch (DllNotFoundException e)
         {
             Logging.Warning($"The FAudio native library could not be loaded - the game will run without sound. {e.Message}");
+
             return null;
         }
         catch (EntryPointNotFoundException e)
@@ -99,34 +106,39 @@ public sealed class FaudioEngine : IDisposable
             Logging.Warning(
                 $"The FAudio native library is missing an expected export - the game will run without sound. {e.Message}"
             );
+
             return null;
         }
 
         FAudio.FAudio_GetDeviceCount(audio, out var devices);
+
         if (devices == 0)
         {
             Logging.Warning("No audio playback device is available - the game will run without sound.");
             FAudio.FAudio_Release(audio);
+
             return null;
         }
 
         if (FAudio.FAudio_CreateMasteringVoice(
-                audio,
-                out var masteringVoice,
-                FAudio.FAUDIO_DEFAULT_CHANNELS,
-                FAudio.FAUDIO_DEFAULT_SAMPLERATE,
-                0,
-                0,
-                IntPtr.Zero
-            )
+            audio,
+            out var masteringVoice,
+            FAudio.FAUDIO_DEFAULT_CHANNELS,
+            FAudio.FAUDIO_DEFAULT_SAMPLERATE,
+            0,
+            0,
+            IntPtr.Zero
+        )
             != 0)
         {
             Logging.Warning("Could not create an FAudio mastering voice - the game will run without sound.");
             FAudio.FAudio_Release(audio);
+
             return null;
         }
 
         FAudio.FAudio_StartEngine(audio);
+
         return new FaudioEngine(audio, masteringVoice);
     }
 
@@ -143,6 +155,7 @@ public sealed class FaudioEngine : IDisposable
     public IntPtr CreateSourceVoice(int sampleRate, int channels, float maxFrequencyRatio = 2.0f)
     {
         if (_disposed || _audio == IntPtr.Zero)
+
             return IntPtr.Zero;
 
         // WAVE_FORMAT_PCM. FAudio.cs carries no named constant for it (FNA hardcodes it in
@@ -161,15 +174,15 @@ public sealed class FaudioEngine : IDisposable
         };
 
         return FAudio.FAudio_CreateSourceVoice(
-                   _audio,
-                   out var voice,
-                   ref format,
-                   Flags: 0,
-                   MaxFrequencyRatio: maxFrequencyRatio,
-                   pCallback: IntPtr.Zero,
-                   pSendList: IntPtr.Zero,
-                   pEffectChain: IntPtr.Zero
-               )
+            _audio,
+            out var voice,
+            ref format,
+            Flags: 0,
+            MaxFrequencyRatio: maxFrequencyRatio,
+            pCallback: IntPtr.Zero,
+            pSendList: IntPtr.Zero,
+            pEffectChain: IntPtr.Zero
+        )
                != 0
             ? IntPtr.Zero
             : voice;
@@ -192,15 +205,20 @@ public sealed class FaudioEngine : IDisposable
         Vector3 emitterPosition
     )
     {
-        if (_disposed || voice == IntPtr.Zero || _spatialUnavailable) return;
+        if (_disposed || voice == IntPtr.Zero || _spatialUnavailable)
+
+            return;
+
         try
         {
             if (_spatialHandle is null)
             {
                 FAudio.FAudioVoice_GetVoiceDetails(_masteringVoice, out var details);
+
                 if (FAudio.FAudio_GetDeviceDetails(_audio, 0, out var device) != 0
                     || details.InputChannels == 0
                     || BitOperations.PopCount(device.OutputFormat.dwChannelMask) != details.InputChannels)
+
                     throw new InvalidOperationException("Could not query the audio speaker layout.");
                 _spatialMatrix = new float[details.InputChannels];
                 var handle = new byte[FAudio.F3DAUDIO_HANDLE_BYTESIZE];
@@ -229,6 +247,7 @@ public sealed class FaudioEngine : IDisposable
                 CurveDistanceScaler = SoundSpatialization.ReferenceDistance,
                 pVolumeCurve = (IntPtr)(&curve)
             };
+
             fixed (float* matrix = _spatialMatrix)
             {
                 var dsp = new FAudio.F3DAUDIO_DSP_SETTINGS
@@ -238,7 +257,9 @@ public sealed class FaudioEngine : IDisposable
                     DstChannelCount = (uint)_spatialMatrix.Length
                 };
                 FAudio.F3DAudioCalculate(_spatialHandle, ref listener, ref emitter, FAudio.F3DAUDIO_CALCULATE_MATRIX, ref dsp);
+
                 if (FAudio.FAudioVoice_SetOutputMatrix(voice, _masteringVoice, 1, dsp.DstChannelCount, (IntPtr)matrix, 0) != 0)
+
                     throw new InvalidOperationException("Could not apply the 3D speaker matrix.");
             }
         }
@@ -267,10 +288,12 @@ public sealed class FaudioEngine : IDisposable
         if (voice == IntPtr.Zero)
         {
             afterDestroy?.Invoke();
+
             return;
         }
 
         var submittedAt = Stopwatch.GetTimestamp();
+
         lock (_fadeGate)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -294,19 +317,24 @@ public sealed class FaudioEngine : IDisposable
         lock (_fadeGate)
         {
             if (_disposed)
+
                 return;
 
             _updatingFades = true;
+
             try
             {
                 for (var i = _pendingFades.Count - 1; i >= 0; i--)
                 {
                     var fade = _pendingFades[i];
                     var remaining = 1.0 - Stopwatch.GetElapsedTime(fade.SubmittedAt).TotalMilliseconds / FadeMilliseconds;
+
                     if (fade.Volume <= 0f || remaining <= 0.0)
                     {
                         CompleteFade(i);
+
                         if (_disposed)
+
                             return;
                     }
                     else
@@ -334,6 +362,7 @@ public sealed class FaudioEngine : IDisposable
             _pendingFades[index] = _pendingFades[last];
         _pendingFades.RemoveAt(last);
         FAudio.FAudioVoice_DestroyVoice(fade.Voice);
+
         try
         {
             fade.AfterDestroy?.Invoke();
@@ -356,6 +385,7 @@ public sealed class FaudioEngine : IDisposable
         lock (_fadeGate)
         {
             if (_disposed)
+
                 return;
 
             _disposed = true;
@@ -405,19 +435,24 @@ internal static class FaudioNativeResolver
     private static IntPtr Resolve(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
     {
         if (libraryName != "FAudio")
+
             return IntPtr.Zero; // let the default resolution handle anything else
 
         var mapped = NativeFileName();
+
         if (mapped is null)
+
             return IntPtr.Zero;
 
         // Both the game and this library deploy their native binaries under libs/<arch>/ relative
         // to the app base directory (NFMWorld.NativeLibs copies them there; WorldGame's own
         // resolver anchors to the same place). A bare file name does not search that directory,
         // so look there first.
+
         if (ArchitectureDirectory() is { } arch)
         {
             var deployed = Path.Combine(AppContext.BaseDirectory, "libs", arch, mapped);
+
             if (File.Exists(deployed))
             {
                 try
@@ -433,6 +468,7 @@ internal static class FaudioNativeResolver
 
         // Fall back to default probing, which finds the library when it sits next to the
         // executable (as in the smoke test) or on the system library path.
+
         return NativeLibrary.TryLoad(mapped, assembly, searchPath, out var handle) ? handle : IntPtr.Zero;
     }
 
@@ -457,6 +493,7 @@ internal static class FaudioNativeResolver
         }
 
         if (OperatingSystem.IsMacOS())
+
             return "osx";
 
         if (OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD())
@@ -477,10 +514,13 @@ internal static class FaudioNativeResolver
     private static string? NativeFileName()
     {
         if (OperatingSystem.IsWindows())
+
             return "FAudio.dll";
         if (OperatingSystem.IsMacOS())
+
             return "libFAudio.0.dylib";
         if (OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD())
+
             return "libFAudio.so.0";
 
         return null;

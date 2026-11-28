@@ -12,6 +12,7 @@ public partial class StageEditorPhase
     private EditorSnapshot CaptureEditorSnapshot()
     {
         if (ActiveTab == null)
+
             return new EditorSnapshot([], []);
 
         var pieces = ActiveTab.ScenePieces
@@ -27,14 +28,18 @@ public partial class StageEditorPhase
 
     private void PushUndoSnapshot()
     {
-        if (ActiveTab == null) return;
+        if (ActiveTab == null)
+
+            return;
         _undoStack.Push(CaptureEditorSnapshot());
         _redoStack.Clear();
     }
 
     private void ApplySnapshot(EditorSnapshot snapshot)
     {
-        if (ActiveTab?.Stage == null) return;
+        if (ActiveTab?.Stage == null)
+
+            return;
 
         var currentObjs = new HashSet<StageObject?>(ActiveTab.ScenePieces.Select(p => p.Obj));
         var snapshotObjs = new HashSet<StageObject?>(snapshot.Pieces.Select(p => p.Obj));
@@ -44,6 +49,7 @@ public partial class StageEditorPhase
         bool wallsChanged = currentWalls.Count != snapshot.Walls.Count || !currentWalls.SequenceEqual(snapshot.Walls);
 
         // Rebuild Stage.pieces to match snapshot order (for Save correctness)
+
         if (needsRebuild)
         {
             ActiveTab.Stage.Pieces.Clear();
@@ -55,10 +61,12 @@ public partial class StageEditorPhase
         var newPieces = snapshot.Pieces.Select(s =>
             {
                 var existing = ActiveTab.ScenePieces.FirstOrDefault(p => p.Obj == s.Obj);
+
                 if (existing != null)
                 {
                     existing.Position = s.Piece.Position;
                     existing.Rotation = s.Piece.Rotation;
+
                     return existing;
                 }
 
@@ -67,6 +75,7 @@ public partial class StageEditorPhase
                 {
                     PiecePlacement = s.Piece,
                 };
+
                 return inst;
             }
         );
@@ -101,14 +110,18 @@ public partial class StageEditorPhase
 
     private void PerformUndo()
     {
-        if (_undoStack.Count == 0 || ActiveTab == null) return;
+        if (_undoStack.Count == 0 || ActiveTab == null)
+
+            return;
         _redoStack.Push(CaptureEditorSnapshot());
         ApplySnapshot(_undoStack.Pop());
     }
 
     private void PerformRedo()
     {
-        if (_redoStack.Count == 0 || ActiveTab == null) return;
+        if (_redoStack.Count == 0 || ActiveTab == null)
+
+            return;
         _undoStack.Push(CaptureEditorSnapshot());
         ApplySnapshot(_redoStack.Pop());
     }

@@ -23,12 +23,18 @@ public static class AssetModeration
     )
     {
         if (!actor.IsModerator || status is not (AssetReviewStatus.Verified or AssetReviewStatus.Rejected))
+
             return false;
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == assetId && a.ContentHash == contentHash, ct);
-        if (asset is null) return false;
-        if (asset.ReviewStatus == status) return true;
+
+        if (asset is null)
+
+            return false;
+        if (asset.ReviewStatus == status)
+
+            return true;
 
         asset.ReviewStatus = status;
         db.ModerationActions.Add(new ModerationAction
@@ -45,6 +51,7 @@ public static class AssetModeration
             await TimeTrialInvalidation.InvalidateForAssetAsync(db, contentHash, ct);
         await transaction.CommitAsync(ct);
         await http.PurgeAssetsAsync([contentHash]);
+
         return true;
     }
 
@@ -58,7 +65,9 @@ public static class AssetModeration
     )
     {
         var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == assetId, ct);
+
         if (asset is null)
+
             return false;
 
         asset.IsTakedown = isTakedown;
@@ -88,6 +97,7 @@ public static class AssetModeration
 
         // The edge copy does not know the row was hidden: its 200 would outlive the takedown.
         await http.PurgeAssetsAsync([asset.ContentHash]);
+
         return true;
     }
 }

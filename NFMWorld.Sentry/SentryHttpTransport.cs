@@ -49,6 +49,7 @@ public class SentryHttpTransport : IDisposable
             {
                 if (_options.Debug)
                     Debug.WriteLine($"[Sentry] Envelope sent successfully ({envelopeBytes.Length} bytes)");
+
                 return null;
             }
 
@@ -56,18 +57,21 @@ public class SentryHttpTransport : IDisposable
             var error = $"Sentry returned {(int)response.StatusCode} {response.StatusCode}: {body}";
             if (_options.Debug)
                 Debug.WriteLine($"[Sentry] {error}");
+
             return error;
         }
         catch (OperationCanceledException)
         {
             if (_options.Debug)
                 Debug.WriteLine("[Sentry] Envelope upload cancelled");
+
             return "Upload cancelled";
         }
         catch (Exception ex)
         {
             if (_options.Debug)
                 Debug.WriteLine($"[Sentry] Envelope upload failed: {ex.Message}");
+
             return ex.Message;
         }
     }

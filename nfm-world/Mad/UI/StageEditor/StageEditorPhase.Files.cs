@@ -53,9 +53,11 @@ public partial class StageEditorPhase
         _activeTabIndex = _tabs.Count - 1;
 
         // Place start piece at origin if specified
+
         if (!string.IsNullOrEmpty(startPartName))
         {
             var partData = BackendGameSparker.GetStagePart(startPartName);
+
             if (partData.Rad != null)
             {
                 var startPos = new f64Vector3((fix64)0, (fix64)250, (fix64)0);
@@ -83,6 +85,7 @@ public partial class StageEditorPhase
     private string ConvertStageNameToFilename(string stageName)
     {
         // Convert to lowercase and replace spaces with underscores
+
         return stageName.ToLower().Replace(' ', '_');
     }
 
@@ -95,6 +98,7 @@ public partial class StageEditorPhase
         if (ActiveTab == null || ActiveTab.Stage == null || string.IsNullOrWhiteSpace(ActiveTab.StageFileName))
         {
             Logging.Info("Cannot save: no stage loaded");
+
             return null;
         }
 
@@ -107,6 +111,7 @@ public partial class StageEditorPhase
         WriteStarts(writer);
         if (ActiveTab.Pulse is { } pulse)
             writer.WriteLine($"pulsegrnd({Fmt(pulse.A)},{Fmt(pulse.B)},{Fmt(pulse.C)})");
+
         if (ActiveTab.FlameColors is { } flames)
         {
             writer.WriteLine($"flameColor1({flames.Outer.R},{flames.Outer.G},{flames.Outer.B})");
@@ -120,15 +125,16 @@ public partial class StageEditorPhase
         writer.WriteLine($"sky({(int)ActiveTab.SkyColor.R},{(int)ActiveTab.SkyColor.G},{(int)ActiveTab.SkyColor.B})");
         writer.WriteLine($"fog({(int)ActiveTab.FogColor.R},{(int)ActiveTab.FogColor.G},{(int)ActiveTab.FogColor.B})");
         writer.WriteLine(
-                $"ground({(int)ActiveTab.GroundColor.R},{(int)ActiveTab.GroundColor.G},{(int)ActiveTab.GroundColor.B})"
-            );
+            $"ground({(int)ActiveTab.GroundColor.R},{(int)ActiveTab.GroundColor.G},{(int)ActiveTab.GroundColor.B})"
+        );
 
         // Write polys parameter
+
         if (ActiveTab.PolysEnabled)
         {
             writer.WriteLine(
-                    $"polys({(int)ActiveTab.PolysColor.R},{(int)ActiveTab.PolysColor.G},{(int)ActiveTab.PolysColor.B})"
-                );
+                $"polys({(int)ActiveTab.PolysColor.R},{(int)ActiveTab.PolysColor.G},{(int)ActiveTab.PolysColor.B})"
+            );
         }
         else
         {
@@ -139,11 +145,12 @@ public partial class StageEditorPhase
         writer.WriteLine($"snap({ActiveTab.SnapA},{ActiveTab.SnapB},{ActiveTab.SnapC})");
 
         // Write clouds parameter
+
         if (ActiveTab.CloudsEnabled)
         {
             writer.WriteLine(
-                    $"clouds({(int)ActiveTab.CloudsColor.R},{(int)ActiveTab.CloudsColor.G},{(int)ActiveTab.CloudsColor.B},{ActiveTab.CloudsParam4},{ActiveTab.CloudsHeight})"
-                );
+                $"clouds({(int)ActiveTab.CloudsColor.R},{(int)ActiveTab.CloudsColor.G},{(int)ActiveTab.CloudsColor.B},{ActiveTab.CloudsParam4},{ActiveTab.CloudsHeight})"
+            );
             writer.WriteLine($"cloudcoverage({Fmt(ActiveTab.CloudCoverage)})");
         }
         else
@@ -152,6 +159,7 @@ public partial class StageEditorPhase
         }
 
         // Write mountains parameter
+
         if (ActiveTab.MountainsEnabled)
         {
             writer.WriteLine($"mountains({ActiveTab.MountainsSeed})");
@@ -195,12 +203,14 @@ public partial class StageEditorPhase
         WriteStagePhysics(writer, ActiveTab.Physics);
 
         // Write unknown parameters
+
         foreach (var param in ActiveTab.UnknownParameters)
         {
             writer.WriteLine(param);
         }
 
         // Write known-but-unsupported directives exactly as loaded.
+
         foreach (var directive in ActiveTab.PreservedDirectives)
         {
             writer.WriteLine(directive);
@@ -221,22 +231,27 @@ public partial class StageEditorPhase
         // Local helper: serialise one piece as set/chk/fix
         void WritePiece(StagePieceInstance piece)
         {
-            if (piece.Obj == null) return;
+            if (piece.Obj == null)
+
+                return;
             var pos = piece.Position;
             var rot = piece.Rotation;
             string pieceId;
 #if WRITE_NFMM_PIECES_AS_STRING
             int numericId = -1;
+
             if (piece.Name.StartsWith("nfmm/"))
             {
                 var baseName = piece.Name.Substring(5);
                 var idx = Array.IndexOf(BackendGameSparker.StageRads, baseName);
+
                 if (idx >= 0)
                 {
                     numericId = idx + 10;
                     pieceId = numericId.ToString();
                 }
-                else pieceId = piece.Name;
+                else
+                    pieceId = piece.Name;
             }
 
             else
@@ -246,10 +261,12 @@ public partial class StageEditorPhase
             }
             int yCoord = (int)pos.Y;
             int rotX = (int)rot.Xz.Degrees;
+
             if (piece.PiecePlacement.Type == PiecePlacementType.Pile)
             {
                 var pile = piece.PiecePlacement;
                 writer.WriteLine($"pile({pile.PileSeed},{pile.PileWidth},{pile.PileHeight},{(int)pos.X},{(int)pos.Z})");
+
                 return;
             }
 
@@ -257,6 +274,7 @@ public partial class StageEditorPhase
             // angle. `set`/`chk` carry an integer height, so rounding one would move the piece.
             double exactY = (double)pos.Y;
             var fractionalY = Math.Abs(exactY - Math.Round(exactY)) > 0.0005;
+
             if (piece.PiecePlacement.Type == PiecePlacementType.FixHoop)
             {
                 writer.WriteLine($"fix({pieceId},{(int)pos.X},{(int)pos.Z},{yCoord},{rotX})");
@@ -264,11 +282,13 @@ public partial class StageEditorPhase
             else if (piece.PiecePlacement.Type == PiecePlacementType.CheckPoint)
             {
                 bool isAir = piece.Name.Contains("nfmm/aircheckpoint");
+
                 if (fractionalY)
                 {
                     writer.WriteLine($"fchk({pieceId},{(int)pos.X},{(int)pos.Z},{Fmt((float)exactY)},{rotX})");
                 }
-                else if (yCoord == 250) writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
+                else if (yCoord == 250)
+                    writer.WriteLine($"chk({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
                 else
                 {
                     int fileY = isAir ? yCoord : 250 - yCoord;
@@ -281,8 +301,10 @@ public partial class StageEditorPhase
             }
             else
             {
-                if (yCoord == 250) writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
-                else writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{250 - yCoord})");
+                if (yCoord == 250)
+                    writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX})");
+                else
+                    writer.WriteLine($"set({pieceId},{(int)pos.X},{(int)pos.Z},{rotX},{250 - yCoord})");
             }
         }
 
@@ -290,6 +312,7 @@ public partial class StageEditorPhase
         // New format: each group is preceded by  #editor_group(Name)
         // and its pieces appear immediately below.  Ungrouped pieces appear at
         // ungroupedSlotSave (0 = before all groups, groups.Count = after all groups).
+
         for (int slot = 0; slot <= ActiveTab.HierarchyGroups.Count; slot++)
         {
             if (slot == ungroupedSlotSave && ungroupedPieces.Count > 0)
@@ -317,6 +340,7 @@ public partial class StageEditorPhase
         }
 
         // ── Stage walls ─────────────────────────────────────────────────────────
+
         if (ActiveTab.StageWalls.Count > 0)
         {
             foreach (var wall in ActiveTab.StageWalls)
@@ -345,10 +369,13 @@ public partial class StageEditorPhase
     private void SaveStage()
     {
         var filePath = $"data/stages/user/{ActiveTab!.StageFileName}.txt";
+
         try
         {
             var text = BuildStageText();
+
             if (text is null)
+
                 return;
 
             using (var stream = VFS.OpenWrite(filePath))
@@ -377,14 +404,17 @@ public partial class StageEditorPhase
         if (ActiveTab?.Stage == null || ActiveTab.StageRenderer == null || ActiveTab.Scene == null)
         {
             _exportResultMessage = "No stage loaded.";
+
             return;
         }
 
         // Checked before the target is created and the scene drawn: the read below is the export's
         // only output, and it throws on a backend with no readback.
+
         if (!_graphicsDevice.SupportsTextureReadback)
         {
             _exportResultMessage = "Top-down export needs texture readback, which this backend does not support.";
+
             return;
         }
 
@@ -514,6 +544,7 @@ public partial class StageEditorPhase
             int r = c.R >> 3;
             int g = c.G >> 3;
             int b = c.B >> 3;
+
             return (r << 10) | (g << 5) | b;
         }
 
@@ -556,6 +587,7 @@ public partial class StageEditorPhase
 
         int matteKey = 0;
         int matteCount = -1;
+
         foreach (var kvp in borderCounts)
         {
             if (kvp.Value > matteCount)
@@ -580,10 +612,13 @@ public partial class StageEditorPhase
         void EnqueueIfBackground(int index)
         {
             if (visited[index])
+
                 return;
 
             var c = pixels[index];
+
             if (!IsNearMatte(c, matteColor, matteTolerance))
+
                 return;
 
             visited[index] = true;
@@ -603,6 +638,7 @@ public partial class StageEditorPhase
         }
 
         int transparentCount = 0;
+
         while (queue.Count > 0)
         {
             int idx = queue.Dequeue();
@@ -625,6 +661,7 @@ public partial class StageEditorPhase
         // Second pass: remove enclosed matte-colored islands that are not connected
         // to the border flood fill (e.g. pockets fully surrounded by track meshes).
         int enclosedTransparentCount = 0;
+
         for (int i = 0; i < pixels.Length; i++)
         {
             if (pixels[i].A > 0 && IsNearMatte(pixels[i], matteColor, matteTolerance))
@@ -668,7 +705,9 @@ public partial class StageEditorPhase
     private async Task PrepareStageArchivePartsAsync(string stageFileName, CancellationToken token)
     {
         var path = $"data/stages/user/{stageFileName}.txt";
+
         if (!VFS.FileExists(path))
+
             return;
 
         foreach (var reference in NFMWorldLibrary.StageLoader.ReferencedArchiveModels(VFS.ReadAllLines(path)))
@@ -679,18 +718,21 @@ public partial class StageEditorPhase
                 NFMWorldLibrary.Radpack.AssetKind.StagePiece,
                 token
             );
+
             if (!result.Ok)
             {
                 Logging.Warning($"Could not prepare stage part '{reference}': {result.Error}");
+
                 continue;
             }
 
             // Keep the part in the library so it can be placed again while the stage is open.
+
             if (NFMWorldLibrary.Radpack.RadpackReader.TryReadModel(
-                    reference,
-                    NFMWorldLibrary.Radpack.RadpackType.TrackPiece,
-                    out _
-                ) is { } part)
+                reference,
+                NFMWorldLibrary.Radpack.RadpackType.TrackPiece,
+                out _
+            ) is { } part)
             {
                 part.FileName = reference;
                 _availableParts.TryAdd(part);
@@ -704,6 +746,7 @@ public partial class StageEditorPhase
 
         // Through the VFS: in the browser the user's stages live in MEMFS, not on disk.
         const string directory = "data/stages/user/";
+
         foreach (var file in VFS.EnumerateFiles(directory, "*.txt", SearchOption.AllDirectories))
         {
             var stagePath = file[directory.Length..];
@@ -721,29 +764,36 @@ public partial class StageEditorPhase
     private async Task LoadStageAsync(string stageFileName)
     {
         // Check if this stage is already open in a tab
+
         foreach (var tab in _tabs)
         {
             if (tab.StageFileName == stageFileName)
             {
                 // Stage already open, switch to that tab
+
                 for (int i = 0; i < _tabs.Count; i++)
                 {
                     if (_tabs[i] == tab)
                     {
                         _activeTabIndex = i;
                         UpdateCameraPosition();
+
                         break;
                     }
                 }
 
                 Logging.Info($"Stage '{stageFileName}' is already open, switched to that tab.");
+
                 return;
             }
         }
 
-        if (!_openingStages.Add(stageFileName)) return;
+        if (!_openingStages.Add(stageFileName))
+
+            return;
         using var loading = LoadingWork.Begin("Loading stage in editor...");
         StageEditorTab? pendingTab = null;
+
         try
         {
             // Create a new tab
@@ -762,9 +812,11 @@ public partial class StageEditorPhase
             // Remove all wall pieces from the stage BEFORE creating the ClientStageRenderer
             // so it never includes them as children
             int removedCount = 0;
+
             for (int i = tab.Stage.Pieces.Count - 1; i >= 0; i--)
             {
                 var piece = tab.Stage.Pieces[i];
+
                 if (piece is StageObject collisionObject
                     && (collisionObject.FileName == "thewall" || collisionObject.FileName.Contains("wall")))
                 {
@@ -778,6 +830,7 @@ public partial class StageEditorPhase
             tab.StageRenderer = await ClientStageRenderer.CreateAsync(tab.Stage, token);
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
+
             while (!ReferenceEquals(GameSparker.CurrentPhase, this))
             {
                 await LoadingWork.NextFrame;
@@ -800,13 +853,17 @@ public partial class StageEditorPhase
             }
 
             // Populate editor pieces from loaded stage
+
             foreach (var piece in tab.Stage.Pieces)
             {
                 if (piece is not StageObject collisionObject)
+
                     continue;
 
                 // Skip wall pieces - they're handled as EditorStageWalls
+
                 if (collisionObject.OriginalPlacement.IsWall)
+
                     continue;
 
                 var instance = new StagePieceInstance(collisionObject, tab.GetNextPieceId());
@@ -828,14 +885,19 @@ public partial class StageEditorPhase
                     // #editor_group(Name) carries no keys: ScenePieces is in the same file order as
                     // group.Pieces, so walk one cursor. Matching by value would collapse duplicates
                     // (every identical piece resolving to the first one).
+
                     foreach (var placement in group.Pieces)
                     {
                         while (pieceCursor < tab.ScenePieces.Count)
                         {
                             var candidate = tab.ScenePieces.ByIndex(pieceCursor++);
-                            if (candidate.PiecePlacement != placement) continue;
+
+                            if (candidate.PiecePlacement != placement)
+
+                                continue;
 
                             hierarchyGroup.PieceIds.Add(candidate.Id);
+
                             break;
                         }
                     }
@@ -845,11 +907,13 @@ public partial class StageEditorPhase
 
                 // Old format group: #editor_group(Name,x:z,...)
                 var resolved = new List<int>();
+
                 foreach (var key in group.CoordinateKeys)
                 {
                     if (key.Contains(':'))
                     {
                         var kparts = key.Split(':');
+
                         if (kparts.Length == 2 && int.TryParse(kparts[0], out int kx) && int.TryParse(kparts[1], out int kz))
                         {
                             var match = tab.ScenePieces.FirstOrDefault(p =>
@@ -872,6 +936,7 @@ public partial class StageEditorPhase
 
             // A piece belongs to one group at most, and only while it exists.
             var claimedIds = new HashSet<int>();
+
             foreach (var group in tab.HierarchyGroups)
             {
                 group.PieceIds.RemoveAll(id =>
@@ -885,6 +950,7 @@ public partial class StageEditorPhase
             tab.FogColor = World.Fog;
             tab.GroundColor = World.GroundColor;
             tab.PolysEnabled = World.HasPolys;
+
             if (World.HasPolys)
             {
                 tab.PolysColor = World.GroundPolysColor;
@@ -900,6 +966,7 @@ public partial class StageEditorPhase
             }
 
             tab.CloudsEnabled = World.HasClouds;
+
             if (World.HasClouds)
             {
                 tab.CloudsColor = new Color3((short)World.Clouds[0], (short)World.Clouds[1], (short)World.Clouds[2]);
@@ -956,7 +1023,10 @@ public partial class StageEditorPhase
             await LoadingWork.NextFrame;
             pendingTab?.StageRenderer?.Dispose();
             pendingTab?.Scene?.Dispose();
-            if (_editorDisposed || ex is OperationCanceledException) return;
+
+            if (_editorDisposed || ex is OperationCanceledException)
+
+                return;
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error loading stage: {ex.Message}");
         }
@@ -985,6 +1055,7 @@ public partial class StageEditorPhase
         tab.PreservedDirectives.Clear();
 
         var filePath = $"data/stages/user/{stageFileName}.txt";
+
         if (!VFS.FileExists(filePath))
         {
             return;
@@ -995,6 +1066,7 @@ public partial class StageEditorPhase
             foreach (var rawLine in VFS.ReadAllLines(filePath))
             {
                 var line = rawLine.Trim();
+
                 if (string.IsNullOrEmpty(line))
                 {
                     continue;
@@ -1021,7 +1093,9 @@ public partial class StageEditorPhase
     /// </summary>
     private void WriteDescription(TextWriter writer)
     {
-        if (ActiveTab!.DescriptionLines.Count == 0) return;
+        if (ActiveTab!.DescriptionLines.Count == 0)
+
+            return;
 
         var lines = ActiveTab.DescriptionLines.Select(line => line.Replace("\r", " ").Replace("\n", " "));
         writer.WriteLine($"desc({string.Join("\\n", lines)})");
@@ -1035,6 +1109,7 @@ public partial class StageEditorPhase
             if (start.PlayerCount == 0 && start.Axis == StartAxis.Y && start.Values.Length == 1)
             {
                 writer.WriteLine($"startheight({Fmt(250f - start.Values[0])})");
+
                 continue;
             }
 
@@ -1051,6 +1126,7 @@ public partial class StageEditorPhase
             );
             writer.Write('(');
             writer.Write(start.PlayerCount);
+
             foreach (var value in start.Values)
             {
                 writer.Write(',');
@@ -1067,7 +1143,9 @@ public partial class StageEditorPhase
     private static void WriteSoundtrack(TextWriter writer, string directive, string path)
     {
         var slash = path.LastIndexOf('/');
+
         if (slash <= 0 || slash == path.Length - 1)
+
             return;
 
         writer.WriteLine($"{directive}({path[..slash]},{path[(slash + 1)..]})");
@@ -1076,16 +1154,26 @@ public partial class StageEditorPhase
     /// <summary>phy-addons stage properties; defaults are left out so they stay absent.</summary>
     private static void WriteStagePhysics(TextWriter writer, StagePhysics physics)
     {
-        if (physics.RechargedStats) writer.WriteLine("stats()");
-        if (physics.Gravity != 1f) writer.WriteLine($"gravity({Fmt(physics.Gravity)})");
-        if (physics.Grip != 1f) writer.WriteLine($"grip({Fmt(physics.Grip)})");
-        if (physics.Powerloss != 1f) writer.WriteLine($"powerloss({Fmt(physics.Powerloss)})");
-        if (physics.Damage != 1f) writer.WriteLine($"dam({Fmt(physics.Damage)})");
-        if (physics.Lava != 0f) writer.WriteLine($"lava({Fmt(physics.Lava)})");
+        if (physics.RechargedStats)
+            writer.WriteLine("stats()");
+        if (physics.Gravity != 1f)
+            writer.WriteLine($"gravity({Fmt(physics.Gravity)})");
+        if (physics.Grip != 1f)
+            writer.WriteLine($"grip({Fmt(physics.Grip)})");
+        if (physics.Powerloss != 1f)
+            writer.WriteLine($"powerloss({Fmt(physics.Powerloss)})");
+        if (physics.Damage != 1f)
+            writer.WriteLine($"dam({Fmt(physics.Damage)})");
+        if (physics.Lava != 0f)
+            writer.WriteLine($"lava({Fmt(physics.Lava)})");
         // The directive is a multiplier on the stock 300 clamp.
-        if (physics.MaxHit != 300f) writer.WriteLine($"maxhit({Fmt(physics.MaxHit / 300f)})");
-        if (physics.Recoil != 1f) writer.WriteLine($"recoil({Fmt(physics.Recoil)})");
-        if (physics.Rage != 1f) writer.WriteLine($"rage({Fmt(physics.Rage)})");
-        if (physics.NoArrow) writer.WriteLine("noarrow()");
+        if (physics.MaxHit != 300f)
+            writer.WriteLine($"maxhit({Fmt(physics.MaxHit / 300f)})");
+        if (physics.Recoil != 1f)
+            writer.WriteLine($"recoil({Fmt(physics.Recoil)})");
+        if (physics.Rage != 1f)
+            writer.WriteLine($"rage({Fmt(physics.Rage)})");
+        if (physics.NoArrow)
+            writer.WriteLine("noarrow()");
     }
 }

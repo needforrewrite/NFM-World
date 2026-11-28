@@ -48,6 +48,7 @@ public sealed partial class AccountManager : IDisposable
     public async Task<bool> RefreshAsync()
     {
         if (ActiveAccount is null)
+
             return false;
 
         try
@@ -55,16 +56,19 @@ public sealed partial class AccountManager : IDisposable
             using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(_baseUri, "auth/me"));
             request.Headers.Authorization = new("Bearer", ActiveAccount.Token);
             using var response = await _http.SendAsync(request);
+
             if (!response.IsSuccessStatusCode)
             {
                 SetActive(null);
                 AccountStore.Clear();
+
                 return false;
             }
 
             var account = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.AccountResponse);
             if (account is { Username.Length: > 0 })
                 SetActive(new Account(ActiveAccount.Token, account.Username, account.Role, account.DeletionPendingUntil));
+
             return true;
         }
         catch (Exception ex)
@@ -72,6 +76,7 @@ public sealed partial class AccountManager : IDisposable
             // A refresh is fired and forgotten at the menu, so anything escaping here is an
             // unobserved fault: on the web build that reaches the crash reporter.
             Logging.Warning($"Could not reach the archive: {ex.Message}");
+
             return false;
         }
     }
@@ -95,6 +100,7 @@ public sealed partial class AccountManager : IDisposable
                 new System.Diagnostics.ProcessStartInfo(url.AbsoluteUri) { UseShellExecute = true }
             );
 #endif
+
             return new RequestResult("Opening in your browser.", true);
         }
         catch (Exception ex)
@@ -117,15 +123,20 @@ public sealed partial class AccountManager : IDisposable
                 new LoginRequest(username, password),
                 AccountJsonContext.Default.LoginRequest
             );
+
             if (!response.IsSuccessStatusCode)
+
                 return new RequestResult(await ReadErrorAsync(response), false);
 
             var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.LoginResponse);
+
             if (body?.Token is not { Length: > 0 })
+
                 return new RequestResult("The archive returned no session token.", false);
 
             AccountStore.Save(body.Token, body.Account.Username, body.Account.Role, body.Account.DeletionPendingUntil);
             SetActive(new Account(body.Token, body.Account.Username, body.Account.Role, body.Account.DeletionPendingUntil));
+
             return new RequestResult("Success", true);
         }
         catch (Exception ex)
@@ -133,6 +144,7 @@ public sealed partial class AccountManager : IDisposable
             // Never let a sign-in failure escape: the caller is fire-and-forget, so an exception
             // here becomes an unobserved task fault rather than a message on the form.
             Logging.Warning($"Sign-in failed: {ex}");
+
             return new RequestResult($"Could not sign in: {ex.Message}", false);
         }
     }
@@ -148,8 +160,12 @@ public sealed partial class AccountManager : IDisposable
         try
         {
             var body = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.JsonElement);
-            if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("error", out var error)
-                && error.ValueKind == JsonValueKind.String && error.GetString() is { Length: > 0 } message)
+
+            if (body.ValueKind == JsonValueKind.Object
+                && body.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.String
+                && error.GetString() is { Length: > 0 } message)
+
                 return message;
         }
         catch (JsonException)

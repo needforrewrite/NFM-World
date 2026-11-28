@@ -34,6 +34,7 @@ public static class RadpackSerializer
     public static RadpackAsset Deserialize(ReadOnlySpan<byte> data, int maxCompressedBytes, int maxDecompressedBytes)
     {
         if (data.Length > maxCompressedBytes)
+
             throw new InvalidDataException($"Radpack exceeds {maxCompressedBytes} compressed bytes");
 
         if (data.Length < 4)
@@ -47,6 +48,7 @@ public static class RadpackSerializer
         }
 
         var type = data[3];
+
         if (type > (byte)RadpackType.Max)
         {
             throw new InvalidDataException($"Radpack declares unknown type {type}");
@@ -54,6 +56,7 @@ public static class RadpackSerializer
 
         var decompData = Deflate.Decompress(data[4..], maxDecompressedBytes);
         RadpackAsset? result;
+
         try
         {
             result = TightPackSerializer.Deserialize<RadpackAsset>(decompData);
@@ -69,6 +72,7 @@ public static class RadpackSerializer
         }
 
         var declared = (RadpackType)type;
+
         if (!RadpackTypes.MatchesPayload(declared, result))
         {
             throw new InvalidDataException(
@@ -82,6 +86,7 @@ public static class RadpackSerializer
         RadpackTypes.ValidatePayload(result);
         if (result is RadpackTrackWithMusic track)
             track.Stage.EmbeddedMusic = track.Music;
+
         return result;
     }
 
@@ -114,6 +119,7 @@ public static class RadpackTypes
     public static void ValidatePayload(RadpackAsset asset)
     {
         if (asset is RadpackGamemode { Assembly: var assembly } && !IsManagedAssembly(assembly))
+
             throw new InvalidDataException("The gamemode package does not contain a .NET assembly");
     }
 
@@ -121,9 +127,11 @@ public static class RadpackTypes
     public static bool IsManagedAssembly(ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length < 0x40 || bytes[0] != 'M' || bytes[1] != 'Z')
+
             return false;
 
         var peOffset = BitConverter.ToInt32(bytes[0x3C..0x40]);
+
         return peOffset > 0
                && peOffset <= bytes.Length - 4
                && bytes[peOffset] == 'P'

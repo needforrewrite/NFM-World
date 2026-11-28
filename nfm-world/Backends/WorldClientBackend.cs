@@ -90,7 +90,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             var images = _imageCache.Values.OfType<AposShapeSvg>()
                 .Concat(_adjustedSvgImages.Values)
                 .Where(image => image.NeedsCache(_graphicsDevice)).ToArray();
-            if (images.Length == 0) return;
+
+            if (images.Length == 0)
+
+                return;
 
             // Replace the batch's retained texture before rebuilding a cache it may reference.
             _svgCacheGuard ??= _graphicsDevice.CreateTexture(
@@ -212,8 +215,10 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         private ShapeFont LoadFont(string fontFile)
         {
             ShapeFont font = new ShapeFont(VFS.ReadAllBytes(fontFile));
+
             // Order matters: this first, so it covers the arrows, then the second for the
             // geometric shapes and dingbats it has nothing for.
+
             foreach (ShapeFont symbols in _symbols)
             {
                 font.AddFallback(symbols);
@@ -226,6 +231,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             // Absent or stale is not an error: a font whose bytes changed misses, and everything it
             // did not cover still bakes on first draw. That is a slow launch, not a broken one.
             string cacheFile = Path.ChangeExtension(fontFile, ".msdf");
+
             if (VFS.FileExists(cacheFile))
             {
                 font.LoadPrewarmed(VFS.ReadAllBytes(cacheFile));
@@ -234,6 +240,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             // Whatever the cache left out is baked here: anything outside ASCII/Latin-1 that the
             // counters and debug overlay draw, so no frame pays for a cold glyph on first tick.
             font.Prewarm(PerFrameChars);
+
             return font;
         }
 
@@ -261,6 +268,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             IImage LoadImageInternal()
             {
                 using var stream = VFS.OpenRead(file);
+
                 if (Path.GetExtension(file) == ".svg")
                 {
                     return new AposShapeSvg(stream);
@@ -282,10 +290,12 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                 path =>
                 {
                     using var stream = VFS.OpenRead(path);
+
                     return new AposShapeSvg(stream, rgbMultiplier, maximumChannel);
                 }
             );
             image.SetColorAdjustment(rgbMultiplier, maximumChannel);
+
             return image;
         }
 
@@ -346,12 +356,12 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
                     new Vector2(x, y),
                     new Vector2(x + width, y + height),
                     new ColorRamp(colors.Select((c, i) => (colorPos?[i] ?? (float)i / (colors.Length - 1), c)).ToArray())
-                );
+                    );
                 _color = new Gradient(
                     new Vector2(x, y),
                     new Vector2(x + width, y + height),
                     new ColorRamp(colors.Select((c, i) => (colorPos?[i] ?? (float)i / (colors.Length - 1), c * _alpha)).ToArray())
-                );
+                    );
             }
         }
 
@@ -469,6 +479,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             if (hAlign != TextHorizontalAlignment.Left)
             {
                 var sz = font.MeasureString(text, _font.Size);
+
                 if (hAlign == TextHorizontalAlignment.Center)
                 {
                     x += areaWidth / 2f;
@@ -507,7 +518,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void DrawImageTransformed(IImage image, Vector2 origin, Vector2 axisX, Vector2 axisY, Color tint)
         {
-            if (image is not TextureImage img) return;
+            if (image is not TextureImage img)
+
+                return;
 
             // The caller works in upright image space. Where the backend's textures start at the
             // bottom row (GL), the quad has to be flipped to keep the image that way: V runs the
@@ -576,7 +589,8 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         // callers of the Ellipse overload that takes a `ref` are expected to.
         public void Arc(float cx, float cy, float arcRadius, float startAngleDeg, float endAngleDeg, bool clockWise)
         {
-            if (!_sb.HasOpenShapePath) BeginPath();
+            if (!_sb.HasOpenShapePath)
+                BeginPath();
             float a0 = startAngleDeg * (MathF.PI / 180f);
             float a1 = endAngleDeg * (MathF.PI / 180f);
             var start = new Vector2(cx + arcRadius * MathF.Cos(a0), cy + arcRadius * MathF.Sin(a0));
@@ -585,17 +599,22 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             // angle, which is the sense a y-down space gives it. Going the other way means going
             // round by the long way.
             float da = a1 - a0;
+
             if (clockWise)
             {
-                while (da < 0f) da += 2f * MathF.PI;
+                while (da < 0f)
+                    da += 2f * MathF.PI;
             }
             else
             {
-                while (da > 0f) da -= 2f * MathF.PI;
+                while (da > 0f)
+                    da -= 2f * MathF.PI;
             }
 
-            if (_hasCurrentPoint) LineTo(start.X, start.Y);
-            else MoveTo(start.X, start.Y);
+            if (_hasCurrentPoint)
+                LineTo(start.X, start.Y);
+            else
+                MoveTo(start.X, start.Y);
 
             // Sweep matches the flag directly: positive angles are clockwise in a y-down space,
             // which is SVG's positive sweep. A full turn cannot be told from a zero one by its
@@ -604,6 +623,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             // would each be handed back the full turn's answer.
             int pieces = MathF.Abs(da) > MathF.Tau - 1e-4f ? 2 : 1;
             float step = da / pieces;
+
             for (int i = 1; i <= pieces; i++)
             {
                 float a = a0 + step * i;
@@ -759,6 +779,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
             if (_cap == PathCap.Round)
             {
                 _sb.DrawLine(new Vector2(x1, y1), new Vector2(x2, y2), _strokeWidth, _color, _color, aaSize: _aaSize);
+
                 return;
             }
 
@@ -825,7 +846,9 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void FillOval(int x, int y, int width, int height)
         {
-            if (width == 0 || height == 0) return;
+            if (width == 0 || height == 0)
+
+                return;
             _sb.FillEllipse(
                 new Vector2(x + width / 2f, y + height / 2f),
                 MathF.Abs(width / 2f),
@@ -842,10 +865,13 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
 
         public void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
         {
-            if (n < 3) return;
+            if (n < 3)
+
+                return;
             BeginPath();
             MoveTo(x[0], y[0]);
-            for (var i = 1; i < n; i++) LineTo(x[i], y[i]);
+            for (var i = 1; i < n; i++)
+                LineTo(x[i], y[i]);
             ClosePath();
             Fill();
         }
@@ -853,6 +879,7 @@ internal sealed class WorldClientBackend(ShapeBatch sb, ImmediateBatch3D batch3D
         public void DrawPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
         {
             Span<Vector2> points = stackalloc Vector2[n];
+
             for (var i = 0; i < n; i++)
             {
                 points[i] = new Vector2(x[i], y[i]);
@@ -907,7 +934,9 @@ internal class AposShapeSvg : AposShape
 
     public void SetColorAdjustment(Vector3 multiplier, byte maximumChannel)
     {
-        if (_rgbMultiplier == multiplier && _maximumChannel == maximumChannel) return;
+        if (_rgbMultiplier == multiplier && _maximumChannel == maximumChannel)
+
+            return;
         var adjusted = new ShapeSvg(SvgColorAdjustment.Apply(_markup, multiplier, maximumChannel));
         _shape = adjusted;
         _rgbMultiplier = multiplier;
@@ -936,6 +965,7 @@ internal class AposShapeSvg : AposShape
                 HasDepthStencil: false
             )
         );
+
         try
         {
             cb.SetRenderTarget(_cache);

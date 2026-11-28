@@ -182,6 +182,7 @@ namespace Poly2Tri
                 if (t.Neighbors[i] == null)
                 {
                     AdvancingFrontNode n = Front.LocatePoint(t.PointCWFrom(t.Points[i]));
+
                     if (n != null)
                     {
                         n.Triangle = t;
@@ -202,6 +203,7 @@ namespace Poly2Tri
             ymax = ymin = Points[0].Y;
 
             // Calculate bounds. Should be combined with the sorting
+
             foreach (TriangulationPoint p in Points)
             {
                 if (p.X > xmax)

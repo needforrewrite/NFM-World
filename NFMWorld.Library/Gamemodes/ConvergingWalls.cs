@@ -24,10 +24,15 @@ public readonly record struct ConvergingWalls(double Minutes)
     [PluginVisible]
     public static ConvergingWalls From(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value)) return Off;
+        if (string.IsNullOrWhiteSpace(value))
+
+            return Off;
 
         var text = value.Trim();
-        if (text.Equals("off", StringComparison.OrdinalIgnoreCase)) return Off;
+
+        if (text.Equals("off", StringComparison.OrdinalIgnoreCase))
+
+            return Off;
 
         return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var minutes)
             ? new ConvergingWalls(Math.Clamp(minutes, 0, 60))

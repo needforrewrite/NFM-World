@@ -69,6 +69,7 @@ namespace Poly2Tri
         public int IndexOf(TriangulationPoint p)
         {
             int i = Points.IndexOf(p);
+
             if (i == -1)
             {
                 throw new Exception("Calling index with a point that doesn't exist in triangle");
@@ -105,6 +106,7 @@ namespace Poly2Tri
         private void MarkNeighbor(TriangulationPoint p1, TriangulationPoint p2, DelaunayTriangle t)
         {
             int i = EdgeIndex(p1, p2);
+
             if (i == -1)
             {
                 throw new Exception("Error marking neighbors -- t doesn't contain edge p1-p2!");
@@ -174,9 +176,11 @@ namespace Poly2Tri
         public void Clear()
         {
             DelaunayTriangle t;
+
             for (int i = 0; i < 3; i++)
             {
                 t = Neighbors[i];
+
                 if (t != null)
                 {
                     t.ClearNeighbor(this);
@@ -192,6 +196,7 @@ namespace Poly2Tri
         public TriangulationPoint OppositePoint(DelaunayTriangle t, TriangulationPoint p)
         {
             Debug.Assert(t != this, "self-pointer error");
+
             return PointCWFrom(t.PointCWFrom(p));
         }
 
@@ -270,10 +275,12 @@ namespace Poly2Tri
 
         public void MarkEdge(DelaunayTriangle triangle)
         {
-            for (int i = 0; i < 3; i++) if (EdgeIsConstrained[i])
-            {
-                triangle.MarkConstrainedEdge(Points[(i + 1) % 3], Points[(i + 2) % 3]);
-            }
+            for (int i = 0; i < 3; i++)
+
+                if (EdgeIsConstrained[i])
+                {
+                    triangle.MarkConstrainedEdge(Points[(i + 1) % 3], Points[(i + 2) % 3]);
+                }
         }
 
         public void MarkEdge(List<DelaunayTriangle> tList)
@@ -309,6 +316,7 @@ namespace Poly2Tri
         public void MarkConstrainedEdge(TriangulationPoint p, TriangulationPoint q)
         {
             int i = EdgeIndex(p, q);
+
             if (i != -1)
             {
                 mEdgeIsConstrained[i] = true;
@@ -328,6 +336,7 @@ namespace Poly2Tri
         {
             double cx = (Points[0].X + Points[1].X + Points[2].X) / 3f;
             double cy = (Points[0].Y + Points[1].Y + Points[2].Y) / 3f;
+
             return new TriangulationPoint(cx, cy);
         }
 
@@ -445,6 +454,7 @@ namespace Poly2Tri
         public bool GetEdge(int idx, out DTSweepConstraint edge)
         {
             edge = null;
+
             if (idx < 0 || idx > 2)
             {
                 return false;
@@ -452,6 +462,7 @@ namespace Poly2Tri
 
             TriangulationPoint p1 = Points[(idx + 1) % 3];
             TriangulationPoint p2 = Points[(idx + 2) % 3];
+
             if (p1.GetEdge(p2, out edge))
             {
                 return true;

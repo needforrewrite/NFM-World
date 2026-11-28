@@ -21,6 +21,7 @@ public sealed class SerialWorkQueue
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default
             );
+
             return task;
         }
     }
@@ -28,6 +29,7 @@ public sealed class SerialWorkQueue
     public Task WhenIdle()
     {
         lock (_sync)
+
             return _tail;
     }
 }

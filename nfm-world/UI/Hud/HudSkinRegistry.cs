@@ -21,7 +21,9 @@ public static class HudSkinRegistry
     {
         get
         {
-            if (!_loaded) Refresh();
+            if (!_loaded)
+                Refresh();
+
             return Skins.Values.Select(s => s.Info).ToArray();
         }
     }
@@ -92,13 +94,14 @@ public static class HudSkinRegistry
                 Styles = Sx.Styles(width: 100.Percent(), height: 100.Percent(), pointerEvents: false)
             }
         );
+
         try
         {
             foreach (var package in HudSkinCatalog.Discover(
-                         VFS,
-                         (path, error) =>
+                VFS,
+                (path, error) =>
                              Logging.Error($"HUD skin '{path}': {error.Message}")
-                     ))
+            ))
                 Register(
                     package.Definition.Info,
                     data => new CustomHud(package, data)
@@ -177,6 +180,7 @@ public static class HudSkinRegistry
         {
             Failed.Add(id);
             Logging.Error($"Could not initialize HUD skin '{id}': {ex.Message}. Using Classic.");
+
             return BuildDefault(data);
         }
     }
@@ -187,6 +191,7 @@ public static class HudSkinRegistry
         public bool TryGetValue(string key, out Func<Node> value)
         {
             value = () => Build(key, data);
+
             return Skins.ContainsKey(key);
         }
 

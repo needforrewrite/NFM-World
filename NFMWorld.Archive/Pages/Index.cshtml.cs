@@ -20,6 +20,7 @@ public sealed class IndexModel(
     public async Task<IActionResult> OnGetAsync()
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         Ratings = await Db.Ratings.Where(r => r.UserId == Account!.Id).OrderBy(r => r.Gamemode).ToListAsync();
@@ -30,6 +31,7 @@ public sealed class IndexModel(
             .Take(100)
             .ToListAsync();
         TimeTrialCount = await Db.TimeTrials.CountAsync(t => t.UserId == Account!.Id);
+
         return Page();
     }
 
@@ -40,13 +42,17 @@ public sealed class IndexModel(
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         if (options.ReadOnly)
+
             return Forbid();
 
         var asset = await Db.Assets.FirstOrDefaultAsync(a => a.Id == id);
+
         if (asset is null || asset.OwnerId != Account!.Id)
+
             return NotFound();
 
         var path = asset.StoragePath;

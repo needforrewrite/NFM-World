@@ -92,6 +92,7 @@ internal sealed class GlDeletionQueue
     public int Drain(GL gl)
     {
         var deleted = 0;
+
         while (_pending.TryDequeue(out var deletion))
         {
             Delete(gl, deletion);
@@ -116,6 +117,7 @@ internal sealed class GlDeletionQueue
             case GlObjectKind.VertexArray: gl.DeleteVertexArray(deletion.Handle); break;
             case GlObjectKind.Program: gl.DeleteProgram(deletion.Handle); break;
             default:
+
                 throw new ArgumentOutOfRangeException(
                     nameof(deletion),
                     deletion.Kind,

@@ -13,7 +13,9 @@ internal sealed class SettingsCameraPreview
 
     public void RestoreNormal(PerspectiveCamera camera)
     {
-        if (_blend <= 0) return;
+        if (_blend <= 0)
+
+            return;
         camera.Position = _normal.Position;
         camera.LookAt = _normal.LookAt;
         camera.Up = _normal.Up;
@@ -29,7 +31,10 @@ internal sealed class SettingsCameraPreview
         if (_blend == 0)
             _target.Fov = camera.Fov;
         _blend = Math.Clamp(_blend + (active ? 1 : -1) / (Physics.TargetTps * 0.9f), 0, 1);
-        if (_blend <= 0) return;
+
+        if (_blend <= 0)
+
+            return;
 
         _follow.Follow(_target, car, (float)car.CarPhysics.Cxz, 0, 0, car.Stats.Swits[2]);
         var t = _blend * _blend * (3 - 2 * _blend);

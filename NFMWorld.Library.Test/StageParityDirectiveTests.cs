@@ -37,7 +37,9 @@ public class StageParityDirectiveTests
 
         TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
 
-        if (BackendGameSparker.stage_parts.Count != 0) return;
+        if (BackendGameSparker.stage_parts.Count != 0)
+
+            return;
         var n = 0;
         foreach (var part in BackendGameSparker.StageRads)
             BackendGameSparker.stage_parts[n++] = RadParser.ParseRad(
@@ -322,6 +324,7 @@ public class StageParityDirectiveTests
             "maxt(3,20000,-4800)"
         );
         var originalSides = loader.pieces.Select(piece => piece.WallSide!.Value).ToArray();
+
         if (legacy)
         {
             for (var i = 0; i < loader.pieces.Count; i++)

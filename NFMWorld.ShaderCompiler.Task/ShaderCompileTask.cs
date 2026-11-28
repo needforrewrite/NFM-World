@@ -90,6 +90,7 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
         if (Shaders.Length == 0)
         {
             Log.LogMessage(MessageImportance.High, "No shaders to compile.");
+
             return true;
         }
 
@@ -99,6 +100,7 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
         foreach (var shader in Shaders)
         {
             var path = shader.GetMetadata("FullPath");
+
             try
             {
                 foreach (var bundle in ShaderBuild.CompileFile(path, line => Log.LogMessage(MessageImportance.Low, line)))
@@ -130,6 +132,7 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
         // Remove bundles whose shader or technique no longer exists. The target globs this
         // directory into Compile, so a leftover bundle would compile forever (and a
         // recycled program name would define the same type twice).
+
         if (!failed && Directory.Exists(OutputDirectory))
         {
             var writtenPaths = new HashSet<string>(
@@ -140,6 +143,7 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
             foreach (var stale in Directory.EnumerateFiles(OutputDirectory, "*.g.cs"))
             {
                 if (writtenPaths.Contains(Path.GetFullPath(stale)))
+
                     continue;
 
                 try
@@ -155,6 +159,7 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
         }
 
         if (failed)
+
             return false;
 
         // The translator can also die partway through, which leaves the earlier bundles with WGSL and
@@ -205,6 +210,7 @@ public sealed class ShaderCompileTask : Microsoft.Build.Utilities.Task
             MessageImportance.Normal,
             $"Compiled {Shaders.Length} shader source(s) into {GeneratedFiles.Length} bundle(s)."
         );
+
         return true;
     }
 }

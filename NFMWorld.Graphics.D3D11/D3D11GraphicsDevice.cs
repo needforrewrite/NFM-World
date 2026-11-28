@@ -180,6 +180,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
             // Not a capability check - the whole backend is Win32-only, since TerraFX.Interop.Windows
             // is P/Invoking user32 and d3d11 directly. Failing here with that sentence beats an
             // EntryPointNotFoundException from inside the loader.
+
             throw new PlatformNotSupportedException(
                 "This backend binds Direct3D 11 and DXGI through TerraFX.Interop.Windows and only runs on Windows."
             );
@@ -240,6 +241,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
                 description.DepthStencilFormat,
                 description.EnableShaderCache
             );
+
             return result;
         }
         catch
@@ -248,6 +250,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
             // ownership of either object until it succeeds.
             D3D11Interop.Release(ref context);
             D3D11Interop.Release(ref device);
+
             throw;
         }
     }
@@ -272,6 +275,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         var commandBuffer = _commandBuffer ??= new D3D11CommandBuffer(this);
         commandBuffer.RestoreBackBufferBinding();
         _activeCommandBuffer = commandBuffer;
+
         return commandBuffer;
     }
 
@@ -312,6 +316,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     public IBuffer CreateBuffer(BufferDesc desc, ReadOnlySpan<byte> initialData = default)
     {
         if (desc.SizeInBytes <= 0)
+
             throw new ArgumentOutOfRangeException(nameof(desc), $"A buffer of {desc.SizeInBytes} bytes cannot be allocated.");
 
         if (initialData.Length > desc.SizeInBytes)
@@ -327,12 +332,14 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         // creation. That is a real restriction of this API and not one this backend invents - but a
         // non-dynamic buffer declared without contents is still constructible, and is how the two
         // deferred-upload renderers in this tree build their buffers before the first UpdateBuffer.
+
         return new D3D11Buffer(this, desc, initialData);
     }
 
     public ITexture CreateTexture(TextureDesc desc, ReadOnlySpan<byte> initialData = default)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
+
             throw new ArgumentOutOfRangeException(nameof(desc), $"A {desc.Width}x{desc.Height} texture cannot be allocated.");
 
         if (desc.MipMapped && !initialData.IsEmpty)
@@ -350,6 +357,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
+
             throw new ArgumentOutOfRangeException(
                 nameof(desc),
                 $"A {desc.Width}x{desc.Height} render target cannot be allocated."
@@ -373,6 +381,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         // the two stages as independent objects and the reflection describes the merged block the
         // shader compiler emits for both. Taking the vertex module's reflection for SetUniform is a
         // consequence of that merge, not of the two being the same object.
+
         return new D3D11PipelineState(this, vertex, pixel, desc);
     }
 
@@ -451,6 +460,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         ArgumentNullException.ThrowIfNull(texture);
 
         if (texture is not D3D11Texture d3dTexture)
+
             throw new ArgumentException($"{nameof(ReadTexture)} needs a texture this backend created.", nameof(texture));
 
         if (d3dTexture.Format.IsDepthFormat())
@@ -478,6 +488,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
         }
 
         if (level != 0)
+
             throw new ArgumentOutOfRangeException(nameof(level), level, "Only level 0 is readable through this backend.");
 
         if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > d3dTexture.Width || y + height > d3dTexture.Height)
@@ -490,6 +501,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
 
         var rowBytes = width * BytesPerPixel(d3dTexture.Format);
         var required = rowBytes * height;
+
         if (destination.Length < required)
         {
             throw new ArgumentException(
@@ -604,10 +616,13 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     internal int ClampSampleCount(DXGI_FORMAT format, int requested)
     {
         if (requested <= 1)
+
             return 1;
 
         uint qualityLevels;
+
         if (Device->CheckMultisampleQualityLevels(format, (uint)requested, &qualityLevels) < 0 || qualityLevels == 0)
+
             return 1;
 
         return requested;
@@ -616,6 +631,7 @@ public sealed unsafe class D3D11GraphicsDevice : IGraphicsDevice, IDisposable
     public void Dispose()
     {
         if (_disposed)
+
             return;
 
         _disposed = true;

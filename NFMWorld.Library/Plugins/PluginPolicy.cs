@@ -185,6 +185,7 @@ internal static class PluginPolicy
         // methods, and removing those by identity takes unrelated members of the same
         // module with them.
         var unsafeType = typeof(Unsafe);
+
         foreach (var method in unsafeType.GetMethods(AllMembers).Where(m => m.DeclaringType == unsafeType))
         {
             if (policy.CanAccess(method))
@@ -214,7 +215,9 @@ internal static class PluginPolicy
     private static void DenyHostEvents(CasPolicyBuilder builder, CasPolicy policy)
     {
         foreach (var assembly in Hosts)
+
         foreach (var type in Types(assembly))
+
         foreach (var @event in type.GetEvents(AllMembers))
         {
             if (@event.AddMethod is { } add && policy.CanAccess(add))
@@ -297,21 +300,27 @@ internal static class PluginPolicy
     private static void PropagateInheritedVisibility(CasPolicyBuilder builder, ref CasPolicy policy)
     {
         var changed = true;
+
         while (changed)
         {
             changed = false;
+
             foreach (var type in ImplementerTypes())
             {
                 if (type.IsInterface || type.IsGenericTypeDefinition)
+
                     continue;
 
                 var interfaces = InterfacesOf(type);
+
                 foreach (var method in type.GetMethods(AllMembers))
                 {
                     if (method.DeclaringType != type || policy.CanAccess(method))
+
                         continue;
 
                     if (!ImplementsVisibleMember(method, interfaces, policy))
+
                         continue;
 
                     builder.Allow(method);
@@ -330,13 +339,16 @@ internal static class PluginPolicy
         if (method.IsVirtual)
         {
             var baseDefinition = method.GetBaseDefinition();
+
             if (baseDefinition != method && policy.CanAccess(baseDefinition))
+
                 return true;
         }
 
         foreach (var contract in interfaces)
         {
             InterfaceMapping map;
+
             try
             {
                 map = method.DeclaringType!.GetInterfaceMap(contract);
@@ -344,12 +356,14 @@ internal static class PluginPolicy
             catch (ArgumentException)
             {
                 // Open generic instantiation, or a type the runtime refuses to map.
+
                 continue;
             }
 
             for (var i = 0; i < map.TargetMethods.Length; i++)
             {
                 if (map.TargetMethods[i] == method && policy.CanAccess(map.InterfaceMethods[i]))
+
                     return true;
             }
         }
@@ -388,9 +402,11 @@ internal static class PluginPolicy
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             if (!CanImplementHostContract(assembly))
+
                 continue;
 
             foreach (var type in Types(assembly))
+
                 yield return type;
         }
     }
@@ -406,6 +422,7 @@ internal static class PluginPolicy
     private static bool CanImplementHostContract(Assembly assembly)
     {
         if (Hosts.Any(host => host == assembly))
+
             return true;
 
         foreach (var reference in assembly.GetReferencedAssemblies())
@@ -413,6 +430,7 @@ internal static class PluginPolicy
             foreach (var host in Hosts)
             {
                 if (string.Equals(reference.Name, host.GetName().Name, StringComparison.Ordinal))
+
                     return true;
             }
         }
@@ -425,6 +443,7 @@ internal static class PluginPolicy
     {
         // [VendorPluginVisible] names a type outside this assembly outright - a vendor
         // type with no host attributes of its own - along with how much of it is exposed.
+
         foreach (var marker in assembly.GetCustomAttributesData())
         {
             if (marker.AttributeType is { IsGenericType: true } attribute
@@ -446,6 +465,7 @@ internal static class PluginPolicy
             // is not a grant of its whole surface: that is what IncludingAllMembersOfType
             // is for, and this path only runs for types that were not marked with it.
             var typeMarker = type.GetCustomAttributesData().FirstOrDefault(IsPluginVisible);
+
             if (typeMarker is not null)
             {
                 Allow(builder, type, VisibilityOf(typeMarker));
@@ -460,6 +480,7 @@ internal static class PluginPolicy
             foreach (var member in type.GetMembers(AllMembers))
             {
                 if (member.DeclaringType != type || member.MemberType == MemberTypes.NestedType)
+
                     continue;
 
                 if (member.GetCustomAttributesData().Any(IsPluginVisible))
@@ -523,6 +544,7 @@ internal static class PluginPolicy
         // plugin that declares a collection, a multi-dimensional array or a Type member uses this
         // type itself and not only the reader/writer below. Each one is a thin serializer over
         // those same primitives.
+
         foreach (Type formatter in GeneratedFormatterTypes)
         {
             builder.Allow(new TypeBinding(formatter, Accessibility.Public));
@@ -581,6 +603,7 @@ internal static class PluginPolicy
         builder.WithSandboxedSystemThreadingTasksParallel();
         builder.WithSandboxedSystemLinqExpressions();
         builder.WithSandboxedRuntimeReflection();
+
         return builder;
     }
 
@@ -591,7 +614,9 @@ internal static class PluginPolicy
         // members AllowMember adds. The IncludingAllMembersOfType variants make the type's
         // own members visible without a marker, and that stops at public: a plugin never
         // needs a host type's internals.
+
         if (visible == Visible.Self)
+
             return;
 
         builder.Allow(new TypeBinding(type, Accessibility.Public));
@@ -617,15 +642,18 @@ internal static class PluginPolicy
             case PropertyInfo property:
                 foreach (var accessor in property.GetAccessors(nonPublic: true))
                     builder.Allow(accessor);
+
                 break;
             case EventInfo @event:
                 if (@event.AddMethod is { } add)
                     builder.Allow(add);
                 if (@event.RemoveMethod is { } remove)
                     builder.Allow(remove);
+
                 break;
             case MethodBase or FieldInfo:
                 builder.Allow(member);
+
                 break;
         }
     }

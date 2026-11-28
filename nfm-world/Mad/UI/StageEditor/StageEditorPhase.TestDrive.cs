@@ -26,6 +26,7 @@ public partial class StageEditorPhase
         if (ActiveTab is not { Stage: not null } tab || tab.StageFileName is not { Length: > 0 } fileName)
         {
             GameSparker.MessageWindow.ShowMessage("Test drive unavailable", "There is no stage to test drive.");
+
             return;
         }
 
@@ -33,6 +34,7 @@ public partial class StageEditorPhase
         {
             _showTestDriveSaveDialog = true;
             Touch();
+
             return;
         }
 
@@ -42,12 +44,14 @@ public partial class StageEditorPhase
     private void BeginTestDrive(string fileName)
     {
         if (_testDriveLaunched)
+
             return;
 
         var stageName = $"user/{fileName}";
 
         // Loads the stage, so a broken document fails here rather than inside the phase stack.
         GaragePhase picker;
+
         try
         {
             picker = new GaragePhase(MenuHistory.Car, stageName, quickSelect: true);
@@ -56,6 +60,7 @@ public partial class StageEditorPhase
         {
             Logging.Error($"Unable to open car selection for test drive: {exception.Message}");
             GameSparker.MessageWindow.ShowMessage("Test drive unavailable", exception.Message);
+
             return;
         }
 
@@ -71,6 +76,7 @@ public partial class StageEditorPhase
     private void StartTestDriveRace(string stageName, string carName)
     {
         BaseGamemodeFactory factory;
+
         try
         {
             factory = GamemodeFactory.Create(
@@ -81,12 +87,14 @@ public partial class StageEditorPhase
         catch (Exception exception)
         {
             FailTestDrive("Unable to start test drive", exception);
+
             return;
         }
 
         var players = FreePlayRoster.Create(carName, _testDriveWithAi);
 
         LocalRaceHost host;
+
         try
         {
             host = LocalRaceHost.CreateDeferred(stageName, factory, new ClientGamemodeParameters { Players = players });
@@ -95,10 +103,12 @@ public partial class StageEditorPhase
         {
             factory.End();
             FailTestDrive("Unable to start test drive", exception);
+
             return;
         }
 
         RacePhase race;
+
         try
         {
             race = new RacePhase(stageName, factory, players, host);
@@ -108,6 +118,7 @@ public partial class StageEditorPhase
             host.Dispose();
             factory.End();
             FailTestDrive("Unable to initialize test drive", exception);
+
             return;
         }
 
@@ -179,12 +190,15 @@ public partial class StageEditorPhase
                     () =>
                     {
                         SaveStage();
-                        if (ActiveTab is { } tab && !tab.HasUnsavedChanges
+
+                        if (ActiveTab is { } tab
+                            && !tab.HasUnsavedChanges
                             && tab.StageFileName is { Length: > 0 } fileName)
                         {
                             _showTestDriveSaveDialog = false;
                             Touch();
                             BeginTestDrive(fileName);
+
                             return;
                         }
 

@@ -21,9 +21,11 @@ public static class SessionBots
         var bots = new Dictionary<byte, ServerSidePlayerInfo>();
 
         var limit = Math.Clamp(maxPlayers, 0, MatchGameplayInfo.MaxPlayers);
+
         for (byte slot = 0; slot < limit && bots.Count < count; slot++)
         {
             if (taken.Contains(slot))
+
                 continue;
 
             bots[slot] = new ServerSidePlayerInfo

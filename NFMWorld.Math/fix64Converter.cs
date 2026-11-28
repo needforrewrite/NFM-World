@@ -11,9 +11,11 @@ public class fix64Converter : JsonConverter<fix64>
     public override fix64 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         // read number as string
+
         if (reader.TokenType == JsonTokenType.Number)
         {
             ReadOnlySpan<byte> span;
+
             if (reader.HasValueSequence)
             {
                 span = reader.ValueSequence.ToArray();
@@ -24,6 +26,7 @@ public class fix64Converter : JsonConverter<fix64>
             }
 
             var str = Encoding.UTF8.GetString(span);
+
             if (fix64.TryParse(str, CultureInfo.InvariantCulture, out var result))
             {
                 return result;

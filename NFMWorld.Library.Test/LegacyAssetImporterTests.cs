@@ -13,6 +13,7 @@ public class LegacyAssetImporterTests
     private static byte[] Zip(string text)
     {
         using var stream = new MemoryStream();
+
         using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
         {
             using var writer = new StreamWriter(archive.CreateEntry("car.rad").Open(), Encoding.UTF8);
@@ -27,7 +28,9 @@ public class LegacyAssetImporterTests
     {
         // First 480 bytes are prefixed by 20; everything after by 40.
         var result = new byte[zip.Length + 40];
-        for (var i = 0; i < zip.Length; i++) result[i + (i < 480 ? 20 : 40)] = zip[i];
+        for (var i = 0; i < zip.Length; i++)
+            result[i + (i < 480 ? 20 : 40)] = zip[i];
+
         return result;
     }
 

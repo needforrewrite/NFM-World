@@ -68,7 +68,8 @@ public sealed class GeneratorEmitTests
             "Holder routes its tuple through a formatter instead of writing the elements."
         );
         Assert.IsTrue(
-            holder.Contains("WriteInt32(__w_Pair.Item1)") &&
+            holder.Contains("WriteInt32(__w_Pair.Item1)")
+            &&
             holder.Contains("WriteSingle(__w_Pair.Item2)"),
             "Holder does not write the tuple elements directly."
         );

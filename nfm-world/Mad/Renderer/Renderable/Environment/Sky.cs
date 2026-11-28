@@ -29,6 +29,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
 
         // Reach the terrain's fog color at the horizon with a flat slope at both ends.
         const int fogLayers = 32;
+
         for (var i = 1; i <= fogLayers; ++i)
         {
             var t = i / (float)fogLayers;
@@ -40,6 +41,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         }
 
         var col = skyColor;
+
         for (var i = 1; i < 20; ++i)
         {
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
@@ -51,6 +53,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         var data = new List<PositionColorVertex>();
 
         var layersArr = layers.ToArray();
+
         for (var i = 0; i + 1 < layers.Count; ++i)
         {
             ReadOnlySpan<(Vector3 Position, Vector3 Color)> vertices =
@@ -85,7 +88,9 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
 
     public void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
-        if (pass.IsShadow) return;
+        if (pass.IsShadow)
+
+            return;
 
         queue.AddImmediate(SortKey.Create(RenderBucket.Sky), this);
     }
@@ -101,6 +106,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         var viewMatrix = camera.ViewMatrix;
         viewMatrix.Translation = Vector3.Zero;
         var horizontalDirection = new Vector3(-viewMatrix.M13, 0, -viewMatrix.M33);
+
         if (horizontalDirection.LengthSquared() < 1e-6f)
         {
             horizontalDirection = Vector3.UnitZ;
@@ -114,6 +120,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         // sky must never touch depth) and mirrors the original, which cleared the target here too -
         // the gradient layers only cover the upper part of the screen, and this fills the rest.
         Vector3 col = World.Sky.Snap(World.Snap);
+
         for (var i = 1; i < 20; ++i)
         {
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
@@ -124,7 +131,8 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
         p.WorldViewProj.SetValue(cb, viewMatrix * camera.ProjectionMatrix);
 
         cb.Draw(startVertex: 0, primitiveCount: _triangleCount);
-        if (World.DrawStars) _stars.Render(cb, camera);
+        if (World.DrawStars)
+            _stars.Render(cb, camera);
     }
 
     private void ReleaseUnmanagedResources()
@@ -134,6 +142,7 @@ public class Sky : Transform, IRenderable, IImmediateRenderElement, IDisposable
     private void Dispose(bool disposing)
     {
         ReleaseUnmanagedResources();
+
         if (disposing)
         {
             _vertexBuffer.Dispose();

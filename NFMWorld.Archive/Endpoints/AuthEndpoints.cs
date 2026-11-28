@@ -52,27 +52,36 @@ public static class AuthEndpoints
             ) =>
             {
                 if (options.ReadOnly)
+
                     return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
                 // Each attempt costs a full PBKDF2 hash and a row, so registration is throttled by
                 // the same per-IP limiter as login.
+
                 if (throttle.IsBlocked("ip:" + (Ip(http) ?? "unknown"), out _))
+
                     return Results.Json(
                         new { error = "Too many attempts. Try again later." },
                         statusCode: StatusCodes.Status429TooManyRequests
                     );
 
                 var challenge = await turnstile.VerifyAsync(request.TurnstileResponse, "register", ct, Ip(http));
+
                 if (!challenge.Accepted)
+
                     return Results.BadRequest(new { error = challenge.Message });
 
                 if (!UsernamePolicy.TryValidate(request.Username, out var nameError))
+
                     return Results.BadRequest(new { error = nameError });
                 if (!PasswordPolicy.TryValidate(request.Password, out var passwordError))
+
                     return Results.BadRequest(new { error = passwordError });
 
                 var normalized = UsernamePolicy.Normalize(request.Username!);
+
                 if (await db.Users.AnyAsync(u => u.UsernameNormalized == normalized, ct))
+
                     return Results.Conflict(new { error = "That username is taken." });
 
                 var user = new User
@@ -112,9 +121,11 @@ public static class AuthEndpoints
 
                 // Both keys are checked so a distributed spray against one account and a spread across
                 // many accounts both slow down.
+
                 if (throttle.IsBlocked(ipKey, out var retry) || throttle.IsBlocked(nameKey, out retry))
                 {
                     http.Response.Headers.RetryAfter = ((int)retry.TotalSeconds).ToString();
+
                     return Results.Json(
                         new { error = "Too many attempts. Try again later." },
                         statusCode: StatusCodes.Status429TooManyRequests
@@ -134,6 +145,7 @@ public static class AuthEndpoints
                     throttle.RecordFailure(nameKey);
                     Audit(db, user?.Id, "login_failed", null, http);
                     await db.SaveChangesAsync(ct);
+
                     return Results.Unauthorized();
                 }
 
@@ -144,6 +156,7 @@ public static class AuthEndpoints
                 SetSessionCookie(http, token, options);
 
                 var rating = await db.Ratings.FirstOrDefaultAsync(r => r.UserId == user.Id && r.Gamemode == "nfmm/pvp", ct);
+
                 return Results.Ok(
                     new TokenResponse(
                         token,
@@ -171,6 +184,7 @@ public static class AuthEndpoints
                 var token = BearerToken(http);
                 if (token is not null)
                     await sessions.RevokeAsync(token, ct);
+
                 return Results.NoContent();
             }
         );
@@ -182,10 +196,13 @@ public static class AuthEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 var rating = await db.Ratings.FirstOrDefaultAsync(r => r.UserId == user.Id && r.Gamemode == "nfmm/pvp", ct);
+
                 return Results.Ok(
                     new AccountResponse(
                         user.Username,
@@ -211,6 +228,7 @@ public static class AuthEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 return user is null
                     ? Results.Unauthorized()
                     : Results.Ok(VerifyShape(user));
@@ -230,10 +248,13 @@ public static class AuthEndpoints
                     request.Headers.Authorization,
                     out _
                 );
+
                 if (error is not null)
+
                     return Results.Json(new { error }, statusCode: StatusCodes.Status401Unauthorized);
 
                 var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+
                 return user is null ? Results.NotFound() : Results.Ok(VerifyShape(user));
             }
         );
@@ -245,13 +266,16 @@ public static class AuthEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 // Bumping the stamp invalidates every session, including ones we cannot see here.
                 user.SecurityStamp++;
                 await db.SaveChangesAsync(ct);
                 await sessions.RevokeAllAsync(user.Id, ct);
+
                 return Results.NoContent();
             }
         );
@@ -266,15 +290,20 @@ public static class AuthEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 // A Discord-only account has no hash to verify; anything else must prove the
                 // current password.
+
                 if (user.PasswordHash is { } hash && !PasswordHasher.Verify(request.CurrentPassword ?? "", hash))
+
                     return Results.BadRequest(new { error = "The current password is wrong." });
 
                 if (!PasswordPolicy.TryValidate(request.NewPassword, out var error))
+
                     return Results.BadRequest(new { error });
 
                 user.PasswordHash = PasswordHasher.Hash(request.NewPassword!);
@@ -284,16 +313,19 @@ public static class AuthEndpoints
 
                 var token = await sessions.CreateAsync(user, null, http.Connection.RemoteIpAddress?.ToString(), ct);
                 SetSessionCookie(http, token, options);
-                return Results.Ok(new TokenResponse(token, new AccountResponse(
-                    user.Username,
-                    user.IsAdmin,
-                    user.Role,
-                    DeletionPendingUntil(user, options),
-                    1500,
-                    0,
-                    0,
-                    0
-                )
+
+                return Results.Ok(new TokenResponse(
+                    token,
+                    new AccountResponse(
+                        user.Username,
+                        user.IsAdmin,
+                        user.Role,
+                        DeletionPendingUntil(user, options),
+                        1500,
+                        0,
+                        0,
+                        0
+                    )
                 )
                 );
             }
@@ -309,21 +341,27 @@ public static class AuthEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 // Removing the only sign-in method would make the account unreachable.
                 var hasDiscord = await db.ExternalLogins.AnyAsync(l => l.UserId == user.Id, ct);
+
                 if (!hasDiscord)
+
                     return Results.BadRequest(new { error = "Link another sign-in method before removing the password." });
 
                 if (user.PasswordHash is { } hash && !PasswordHasher.Verify(request.CurrentPassword ?? "", hash))
+
                     return Results.BadRequest(new { error = "The current password is wrong." });
 
                 user.PasswordHash = null;
                 user.SecurityStamp++;
                 await db.SaveChangesAsync(ct);
                 await sessions.RevokeAllAsync(user.Id, ct);
+
                 return Results.NoContent();
             }
         );
@@ -333,16 +371,20 @@ public static class AuthEndpoints
             async (HttpContext http, ArchiveDbContext db, SessionService sessions, CancellationToken ct) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 if (user.PasswordHash is null)
+
                     return Results.BadRequest(new { error = "Add a password before unlinking Discord." });
 
                 await db.ExternalLogins
                 .Where(l => l.UserId == user.Id && l.Provider == "discord")
                 .ExecuteDeleteAsync(ct);
                 await db.SaveChangesAsync(ct);
+
                 return Results.NoContent();
             }
         );
@@ -389,6 +431,7 @@ public static class AuthEndpoints
     internal static string? BearerToken(HttpContext http)
     {
         var header = http.Request.Headers.Authorization.ToString();
+
         return header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
             ? header["Bearer ".Length..].Trim()
             : null;
@@ -397,10 +440,13 @@ public static class AuthEndpoints
     internal static async Task<User?> GetUserAsync(this HttpContext http, ArchiveDbContext db, CancellationToken ct)
     {
         var token = BearerToken(http) ?? http.Request.Cookies["nfmw_session"];
+
         if (string.IsNullOrEmpty(token))
+
             return null;
 
         var sessions = http.RequestServices.GetRequiredService<SessionService>();
+
         return await sessions.ValidateAsync(token, ct);
     }
 

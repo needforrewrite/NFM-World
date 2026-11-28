@@ -77,9 +77,11 @@ internal sealed class D3D11ShaderCache
     internal static D3D11ShaderCache? Create(bool enabled)
     {
         if (!enabled)
+
             return null;
 
         var directories = CandidateDirectories();
+
         return new D3D11ShaderCache(directories, ResolveWriteDirectory(directories));
     }
 
@@ -118,6 +120,7 @@ internal sealed class D3D11ShaderCache
                 var probe = Path.Combine(directory, "." + Environment.ProcessId + ".probe");
                 File.WriteAllBytes(probe, []);
                 File.Delete(probe);
+
                 return directory;
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException)
@@ -160,6 +163,7 @@ internal sealed class D3D11ShaderCache
         // code than the one-shot overload and avoids copying the source into a concatenated buffer.
         Span<byte> hash = stackalloc byte[32];
         var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+
         try
         {
             hasher.AppendData(Magic);
@@ -186,22 +190,28 @@ internal sealed class D3D11ShaderCache
     internal byte[]? TryRead(string hlsl, string profile)
     {
         var name = KeyFor(hlsl, profile);
+
         foreach (var directory in _directories)
         {
             try
             {
                 var path = Path.Combine(directory, name);
+
                 if (!File.Exists(path))
+
                     continue;
 
                 var bytes = File.ReadAllBytes(path);
 
                 // Header: the magic, the format version, then the payload. A file too short to hold the
                 // header is one written by something else, or truncated by a crash mid-write.
+
                 if (bytes.Length <= Magic.Length + 1 || !bytes.AsSpan(0, Magic.Length).SequenceEqual(Magic))
+
                     continue;
 
                 if (bytes[Magic.Length] != FormatVersion)
+
                     continue;
 
                 return bytes[(Magic.Length + 1)..];
@@ -211,6 +221,7 @@ internal sealed class D3D11ShaderCache
                 GraphicsDiagnostics.Warning?.Invoke(
                     $"The shader cache at {directory} could not be read ({e.GetType().Name}: {e.Message}); " + "recompiling."
                 );
+
                 continue;
             }
         }
@@ -230,12 +241,15 @@ internal sealed class D3D11ShaderCache
     internal void Store(string hlsl, string profile, byte[] dxbc)
     {
         if (_writeDirectory is not { } directory)
+
             return;
 
         try
         {
             var path = Path.Combine(directory, KeyFor(hlsl, profile));
+
             if (File.Exists(path))
+
                 return;
 
             var payload = new byte[Magic.Length + 1 + dxbc.Length];

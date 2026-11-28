@@ -82,6 +82,7 @@ public class GameMasterHttpClient
         response.EnsureSuccessStatusCode();
 
         var responseBytes = await response.Content.ReadAsByteArrayAsync();
+
         return TightPackSerializer.Deserialize<Lobby2RaceServer_CreateRaceResponse>(responseBytes);
     }
 
@@ -92,6 +93,7 @@ public class GameMasterHttpClient
     private static void EnsureProtocolAccepted(HttpResponseMessage response)
     {
         if (response.StatusCode != HttpStatusCode.Conflict)
+
             return;
 
         throw new InvalidOperationException(
@@ -113,6 +115,7 @@ public class GameMasterHttpClient
         using var response = await _httpClient.SendAsync(httpRequest);
         EnsureProtocolAccepted(response);
         response.EnsureSuccessStatusCode();
+
         return TightPackSerializer.Deserialize<Lobby2RaceServer_RegisterSpectatorResponse>(
             await response.Content.ReadAsByteArrayAsync()
         ).JoinToken;

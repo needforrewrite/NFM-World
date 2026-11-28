@@ -167,6 +167,7 @@ namespace Poly2Tri
         public Point2DList(Point2DList l)
         {
             int numPoints = l.Count;
+
             for (int i = 0; i < numPoints; ++i)
             {
                 mPoints.Add(l[i]);
@@ -181,9 +182,11 @@ namespace Poly2Tri
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
+
             for (int i = 0; i < Count; i++)
             {
                 builder.Append(this[i].ToString());
+
                 if (i < Count - 1)
                 {
                     builder.Append(" ");
@@ -239,6 +242,7 @@ namespace Poly2Tri
             }
 
             mBoundingBox.AddPoint(p);
+
             if (bCalcWindingOrderAndEpsilon)
             {
                 if (mWindingOrder == WindingOrderType.Unknown)
@@ -269,11 +273,13 @@ namespace Poly2Tri
                 mWindingOrder = windingOrder;
             }
 
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown)
+                                     && (windingOrder != WindingOrderType.Unknown)
                                      && (WindingOrder != windingOrder);
             bool bAddedFirst = true;
             int startCount = mPoints.Count;
             iter.Reset();
+
             while (iter.MoveNext())
             {
                 if (!bAddedFirst)
@@ -314,6 +320,7 @@ namespace Poly2Tri
             {
                 CalculateBounds();
                 mEpsilon = CalculateEpsilon();
+
                 return true;
             }
 
@@ -361,6 +368,7 @@ namespace Poly2Tri
         public void CopyTo(Point2D[] array, int arrayIndex)
         {
             int numElementsToCopy = Math.Min(Count, array.Length - arrayIndex);
+
             for (int i = 0; i < numElementsToCopy; ++i)
             {
                 array[arrayIndex + i] = mPoints[i];
@@ -371,6 +379,7 @@ namespace Poly2Tri
         public void CalculateBounds()
         {
             mBoundingBox.Clear();
+
             foreach (Point2D pt in mPoints)
             {
                 mBoundingBox.AddPoint(pt);
@@ -388,6 +397,7 @@ namespace Poly2Tri
         {
             // the sign of the 'area' of the polygon is all we are interested in.
             double area = GetSignedArea();
+
             if (area < 0.0)
             {
                 return WindingOrderType.CW;
@@ -398,6 +408,7 @@ namespace Poly2Tri
             }
 
             // error condition - not even verts to calculate, non-simple poly, etc.
+
             return WindingOrderType.Unknown;
         }
 
@@ -436,6 +447,7 @@ namespace Poly2Tri
         public double GetSignedArea()
         {
             double area = 0.0;
+
             for (int i = 0; i < Count; i++)
             {
                 int j = (i + 1) % Count;
@@ -466,6 +478,7 @@ namespace Poly2Tri
             }
 
             area /= 2.0f;
+
             return (area < 0 ? -area : area);
         }
 
@@ -483,6 +496,7 @@ namespace Poly2Tri
 
             const double inv3 = 1.0 / 3.0;
             Point2D pRef = new Point2D();
+
             for (int i = 0; i < Count; ++i)
             {
                 // Triangle vertices.
@@ -504,6 +518,7 @@ namespace Poly2Tri
 
             // Centroid
             c *= 1.0f / area;
+
             return c;
         }
 
@@ -543,6 +558,7 @@ namespace Poly2Tri
             // kickin' it old-skool since I don't want to create a Matrix class for now.
             double cosr = Math.Cos(radians);
             double sinr = Math.Sin(radians);
+
             foreach (Point2D p in mPoints)
             {
                 double xold = p.X;
@@ -571,6 +587,7 @@ namespace Poly2Tri
             for (int k = 0; k < Count; ++k)
             {
                 int j = PreviousIndex(k);
+
                 if (mPoints[j].Equals(mPoints[k], Epsilon))
                 {
                     return true;
@@ -578,6 +595,7 @@ namespace Poly2Tri
 
                 int i = PreviousIndex(j);
                 Orientation orientation = TriangulationUtil.Orient2d(mPoints[i], mPoints[j], mPoints[k]);
+
                 if (orientation == Orientation.Collinear)
                 {
                     return true;
@@ -614,6 +632,7 @@ namespace Poly2Tri
                 // Cross product should have same sign
                 // for each vertex if poly is convex.
                 bool newIsP = (cross >= 0) ? true : false;
+
                 if (i == 0)
                 {
                     isPositive = newIsP;
@@ -637,10 +656,12 @@ namespace Poly2Tri
             for (int i = 0; i < Count; ++i)
             {
                 int iplus = NextIndex(i);
+
                 for (int j = i + 1; j < Count; ++j)
                 {
                     int jplus = NextIndex(j);
                     Point2D temp = null;
+
                     if (TriangulationUtil.LinesIntersect2D(
                         mPoints[i],
                         mPoints[iplus],
@@ -676,10 +697,13 @@ namespace Poly2Tri
         public PolygonError CheckPolygon()
         {
             PolygonError error = PolygonError.None;
+
             if (Count < 3 || Count > Point2DList.kMaxPolygonVertices)
             {
                 error |= PolygonError.NotEnoughVertices;
+
                 // no other tests will be valid at this point, so just return
+
                 return error;
             }
 
@@ -693,6 +717,7 @@ namespace Poly2Tri
             //{
             //    error |= PolygonError.NotConvex;
             //}
+
             if (!IsSimple())
             {
                 error |= PolygonError.NotSimple;
@@ -704,11 +729,13 @@ namespace Poly2Tri
             }
 
             // the following tests don't make sense if the polygon is not simple
+
             if ((error & PolygonError.NotSimple) != PolygonError.NotSimple)
             {
                 bool bReversed = false;
                 WindingOrderType expectedWindingOrder = WindingOrderType.CCW;
                 WindingOrderType reverseWindingOrder = WindingOrderType.CW;
+
                 if (WindingOrder == reverseWindingOrder)
                 {
                     WindingOrder = expectedWindingOrder;
@@ -718,6 +745,7 @@ namespace Poly2Tri
                 //Compute normals
                 Point2D[] normals = new Point2D[Count];
                 Point2DList vertices = new Point2DList(Count);
+
                 for (int i = 0; i < Count; ++i)
                 {
                     vertices.Add(new Point2D(this[i].X, this[i].Y));
@@ -729,6 +757,7 @@ namespace Poly2Tri
                 }
 
                 //Required side checks
+
                 for (int i = 0; i < Count; ++i)
                 {
                     int iminus = PreviousIndex(i);
@@ -737,9 +766,11 @@ namespace Poly2Tri
                     double cross = Point2D.Cross(normals[iminus], normals[i]);
                     cross = MathUtil.Clamp(cross, -1.0f, 1.0f);
                     float angle = (float)Math.Asin(cross);
+
                     if (Math.Abs(angle) <= Point2DList.kAngularSlop)
                     {
                         error |= PolygonError.SidesTooCloseToParallel;
+
                         break;
                     }
 
@@ -799,6 +830,7 @@ namespace Poly2Tri
         public static string GetErrorString(PolygonError error)
         {
             StringBuilder sb = new StringBuilder(256);
+
             if (error == PolygonError.None)
             {
                 sb.AppendFormat("No errors.\n");
@@ -861,6 +893,7 @@ namespace Poly2Tri
             int numPoints = Count;
             int i = numPoints - 1;
             int j = 0;
+
             while (numPoints > 1 && j < numPoints)
             {
                 if (mPoints[i].Equals(mPoints[j]))
@@ -868,6 +901,7 @@ namespace Poly2Tri
                     int idxToRemove = Math.Max(i, j);
                     mPoints.RemoveAt(idxToRemove);
                     --numPoints;
+
                     if (i >= numPoints)
                     {
                         // can happen if first element in list is deleted...
@@ -918,6 +952,7 @@ namespace Poly2Tri
         public void Simplify(double bias)
         {
             //We can't simplify polygons under 3 vertices
+
             if (Count < 3)
             {
                 return;
@@ -933,6 +968,7 @@ namespace Poly2Tri
             int curr = 0;
             int numVerts = Count;
             double biasSquared = bias * bias;
+
             while (curr < numVerts && numVerts >= 3)
             {
                 int prevId = PreviousIndex(curr);
@@ -943,19 +979,23 @@ namespace Poly2Tri
                 Point2D next = this[nextId];
 
                 //If they are closer than the bias, continue
+
                 if ((prev - current).MagnitudeSquared() <= biasSquared)
                 {
                     RemoveAt(curr);
                     --numVerts;
+
                     continue;
                 }
 
                 //If they collinear, continue
                 Orientation orientation = TriangulationUtil.Orient2d(prev, current, next);
+
                 if (orientation == Orientation.Collinear)
                 {
                     RemoveAt(curr);
                     --numVerts;
+
                     continue;
                 }
 
@@ -974,6 +1014,7 @@ namespace Poly2Tri
             if (Count <= 3)
             {
                 // Can't do anything useful here to a triangle
+
                 return;
             }
 
@@ -981,6 +1022,7 @@ namespace Poly2Tri
             int newNVertices = Count;
 
             //Gather points to process
+
             for (int i = 0; i < Count; ++i)
             {
                 int lower = (i == 0) ? (Count - 1) : (i - 1);
@@ -1040,8 +1082,11 @@ namespace Poly2Tri
                 if (currIndex >= newNVertices)
                 {
                     throw new Exception(
-                        "Point2DList::MergeParallelEdges - currIndex[ " + currIndex.ToString() + "] >= newNVertices["
-                        + newNVertices + "]"
+                        "Point2DList::MergeParallelEdges - currIndex[ "
+                        + currIndex.ToString()
+                        + "] >= newNVertices["
+                        + newNVertices
+                        + "]"
                     );
                 }
 
@@ -1071,6 +1116,7 @@ namespace Poly2Tri
             for (int i = 0; i < Count; i++)
             {
                 dotProduct = Point2D.Dot(this[i], axis);
+
                 if (dotProduct < min)
                 {
                     min = dotProduct;

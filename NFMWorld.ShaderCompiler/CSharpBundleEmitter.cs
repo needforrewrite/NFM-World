@@ -22,6 +22,7 @@ public static class CSharpBundleEmitter
         public IDisposable Indent()
         {
             _indent++;
+
             return new Popper(this);
         }
 
@@ -35,6 +36,7 @@ public static class CSharpBundleEmitter
             if (text.Length == 0)
             {
                 _sb.Append('\n');
+
                 return;
             }
 
@@ -75,6 +77,7 @@ public static class CSharpBundleEmitter
         sb.Line();
         sb.Line($"internal static class {name}");
         sb.Line("{");
+
         using (sb.Indent())
         {
             EmitSources(sb, program.Stages, sourcesByStage);
@@ -112,6 +115,7 @@ public static class CSharpBundleEmitter
         foreach (var stage in stages)
         {
             if (!sourcesByStage.TryGetValue(stage.Stage, out var sources))
+
                 continue;
 
             var member = MemberName(stage.Stage);
@@ -157,6 +161,7 @@ public static class CSharpBundleEmitter
         sb.Line($"private static readonly Lazy<string> {member}Lazy = new(() => NfmwShaderText.Inflate({member}Bytes));");
         sb.Line($"private static byte[] {member}Bytes => new byte[]");
         sb.Line("{");
+
         using (sb.Indent())
         {
             for (var i = 0; i < compressed.Length; i += 16)
@@ -172,6 +177,7 @@ public static class CSharpBundleEmitter
         using var output = new MemoryStream();
         using (var deflate = new DeflateStream(output, CompressionLevel.Optimal, leaveOpen: true))
             deflate.Write(bytes);
+
         return output.ToArray();
     }
 
@@ -190,6 +196,7 @@ public static class CSharpBundleEmitter
         sb.Line("/// not re-derived from source at runtime.");
         sb.Line("/// </summary>");
         sb.Line($"public static {name}Program Create() => new(");
+
         using (sb.Indent())
         {
             foreach (var stage in program.Stages)
@@ -197,6 +204,7 @@ public static class CSharpBundleEmitter
                 var member = MemberName(stage.Stage);
                 var sources = sourcesByStage.TryGetValue(stage.Stage, out var s) ? s : null;
                 sb.Line($"new ShaderStageSources(");
+
                 using (sb.Indent())
                 {
                     // SPIR-V, MSL and desktop GLSL are blank: see EmitSources for why they are
@@ -214,6 +222,7 @@ public static class CSharpBundleEmitter
                     var hasWgsl = sources is { Wgsl.Length: > 0 };
                     var hasWgslBrowser = sources is { WgslBrowser.Length: > 0 };
                     sb.Line("{");
+
                     using (sb.Indent())
                     {
                         sb.Line($"Wgsl = {(hasWgsl ? $"{member}Wgsl" : "\"\"")},");
@@ -235,10 +244,12 @@ public static class CSharpBundleEmitter
     {
         sb.Line("new ShaderReflection");
         sb.Line("{");
+
         using (sb.Indent())
         {
             sb.Line("Uniforms = new UniformParam[]");
             sb.Line("{");
+
             using (sb.Indent())
             {
                 foreach (var block in program.UniformBlocks)
@@ -252,6 +263,7 @@ public static class CSharpBundleEmitter
 
             sb.Line("Textures = new ResourceBinding[]");
             sb.Line("{");
+
             using (sb.Indent())
             {
                 foreach (var t in program.Textures)
@@ -262,6 +274,7 @@ public static class CSharpBundleEmitter
 
             sb.Line("Samplers = new ResourceBinding[]");
             sb.Line("{");
+
             using (sb.Indent())
             {
                 foreach (var s in program.Samplers)
@@ -272,10 +285,12 @@ public static class CSharpBundleEmitter
 
             // The location table WebGPU needs to turn the caller's semantic-named vertex layout into
             // @location attributes. Empty on a program whose vertex stage declares none.
+
             if (program.VertexInputs.Count > 0)
             {
                 sb.Line("VertexInputs = new ShaderVertexInput[]");
                 sb.Line("{");
+
                 using (sb.Indent())
                 {
                     foreach (var input in program.VertexInputs)
@@ -345,10 +360,12 @@ public static class CSharpBundleEmitter
         sb.Line("/// </summary>");
         sb.Line($"internal readonly struct {name}Parameters");
         sb.Line("{");
+
         using (sb.Indent())
         {
             sb.Line($"internal {name}Parameters(ShaderReflection reflection)");
             sb.Line("{");
+
             using (sb.Indent())
             {
                 foreach (var block in program.UniformBlocks)
@@ -377,11 +394,13 @@ public static class CSharpBundleEmitter
             sb.Line("// no-ops on a negative slot.");
             sb.Line("private static int SlotOf(ShaderReflection reflection, string name)");
             sb.Line("{");
+
             using (sb.Indent())
             {
                 sb.Line("foreach (var uniform in reflection.Uniforms)");
                 sb.Line("{");
-                using (sb.Indent()) sb.Line("if (uniform.Name == name) return uniform.Offset;");
+                using (sb.Indent())
+                    sb.Line("if (uniform.Name == name) return uniform.Offset;");
                 sb.Line("}");
                 sb.Line("return -1;");
             }
@@ -390,11 +409,13 @@ public static class CSharpBundleEmitter
             sb.Line();
             sb.Line("private static int TextureSlotOf(ShaderReflection reflection, string name)");
             sb.Line("{");
+
             using (sb.Indent())
             {
                 sb.Line("foreach (var texture in reflection.Textures)");
                 sb.Line("{");
-                using (sb.Indent()) sb.Line("if (texture.Name == name) return texture.Slot;");
+                using (sb.Indent())
+                    sb.Line("if (texture.Name == name) return texture.Slot;");
                 sb.Line("}");
                 sb.Line("return -1;");
             }
@@ -405,6 +426,7 @@ public static class CSharpBundleEmitter
         sb.Line("}");
         sb.Line();
         sb.Line($"internal sealed record {name}Program(");
+
         using (sb.Indent())
         {
             foreach (var stage in program.Stages)
@@ -413,6 +435,7 @@ public static class CSharpBundleEmitter
         }
 
         sb.Line("{");
+
         using (sb.Indent())
         {
             foreach (var stage in program.Stages)

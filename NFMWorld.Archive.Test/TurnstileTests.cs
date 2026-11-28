@@ -31,7 +31,9 @@ public sealed class FakeSiteverifyHandler : HttpMessageHandler
         Calls++;
         Assert.AreEqual("https://challenges.cloudflare.com/turnstile/v0/siteverify", request.RequestUri!.ToString());
         Assert.AreEqual(HttpMethod.Post, request.Method);
+
         if (Exception is not null)
+
             throw Exception;
         var fields = (await request.Content!.ReadAsStringAsync(ct)).Split('&')
             .Select(field => field.Split('=', 2))
@@ -39,6 +41,7 @@ public sealed class FakeSiteverifyHandler : HttpMessageHandler
         LastFields = fields;
         Assert.AreEqual(ExpectedSecret, fields["secret"]);
         var token = fields["response"];
+
         return new HttpResponseMessage(Status)
         {
             Content = RawResponse is null
@@ -205,6 +208,7 @@ public class TurnstileTests
     {
         using var factory = new ArchiveAppFactory();
         var verifier = factory.Services.GetRequiredService<TurnstileVerifier>();
+
         foreach (var error in new Exception[] { new HttpRequestException(), new TaskCanceledException() })
         {
             factory.Siteverify.Exception = error;
@@ -343,6 +347,7 @@ public class TurnstileTests
                 new { Username = "someone", Password = "password123" }
             )).StatusCode
         );
+
         foreach (var token in new[] { "", new string('a', 2049), ArchiveAppFactory.Challenge("signin") })
         {
             var form = ArchiveAppFactory.Registration("someone");

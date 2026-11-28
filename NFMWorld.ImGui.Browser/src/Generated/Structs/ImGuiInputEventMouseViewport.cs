@@ -16,27 +16,24 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEventMouseViewport
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint HoveredViewportID;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEventMouseViewport
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint HoveredViewportID;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEventMouseViewport(uint hoveredViewportId = default)
-		{
-			HoveredViewportID = hoveredViewportId;
-		}
-
-
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEventMouseViewport(uint hoveredViewportId = default)
+        {
+            HoveredViewportID = hoveredViewportId;
+        }
+    }
 }

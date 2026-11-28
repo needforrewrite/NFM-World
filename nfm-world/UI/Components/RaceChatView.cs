@@ -42,18 +42,21 @@ internal static class RaceChatView
             children: [
                 Sx.Show(
                     () => chat.Open.Value,
-                    () => Sx.View(style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexShrink: 0), children: [
+                    () => Sx.View(
+                        style: () => Sx.Styles(flexDirection: FlexDirection.Row, flexShrink: 0),
+                        children: [
                         Sx.Text(
                             style: () => Sx.TextStyles(
                                 fontSize: 12,
                                 fontFamily: classic() ? FontFamily.Adventure : FontFamily.NotoSans,
-                            foregroundColor: classic() ? new Color(190, 245, 255) : Theme.MenuBlue
+                                foregroundColor: classic() ? new Color(190, 245, 255) : Theme.MenuBlue
                             ),
                             text: () => "Chat"
                         ),
                         Sx.View(style: () => Sx.Styles(flexGrow: 1)),
                         Button.Create(() => "×", close, size: ButtonSize.Sm)
-                    ])
+                    ]
+                    )
                 ),
                 Sx.Show(
                     () => chat.Open.Value,
@@ -66,8 +69,11 @@ internal static class RaceChatView
 
     private static float RadarScale(bool classic)
     {
-        if (!classic) return 1;
+        if (!classic)
+
+            return 1;
         var scale = MathF.Min(G.Viewport.X / 960, G.Viewport.Y / 540) / MathF.Max(G.Scale, 0.01f);
+
         return scale > 0 ? scale : 1;
     }
 
@@ -112,12 +118,13 @@ internal static class RaceChatView
             style: () => Sx.Styles(
                 width: 100.Percent(),
                 flexShrink: 0,
-            flexDirection: FlexDirection.Column,
+                flexDirection: FlexDirection.Column,
                 gapRow: 4
             ),
             children: Sx.For(() => chat.Lines.Value, (line, _) => Line(line))
         )
         );
+
         return history;
     }
 
@@ -154,6 +161,7 @@ internal static class RaceChatView
         var scale = SettingsMenu.HudScale * Math.Max(G.Scale, 0.01f);
         // Keep the outline and its antialiasing inside the glyph's distance field.
         var available = Math.Max(0, 13 * scale / 6 - 0.75f);
+
         return Math.Min(1.5f * scale, available);
     }
 
@@ -177,7 +185,8 @@ internal static class RaceChatView
             {
                 var text = value[..Math.Min(value.Length, RaceChat.MaxMessageLength)];
                 chat.Draft.Value = text;
-                if (text != value) input!.SetText(text);
+                if (text != value)
+                    input!.SetText(text);
             },
             placeholder: () => "Say...  (Enter to send, Esc to close)",
             onsubmit: send
@@ -188,6 +197,7 @@ internal static class RaceChatView
             foregroundColor: new Color(235, 250, 255)
         ).Resolved;
         FocusManager.FocusedNode = input;
+
         return input;
     }
 
@@ -199,6 +209,7 @@ internal static class RaceChatView
         {
             // Scroll extent is refreshed immediately before painting.
             var id = chat.Lines.Value.LastOrDefault()?.Id ?? 0;
+
             if (id != _lastId)
             {
                 ScrollTop = float.MaxValue;

@@ -31,10 +31,12 @@ public static class AssetPreview
     public static PreviewRequest? Request(ArchiveOptions options, AssetType type, string contentHash)
     {
         if (Mode(type) is not { } mode || string.IsNullOrWhiteSpace(options.GamePreviewUrl))
+
             return null;
 
         var root = options.GamePreviewUrl.TrimEnd('/');
         var archive = options.PublicBaseUrl;
+
         return new PreviewRequest(
             $"{root}/index.html?hash={Uri.EscapeDataString(contentHash)}"
             + $"&preview={mode}&archive={Uri.EscapeDataString(archive)}",
@@ -55,6 +57,7 @@ public static class AssetPreview
     public static string? FrameOrigin(ArchiveOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.GamePreviewUrl))
+
             return null;
 
         // A bare "game.example" would otherwise be parsed as a path and read as a same-origin frame.

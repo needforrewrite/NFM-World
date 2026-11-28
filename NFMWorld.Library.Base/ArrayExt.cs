@@ -8,6 +8,7 @@ public static class ArrayExt
     {
         var to = new T[arr.Length];
         arr.CopyTo(to, 0);
+
         return to;
     }
 
@@ -15,6 +16,7 @@ public static class ArrayExt
     {
         var len = arr2.GetLength(1);
         var arr = new T[len];
+
         for (var j = 0; j < len; j++)
         {
             arr[j] = arr2[i, j];
@@ -26,6 +28,7 @@ public static class ArrayExt
     public static T[][] New<T>(int l0, int l1)
     {
         var arr = new T[l0][];
+
         for (var i = 0; i < l0; i++)
         {
             arr[i] = new T[l1];
@@ -37,9 +40,11 @@ public static class ArrayExt
     public static T[][][] New<T>(int l0, int l1, int l2)
     {
         var arr = new T[l0][][];
+
         for (var i = 0; i < l0; i++)
         {
             arr[i] = new T[l1][];
+
             for (var j = 0; j < l0; j++)
             {
                 arr[i][j] = new T[l2];
@@ -52,6 +57,7 @@ public static class ArrayExt
     public static List<T> Shuffle<T>(this List<T> list)
     {
         var n = list.Count;
+
         while (n > 1)
         {
             n--;
@@ -89,6 +95,7 @@ public static class ArrayExt
         }
 
         var retVal = 0;
+
         foreach (var item in items)
         {
             if (predicate(item))
@@ -114,6 +121,7 @@ public static class ArrayExt
         }
 
         var retVal = 0;
+
         foreach (var item in items)
         {
             if (Equals(item, target))

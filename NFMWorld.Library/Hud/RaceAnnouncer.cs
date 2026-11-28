@@ -105,7 +105,8 @@ public sealed class RaceAnnouncer
     public void Tick(BackendCar client, BaseClientGamemode gamemode)
     {
         Expire();
-        if (_powerLowCooldown > 0) _powerLowCooldown--;
+        if (_powerLowCooldown > 0)
+            _powerLowCooldown--;
 
         CheckCheckpoint(client, gamemode);
         CheckOpponents(gamemode);
@@ -117,6 +118,7 @@ public sealed class RaceAnnouncer
     internal bool TickSpectating(BackendCar? car, BaseClientGamemode gamemode, bool changed)
     {
         Expire();
+
         if (changed)
         {
             _status = null;
@@ -132,13 +134,16 @@ public sealed class RaceAnnouncer
             _approachedCheckpoint = false;
         }
 
-        if (_powerLowCooldown > 0) _powerLowCooldown--;
+        if (_powerLowCooldown > 0)
+            _powerLowCooldown--;
         var playPowerUp = false;
+
         if (car is not null)
         {
             CheckCheckpoint(car, gamemode);
             CheckOwnState(car, gamemode);
             var stunt = car.CarPhysics.LatestStunt;
+
             if (stunt.Sequence != _lastSpectatedStunt)
             {
                 _lastSpectatedStunt = stunt.Sequence;
@@ -147,6 +152,7 @@ public sealed class RaceAnnouncer
         }
 
         CheckOpponents(gamemode, spectating: true);
+
         return playPowerUp;
     }
 
@@ -172,18 +178,25 @@ public sealed class RaceAnnouncer
 
     private void CheckCheckpoint(BackendCar client, BaseClientGamemode gamemode)
     {
-        if (client.TotalCheckpoint == _lastTotalCheckpoint) return;
+        if (client.TotalCheckpoint == _lastTotalCheckpoint)
+
+            return;
         _lastTotalCheckpoint = client.TotalCheckpoint;
 
         // The arrow is pointing at cars, so checkpoint progress is not what the player is
         // watching; keep the total synced but say nothing.
-        if (client.Control.Arrace) return;
+
+        if (client.Control.Arrace)
+
+            return;
 
         var laps = gamemode.CurrentStage.Nlaps;
+
         if (client.CurrentCheckpoint == 0 && client.CurrentLap > 0)
         {
             var remaining = laps - client.CurrentLap;
             Show(remaining <= 1 ? "Final lap!!!" : $"{remaining} laps to go!", HudMessageKind.Info);
+
             return;
         }
 
@@ -194,29 +207,41 @@ public sealed class RaceAnnouncer
     {
         foreach (var player in gamemode.Players)
         {
-            if (player.Car is not { } car) continue;
+            if (player.Car is not { } car)
+
+                continue;
+
             if (car.DepartureReason is { } reason)
             {
                 _wasted[player.Index] = true;
                 if (_departures.Add(player.Index) && car.AnnounceDeparture)
                     Show(PlayerDeparture.Message(player.Info.PlayerName, reason), HudMessageKind.Info);
+
                 continue;
             }
 
             var wasted = car.Wasted;
+
             if (!_wasted.TryGetValue(player.Index, out var wasWasted))
             {
                 _wasted[player.Index] = wasted;
+
                 continue;
             }
 
-            if (wasted == wasWasted) continue;
+            if (wasted == wasWasted)
+
+                continue;
             _wasted[player.Index] = wasted;
-            if (!wasted) continue;
+
+            if (!wasted)
+
+                continue;
 
             if (player.Info.IsClientPlayer && !spectating)
             {
                 Show(WastedText(car, gamemode), HudMessageKind.Danger);
+
                 continue;
             }
 
@@ -229,22 +254,37 @@ public sealed class RaceAnnouncer
         // Player names, not car names: in a race every car can be the same model.
         var name = NameOf(car, gamemode);
         var killer = car.CarPhysics.LastDamageFrom;
+
         if (!spectating && ReferenceEquals(gamemode.ClientPlayer?.Car, car))
         {
             foreach (var player in gamemode.Players)
+
                 if (player.Car is { } other && other != car && other.CarPhysics.Im == killer)
+
                     return $"You have been wasted by {NameOf(other, gamemode)}!";
+
             return "You have been wasted!";
         }
 
-        if (killer == car.CarPhysics.Im) killer = -1;
-        if (killer < 0) return $"{name} has been wasted!";
+        if (killer == car.CarPhysics.Im)
+            killer = -1;
+
+        if (killer < 0)
+
+            return $"{name} has been wasted!";
+
         // Spectators use names even when their own driver is still in the roster.
+
         if (!spectating && gamemode.ClientPlayer?.Car is { } own && own.CarPhysics.Im == killer)
+
             return $"You wasted {name}!";
+
         foreach (var player in gamemode.Players)
         {
-            if (player.Car is not { } other || other.CarPhysics.Im != killer) continue;
+            if (player.Car is not { } other || other.CarPhysics.Im != killer)
+
+                continue;
+
             return $"{name} has been wasted by {NameOf(other, gamemode)}!";
         }
 
@@ -256,6 +296,7 @@ public sealed class RaceAnnouncer
         foreach (var player in gamemode.Players)
         {
             if (ReferenceEquals(player.Car, car))
+
                 return player.Info.PlayerName;
         }
 
@@ -272,19 +313,23 @@ public sealed class RaceAnnouncer
 
         // BadLanding covers a car tilted past vertical, which starts the moment it lands badly;
         // CapsizedCounter only follows once every wheel has stopped, so it is the slower signal.
+
         if (physics.CapsizedCounter != 0 || (physics.BadLanding && physics.Mtouch))
         {
             Show("Bad Landing!", HudMessageKind.Warning);
             _badLandingActive = true;
+
             return;
         }
 
         // The warning belongs to the bad landing only: drop it as soon as the car is upright
         // again instead of leaving it to expire on its timer.
+
         if (_badLandingActive)
         {
             _badLandingActive = false;
-            if (_status?.Text == "Bad Landing!") _status = null;
+            if (_status?.Text == "Bad Landing!")
+                _status = null;
         }
 
         if (physics.Power < 45 && physics.Mtouch && _powerLowCooldown == 0)
@@ -304,16 +349,20 @@ public sealed class RaceAnnouncer
     {
         // The guidance arrow is what the warning is about; with it pointing at cars there is no
         // track direction to be wrong about.
+
         if (client.Control.Arrace)
         {
             _wrongWayTicks = 0;
-            if (_status?.Text == "Wrong Way!") _status = null;
+            if (_status?.Text == "Wrong Way!")
+                _status = null;
+
             return;
         }
 
         if (IsWrongWay(client, gamemode))
         {
-            if (++_wrongWayTicks == WrongWayTicks) Show("Wrong Way!", HudMessageKind.Danger);
+            if (++_wrongWayTicks == WrongWayTicks)
+                Show("Wrong Way!", HudMessageKind.Danger);
         }
         else
         {
@@ -332,7 +381,10 @@ public sealed class RaceAnnouncer
     private void CheckMissedCheckpoint(BackendCar client, BaseClientGamemode gamemode)
     {
         var checkpoints = gamemode.CurrentStage.Checkpoints;
-        if (checkpoints.Count == 0) return;
+
+        if (checkpoints.Count == 0)
+
+            return;
 
         if (client.TotalCheckpoint != _armedTotalCheckpoint)
         {
@@ -341,9 +393,11 @@ public sealed class RaceAnnouncer
         }
 
         // Same rule as the checkpoint line: with the arrow on cars, no track guidance.
+
         if (client.Control.Arrace)
         {
             _approachedCheckpoint = false;
+
             return;
         }
 
@@ -355,9 +409,15 @@ public sealed class RaceAnnouncer
         if (client.CarPhysics.Mtouch && distanceSquared < CheckpointNear * CheckpointNear)
             _approachedCheckpoint = true;
 
-        if (!_approachedCheckpoint) return;
-        if (distanceSquared <= CheckpointFar * CheckpointFar) return;
-        if (client.TotalCheckpoint == _lastMissedTotalCheckpoint) return;
+        if (!_approachedCheckpoint)
+
+            return;
+        if (distanceSquared <= CheckpointFar * CheckpointFar)
+
+            return;
+        if (client.TotalCheckpoint == _lastMissedTotalCheckpoint)
+
+            return;
 
         _lastMissedTotalCheckpoint = client.TotalCheckpoint;
         Show("Checkpoint Missed!", HudMessageKind.Warning);
@@ -371,12 +431,18 @@ public sealed class RaceAnnouncer
     private static bool IsWrongWay(BackendCar client, BaseClientGamemode gamemode)
     {
         var checkpoints = gamemode.CurrentStage.Checkpoints;
-        if (checkpoints.Count == 0) return false;
+
+        if (checkpoints.Count == 0)
+
+            return false;
         var next = checkpoints[Math.Clamp((int)client.CurrentCheckpoint, 0, checkpoints.Count - 1)];
 
         var dx = (float)next.Position.X - (float)client.Position.X;
         var dz = (float)next.Position.Z - (float)client.Position.Z;
-        if (dx * dx + dz * dz < 1) return false;
+
+        if (dx * dx + dz * dz < 1)
+
+            return false;
 
         // The car's forward direction is (-sin cxz, cos cxz).
         var heading = (float)client.CarPhysics.Cxz * MathF.PI / 180f;
@@ -384,19 +450,23 @@ public sealed class RaceAnnouncer
         var forwardZ = MathF.Cos(heading);
         var length = MathF.Sqrt(dx * dx + dz * dz);
         var dot = (forwardX * dx + forwardZ * dz) / length;
+
         return dot < MathF.Cos(WrongWayDegrees * MathF.PI / 180f);
     }
 
     private void CheckArrow(BackendCar client, BaseClientGamemode gamemode)
     {
         var control = client.Control;
+
         if (control.Arrace != _lastArrace)
         {
             _lastArrace = control.Arrace;
             Show($"Arrow now pointing at {(control.Arrace ? "CARS" : "TRACK")}", HudMessageKind.Info, ArrowSeconds);
         }
 
-        if (control.ArrowLock == _lastArrowLock) return;
+        if (control.ArrowLock == _lastArrowLock)
+
+            return;
         _lastArrowLock = control.ArrowLock;
         var name = PlayerName(control.ArrowLock, gamemode);
         Show(name is null ? "Arrow Unlocked!" : $"Arrow Locked on > {name}", HudMessageKind.Info, ArrowSeconds);
@@ -404,10 +474,15 @@ public sealed class RaceAnnouncer
 
     private static string? PlayerName(int index, BaseClientGamemode gamemode)
     {
-        if (index < 0) return null;
+        if (index < 0)
+
+            return null;
+
         foreach (var player in gamemode.Players)
         {
-            if (player.Index == index) return player.Info.PlayerName;
+            if (player.Index == index)
+
+                return player.Info.PlayerName;
         }
 
         return null;
@@ -416,9 +491,13 @@ public sealed class RaceAnnouncer
     private void CheckStunt(BackendCar client)
     {
         var physics = client.CarPhysics;
+
         // trcnt hits 10 exactly once per combo; the stunt values are still set at that point
         // and cleared after, so this is the one tick the whole combo is readable.
-        if (physics.TabletopCounter != 10) return;
+
+        if (physics.TabletopCounter != 10)
+
+            return;
         var stunt = physics.LatestStunt.Sequence != 0 ? physics.LatestStunt : CompletedStunt.Capture(physics);
         ShowStunt(stunt, requireDescription: true);
     }
@@ -426,15 +505,22 @@ public sealed class RaceAnnouncer
     private bool ShowStunt(CompletedStunt stunt, bool requireDescription = false)
     {
         var text = DescribeStunt(stunt);
-        if (text is null && (requireDescription || stunt.AtMaxPower)) return false;
+
+        if (text is null && (requireDescription || stunt.AtMaxPower))
+
+            return false;
         if (text is not null)
             _stunt = new Slot(text, HudMessageKind.Info, SecondsToTicks(Math.Min(6f, 2f + text.Length / 20f)));
 
         // phy posted both at once: the stunt name on its own line and the power it earned on the
         // status line. Full power reads as a max rather than a percentage.
-        if (stunt.Powerup <= 0) return false;
+
+        if (stunt.Powerup <= 0)
+
+            return false;
         var percent = (int)(100f * (float)stunt.Powerup / 98f);
         Show(stunt.AtMaxPower ? "Power to the MAX" : $"Power Up {percent}%", HudMessageKind.Info);
+
         return text is not null;
     }
 
@@ -459,10 +545,14 @@ public sealed class RaceAnnouncer
     private static string? DescribeStunt(CompletedStunt physics)
     {
         var body = StuntName(physics);
-        if (body.Length == 0) return null;
+
+        if (body.Length == 0)
+
+            return null;
 
         var tier = physics.Powerup > 150 ? 3 : physics.Powerup > 40 ? 2 : physics.Powerup > 20 ? 1 : 0;
         var adjective = Adjectives[tier][System.Random.Shared.Next(3)];
+
         return tier == 3 ? adjective : $"{adjective} {body}{Exclamations[tier]}";
     }
 
@@ -473,6 +563,7 @@ public sealed class RaceAnnouncer
         var flip = FlipDegrees(physics.TotalStuntXz, out var beyond);
 
         var text = loop;
+
         if (flip != 0)
         {
             if (loop.Length == 0 && spin.Length == 0)
@@ -481,11 +572,13 @@ public sealed class RaceAnnouncer
             }
             else
             {
-                if (spin.Length > 0) text += loop.Length == 0 ? $" {spin}" : $" with {spin}";
+                if (spin.Length > 0)
+                    text += loop.Length == 0 ? $" {spin}" : $" with {spin}";
                 text += $" by {flip}";
             }
 
-            if (beyond) text += " and beyond";
+            if (beyond)
+                text += " and beyond";
         }
         else if (spin.Length > 0)
         {
@@ -499,8 +592,10 @@ public sealed class RaceAnnouncer
     {
         var zy = (float)physics.TotalStuntZy;
         var i = 0;
-        for (; zy > 225; i++) zy -= 360;
-        for (; zy < -225; zy += 360) i--;
+        for (; zy > 225; i++)
+            zy -= 360;
+        for (; zy < -225; zy += 360)
+            i--;
 
         var loop = i switch
         {
@@ -515,9 +610,16 @@ public sealed class RaceAnnouncer
             _ => physics.ForwardTabletop || physics.BackwardsTabletop ? "Tabletop" : ""
         };
 
-        if (loop.Length == 0) return "";
-        if (i > 0 && physics.BackwardsTabletop) return $"Hanged {loop}";
-        if (i < 0 && physics.ForwardTabletop) return $"Hanged {loop}";
+        if (loop.Length == 0)
+
+            return "";
+        if (i > 0 && physics.BackwardsTabletop)
+
+            return $"Hanged {loop}";
+        if (i < 0 && physics.ForwardTabletop)
+
+            return $"Hanged {loop}";
+
         return loop;
     }
 
@@ -525,8 +627,13 @@ public sealed class RaceAnnouncer
     {
         var xy = MathF.Abs((float)physics.TotalStuntXy);
         var i = 0;
-        for (; xy > 270; i++) xy -= 360;
-        if (i == 0 && physics.RightTabletop) return loopEmpty ? "Tabletop" : "Flipside";
+        for (; xy > 270; i++)
+            xy -= 360;
+
+        if (i == 0 && physics.RightTabletop)
+
+            return loopEmpty ? "Tabletop" : "Flipside";
+
         return i switch
         {
             1 => "Rollspin",
@@ -542,13 +649,18 @@ public sealed class RaceAnnouncer
         var xz = MathF.Abs((float)total);
         var degrees = 0;
         beyond = false;
+
         while (xz > 90)
         {
             xz -= 180;
             degrees += 180;
-            if (degrees <= 900) continue;
+
+            if (degrees <= 900)
+
+                continue;
             degrees = 900;
             beyond = true;
+
             break;
         }
 

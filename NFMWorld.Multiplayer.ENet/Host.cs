@@ -114,12 +114,14 @@ public sealed class Host : IDisposable
     private void ThrowIfNotCreated()
     {
         if (!_created)
+
             throw new InvalidOperationException("Host not created");
     }
 
     private static void ThrowIfChannelsExceeded(int channelLimit)
     {
         if (channelLimit < 0 || channelLimit > MaximumChannelCount)
+
             throw new ArgumentOutOfRangeException(nameof(channelLimit));
     }
 
@@ -156,9 +158,11 @@ public sealed class Host : IDisposable
     )
     {
         if (_created)
+
             throw new InvalidOperationException("Host already created");
 
         if (peerLimit < 0 || peerLimit > MaximumPeerId)
+
             throw new ArgumentOutOfRangeException(nameof(peerLimit));
 
         ThrowIfChannelsExceeded(channelLimit);
@@ -282,6 +286,7 @@ public sealed class Host : IDisposable
     public void Dispose()
     {
         if (!_created && _socket is null)
+
             return;
 
         _socket?.Dispose();
@@ -362,11 +367,13 @@ public sealed class Host : IDisposable
             if (candidate.State == PeerState.Disconnected)
             {
                 peer = candidate;
+
                 break;
             }
         }
 
         if (peer is null)
+
             return null;
 
         peer.Channels = new Channel[channelCount];
@@ -416,6 +423,7 @@ public sealed class Host : IDisposable
     private void EnsureSocketFor(Address address)
     {
         if (_socket is not null)
+
             return;
 
         CreateSocket(null, 0);
@@ -423,11 +431,13 @@ public sealed class Host : IDisposable
         var target = address.ResolvedAddress;
 
         if (target is null)
+
             return;
 
         var needsIpv6 = target.AddressFamily == AddressFamily.InterNetworkV6;
 
         if (!needsIpv6 && _dualMode)
+
             return;
 
         if (needsIpv6 && !_dualMode)
@@ -452,6 +462,7 @@ public sealed class Host : IDisposable
         foreach (var peer in _peers)
         {
             if (peer.State != PeerState.Connected)
+
                 continue;
 
             peer.Send(channelId, ref packet);
@@ -471,6 +482,7 @@ public sealed class Host : IDisposable
         foreach (var peer in _peers)
         {
             if (peer.State != PeerState.Connected || ReferenceEquals(peer, excludedPeer.Impl))
+
                 continue;
 
             peer.Send(channelId, ref packet);
@@ -487,6 +499,7 @@ public sealed class Host : IDisposable
         if (peers.Length == 0)
         {
             packet.Dispose();
+
             throw new ArgumentOutOfRangeException(nameof(peers), "Peers array can't be empty");
         }
 
@@ -498,6 +511,7 @@ public sealed class Host : IDisposable
         foreach (var peer in peers)
         {
             if (peer.Impl is not { } impl || impl.State != PeerState.Connected)
+
                 continue;
 
             var copy = packet;
@@ -535,6 +549,7 @@ public sealed class Host : IDisposable
         var result = DispatchIncomingCommands(ref ev);
 
         @event = result > 0 && ev is { } value ? value : default;
+
         return result;
     }
 
@@ -549,9 +564,11 @@ public sealed class Host : IDisposable
         {
             case 1:
                 @event = ev!.Value;
+
                 return 1;
             case -1:
                 @event = default;
+
                 return -1;
         }
 
@@ -568,9 +585,11 @@ public sealed class Host : IDisposable
             {
                 case 1:
                     @event = ev!.Value;
+
                     return 1;
                 case -1:
                     @event = default;
+
                     return -1;
             }
 
@@ -578,9 +597,11 @@ public sealed class Host : IDisposable
             {
                 case 1:
                     @event = ev!.Value;
+
                     return 1;
                 case -1:
                     @event = default;
+
                     return -1;
             }
 
@@ -588,9 +609,11 @@ public sealed class Host : IDisposable
             {
                 case 1:
                     @event = ev!.Value;
+
                     return 1;
                 case -1:
                     @event = default;
+
                     return -1;
             }
 
@@ -598,15 +621,18 @@ public sealed class Host : IDisposable
             {
                 case 1:
                     @event = ev!.Value;
+
                     return 1;
                 case -1:
                     @event = default;
+
                     return -1;
             }
 
             if (TimeGreaterEqual(ServiceTime, timeoutAt))
             {
                 @event = default;
+
                 return 0;
             }
 
@@ -617,6 +643,7 @@ public sealed class Host : IDisposable
                 if (TimeGreaterEqual(ServiceTime, timeoutAt))
                 {
                     @event = default;
+
                     return 0;
                 }
 
@@ -625,6 +652,7 @@ public sealed class Host : IDisposable
                 if (SocketWait(ref waitCondition, TimeDifference(timeoutAt, ServiceTime)) != 0)
                 {
                     @event = default;
+
                     return -1;
                 }
             } while ((waitCondition & 4) != 0);
@@ -633,6 +661,7 @@ public sealed class Host : IDisposable
         } while ((waitCondition & 2) != 0);
 
         @event = default;
+
         return 0;
     }
 
@@ -643,6 +672,7 @@ public sealed class Host : IDisposable
         if (_socket is null)
         {
             Thread.Sleep((int)Math.Min(timeoutMs, 100));
+
             return 0;
         }
 
@@ -668,11 +698,13 @@ public sealed class Host : IDisposable
     private int SocketSend(PeerImpl peer, ReadOnlySpan<byte> data)
     {
         if (_socket is null)
+
             return -1;
 
         try
         {
             var endpoint = ToSocketEndPoint(peer.EndPoint);
+
             return _socket.SendTo(data, SocketFlags.None, endpoint);
         }
         catch (SocketException)
@@ -690,6 +722,7 @@ public sealed class Host : IDisposable
         address = default;
 
         if (_socket is null)
+
             return -1;
 
         EndPoint remote = _dualMode
@@ -725,6 +758,7 @@ public sealed class Host : IDisposable
     private IPEndPoint ToSocketEndPoint(IPEndPoint endpoint)
     {
         if (_dualMode && endpoint.AddressFamily == AddressFamily.InterNetwork)
+
             return new IPEndPoint(endpoint.Address.MapToIPv6(), endpoint.Port);
 
         return endpoint;
@@ -739,6 +773,7 @@ public sealed class Host : IDisposable
         var rightIp = right.ResolvedAddress;
 
         if (leftIp is null || rightIp is null)
+
             return leftIp is null && rightIp is null;
 
         return leftIp.Equals(rightIp) && left.Port == right.Port;
@@ -789,6 +824,7 @@ public sealed class Host : IDisposable
                 {
                     ChangeState(peer, PeerState.Connected);
                     @event = new Event(EventType.Connect, peer, peer.EventData);
+
                     return 1;
                 }
 
@@ -799,17 +835,20 @@ public sealed class Host : IDisposable
                     var zombie = peer;
                     peer.Reset();
                     @event = new Event(EventType.Disconnect, zombie, data);
+
                     return 1;
                 }
 
                 case PeerState.Connected:
                 {
                     if (peer.DispatchedCommands.IsEmpty)
+
                         continue;
 
                     var packet = peer.Receive(out var channelId);
 
                     if (!packet.IsSet)
+
                         continue;
 
                     @event = new Event(EventType.Receive, peer, channelId: channelId, packet: packet);
@@ -824,6 +863,7 @@ public sealed class Host : IDisposable
                 }
 
                 default:
+
                     break;
             }
         }
@@ -923,10 +963,12 @@ public sealed class Host : IDisposable
             if ((outgoingCommand.Command.Command & CommandFlagAcknowledge) != 0)
             {
                 if (outgoingCommand.SendAttempts < 1)
+
                     break;
 
                 if (outgoingCommand.ReliableSequenceNumber == reliableSequenceNumber
                     && outgoingCommand.Command.ChannelId == channelId)
+
                     return outgoingCommand;
             }
 
@@ -954,6 +996,7 @@ public sealed class Host : IDisposable
             {
                 outgoingCommand = candidate;
                 list = peer.SentReliableCommands;
+
                 break;
             }
         }
@@ -977,6 +1020,7 @@ public sealed class Host : IDisposable
         }
 
         if (outgoingCommand is null)
+
             return CommandType.None;
 
         if (channelId < peer.ChannelCount)
@@ -1018,6 +1062,7 @@ public sealed class Host : IDisposable
         var channelCount = command.ChannelCount;
 
         if (channelCount < MinimumChannelCount || channelCount > MaximumChannelCount)
+
             return null;
 
         PeerImpl? peer = null;
@@ -1034,6 +1079,7 @@ public sealed class Host : IDisposable
             {
                 if (currentPeer.Address.Port == ReceivedAddress.Port
                     && currentPeer.ConnectId == command.ConnectId)
+
                     return null;
 
                 ++duplicatePeers;
@@ -1041,6 +1087,7 @@ public sealed class Host : IDisposable
         }
 
         if (peer is null || duplicatePeers >= DuplicatePeers)
+
             return null;
 
         if (channelCount > ChannelLimit)
@@ -1150,17 +1197,20 @@ public sealed class Host : IDisposable
     {
         if (command.ChannelId >= peer.ChannelCount
             || (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater))
+
             return -1;
 
         var dataLength = command.DataLength;
         currentData += dataLength;
 
         if (dataLength > peer.Host.MaximumPacketSize || currentData > data.Length)
+
             return -1;
 
         var payload = data.Slice(currentData - dataLength, dataLength);
 
         if (peer.QueueIncomingCommand(command, payload, dataLength, PacketFlags.Reliable, 0) is null)
+
             return -1;
 
         return 0;
@@ -1175,12 +1225,14 @@ public sealed class Host : IDisposable
     {
         if (command.ChannelId >= peer.ChannelCount
             || (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater))
+
             return -1;
 
         var dataLength = command.DataLength;
         currentData += dataLength;
 
         if (dataLength > peer.Host.MaximumPacketSize || currentData > data.Length)
+
             return -1;
 
         var unsequencedGroup = (uint)command.UnsequencedGroup;
@@ -1192,6 +1244,7 @@ public sealed class Host : IDisposable
         if (unsequencedGroup
             >= (uint)peer.IncomingUnsequencedGroup
             + (uint)(PeerConstants.FreeUnsequencedWindows * PeerConstants.UnsequencedWindowSize))
+
             return 0;
 
         unsequencedGroup &= 0xFFFF;
@@ -1209,6 +1262,7 @@ public sealed class Host : IDisposable
         var payload = data.Slice(currentData - dataLength, dataLength);
 
         if (peer.QueueIncomingCommand(command, payload, dataLength, PacketFlags.Unsequenced, 0) is null)
+
             return -1;
 
         peer.UnsequencedWindow[index / 32] |= 1u << (int)(index % 32);
@@ -1225,17 +1279,20 @@ public sealed class Host : IDisposable
     {
         if (command.ChannelId >= peer.ChannelCount
             || (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater))
+
             return -1;
 
         var dataLength = command.DataLength;
         currentData += dataLength;
 
         if (dataLength > peer.Host.MaximumPacketSize || currentData > data.Length)
+
             return -1;
 
         var payload = data.Slice(currentData - dataLength, dataLength);
 
         if (peer.QueueIncomingCommand(command, payload, dataLength, 0, 0) is null)
+
             return -1;
 
         return 0;
@@ -1250,12 +1307,14 @@ public sealed class Host : IDisposable
     {
         if (command.ChannelId >= peer.ChannelCount
             || (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater))
+
             return -1;
 
         var fragmentLength = (uint)command.DataLength;
         currentData += (int)fragmentLength;
 
         if (fragmentLength == 0 || fragmentLength > peer.Host.MaximumPacketSize || currentData > data.Length)
+
             return -1;
 
         var channel = peer.Channels![command.ChannelId];
@@ -1267,6 +1326,7 @@ public sealed class Host : IDisposable
             startWindow += PeerConstants.ReliableWindows;
 
         if (startWindow < currentWindow || startWindow >= currentWindow + PeerConstants.FreeReliableWindows - 1)
+
             return 0;
 
         var fragmentNumber = command.FragmentNumber;
@@ -1280,6 +1340,7 @@ public sealed class Host : IDisposable
             || totalLength < fragmentCount
             || fragmentOffset >= totalLength
             || fragmentLength > totalLength - fragmentOffset)
+
             return -1;
 
         IncomingCommand? startCommand = null;
@@ -1294,6 +1355,7 @@ public sealed class Host : IDisposable
                 if (incomingCommand.ReliableSequenceNumber < channel.IncomingReliableSequenceNumber)
                 {
                     node = incomingCommand.Previous;
+
                     continue;
                 }
             }
@@ -1305,14 +1367,17 @@ public sealed class Host : IDisposable
             if (incomingCommand.ReliableSequenceNumber <= startSequenceNumber)
             {
                 if (incomingCommand.ReliableSequenceNumber < startSequenceNumber)
+
                     break;
 
                 if (incomingCommand.Command.Type != CommandType.SendFragment
                     || totalLength != (uint)incomingCommand.Packet!.Length
                     || fragmentCount != incomingCommand.FragmentCount)
+
                     return -1;
 
                 startCommand = incomingCommand;
+
                 break;
             }
 
@@ -1333,6 +1398,7 @@ public sealed class Host : IDisposable
             );
 
             if (startCommand is null)
+
                 return -1;
         }
 
@@ -1365,12 +1431,14 @@ public sealed class Host : IDisposable
     {
         if (command.ChannelId >= peer.ChannelCount
             || (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater))
+
             return -1;
 
         var fragmentLength = (uint)command.DataLength;
         currentData += (int)fragmentLength;
 
         if (fragmentLength > peer.Host.MaximumPacketSize || currentData > data.Length)
+
             return -1;
 
         var channel = peer.Channels![command.ChannelId];
@@ -1384,10 +1452,12 @@ public sealed class Host : IDisposable
             reliableWindow += PeerConstants.ReliableWindows;
 
         if (reliableWindow < currentWindow || reliableWindow >= currentWindow + PeerConstants.FreeReliableWindows - 1)
+
             return 0;
 
         if (reliableSequenceNumber == channel.IncomingReliableSequenceNumber
             && startSequenceNumber <= channel.IncomingUnreliableSequenceNumber)
+
             return 0;
 
         var fragmentNumber = command.FragmentNumber;
@@ -1400,6 +1470,7 @@ public sealed class Host : IDisposable
             || totalLength > (uint)peer.Host.MaximumPacketSize
             || fragmentOffset >= totalLength
             || fragmentLength > totalLength - fragmentOffset)
+
             return -1;
 
         IncomingCommand? startCommand = null;
@@ -1414,6 +1485,7 @@ public sealed class Host : IDisposable
                 if (incomingCommand.ReliableSequenceNumber < channel.IncomingReliableSequenceNumber)
                 {
                     node = incomingCommand.Previous;
+
                     continue;
                 }
             }
@@ -1423,25 +1495,30 @@ public sealed class Host : IDisposable
             }
 
             if (incomingCommand.ReliableSequenceNumber < reliableSequenceNumber)
+
                 break;
 
             if (incomingCommand.ReliableSequenceNumber > reliableSequenceNumber)
             {
                 node = incomingCommand.Previous;
+
                 continue;
             }
 
             if (incomingCommand.UnreliableSequenceNumber <= startSequenceNumber)
             {
                 if (incomingCommand.UnreliableSequenceNumber < startSequenceNumber)
+
                     break;
 
                 if (incomingCommand.Command.Type != CommandType.SendUnreliableFragment
                     || totalLength != (uint)incomingCommand.Packet!.Length
                     || fragmentCount != incomingCommand.FragmentCount)
+
                     return -1;
 
                 startCommand = incomingCommand;
+
                 break;
             }
 
@@ -1459,6 +1536,7 @@ public sealed class Host : IDisposable
             );
 
             if (startCommand is null)
+
                 return -1;
         }
 
@@ -1485,6 +1563,7 @@ public sealed class Host : IDisposable
     private static int HandlePing(PeerImpl peer)
     {
         if (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater)
+
             return -1;
 
         return 0;
@@ -1493,6 +1572,7 @@ public sealed class Host : IDisposable
     private int HandleBandwidthLimit(in ProtocolCommand command, PeerImpl peer)
     {
         if (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater)
+
             return -1;
 
         if (peer.IncomingBandwidth != 0)
@@ -1524,6 +1604,7 @@ public sealed class Host : IDisposable
     private static int HandleThrottleConfigure(in ProtocolCommand command, PeerImpl peer)
     {
         if (peer.State != PeerState.Connected && peer.State != PeerState.DisconnectLater)
+
             return -1;
 
         peer.PacketThrottleInterval = command.PacketThrottleInterval;
@@ -1536,6 +1617,7 @@ public sealed class Host : IDisposable
     private int HandleDisconnect(in ProtocolCommand command, PeerImpl peer)
     {
         if (peer.State is PeerState.Disconnected or PeerState.Zombie or PeerState.AcknowledgingDisconnect)
+
             return 0;
 
         peer.ResetQueues();
@@ -1569,6 +1651,7 @@ public sealed class Host : IDisposable
     private int HandleAcknowledge(in ProtocolCommand command, ref Event? @event, PeerImpl peer)
     {
         if (peer.State is PeerState.Disconnected or PeerState.Zombie)
+
             return 0;
 
         var receivedSentTime = (uint)command.ReceivedSentTime;
@@ -1578,6 +1661,7 @@ public sealed class Host : IDisposable
             receivedSentTime = unchecked(receivedSentTime - 0x10000);
 
         if (TimeLess(ServiceTime, receivedSentTime))
+
             return 0;
 
         var roundTripTime = TimeDifference(ServiceTime, receivedSentTime);
@@ -1646,22 +1730,29 @@ public sealed class Host : IDisposable
         switch (peer.State)
         {
             case PeerState.AcknowledgingConnect:
+
                 if (commandNumber != CommandType.VerifyConnect)
+
                     return -1;
 
                 NotifyConnect(peer, ref @event);
+
                 break;
 
             case PeerState.Disconnecting:
+
                 if (commandNumber != CommandType.Disconnect)
+
                     return -1;
 
                 NotifyDisconnect(peer, ref @event);
+
                 break;
 
             case PeerState.DisconnectLater:
                 if (!peer.HasOutgoingCommands)
                     peer.Disconnect(peer.EventData);
+
                 break;
         }
 
@@ -1671,6 +1762,7 @@ public sealed class Host : IDisposable
     private int HandleVerifyConnect(in ProtocolCommand command, ref Event? @event, PeerImpl peer)
     {
         if (peer.State != PeerState.Connecting)
+
             return 0;
 
         var channelCount = command.ChannelCount;
@@ -1684,6 +1776,7 @@ public sealed class Host : IDisposable
         {
             peer.EventData = 0;
             DispatchState(peer, PeerState.Zombie);
+
             return -1;
         }
 
@@ -1730,6 +1823,7 @@ public sealed class Host : IDisposable
         var data = ReceivedData.AsSpan(0, ReceivedDataLength);
 
         if (data.Length < 2)
+
             return 0;
 
         var peerId = BinaryPrimitives.ReadUInt16BigEndian(data);
@@ -1743,6 +1837,7 @@ public sealed class Host : IDisposable
             headerSize += ChecksumSize;
 
         if (data.Length < headerSize)
+
             return 0;
 
         PeerImpl? peer;
@@ -1765,6 +1860,7 @@ public sealed class Host : IDisposable
             if (peer.State is PeerState.Disconnected or PeerState.Zombie
                 || (addressMismatch && !broadcast)
                 || (peer.OutgoingPeerId < MaximumPeerId && sessionId != peer.IncomingSessionId))
+
                 return 0;
         }
 
@@ -1777,6 +1873,7 @@ public sealed class Host : IDisposable
             BinaryPrimitives.WriteUInt64BigEndian(ReceivedData.AsSpan(checksumOffset), newChecksum);
 
             if (checksumCallback(data) != desiredChecksum)
+
                 return 0;
         }
 
@@ -1792,22 +1889,29 @@ public sealed class Host : IDisposable
         while (currentData < data.Length)
         {
             if (!Protocol.TryRead(data, currentData, out var command, out var commandSize))
+
                 break;
 
             currentData += commandSize;
 
             if (peer is null && (command.Type != CommandType.Connect || currentData < data.Length))
+
                 break;
 
             switch (command.Type)
             {
                 case CommandType.Acknowledge:
+
                     if (peer is null || HandleAcknowledge(command, ref @event, peer) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.Connect:
+
                     if (peer is not null)
+
                         goto commandError;
 
                     if (!ConnectionsPrevented)
@@ -1815,68 +1919,101 @@ public sealed class Host : IDisposable
                         peer = HandleConnect(command);
 
                         if (peer is null)
+
                             goto commandError;
                     }
 
                     break;
 
                 case CommandType.VerifyConnect:
+
                     if (peer is null || HandleVerifyConnect(command, ref @event, peer) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.Disconnect:
+
                     if (peer is null || HandleDisconnect(command, peer) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.Ping:
+
                     if (peer is null || HandlePing(peer) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.SendReliable:
+
                     if (peer is null || HandleSendReliable(command, peer, data, ref currentData) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.SendUnreliable:
+
                     if (peer is null || HandleSendUnreliable(command, peer, data, ref currentData) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.SendUnsequenced:
+
                     if (peer is null || HandleSendUnsequenced(command, peer, data, ref currentData) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.SendFragment:
+
                     if (peer is null || HandleSendFragment(command, peer, data, ref currentData) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.BandwidthLimit:
+
                     if (peer is null || HandleBandwidthLimit(command, peer) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.ThrottleConfigure:
+
                     if (peer is null || HandleThrottleConfigure(command, peer) != 0)
+
                         goto commandError;
+
                     break;
 
                 case CommandType.SendUnreliableFragment:
+
                     if (peer is null || HandleSendUnreliableFragment(command, peer, data, ref currentData) != 0)
+
                         goto commandError;
+
                     break;
 
                 default:
+
                     goto commandError;
             }
 
             if (peer is not null && (command.Command & CommandFlagAcknowledge) != 0)
             {
                 if ((flags & HeaderFlagSentTime) == 0)
+
                     break;
 
                 var sentTime = BinaryPrimitives.ReadUInt16BigEndian(data[2..]);
@@ -1887,15 +2024,18 @@ public sealed class Host : IDisposable
                     case PeerState.AcknowledgingConnect:
                     case PeerState.Disconnected:
                     case PeerState.Zombie:
+
                         break;
 
                     case PeerState.AcknowledgingDisconnect:
                         if (command.Type == CommandType.Disconnect)
                             peer.QueueAcknowledgement(command, sentTime);
+
                         break;
 
                     default:
                         peer.QueueAcknowledgement(command, sentTime);
+
                         break;
                 }
             }
@@ -1904,6 +2044,7 @@ public sealed class Host : IDisposable
         commandError:
 
         if (@event is { Type: not EventType.None })
+
             return 1;
 
         return 0;
@@ -1916,12 +2057,15 @@ public sealed class Host : IDisposable
             var receivedLength = SocketReceive(out var address, _receiveBuffer.AsSpan(0, (int)Mtu));
 
             if (receivedLength == -2)
+
                 continue;
 
             if (receivedLength < 0)
+
                 return -1;
 
             if (receivedLength == 0)
+
                 return 0;
 
             ReceivedAddress = address;
@@ -1937,15 +2081,18 @@ public sealed class Host : IDisposable
                 switch (intercept(ref intercepted, ref address, _receiveBuffer.AsSpan(0, receivedLength)))
                 {
                     case 1:
+
                         if (intercepted is { Type: not EventType.None } interceptedEvent)
                         {
                             @event = interceptedEvent;
+
                             return 1;
                         }
 
                         continue;
 
                     case -1:
+
                         return -1;
                 }
             }
@@ -1953,9 +2100,11 @@ public sealed class Host : IDisposable
             switch (HandleIncomingCommands(ref @event))
             {
                 case 1:
+
                     return 1;
 
                 case -1:
+
                     return -1;
             }
         }
@@ -1974,6 +2123,7 @@ public sealed class Host : IDisposable
                 || (long)peer.Mtu - PacketSize < Protocol.CommandSizes[(int)CommandType.Acknowledge])
             {
                 peer.ContinueSending = true;
+
                 break;
             }
 
@@ -2014,6 +2164,7 @@ public sealed class Host : IDisposable
             current = current.Next;
 
             if (TimeDifference(ServiceTime, outgoingCommand.SentTime) < outgoingCommand.RoundTripTimeout)
+
                 continue;
 
             if (peer.EarliestTimeout == 0 || TimeLess(outgoingCommand.SentTime, peer.EarliestTimeout))
@@ -2025,6 +2176,7 @@ public sealed class Host : IDisposable
                         && TimeDifference(ServiceTime, peer.EarliestTimeout) >= peer.TimeoutMinimumValue)))
             {
                 NotifyDisconnectTimeout(peer, ref @event);
+
                 return 1;
             }
 
@@ -2115,7 +2267,7 @@ public sealed class Host : IDisposable
                     if (outgoingCommand.SendAttempts < 1
                         && outgoingCommand.ReliableSequenceNumber % PeerConstants.ReliableWindowSize == 0
                         && (channel.ReliableWindows[(reliableWindow + PeerConstants.ReliableWindows - 1)
-                                                    % PeerConstants.ReliableWindows]
+                            % PeerConstants.ReliableWindows]
                             >= PeerConstants.ReliableWindowSize
                             || (channel.UsedReliableWindows
                                 & ((((1u << (PeerConstants.FreeReliableWindows + 2)) - 1)
@@ -2126,6 +2278,7 @@ public sealed class Host : IDisposable
                     {
                         windowWrap = true;
                         currentSendReliableCommand = null;
+
                         continue;
                     }
                 }
@@ -2138,6 +2291,7 @@ public sealed class Host : IDisposable
                         > Math.Max(windowSize, peer.Mtu))
                     {
                         currentSendReliableCommand = null;
+
                         continue;
                     }
                 }
@@ -2155,6 +2309,7 @@ public sealed class Host : IDisposable
                     < unchecked((ushort)(commandSize + outgoingCommand.FragmentLength))))
             {
                 peer.ContinueSending = true;
+
                 break;
             }
 
@@ -2207,12 +2362,14 @@ public sealed class Host : IDisposable
                             source.Remove(outgoingCommand);
 
                             if (currentCommand is null)
+
                                 break;
 
                             outgoingCommand = currentCommand;
 
                             if (outgoingCommand.ReliableSequenceNumber != reliableSequenceNumber
                                 || outgoingCommand.UnreliableSequenceNumber != unreliableSequenceNumber)
+
                                 break;
 
                             currentCommand = currentCommand.Next;
@@ -2268,10 +2425,12 @@ public sealed class Host : IDisposable
             foreach (var peer in _peers)
             {
                 if (peer is null)
+
                     continue;
 
                 if (peer.State is PeerState.Disconnected or PeerState.Zombie
                     || (sendPass > 0 && !peer.ContinueSending))
+
                     continue;
 
                 peer.ContinueSending = false;
@@ -2293,6 +2452,7 @@ public sealed class Host : IDisposable
                     && CheckTimeouts(peer, ref @event) == 1)
                 {
                     if (@event is { Type: not EventType.None })
+
                         return 1;
 
                     goto nextPeer;
@@ -2309,6 +2469,7 @@ public sealed class Host : IDisposable
                 }
 
                 if (CommandCount == 0)
+
                     goto nextPeer;
 
                 var hasSentTime = (HeaderFlags & HeaderFlagSentTime) != 0;
@@ -2353,6 +2514,7 @@ public sealed class Host : IDisposable
                 RemoveSentUnreliableCommands(peer);
 
                 if (sentLength < 0)
+
                     return -1;
 
                 TotalSentData += (uint)sentLength;
@@ -2381,14 +2543,17 @@ public sealed class Host : IDisposable
         var needsAdjustment = BandwidthLimitedPeers > 0;
 
         if (elapsedTime < 1000)
+
             return;
 
         if (OutgoingBandwidth == 0 && IncomingBandwidth == 0)
+
             return;
 
         BandwidthThrottleEpoch = timeCurrent;
 
         if (peersRemaining == 0)
+
             return;
 
         if (OutgoingBandwidth != 0)
@@ -2399,6 +2564,7 @@ public sealed class Host : IDisposable
             foreach (var peer in _peers)
             {
                 if (peer.State is not (PeerState.Connected or PeerState.DisconnectLater))
+
                     continue;
 
                 dataTotal += peer.OutgoingDataTotal;
@@ -2418,11 +2584,13 @@ public sealed class Host : IDisposable
                 if (peer.State is not (PeerState.Connected or PeerState.DisconnectLater)
                     || peer.IncomingBandwidth == 0
                     || peer.OutgoingBandwidthThrottleEpoch == timeCurrent)
+
                     continue;
 
                 var peerBandwidth = peer.IncomingBandwidth * elapsedTime / 1000;
 
                 if (throttle * peer.OutgoingDataTotal / PeerConstants.PacketThrottleScale <= peerBandwidth)
+
                     continue;
 
                 peer.PacketThrottleLimit = peerBandwidth * PeerConstants.PacketThrottleScale / peer.OutgoingDataTotal;
@@ -2453,6 +2621,7 @@ public sealed class Host : IDisposable
             {
                 if (peer.State is not (PeerState.Connected or PeerState.DisconnectLater)
                     || peer.OutgoingBandwidthThrottleEpoch == timeCurrent)
+
                     continue;
 
                 peer.PacketThrottleLimit = throttle;
@@ -2466,6 +2635,7 @@ public sealed class Host : IDisposable
         }
 
         if (!RecalculateBandwidthLimits)
+
             return;
 
         RecalculateBandwidthLimits = false;
@@ -2488,9 +2658,11 @@ public sealed class Host : IDisposable
                 {
                     if (peer.State is not (PeerState.Connected or PeerState.DisconnectLater)
                         || peer.IncomingBandwidthThrottleEpoch == timeCurrent)
+
                         continue;
 
                     if (peer.OutgoingBandwidth > 0 && peer.OutgoingBandwidth >= bandwidthLimit)
+
                         continue;
 
                     peer.IncomingBandwidthThrottleEpoch = timeCurrent;
@@ -2504,6 +2676,7 @@ public sealed class Host : IDisposable
         foreach (var peer in _peers)
         {
             if (peer.State is not (PeerState.Connected or PeerState.DisconnectLater))
+
                 continue;
 
             var command = new ProtocolCommand

@@ -25,7 +25,9 @@ public static class Tokens
     public static (string Selector, string VerifierHash) Split(string token)
     {
         var dot = token.IndexOf('.');
+
         if (dot <= 0 || dot == token.Length - 1)
+
             return (token, Hash(token));
 
         return (token[..dot], Hash(token[(dot + 1)..]));
@@ -35,6 +37,7 @@ public static class Tokens
     {
         var selector = Base64UrlEncode(RandomNumberGenerator.GetBytes(8));
         var secret = Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+
         return $"{selector}.{secret}";
     }
 
@@ -45,6 +48,7 @@ public static class Tokens
     {
         var padded = value.Replace('-', '+').Replace('_', '/');
         padded = padded.PadRight(padded.Length + (4 - padded.Length % 4) % 4, '=');
+
         return Convert.FromBase64String(padded);
     }
 }

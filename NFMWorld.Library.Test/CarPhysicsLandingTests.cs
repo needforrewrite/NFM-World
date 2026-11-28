@@ -44,13 +44,16 @@ public class CarPhysicsLandingTests
         var car = new BackendCar(rad, 0, 0, 0, isClientPlayer: false);
         // The empty stage is all off-road; a road's traction is the harder case.
         car.CarPhysics.Stat = car.Stats = car.Stats with { OffRoadGrip = Fixed64.One };
+
         return car;
     }
 
     private static double FromFlat(Fixed64 angle)
     {
         var a = (double)angle % 180;
-        if (a < 0) a += 180;
+        if (a < 0)
+            a += 180;
+
         return Math.Min(a, 180 - a);
     }
 
@@ -59,6 +62,7 @@ public class CarPhysicsLandingTests
         var stage = new BackendStage("landing-test", new StageLoader(), throwOnError: true);
         Assert.AreEqual(1f, stage.Physics.Gravity);
         Assert.AreEqual(0, stage.Pieces.Count);
+
         return stage;
     }
 
@@ -68,6 +72,7 @@ public class CarPhysicsLandingTests
         var physics = car.CarPhysics;
         var landed = false;
         var ticksOnEnd = 0;
+
         for (var tick = 0; tick < 700; tick++)
         {
             FrameTrace.ClearMessages(); // only the game loop clears it
@@ -75,12 +80,16 @@ public class CarPhysicsLandingTests
             landed |= physics.Wtouch;
             if (landed && releaseOnLanding)
                 car.Control.Handb = car.Control.Up = car.Control.Down = car.Control.Left = car.Control.Right = false;
-            if (physics.Wtouch && (FromFlat(physics.Pzy) > 45 || FromFlat(physics.Pxy) > 45)) ticksOnEnd++;
+            if (physics.Wtouch && (FromFlat(physics.Pzy) > 45 || FromFlat(physics.Pxy) > 45))
+                ticksOnEnd++;
         }
 
         if (FromFlat(physics.Pxy) > 12 || FromFlat(physics.Pzy) > 12 || physics.BadLanding)
+
             return $"ended at Pxy={(double)physics.Pxy:0.0} Pzy={(double)physics.Pzy:0.0} BadLanding={physics.BadLanding}";
+
         // About two seconds of contact while on end; a car that tips over needs a fraction of that.
+
         return ticksOnEnd > 120 ? $"touched the ground on end for {ticksOnEnd} ticks" : null;
     }
 
@@ -89,8 +98,11 @@ public class CarPhysicsLandingTests
     {
         var stage = CreateStage();
         var failures = new List<string>();
+
         foreach (var name in Cars)
+
         foreach (var roll in new[] { 0, 30, 60, 75, 90, 105, 120, 150, 180, 270 })
+
             for (var pitch = 60; pitch < 300; pitch += pitch is >= 120 and < 240 ? 120 : 10)
             {
                 var car = CreateCar(name);
@@ -113,9 +125,13 @@ public class CarPhysicsLandingTests
     {
         var stage = CreateStage();
         var failures = new List<string>();
+
         foreach (var name in Cars)
+
         foreach (var input in new[] { "down", "down+left", "up+right", "down+left+release" })
+
         foreach (var speed in new[] { 0, 200 })
+
             for (var height = 300; height <= 4000; height += 200)
             {
                 var car = CreateCar(name);
@@ -126,7 +142,8 @@ public class CarPhysicsLandingTests
                 car.Control.Left = input.Contains("left");
                 car.Control.Right = input.Contains("right");
                 conto.Y -= height;
-                for (var i = 0; i < 4; i++) car.CarPhysics.Scz[i] = speed;
+                for (var i = 0; i < 4; i++)
+                    car.CarPhysics.Scz[i] = speed;
 
                 if (Run(stage, car, input.Contains("release")) is { } failure)
                     failures.Add($"{name} input={input} speed={speed} height={height}: {failure}");

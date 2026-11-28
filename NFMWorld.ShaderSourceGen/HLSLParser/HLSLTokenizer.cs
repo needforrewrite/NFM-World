@@ -165,6 +165,7 @@ public ref struct HLSLTokenizer
         if (_pos >= _length)
         {
             _token = (ushort)HLSLToken.EndOfStream;
+
             return;
         }
 
@@ -172,10 +173,12 @@ public ref struct HLSLTokenizer
         var c1 = _pos + 1 < _length ? _buffer[_pos + 1] : '\0';
 
         // Two-character operators
+
         if (c0 == '+' && c1 == '=')
         {
             _token = (ushort)HLSLToken.PlusEqual;
             _pos += 2;
+
             return;
         }
 
@@ -183,6 +186,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.MinusEqual;
             _pos += 2;
+
             return;
         }
 
@@ -190,6 +194,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.TimesEqual;
             _pos += 2;
+
             return;
         }
 
@@ -197,6 +202,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.DivideEqual;
             _pos += 2;
+
             return;
         }
 
@@ -204,6 +210,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.EqualEqual;
             _pos += 2;
+
             return;
         }
 
@@ -211,6 +218,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.NotEqual;
             _pos += 2;
+
             return;
         }
 
@@ -218,6 +226,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.LessEqual;
             _pos += 2;
+
             return;
         }
 
@@ -225,6 +234,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.GreaterEqual;
             _pos += 2;
+
             return;
         }
 
@@ -232,6 +242,7 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.AndAnd;
             _pos += 2;
+
             return;
         }
 
@@ -239,25 +250,33 @@ public ref struct HLSLTokenizer
         {
             _token = (ushort)HLSLToken.BarBar;
             _pos += 2;
+
             return;
         }
 
         // ++, --
+
         if (c0 is '+' or '-' && c1 == c0)
         {
             _token = c0 == '+' ? (ushort)HLSLToken.PlusPlus : (ushort)HLSLToken.MinusMinus;
             _pos += 2;
+
             return;
         }
 
         // Number
-        if (ScanNumber()) return;
+
+        if (ScanNumber())
+
+            return;
 
         // Single-char symbol
+
         if (IsSymbol(c0))
         {
             _token = c0;
             _pos++;
+
             return;
         }
 
@@ -273,6 +292,7 @@ public ref struct HLSLTokenizer
             if (_identifier.SequenceEqual(ReservedWords[i]))
             {
                 _token = (ushort)(256 + i);
+
                 return;
             }
         }
@@ -297,19 +317,27 @@ public ref struct HLSLTokenizer
         get
         {
             if (_token is (int)HLSLToken.FloatLiteral or (int)HLSLToken.HalfLiteral)
+
                 return _fValue.ToString(CultureInfo.InvariantCulture);
             if (_token == (int)HLSLToken.IntLiteral)
+
                 return _iValue.ToString(CultureInfo.InvariantCulture);
             if (_token == (int)HLSLToken.Identifier)
+
                 return _identifier;
+
             return GetTokenName(_token);
         }
     }
 
     public static string GetTokenName(int token)
     {
-        if (token < 256) return ((char)token).ToString();
-        if (token < (int)HLSLToken.LessEqual) return ReservedWords[token - 256];
+        if (token < 256)
+
+            return ((char)token).ToString();
+        if (token < (int)HLSLToken.LessEqual)
+
+            return ReservedWords[token - 256];
 
         return (HLSLToken)token switch
         {
@@ -359,10 +387,12 @@ public ref struct HLSLTokenizer
     private bool SkipWhitespace()
     {
         var result = false;
+
         while (_pos < _length && char.IsWhiteSpace(_buffer[_pos]))
         {
             result = true;
-            if (_buffer[_pos] == '\n') _lineNumber++;
+            if (_buffer[_pos] == '\n')
+                _lineNumber++;
             _pos++;
         }
 
@@ -371,16 +401,21 @@ public ref struct HLSLTokenizer
 
     private bool SkipComment()
     {
-        if (_pos >= _length || _buffer[_pos] != '/') return false;
+        if (_pos >= _length || _buffer[_pos] != '/')
+
+            return false;
         var next = CharAt(_pos + 1);
+
         if (next == '/')
         {
             _pos += 2;
+
             while (_pos < _length)
             {
                 if (_buffer[_pos++] == '\n')
                 {
                     _lineNumber++;
+
                     break;
                 }
             }
@@ -391,12 +426,16 @@ public ref struct HLSLTokenizer
         if (next == '*')
         {
             _pos += 2;
+
             while (_pos < _length)
             {
-                if (_buffer[_pos] == '\n') _lineNumber++;
+                if (_buffer[_pos] == '\n')
+                    _lineNumber++;
+
                 if (_buffer[_pos] == '*' && CharAt(_pos + 1) == '/')
                 {
                     _pos += 2;
+
                     break;
                 }
 
@@ -411,19 +450,25 @@ public ref struct HLSLTokenizer
 
     private bool SkipPragmaDirective()
     {
-        if (_pos >= _length || _buffer[_pos] != '#') return false;
+        if (_pos >= _length || _buffer[_pos] != '#')
+
+            return false;
         var ptr = _pos + 1;
-        while (ptr < _length && char.IsWhiteSpace(_buffer[ptr]) && _buffer[ptr] != '\n') ptr++;
+        while (ptr < _length && char.IsWhiteSpace(_buffer[ptr]) && _buffer[ptr] != '\n')
+            ptr++;
+
         if (ptr + 6 <= _length
             && _buffer.Slice(ptr, 6) is "pragma"
             && (ptr + 6 >= _length || char.IsWhiteSpace(_buffer[ptr + 6])))
         {
             _pos = ptr + 6;
+
             while (_pos < _length)
             {
                 if (_buffer[_pos++] == '\n')
                 {
                     _lineNumber++;
+
                     break;
                 }
             }
@@ -436,20 +481,29 @@ public ref struct HLSLTokenizer
 
     private bool ScanNumber()
     {
-        if (_pos >= _length) return false;
+        if (_pos >= _length)
+
+            return false;
         var c0 = _buffer[_pos];
-        if (c0 == '+' || c0 == '-') return false;
+
+        if (c0 == '+' || c0 == '-')
+
+            return false;
 
         // Hex literal
+
         if (_length - _pos > 2 && c0 == '0' && _buffer[_pos + 1] == 'x')
         {
             var end = _pos + 2;
-            while (end < _length && IsHexDigit(_buffer[end])) end++;
+            while (end < _length && IsHexDigit(_buffer[end]))
+                end++;
+
             if (end > _pos + 2 && IsNumberSeparator(CharAt(end)))
             {
                 _iValue = Convert.ToInt32(string.FromSpan(_buffer.Slice(_pos + 2, end - _pos - 2)), 16);
                 _pos = end;
                 _token = (int)HLSLToken.IntLiteral;
+
                 return true;
             }
         }
@@ -458,6 +512,7 @@ public ref struct HLSLTokenizer
         var fEnd = _pos;
         var hasDot = false;
         var hasDigit = false;
+
         while (fEnd < _length && char.IsDigit(_buffer[fEnd]))
         {
             fEnd++;
@@ -477,18 +532,24 @@ public ref struct HLSLTokenizer
         }
 
         // Exponent
+
         if (fEnd < _length && (_buffer[fEnd] == 'e' || _buffer[fEnd] == 'E'))
         {
             fEnd++;
-            if (fEnd < _length && (_buffer[fEnd] == '+' || _buffer[fEnd] == '-')) fEnd++;
-            while (fEnd < _length && char.IsDigit(_buffer[fEnd])) fEnd++;
+            if (fEnd < _length && (_buffer[fEnd] == '+' || _buffer[fEnd] == '-'))
+                fEnd++;
+            while (fEnd < _length && char.IsDigit(_buffer[fEnd]))
+                fEnd++;
         }
 
-        if (!hasDigit) return false;
+        if (!hasDigit)
+
+            return false;
 
         // Check for f/h suffix
         var hasSuffix = false;
         var suffix = '\0';
+
         if (fEnd < _length && (_buffer[fEnd] == 'f' || _buffer[fEnd] == 'h'))
         {
             suffix = _buffer[fEnd];
@@ -498,16 +559,19 @@ public ref struct HLSLTokenizer
 
         // Try integer
         var iEnd = _pos;
-        while (iEnd < _length && char.IsDigit(_buffer[iEnd])) iEnd++;
+        while (iEnd < _length && char.IsDigit(_buffer[iEnd]))
+            iEnd++;
 
         if ((hasDot || hasSuffix) && hasDigit && fEnd > iEnd && IsNumberSeparator(CharAt(fEnd)))
         {
             var numStr = _buffer.Slice(_pos, (hasSuffix ? fEnd - 1 : fEnd) - _pos);
+
             if (double.TryParse(numStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var dv))
             {
                 _fValue = (float)dv;
                 _pos = fEnd;
                 _token = suffix == 'h' ? (ushort)HLSLToken.HalfLiteral : (ushort)HLSLToken.FloatLiteral;
+
                 return true;
             }
         }
@@ -517,6 +581,7 @@ public ref struct HLSLTokenizer
             _iValue = int.Parse(_buffer.Slice(_pos, iEnd - _pos), CultureInfo.InvariantCulture);
             _pos = iEnd;
             _token = (int)HLSLToken.IntLiteral;
+
             return true;
         }
 
@@ -526,14 +591,17 @@ public ref struct HLSLTokenizer
     private bool ScanLineDirective()
     {
         if (_length - _pos <= 5 || _buffer.Slice(_pos, 5) is not "#line" || !char.IsWhiteSpace(_buffer[_pos + 5]))
+
             return false;
 
         _pos += 5;
+
         while (_pos < _length && char.IsWhiteSpace(_buffer[_pos]))
         {
             if (_buffer[_pos] == '\n')
             {
                 Error("Syntax error: expected line number after #line");
+
                 return false;
             }
 
@@ -541,10 +609,13 @@ public ref struct HLSLTokenizer
         }
 
         var numStart = _pos;
-        while (_pos < _length && char.IsDigit(_buffer[_pos])) _pos++;
+        while (_pos < _length && char.IsDigit(_buffer[_pos]))
+            _pos++;
+
         if (_pos == numStart || !char.IsWhiteSpace(CharAt(_pos)))
         {
             Error("Syntax error: expected line number after #line");
+
             return false;
         }
 
@@ -554,9 +625,11 @@ public ref struct HLSLTokenizer
         {
             var ch = _buffer[_pos];
             _pos++;
+
             if (ch == '\n')
             {
                 _lineNumber = lineNumber;
+
                 return true;
             }
         }
@@ -564,23 +637,27 @@ public ref struct HLSLTokenizer
         if (_pos >= _length)
         {
             _lineNumber = lineNumber;
+
             return true;
         }
 
         if (_buffer[_pos] != '"')
         {
             Error("Syntax error: expected '\"' after line number near #line");
+
             return false;
         }
 
         _pos++;
 
         var fnStart = _pos;
+
         while (_pos < _length && _buffer[_pos] != '"')
         {
             if (_buffer[_pos] == '\n')
             {
                 Error("Syntax error: expected '\"' before end of line near #line");
+
                 return false;
             }
 
@@ -590,6 +667,7 @@ public ref struct HLSLTokenizer
         if (_pos >= _length)
         {
             Error("Syntax error: expected '\"' before end of file near #line");
+
             return false;
         }
 
@@ -601,6 +679,7 @@ public ref struct HLSLTokenizer
             if (!char.IsWhiteSpace(_buffer[_pos]))
             {
                 Error("Syntax error: unexpected input after file name near #line");
+
                 return false;
             }
 
@@ -611,6 +690,7 @@ public ref struct HLSLTokenizer
 
         _lineNumber = lineNumber;
         _fileName = _lineDirectiveFileName;
+
         return true;
     }
 

@@ -16,39 +16,40 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEventMouseButton
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int Button;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEventMouseButton
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int Button;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte Down;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte Down;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiMouseSource MouseSource;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEventMouseButton(int button = default, bool down = default, ImGuiMouseSource mouseSource = default)
-		{
-			Button = button;
-			Down = down ? (byte)1 : (byte)0;
-			MouseSource = mouseSource;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiMouseSource MouseSource;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEventMouseButton(
+            int button = default,
+            bool down = default,
+            ImGuiMouseSource mouseSource = default
+        )
+        {
+            Button = button;
+            Down = down ? (byte)1 : (byte)0;
+            MouseSource = mouseSource;
+        }
+    }
 }

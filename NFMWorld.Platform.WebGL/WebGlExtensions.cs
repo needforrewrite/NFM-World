@@ -19,6 +19,7 @@ internal static class WebGlExtensions
     internal static bool IsSupported(string name)
     {
         _supported ??= ReadAll();
+
         return _supported.Contains(name);
     }
 
@@ -27,14 +28,19 @@ internal static class WebGlExtensions
         var set = new HashSet<string>(StringComparer.Ordinal);
 
         // Walk until the shim reports no entry.
+
         for (var i = 0u; i < 4096; i++)
         {
             var raw = GlNativeContext.GetExtensionName(i);
+
             if (raw == IntPtr.Zero)
+
                 break;
 
             var name = Marshal.PtrToStringUTF8(raw);
+
             if (string.IsNullOrEmpty(name))
+
                 break;
 
             set.Add(name);

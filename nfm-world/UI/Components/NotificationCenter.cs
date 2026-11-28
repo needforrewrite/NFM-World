@@ -52,24 +52,31 @@ internal sealed class NotificationCenter(Action? requestAttention = null, TimePr
         NotificationAction? action = null
     )
     {
-        if (expiresAtUnixMs <= _clock.GetUtcNow().ToUnixTimeMilliseconds()) return;
+        if (expiresAtUnixMs <= _clock.GetUtcNow().ToUnixTimeMilliseconds())
+
+            return;
 
         var notice = new Notification(owner, title, message, key, expiresAtUnixMs, action);
+
         if (key is not null)
         {
             bool Matches(Notification item) => ReferenceEquals(item.Owner, owner) && item.Key == key;
+
             if (_visible.Value.Any(Matches))
             {
                 notice.ShownAt = _clock.GetTimestamp();
                 _visible.Value = _visible.Value.Select(item => Matches(item) ? notice : item).ToArray();
                 Alert();
+
                 return;
             }
 
             var queuedIndex = _pending.FindIndex(Matches);
+
             if (queuedIndex >= 0)
             {
                 _pending[queuedIndex] = notice;
+
                 return;
             }
         }
@@ -80,16 +87,22 @@ internal sealed class NotificationCenter(Action? requestAttention = null, TimePr
 
     private void FillVisible()
     {
-        if (_pending.Count == 0 || _visible.Value.Count >= MaxVisible) return;
+        if (_pending.Count == 0 || _visible.Value.Count >= MaxVisible)
+
+            return;
 
         var now = _clock.GetUtcNow().ToUnixTimeMilliseconds();
         var visible = _visible.Value.ToList();
         var consumed = 0;
         var shown = 0;
+
         while (consumed < _pending.Count && visible.Count < MaxVisible)
         {
             var notice = _pending[consumed++];
-            if (notice.ExpiresAtUnixMs <= now) continue;
+
+            if (notice.ExpiresAtUnixMs <= now)
+
+                continue;
 
             notice.ShownAt = _clock.GetTimestamp();
             visible.Insert(0, notice);
@@ -97,7 +110,10 @@ internal sealed class NotificationCenter(Action? requestAttention = null, TimePr
         }
 
         _pending.RemoveRange(0, consumed);
-        if (shown == 0) return;
+
+        if (shown == 0)
+
+            return;
         _visible.Value = visible;
         Alert();
     }
@@ -109,9 +125,11 @@ internal sealed class NotificationCenter(Action? requestAttention = null, TimePr
         if (!_soundChecked)
         {
             _soundChecked = true;
+
             try
             {
-                if (TheVFS.VFS.FileExists(SoundPath)) _sound = IBackend.Backend.GetSound(SoundPath);
+                if (TheVFS.VFS.FileExists(SoundPath))
+                    _sound = IBackend.Backend.GetSound(SoundPath);
             }
             catch (Exception error)
             {
@@ -131,9 +149,12 @@ internal sealed class NotificationCenter(Action? requestAttention = null, TimePr
 
     public void Update()
     {
-        if (_visible.Value.Count == 0) return;
+        if (_visible.Value.Count == 0)
+
+            return;
         var now = _clock.GetUtcNow().ToUnixTimeMilliseconds();
         var tick = _clock.GetTimestamp();
+
         foreach (var notice in _visible.Value)
         {
             var elapsed = _clock.GetElapsedTime(notice.ShownAt, tick);
@@ -197,11 +218,13 @@ internal sealed class NotificationCenter(Action? requestAttention = null, TimePr
             onmousedown: e => e.StopPropagation(),
             children:
             [
-                Sx.Text(style: () => Sx.TextStyles(
-                    fontSize: 14,
-                    fontStyle: FontStyle.Bold,
-                    foregroundColor: notice.Flash.Value > 0.45f ? CardFill : Theme.MenuBlue
-                ), text: () => notice.Title
+                Sx.Text(
+                    style: () => Sx.TextStyles(
+                        fontSize: 14,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: notice.Flash.Value > 0.45f ? CardFill : Theme.MenuBlue
+                    ),
+                    text: () => notice.Title
                 ),
                 Sx.Text(
                     style: () => Sx.WrappingText(
@@ -244,9 +267,12 @@ internal sealed class NotificationCenter(Action? requestAttention = null, TimePr
 
     private void Complete(Notification notice)
     {
-        if (notice.FadeStartedAt.HasValue || !_visible.Value.Contains(notice)
-            || notice.Action is not { } action || !action.IsAvailable()
+        if (notice.FadeStartedAt.HasValue
+            || !_visible.Value.Contains(notice)
+            || notice.Action is not { } action
+            || !action.IsAvailable()
             || notice.ExpiresAtUnixMs <= _clock.GetUtcNow().ToUnixTimeMilliseconds())
+
             return;
         StartFade(notice);
         action.Invoke();

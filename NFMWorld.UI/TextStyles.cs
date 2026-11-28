@@ -87,6 +87,7 @@ public struct TextStyles() : IEquatable<TextStyles>
         hashCode.Add(OverflowBehavior);
         hashCode.Add(HorizontalAlignment);
         hashCode.Add(VerticalAlignment);
+
         return hashCode.ToHashCode();
     }
 

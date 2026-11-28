@@ -80,6 +80,7 @@ internal static class Program
 
         Console.WriteLine();
         Console.WriteLine(_failures == 0 ? "SMOKE: pass" : $"SMOKE: FAILED ({_failures} failure(s))");
+
         return _failures == 0 ? 0 : 1;
     }
 
@@ -115,6 +116,7 @@ internal static class Program
         static unsafe string glString(StringName name)
         {
             var pointer = _gl.GetString(name);
+
             return pointer is null ? "(null)" : Marshal.PtrToStringUTF8((nint)pointer) ?? "(unreadable)";
         }
     }
@@ -184,6 +186,7 @@ internal static class Program
 
         var refused = false;
         var cb = device.AcquireCommandBuffer();
+
         try
         {
             cb.UpdateTexture(texture, 0, 0, 1, 1, [0, 0, 0, 0]);
@@ -206,6 +209,7 @@ internal static class Program
     private static void CheckCompressedRefusal(GlGraphicsDevice device)
     {
         var refused = false;
+
         try
         {
             device.CreateTexture(new TextureDesc(4, 4, TextureFormat.Dxt1), new byte[8]);
@@ -235,6 +239,7 @@ internal static class Program
 
         gl.BindBuffer(target, glBuffer.Handle);
         var mapped = (byte*)gl.MapBufferRange(target, 0, (nuint)bytes.Length, MapBufferAccessMask.ReadBit);
+
         if (mapped is not null)
         {
             new ReadOnlySpan<byte>(mapped, bytes.Length).CopyTo(bytes);
@@ -335,6 +340,7 @@ internal static class Program
         );
         var refused = false;
         var cb2 = device.AcquireCommandBuffer();
+
         try
         {
             cb2.UpdateBuffer(immutable, [1, 2, 3, 4]);
@@ -365,6 +371,7 @@ internal static class Program
     {
         var cb = device.AcquireCommandBuffer();
         var refused = false;
+
         try
         {
             device.AcquireCommandBuffer();
@@ -383,6 +390,7 @@ internal static class Program
 
         var live = device.AcquireCommandBuffer();
         var staleRefused = false;
+
         try
         {
             device.Submit(again);
@@ -442,6 +450,7 @@ internal static class Program
         DrainGlErrors("render target readback");
 
         var depthRefused = false;
+
         try
         {
             device.ReadTexture(target.DepthStencilTexture!, 0, 0, size, size, pixels);
@@ -492,6 +501,7 @@ internal static class Program
         if (!gl.TryGetExtension(out Silk.NET.OpenGLES.Extensions.OES.OesGetProgramBinary ext))
         {
             Console.WriteLine("BINARY: OES_get_program_binary entry points NOT resolvable on this context");
+
             return;
         }
 
@@ -501,7 +511,8 @@ internal static class Program
         gl.GetInteger((GLEnum)Silk.NET.OpenGLES.Extensions.OES.OES.NumProgramBinaryFormatsOes, formats);
         var count = formats[0];
         Console.WriteLine($"BINARY: NUM_PROGRAM_BINARY_FORMATS = {count}");
-        for (var i = 0; i < 8; i++) formats[i] = 0;
+        for (var i = 0; i < 8; i++)
+            formats[i] = 0;
         gl.GetInteger((GLEnum)Silk.NET.OpenGLES.Extensions.OES.OES.ProgramBinaryFormatsOes, formats);
         Console.WriteLine($"BINARY: PROGRAM_BINARY_FORMATS[0] = 0x{formats[0]:X4}");
 
@@ -509,6 +520,7 @@ internal static class Program
         {
             Console.WriteLine("BINARY: no binary formats advertised, cache cannot be enabled here");
             Report("BINARY", "a program binary format is advertised", false);
+
             return;
         }
 
@@ -540,12 +552,14 @@ internal static class Program
         {
             Console.WriteLine($"BINARY: no binary available (length {length}), errors before = {before}");
             Report("BINARY", $"{bundle.Name}: glGetProgramBinaryOES produced a usable blob", false);
+
             return;
         }
 
         var blob = new byte[length];
         uint written = 0;
         var format = advertisedFormat;
+
         fixed (byte* p = blob)
         {
             ext.GetProgramBinary(program.Handle, (uint)length, &written, &format, p);
@@ -556,6 +570,7 @@ internal static class Program
 
         // Load it into a fresh program object and confirm it links from the blob alone.
         var restored = gl.CreateProgram();
+
         fixed (byte* p = blob)
         {
             ext.ProgramBinary(restored, format, p, (int)written);
@@ -605,6 +620,7 @@ internal static class Program
         // misissuing a call. Leaving it undrained is not an option - the next check would read it as
         // its own and fail for the wrong reason - so it is cleared, named, and not counted.
         var drained = 0;
+
         while (_gl.GetError() != GLEnum.NoError && ++drained < 32)
         {
         }
@@ -631,9 +647,11 @@ internal static class Program
     {
         const int size = 256;
         string fontPath = Path.Combine(AppContext.BaseDirectory, "source-code-pro-medium.ttf");
+
         if (!File.Exists(fontPath))
         {
             Report("TEXT", $"font present at {fontPath}", false);
+
             return;
         }
 
@@ -669,6 +687,7 @@ internal static class Program
                 Vector2.One,
                 new AposColor(255, 255, 255)
             );
+
             if (outlined)
             {
                 var red = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(255, 0, 0), Vector2.One, new AposColor(255, 0, 0));
@@ -685,6 +704,7 @@ internal static class Program
 
             var pixels = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+
             return pixels;
         }
 
@@ -712,6 +732,7 @@ internal static class Program
 
             var pixels = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+
             return pixels;
         }
 
@@ -722,14 +743,19 @@ internal static class Program
         // that stopped being black. Counting alpha instead would count the clear.
         int plainRed = 0, outlineRed = 0;
         int plainLit = 0, outlineLit = 0;
+
         for (int i = 0; i < plain.Length; i += 4)
         {
             bool plainOn = plain[i] > 30 || plain[i + 1] > 30 || plain[i + 2] > 30;
             bool outOn = outlined[i] > 30 || outlined[i + 1] > 30 || outlined[i + 2] > 30;
-            if (plainOn) plainLit++;
-            if (outOn) outlineLit++;
-            if (plainOn && plain[i] > 150 && plain[i + 1] < 90 && plain[i + 2] < 90) plainRed++;
-            if (outOn && outlined[i] > 150 && outlined[i + 1] < 90 && outlined[i + 2] < 90) outlineRed++;
+            if (plainOn)
+                plainLit++;
+            if (outOn)
+                outlineLit++;
+            if (plainOn && plain[i] > 150 && plain[i + 1] < 90 && plain[i + 2] < 90)
+                plainRed++;
+            if (outOn && outlined[i] > 150 && outlined[i + 1] < 90 && outlined[i + 2] < 90)
+                outlineRed++;
         }
 
         // A glyph's fade straddles its own edge whatever the batch's AA style is.
@@ -761,9 +787,11 @@ internal static class Program
         // The stroke straddles the outline, so the centre of a stem stays the fill's white and the
         // red is a band around it. Without that, the stroke would be sitting on top of the glyph.
         int whiteInOutlined = 0;
+
         for (int i = 0; i < outlined.Length; i += 4)
         {
-            if (outlined[i] > 200 && outlined[i + 1] > 200 && outlined[i + 2] > 200) whiteInOutlined++;
+            if (outlined[i] > 200 && outlined[i + 1] > 200 && outlined[i + 2] > 200)
+                whiteInOutlined++;
         }
 
         Report("TEXT", $"the fill still shows through the outline ({whiteInOutlined} white pixels)", whiteInOutlined > 500);
@@ -775,11 +803,14 @@ internal static class Program
         var cold = Render(outlined: true, 26f);
         var warm = Render(outlined: true, 26f);
         int diff = 0, worst = 0;
+
         for (int i = 0; i < cold.Length; i++)
         {
             int d = Math.Abs(cold[i] - warm[i]);
-            if (d != 0) diff++;
-            if (d > worst) worst = d;
+            if (d != 0)
+                diff++;
+            if (d > worst)
+                worst = d;
         }
 
         Report(
@@ -793,10 +824,13 @@ internal static class Program
         // after a straight one so it is a hit rather than a build.
         var turned = RenderRotated();
         int turnedRed = 0, turnedWhite = 0;
+
         for (int i = 0; i < turned.Length; i += 4)
         {
-            if (turned[i] > 150 && turned[i + 1] < 90 && turned[i + 2] < 90) turnedRed++;
-            if (turned[i] > 200 && turned[i + 1] > 200 && turned[i + 2] > 200) turnedWhite++;
+            if (turned[i] > 150 && turned[i + 1] < 90 && turned[i + 2] < 90)
+                turnedRed++;
+            if (turned[i] > 200 && turned[i + 1] > 200 && turned[i + 2] > 200)
+                turnedWhite++;
         }
 
         Report(
@@ -829,20 +863,24 @@ internal static class Program
             device.Submit(cb);
             var pixels = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+
             return pixels;
         }
 
         static (int Red, int RedTop, int RedBottom) RedSpread(byte[] px, int size)
         {
             int red = 0, top = 0, bottom = 0;
+
             for (int i = 0; i < px.Length; i += 4)
             {
                 if (px[i] > 150 && px[i + 1] < 90 && px[i + 2] < 90)
                 {
                     red++;
                     int y = i / 4 / size;
-                    if (y < size / 2) top++;
-                    else bottom++;
+                    if (y < size / 2)
+                        top++;
+                    else
+                        bottom++;
                 }
             }
 
@@ -884,6 +922,7 @@ internal static class Program
             device.Submit(cb);
             var outPx = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, outPx);
+
             return outPx;
         }
 
@@ -893,6 +932,7 @@ internal static class Program
             for (int i = 0; i < px.Length; i += 4)
                 if (px[i] > 60 || px[i + 1] > 60 || px[i + 2] > 60)
                     n++;
+
             return n;
         }
 
@@ -913,15 +953,19 @@ internal static class Program
         {
             byte[] px = RenderText("L", 8f, 120f);
             int topLit = 0, bottomLit = 0;
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
                     int i = (y * size + x) * 4;
+
                     if (px[i] > 60 || px[i + 1] > 60 || px[i + 2] > 60)
                     {
-                        if (y < size / 2) topLit++;
-                        else bottomLit++;
+                        if (y < size / 2)
+                            topLit++;
+                        else
+                            bottomLit++;
                     }
                 }
             }
@@ -959,15 +1003,18 @@ internal static class Program
             device.Submit(cb);
             var outPx = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, outPx);
+
             return outPx;
         }
 
         byte[] noGlow = RenderGlow(0f);
         byte[] withGlow = RenderGlow(14f);
         int noGlowDiff = 0;
+
         for (int i = 0; i < plain.Length; i++)
         {
-            if (Math.Abs(plain[i] - noGlow[i]) > 8) noGlowDiff++;
+            if (Math.Abs(plain[i] - noGlow[i]) > 8)
+                noGlowDiff++;
         }
 
         Report(
@@ -1005,9 +1052,11 @@ internal static class Program
     {
         const int size = 256;
         string fontPath = Path.Combine(AppContext.BaseDirectory, "source-code-pro-medium.ttf");
+
         if (!File.Exists(fontPath))
         {
             Report("SAMPLERS", $"font present at {fontPath}", false);
+
             return;
         }
 
@@ -1078,14 +1127,20 @@ internal static class Program
         // texture shows up as a colour with no ink of its own - and counting by colour means the
         // check is about which texture was read, not about where a quad landed.
         int litWhite = 0, litRed = 0, litGreen = 0, litBlue = 0, litYellow = 0;
+
         for (int i = 0; i < px.Length; i += 4)
         {
             int r = px[i], g = px[i + 1], b = px[i + 2];
-            if (r > 200 && g > 200 && b > 200) litWhite++;
-            else if (r > 150 && g < 90 && b < 90) litRed++;
-            else if (g > 150 && r < 90 && b < 90) litGreen++;
-            else if (b > 150 && r < 90 && g < 90) litBlue++;
-            else if (r > 150 && g > 150 && b < 90) litYellow++;
+            if (r > 200 && g > 200 && b > 200)
+                litWhite++;
+            else if (r > 150 && g < 90 && b < 90)
+                litRed++;
+            else if (g > 150 && r < 90 && b < 90)
+                litGreen++;
+            else if (b > 150 && r < 90 && g < 90)
+                litBlue++;
+            else if (r > 150 && g > 150 && b < 90)
+                litYellow++;
         }
 
         Report("SAMPLERS", $"the SVG fill drew beside everything else ({litWhite} white pixels)", litWhite > 500);
@@ -1117,9 +1172,11 @@ internal static class Program
         const int lines = 9;
         const int frames = 30;
         string fontPath = Path.Combine(AppContext.BaseDirectory, "source-code-pro-medium.ttf");
+
         if (!File.Exists(fontPath))
         {
             Report("COST", $"font present at {fontPath}", false);
+
             return;
         }
 
@@ -1141,6 +1198,7 @@ internal static class Program
         (double Build, double End, double Gpu) Run(bool outlined, float width)
         {
             double build = 0, end = 0, gpu = 0;
+
             for (int f = 0; f < frames; f++)
             {
                 var cb = device.AcquireCommandBuffer();
@@ -1150,11 +1208,14 @@ internal static class Program
 
                 var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 batch.Begin(cb, null, projection);
+
                 for (int i = 0; i < lines; i++)
                 {
                     var at = new Vector2(4, 4 + i * 13);
-                    if (outlined) batch.DrawString(font, line, at, 12f, white, black, width);
-                    else batch.DrawString(font, line, at, 12f, white);
+                    if (outlined)
+                        batch.DrawString(font, line, at, 12f, white, black, width);
+                    else
+                        batch.DrawString(font, line, at, 12f, white);
                 }
 
                 var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -1174,6 +1235,7 @@ internal static class Program
 
             // Held in ticks rather than milliseconds so the three add up to the frame they came from.
             double toMs = 1000.0 / System.Diagnostics.Stopwatch.Frequency / frames;
+
             return (build * toMs, end * toMs, gpu * toMs);
         }
 
@@ -1185,6 +1247,7 @@ internal static class Program
         {
             ReadOnlySpan<(int, int)> offsets = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)];
             double build = 0, end = 0, gpu = 0;
+
             for (int f = 0; f < frames; f++)
             {
                 var cb = device.AcquireCommandBuffer();
@@ -1194,6 +1257,7 @@ internal static class Program
 
                 var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 batch.Begin(cb, null, projection);
+
                 for (int i = 0; i < lines; i++)
                 {
                     var at = new Vector2(4, 4 + i * 13);
@@ -1216,6 +1280,7 @@ internal static class Program
             }
 
             double toMs = 1000.0 / System.Diagnostics.Stopwatch.Frequency / frames;
+
             return (build * toMs, end * toMs, gpu * toMs);
         }
 
@@ -1233,6 +1298,7 @@ internal static class Program
         var outlined = (Build: 0.0, End: 0.0, Gpu: 0.0);
         var heavy = (Build: 0.0, End: 0.0, Gpu: 0.0);
         const int rounds = 5;
+
         for (int r = 0; r < rounds; r++)
         {
             var f = Run(false, 0f);
@@ -1290,6 +1356,7 @@ internal static class Program
         var warmed = watch.ElapsedMilliseconds;
 
         Console.WriteLine($"APOS {label}: create+link {constructed} ms, first draw {warmed - constructed} ms");
+
         return warmed;
     }
 
@@ -1343,6 +1410,7 @@ internal static class Program
     private static void CheckSamplers(string name, GlShaderProgram program, ShaderReflection reflection)
     {
         if (reflection.Textures.Count == 0)
+
             return;
 
         var names = string.Join(", ", reflection.Textures.Select(t => t.Name));
@@ -1361,10 +1429,12 @@ internal static class Program
                 $"           {dropped} reflected texture(s) were optimised out - this entry point does not sample them;"
             );
             Console.WriteLine("           the resolve check below covers whatever the program does declare");
+
             return;
         }
 
         var unresolved = new List<string>();
+
         for (var i = 0; i < reflection.Textures.Count; i++)
         {
             if (program.TextureLocations[i] < 0)
@@ -1395,9 +1465,11 @@ internal static class Program
     private static void CheckUniformBlock(string name, GlShaderProgram program, ShaderReflection reflection)
     {
         if (reflection.Uniforms.Count == 0)
+
             return;
 
         var block = program.UniformBlock;
+
         if (block is null)
         {
             Report(
@@ -1405,6 +1477,7 @@ internal static class Program
                 $"{name}: reflection declares {reflection.Uniforms.Count} uniform(s) and the linked program has a _Global block",
                 false
             );
+
             return;
         }
 
@@ -1425,6 +1498,7 @@ internal static class Program
 
         var mismatched = new List<string>();
         var missing = new List<string>();
+
         foreach (var uniform in reflection.Uniforms)
         {
             if (!block.MemberOffsets.TryGetValue(uniform.Name, out var offset))
@@ -1972,7 +2046,8 @@ internal static class Program
         var clip = System.Numerics.Vector4.Transform(new System.Numerics.Vector4(world, 1f), lightViewProj);
         var ndc = new System.Numerics.Vector2(clip.X / clip.W, clip.Y / clip.W);
         var uv = new System.Numerics.Vector2(0.5f * ndc.X + 0.5f, 0.5f * ndc.Y + 0.5f);
-        if (flipY) uv.Y = 1f - uv.Y;
+        if (flipY)
+            uv.Y = 1f - uv.Y;
 
         return (Math.Clamp((int)(uv.X * resolution), 0, resolution - 1),
             Math.Clamp((int)(uv.Y * resolution), 0, resolution - 1));
@@ -1994,6 +2069,7 @@ internal static class Program
         Span<(float X, float Z)> corners = [(minX, minZ), (maxX, minZ), (maxX, maxZ), (minX, maxZ)];
 
         var bytes = new byte[PolyStride * corners.Length];
+
         for (var v = 0; v < corners.Length; v++)
         {
             var at = v * PolyStride;
@@ -2129,6 +2205,7 @@ internal static class Program
         // of the width. Unshifted it stops at the centre; with the translation read as w it smears
         // past the right edge instead.
         var lastDrawn = -1;
+
         for (var x = 0; x < size; x++)
         {
             for (var y = 0; y < size; y++)
@@ -2136,6 +2213,7 @@ internal static class Program
                 if (PixelAt(pixels, size, x, y).R > 100)
                 {
                     lastDrawn = x;
+
                     break;
                 }
             }
@@ -2275,6 +2353,7 @@ internal static class Program
             cb.SetPipeline(pipeline);
             cb.SetVertexBuffer(0, vertexBuffer, ImGuiStride);
             cb.SetIndexBuffer(indexBuffer);
+
             try
             {
                 cb.DrawIndexed(baseVertex: 1, startIndex: 0, primitiveCount: 1);
@@ -2287,6 +2366,7 @@ internal static class Program
             device.Submit(cb);
             Report("DRAW", "a non-zero baseVertex is refused on a context without the extension", refused);
             Console.WriteLine("           skipping the pixel assertions: this context cannot do the draw at all");
+
             return;
         }
 
@@ -2313,6 +2393,7 @@ internal static class Program
 
             var pixels = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+
             return pixels;
         }
 
@@ -2379,6 +2460,7 @@ internal static class Program
     private static Pixel PixelAt(byte[] pixels, int width, int x, int y)
     {
         var i = (y * width + x) * 4;
+
         return new Pixel(pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]);
     }
 
@@ -2389,6 +2471,7 @@ internal static class Program
     private static byte[] ImGuiVertices(params float[] positionsAndUvs)
     {
         var bytes = new byte[ImGuiStride * (positionsAndUvs.Length / 4)];
+
         for (var v = 0; v < positionsAndUvs.Length / 4; v++)
         {
             var at = v * ImGuiStride;
@@ -2408,6 +2491,7 @@ internal static class Program
     {
         const int stride = LineGeometryStride;
         var bytes = new byte[stride * 3];
+
         for (var v = 0; v < 3; v++)
         {
             var at = v * stride;
@@ -2446,6 +2530,7 @@ internal static class Program
         float[] values = [1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f];
         for (var i = 0; i < values.Length; i++)
             BitConverter.TryWriteBytes(bytes.AsSpan(i * sizeof(float)), values[i]);
+
         return bytes;
     }
 
@@ -2460,10 +2545,14 @@ internal static class Program
     private static int DrainGlErrors(string where)
     {
         var errors = new List<GLEnum>();
+
         for (var i = 0; i < 32; i++)
         {
             var error = _gl.GetError();
-            if (error == GLEnum.NoError) break;
+
+            if (error == GLEnum.NoError)
+
+                break;
             errors.Add(error);
         }
 
@@ -2478,7 +2567,8 @@ internal static class Program
 
     private static void Report(string category, string what, bool ok)
     {
-        if (!ok) _failures++;
+        if (!ok)
+            _failures++;
         Console.WriteLine($"{category}: {(ok ? "ok" : "<-- FAIL")} - {what}");
     }
 
@@ -2518,12 +2608,15 @@ internal static class Program
         get
         {
             var imgui = ImGuiFullbright.Create();
+
             yield return new Bundle("ImGuiFullbright", imgui.Vertex, imgui.Pixel, imgui.Reflection, [ImGuiLayout]);
 
             var ground = GroundFullbright.Create();
+
             yield return new Bundle("GroundFullbright", ground.Vertex, ground.Pixel, ground.Reflection, [PositionColorLayout]);
 
             var mountains = MountainsFullbright.Create();
+
             yield return new Bundle(
                 "MountainsFullbright",
                 mountains.Vertex,
@@ -2533,15 +2626,18 @@ internal static class Program
             );
 
             var sky = SkyFullbright.Create();
+
             yield return new Bundle("SkyFullbright", sky.Vertex, sky.Pixel, sky.Reflection, [PositionColorLayout]);
 
             // Both Poly techniques, unlike the POC's single bundle. The shadow pass is a distinct
             // entry-point pair with its own reflection, so it is a distinct program that has to
             // link - and it is the one whose block layout nothing else here would cover.
             var poly = PolyBasic.Create();
+
             yield return new Bundle("PolyBasic", poly.Vertex, poly.Pixel, poly.Reflection, [PolyLayout, InstanceLayout]);
 
             var polyShadow = PolyCreateShadowMap.Create();
+
             yield return new Bundle(
                 "PolyCreateShadowMap",
                 polyShadow.Vertex,
@@ -2554,9 +2650,11 @@ internal static class Program
             // which is exactly the axis a sampler-name bug lives on - Simple samples nothing while
             // the other three sample g_texture.
             var nvgSimple = NvgSimple.Create();
+
             yield return new Bundle("NvgSimple", nvgSimple.Vertex, nvgSimple.Pixel, nvgSimple.Reflection, [NvgLayout]);
 
             var nvgFillGradient = NvgFillGradient.Create();
+
             yield return new Bundle(
                 "NvgFillGradient",
                 nvgFillGradient.Vertex,
@@ -2566,6 +2664,7 @@ internal static class Program
             );
 
             var nvgFillImage = NvgFillImage.Create();
+
             yield return new Bundle(
                 "NvgFillImage",
                 nvgFillImage.Vertex,
@@ -2575,6 +2674,7 @@ internal static class Program
             );
 
             var nvgTriangles = NvgTriangles.Create();
+
             yield return new Bundle(
                 "NvgTriangles",
                 nvgTriangles.Vertex,
@@ -2584,6 +2684,7 @@ internal static class Program
             );
 
             var particle = ParticleFullbright.Create();
+
             yield return new Bundle(
                 "ParticleFullbright",
                 particle.Vertex,

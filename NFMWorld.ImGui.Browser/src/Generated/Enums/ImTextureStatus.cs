@@ -13,35 +13,35 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImTextureStatus : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Ok = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImTextureStatus : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Ok = unchecked(0),
 
-		/// <summary>
-		/// Backend destroyed the texture.<br/>
-		/// </summary>
-		Destroyed = unchecked(1),
+        /// <summary>
+        /// Backend destroyed the texture.<br/>
+        /// </summary>
+        Destroyed = unchecked(1),
 
-		/// <summary>
-		/// Requesting backend to create the texture. Set status OK when done.<br/>
-		/// </summary>
-		WantCreate = unchecked(2),
+        /// <summary>
+        /// Requesting backend to create the texture. Set status OK when done.<br/>
+        /// </summary>
+        WantCreate = unchecked(2),
 
-		/// <summary>
-		/// Requesting backend to update specific blocks of pixels (write to texture portions which have never been used before). Set status OK when done.<br/>
-		/// </summary>
-		WantUpdates = unchecked(3),
+        /// <summary>
+        /// Requesting backend to update specific blocks of pixels (write to texture portions which have never been used before). Set status OK when done.<br/>
+        /// </summary>
+        WantUpdates = unchecked(3),
 
-		/// <summary>
-		/// Requesting backend to destroy the texture. Set status to Destroyed when done.<br/>
-		/// </summary>
-		WantDestroy = unchecked(4),
-	}
+        /// <summary>
+        /// Requesting backend to destroy the texture. Set status to Destroyed when done.<br/>
+        /// </summary>
+        WantDestroy = unchecked(4),
+    }
 }

@@ -39,6 +39,7 @@ public static class Controls
             };
             // Keep the full scroll extent while recycling only the visible rows and a buffer.
             _rows = new DropdownOptionView[Math.Min(options.Count, (int)Math.Ceiling(maxHeight / RowHeight) + 2)];
+
             for (var i = 0; i < _rows.Length; i++)
             {
                 var row = new DropdownOptionView(onSelect);
@@ -54,13 +55,16 @@ public static class Controls
         {
             var changed = base.OnPostLayout();
             var selected = _selected();
+
             if (_lastSelected != selected)
             {
                 var top = selected * RowHeight * Math.Max(G.Scale, 0.01f);
                 var bottom = top + RowHeight * Math.Max(G.Scale, 0.01f);
                 var previous = ScrollTop;
-                if (top < ScrollTop) ScrollTop = top;
-                else if (bottom > ScrollTop + LayoutPaddingSize.Y) ScrollTop = bottom - LayoutPaddingSize.Y;
+                if (top < ScrollTop)
+                    ScrollTop = top;
+                else if (bottom > ScrollTop + LayoutPaddingSize.Y)
+                    ScrollTop = bottom - LayoutPaddingSize.Y;
                 changed |= previous != ScrollTop;
                 if (top >= ScrollTop - 0.5f && bottom <= ScrollTop + LayoutPaddingSize.Y + 0.5f)
                     _lastSelected = selected;
@@ -71,6 +75,7 @@ public static class Controls
                 0,
                 Math.Max(0, _options.Count - _rows.Length)
             );
+
             for (var i = 0; i < _rows.Length; i++)
             {
                 var index = first + i;
@@ -120,7 +125,10 @@ public static class Controls
 
             public bool SetOption(int index, string option, bool selected)
             {
-                if (_index == index && _selected == selected) return false;
+                if (_index == index && _selected == selected)
+
+                    return false;
+
                 if (_index != index)
                 {
                     _hovered = false;
@@ -135,6 +143,7 @@ public static class Controls
                 _index = index;
                 _selected = selected;
                 UpdateColors();
+
                 return true;
             }
 
@@ -164,12 +173,16 @@ public static class Controls
                 var inside = hit.Any(target =>
                     {
                         for (Node? current = target; current != null; current = current.VisualParent)
+
                             if (ReferenceEquals(current, dropdown))
+
                                 return true;
+
                         return false;
                     }
                 );
-                if (!inside) dropdown.Dismiss();
+                if (!inside)
+                    dropdown.Dismiss();
             }
 
             foreach (var child in node.VisualChildren)
@@ -247,13 +260,19 @@ public static class Controls
                 )
             ]
         );
+
         return KeyboardNavigation.Bind(
             node,
             key =>
             {
-                if (key is not (Key.Enter or Key.Space or Key.Left or Key.Right)) return false;
-                if (key == Key.Left && !checkedValue() || key == Key.Right && checkedValue()) return true;
+                if (key is not (Key.Enter or Key.Space or Key.Left or Key.Right))
+
+                    return false;
+                if (key == Key.Left && !checkedValue() || key == Key.Right && checkedValue())
+
+                    return true;
                 onToggle();
+
                 return true;
             },
             value => focused.Value = value
@@ -295,6 +314,7 @@ public static class Controls
         double Progress()
         {
             var upper = Math.Max(min, max());
+
             return upper <= min ? 0 : Math.Clamp((value() - min) / (upper - min), 0, 1);
         }
 
@@ -305,12 +325,15 @@ public static class Controls
         void SetFromPointer(MouseEvent e)
         {
             if (row is null)
+
                 return;
 
             // Always re-read: the node is laid out before any press can reach it, but its
             // width changes with the window.
             var width = TrackWidth();
+
             if (width <= 0)
+
                 return;
 
             var local = (e.Position.X - row.LayoutPaddingPosition.X - (thumbWidth / 2)) / width;
@@ -379,7 +402,7 @@ public static class Controls
                 overflow: Overflow.Hidden
             ),
             children: new object?[] { fill, thumb }
-        );
+            );
 
         row = Sx.View(
             style: () => Sx.Styles(
@@ -395,20 +418,26 @@ public static class Controls
             onmousedown: SetFromPointer,
             onmousedrag: SetFromDrag,
             children: new object?[] { track }
-        );
+            );
 
         // The row is positioned, so it is the containing block for the track and thumb.
+
         return KeyboardNavigation.Bind(
             row,
             key =>
             {
-                if (key is Key.Enter or Key.Space) return true;
-                if (key is not (Key.Left or Key.Right or Key.Home or Key.End)) return false;
+                if (key is Key.Enter or Key.Space)
+
+                    return true;
+                if (key is not (Key.Left or Key.Right or Key.Home or Key.End))
+
+                    return false;
                 var upper = Math.Max(min, max());
                 var next = key == Key.Home ? min
                     : key == Key.End ? upper
                     : Math.Round((value() + (key == Key.Left ? -step : step)) / step) * step;
                 onValue(Math.Clamp(next, min, upper));
+
                 return true;
             },
             value => focused.Value = value
@@ -446,10 +475,13 @@ public static class Controls
             if (open.Value)
             {
                 open.Value = false;
+
                 return;
             }
 
-            if (root == null) return;
+            if (root == null)
+
+                return;
 
             openOptions = options().ToArray();
             cursor.Value = Math.Clamp(value(), 0, Math.Max(0, openOptions.Count - 1));
@@ -569,15 +601,18 @@ public static class Controls
                 if (key == Key.Escape && open.Value)
                 {
                     open.Value = false;
+
                     return true;
                 }
 
                 if (key is Key.Enter or Key.Space)
                 {
-                    if (!open.Value) Toggle();
+                    if (!open.Value)
+                        Toggle();
                     else
                     {
-                        if (cursor.Value >= 0 && cursor.Value < openOptions.Count) onSelect(cursor.Value);
+                        if (cursor.Value >= 0 && cursor.Value < openOptions.Count)
+                            onSelect(cursor.Value);
                         open.Value = false;
                     }
 
@@ -589,13 +624,16 @@ public static class Controls
                     cursor.Value = key == Key.Home ? 0
                         : key == Key.End ? Math.Max(0, openOptions.Count - 1)
                         : Math.Clamp(cursor.Value + (key is Key.Up or Key.Left ? -1 : 1), 0, Math.Max(0, openOptions.Count - 1));
+
                     return true;
                 }
 
                 if (!open.Value && key is (Key.Left or Key.Right))
                 {
                     var count = options().Count;
-                    if (count > 0) onSelect(Math.Clamp(value() + (key == Key.Left ? -1 : 1), 0, count - 1));
+                    if (count > 0)
+                        onSelect(Math.Clamp(value() + (key == Key.Left ? -1 : 1), 0, count - 1));
+
                     return true;
                 }
 
@@ -604,7 +642,8 @@ public static class Controls
             value =>
             {
                 focused.Value = value;
-                if (!value) open.Value = false;
+                if (!value)
+                    open.Value = false;
             }
         );
     }
@@ -640,6 +679,7 @@ public static class Controls
             onchange: onChange,
             placeholder: placeholder
         );
+
         return KeyboardNavigation.Bind(node, _ => false, value => focused.Value = value);
     }
 }

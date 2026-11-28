@@ -23,6 +23,7 @@ public class WebPageTests
                 AllowAutoRedirect = false
             }
         );
+
         return client;
     }
 
@@ -226,6 +227,7 @@ public class WebPageTests
 
         var hash = new string('a', 64);
         int id, otherId;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -286,6 +288,7 @@ public class WebPageTests
         using var client = Browser(factory);
 
         int privateId, takedownId;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -498,6 +501,7 @@ public class WebPageTests
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
         var user = db.Users.FirstOrDefault(u => u.UsernameNormalized == owner);
+
         if (user is null)
         {
             user = new User { Username = owner, UsernameNormalized = owner };
@@ -520,6 +524,7 @@ public class WebPageTests
         };
         db.Assets.Add(asset);
         await db.SaveChangesAsync();
+
         return asset.Id;
     }
 
@@ -532,6 +537,7 @@ public class WebPageTests
         using var anonymous = Browser(factory);
         await SignUpAsync(admin, "adminuser");
         await SignUpAsync(moderator, "moduser");
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -598,6 +604,7 @@ public class WebPageTests
         await SignUpAsync(moderator, "reviewer");
         var id = await SeedOwnedAsync(factory, "artist", "Pending course");
         string hash;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -647,9 +654,11 @@ public class WebPageTests
         StringAssert.Contains(await owner.GetStringAsync($"/asset/{id}/edit"), "Rejected");
 
         Task<HttpResponseMessage> Review(HttpClient client, string token, string action, string version)
-            => client.PostAsync($"/moderation/assets?handler={action}&id={id}", new FormUrlEncodedContent(
-                new Dictionary<string, string> { ["__RequestVerificationToken"] = token, ["hash"] = version }
-            )
+            => client.PostAsync(
+                $"/moderation/assets?handler={action}&id={id}",
+                new FormUrlEncodedContent(
+                    new Dictionary<string, string> { ["__RequestVerificationToken"] = token, ["hash"] = version }
+                )
             );
     }
 
@@ -664,6 +673,7 @@ public class WebPageTests
         await SignUpAsync(moderator, "moduser");
         await SignUpAsync(artist, "artist");
         int id;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -689,9 +699,11 @@ public class WebPageTests
         Assert.AreEqual(2, saved.ModerationActions.Count(action => action.TargetUserId == id));
 
         Task<HttpResponseMessage> SetVerification(HttpClient client, string token, string handler)
-            => client.PostAsync($"{url}?handler={handler}", new FormUrlEncodedContent(
-                new Dictionary<string, string> { ["__RequestVerificationToken"] = token }
-            )
+            => client.PostAsync(
+                $"{url}?handler={handler}",
+                new FormUrlEncodedContent(
+                    new Dictionary<string, string> { ["__RequestVerificationToken"] = token }
+                )
             );
     }
 
@@ -707,6 +719,7 @@ public class WebPageTests
         var ordinaryAssetId = await SeedOwnedAsync(factory, "ordinary", "Ordinary course");
         int profileId, deletedId, ordinaryId;
         string hash;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -760,6 +773,7 @@ public class WebPageTests
 
         var value = Regex.Match(tag.Value, "value=\"([^\"]+)\"");
         Assert.IsTrue(value.Success, "the antiforgery input has no value");
+
         return value.Groups[1].Value;
     }
 }

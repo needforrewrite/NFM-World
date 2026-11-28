@@ -83,6 +83,7 @@ public partial class RadParser
                                 return new Vector3(x, y, z);
                             }
                         ).ToArray();
+
                         return poly.WithPoints(scaledPoints, poly.Triangles);
                     }
                 )
@@ -160,11 +161,16 @@ public partial class RadParser
         var parser = new RadParser(fileName);
         var lines = radFile.AsSpan().Split("\n");
         int lineNumber = 0;
+
         foreach (var lineRange in lines)
         {
             lineNumber++;
             var line = radFile.AsSpan(lineRange).Trim();
-            if (line.IsEmpty) continue;
+
+            if (line.IsEmpty)
+
+                continue;
+
             try
             {
                 parser.ParseLine(line);
@@ -176,6 +182,7 @@ public partial class RadParser
         }
 
         // reconcile phy-addons custom wheels
+
         for (var i = 0; i < parser._phyAddonsWheelMeshes.Count; i++)
         {
             if (parser._phyAddonsWheelMeshes[i] is { } wheelMesh)
@@ -231,22 +238,27 @@ public partial class RadParser
             )
         );
         transaction.Finish();
+
         return result;
     }
 
     private static Rad3d RepositionCar(Rad3d rad3d)
     {
-        if (rad3d.Wheels is { Length: < 4 }) return rad3d;
+        if (rad3d.Wheels is { Length: < 4 })
+
+            return rad3d;
 
         // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
         // this fixes masheen bouncing on the big ramp
         fix64 groundTranslation = fix64.MaxValue;
         fix64 wheelXTranslation = 0;
         fix64 wheelZTranslation = 0;
+
         for (var i = 0; i < 4; i++)
         {
             var wheel = rad3d.Wheels[i];
             var groundY = wheel.Ground;
+
             if (groundY < groundTranslation)
             {
                 groundTranslation = groundY;
@@ -281,6 +293,7 @@ public partial class RadParser
         for (var i = 0; i < rad3d.Polys.Length; i++)
         {
             var poly = rad3d.Polys[i];
+
             for (var j = 0; j < poly.Points.Length; j++)
             {
                 var point = poly.Points[j];
@@ -297,18 +310,26 @@ public partial class RadParser
 
     private void ParseLine(ReadOnlySpan<char> line)
     {
-        if (line.StartsWith("1stWheelColor(") || line.StartsWith("2ndWheelColor(")
-            || line.StartsWith("3rdWheelColor(") || line.StartsWith("4thWheelColor("))
+        if (line.StartsWith("1stWheelColor(")
+            || line.StartsWith("2ndWheelColor(")
+            || line.StartsWith("3rdWheelColor(")
+            || line.StartsWith("4thWheelColor("))
         {
             _wheelColors[Color3.FromSpan(BracketParser.GetShorts(line, stackalloc short[3]))] = line[0] - '1';
+
             return;
         }
 
-        if (line.StartsWith("stonecold") || line.StartsWith("newstone")) _stonecold = true;
-        else if (line.StartsWith("road")) _road = true;
-        else if (line.StartsWith("notroad")) _road = false;
-        else if (line.StartsWith("shadow")) _castsShadow = true;
-        else if (line.StartsWith("gshadow")) _castsShadow = true; // used by decorative trees
+        if (line.StartsWith("stonecold") || line.StartsWith("newstone"))
+            _stonecold = true;
+        else if (line.StartsWith("road"))
+            _road = true;
+        else if (line.StartsWith("notroad"))
+            _road = false;
+        else if (line.StartsWith("shadow"))
+            _castsShadow = true;
+        else if (line.StartsWith("gshadow"))
+            _castsShadow = true; // used by decorative trees
 
         else if (line.StartsWith("1stColor("))
         {
@@ -350,37 +371,62 @@ public partial class RadParser
             _stats = _stats with { Swits = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3])) };
         else if (line.StartsWith("acelf("))
             _stats = _stats with { Acelf = f64Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc fix64[3])) };
-        else if (line.StartsWith("handb(")) _stats = _stats with { Handb = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("airs(")) _stats = _stats with { Airs = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("airc(")) _stats = _stats with { Airc = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("turn(")) _stats = _stats with { Turn = (int)BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("grip(")) _stats = _stats with { Grip = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("bounce(")) _stats = _stats with { Bounce = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("simag(")) _stats = _stats with { Simag = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("moment(")) _stats = _stats with { Moment = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("comprad(")) _stats = _stats with { Comprad = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("push(")) _stats = _stats with { Push = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("lift(")) _stats = _stats with { Lift = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("revlift(")) _stats = _stats with { Revlift = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("powerloss(")) _stats = _stats with { Powerloss = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("flipy(")) _stats = _stats with { Flipy = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("msquash(")) _stats = _stats with { Msquash = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("clrad(")) _stats = _stats with { Clrad = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("handb("))
+            _stats = _stats with { Handb = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("airs("))
+            _stats = _stats with { Airs = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("airc("))
+            _stats = _stats with { Airc = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("turn("))
+            _stats = _stats with { Turn = (int)BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("grip("))
+            _stats = _stats with { Grip = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("bounce("))
+            _stats = _stats with { Bounce = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("simag("))
+            _stats = _stats with { Simag = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("moment("))
+            _stats = _stats with { Moment = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("comprad("))
+            _stats = _stats with { Comprad = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("push("))
+            _stats = _stats with { Push = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("revpush("))
+            _stats = _stats with { Revpush = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("lift("))
+            _stats = _stats with { Lift = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("revlift("))
+            _stats = _stats with { Revlift = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("powerloss("))
+            _stats = _stats with { Powerloss = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("flipy("))
+            _stats = _stats with { Flipy = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("msquash("))
+            _stats = _stats with { Msquash = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("clrad("))
+            _stats = _stats with { Clrad = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("dammult("))
+            _stats = _stats with { Dammult = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("maxmag("))
             _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line), HasMaxmag = true };
-        else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("dishandle("))
+            _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("handling(")) /* physhot */
             _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) / (fix64)200f };
-        else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("name(")) _stats = _stats with { Name = BracketParser.GetString(line) };
+        else if (line.StartsWith("outdam("))
+            _stats = _stats with { Outdam = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("name("))
+            _stats = _stats with { Name = BracketParser.GetString(line) };
         else if (line.StartsWith("enginsignature("))
             _stats = _stats with { Enginsignature = BracketParser.GetNumber<sbyte>(line) };
-        else if (line.StartsWith("turnradius(")) _stats = _stats with { TurnRadius = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("roadgrip(")) _stats = _stats with { RoadGrip = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("offroadgrip(")) _stats = _stats with { OffRoadGrip = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("offtrackgrip(")) _stats = _stats with { OffTrackGrip = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("turnradius("))
+            _stats = _stats with { TurnRadius = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("roadgrip("))
+            _stats = _stats with { RoadGrip = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("offroadgrip("))
+            _stats = _stats with { OffRoadGrip = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("offtrackgrip("))
+            _stats = _stats with { OffTrackGrip = BracketParser.GetNumber<fix64>(line) };
 
         else if (line.StartsWith("w("))
         {
@@ -411,6 +457,7 @@ public partial class RadParser
             );
 
             // phy-addons custom wheels
+
             if (line.EndsWith(")c"))
             {
                 _phyAddonsWheelMeshes[_wheels.Count - 1] = [];
@@ -431,12 +478,18 @@ public partial class RadParser
             );
         }
 
-        else if (line.StartsWith("div(")) idiv = BracketParser.GetNumber<int>(line) / (fix64)10f;
-        else if (line.StartsWith("idiv(")) idiv = BracketParser.GetNumber<int>(line) / (fix64)100f;
-        else if (line.StartsWith("iwid(")) iwid = BracketParser.GetNumber<int>(line) / (fix64)100f;
-        else if (line.StartsWith("ScaleX(")) scaleX = BracketParser.GetNumber<int>(line) / (fix64)100f;
-        else if (line.StartsWith("ScaleY(")) scaleY = BracketParser.GetNumber<int>(line) / (fix64)100f;
-        else if (line.StartsWith("ScaleZ(")) scaleZ = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("div("))
+            idiv = BracketParser.GetNumber<int>(line) / (fix64)10f;
+        else if (line.StartsWith("idiv("))
+            idiv = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("iwid("))
+            iwid = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("ScaleX("))
+            scaleX = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("ScaleY("))
+            scaleY = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("ScaleZ("))
+            scaleZ = BracketParser.GetNumber<int>(line) / (fix64)100f;
 
         else if (line.StartsWith("<track>"))
         {
@@ -471,6 +524,7 @@ public partial class RadParser
         else if (line.StartsWith("mtri("))
         {
             var tri = BracketParser.GetNumbers(line, stackalloc ushort[3]);
+
             foreach (var idx in tri)
             {
                 _meshCollisionIndices.Add(idx);
@@ -513,6 +567,7 @@ public partial class RadParser
         if (_boxes.Count > 0)
         {
             ref var currentBox = ref _boxes.GetValueRef(^1);
+
             if (line.StartsWith("c("))
             {
                 var color = Color3.FromSpan(BracketParser.GetShorts(line, stackalloc short[3]));
@@ -581,6 +636,7 @@ public partial class RadParser
         }
 
         // SRC custom wheel format
+
         if (line.StartsWith("<wheel>"))
         {
             _wheelMeshes.Add(new WheelMesh { Polys = _currentPolys = [] });
@@ -629,6 +685,7 @@ public partial class RadParser
             {
                 var color = Color3.FromSpan(BracketParser.GetShorts(line, stackalloc short[3]));
                 _currentPoly = _currentPoly with { Color = color };
+
                 if (_colors.TryGetValue(color, out var colNum))
                 {
                     _currentPoly = _currentPoly with { ColNum = colNum };
@@ -642,7 +699,8 @@ public partial class RadParser
                 };
             else if (line.StartsWith("libtess"))
                 _currentPoly = _currentPoly with { TriangulationAlgorithm = PolygonTriangulator.TriangulationAlgorithm.Libtess };
-            else if (line.StartsWith("glass")) _currentPoly = _currentPoly with { PolyType = PolyType.Glass };
+            else if (line.StartsWith("glass"))
+                _currentPoly = _currentPoly with { PolyType = PolyType.Glass };
             // confusing: NFMM allows you to have a polygon be BOTH glass and light, which doesn't make any sense in NFMW. so we just ignore the light part if it's non flat.
             else if (line.StartsWith("lightBrake") && _currentPoly.PolyType == PolyType.Flat)
                 _currentPoly = _currentPoly with { PolyType = PolyType.BrakeLight };
@@ -652,16 +710,21 @@ public partial class RadParser
                 _currentPoly = _currentPoly with { PolyType = PolyType.ReverseLight };
             else if (line.StartsWith("light") && _currentPoly.PolyType == PolyType.Flat)
                 _currentPoly = _currentPoly with { PolyType = PolyType.Light };
-            else if (line.StartsWith("gr(-10)")) _currentPoly = _currentPoly with { LineType = LineType.BrightColored };
-            else if (line.StartsWith("gr(-18)")) _currentPoly = _currentPoly with { LineType = LineType.Charged };
-            else if (line.StartsWith("gr(-13)")) _currentPoly = _currentPoly with { PolyType = PolyType.Finish };
+            else if (line.StartsWith("gr(-10)"))
+                _currentPoly = _currentPoly with { LineType = LineType.BrightColored };
+            else if (line.StartsWith("gr(-18)"))
+                _currentPoly = _currentPoly with { LineType = LineType.Charged };
+            else if (line.StartsWith("gr(-13)"))
+                _currentPoly = _currentPoly with { PolyType = PolyType.Finish };
             // SRC extension
-            else if (line.StartsWith("proad")) _currentPoly = _currentPoly with { LineType = LineType.Colored };
+            else if (line.StartsWith("proad"))
+                _currentPoly = _currentPoly with { LineType = LineType.Colored };
             // NFMW extension
             else if (line.StartsWith("decal"))
             {
                 // Parse decal with optional value: decal or decal(value)
                 float decalValue = -1.0f; // default (no offset)
+
                 if (line.Length > 5 && line[5] == '(')
                 {
                     decalValue = BracketParser.GetNumber<float>(line);
@@ -672,6 +735,7 @@ public partial class RadParser
             else if (line.StartsWith("p("))
             {
                 var position = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3]));
+
                 if (!_inPhyshotWheel) // PhyShot custom wheels do NOT use the div/scale values
                 {
                     var transformedPoint = new Vector3(
@@ -697,7 +761,8 @@ public partial class RadParser
                 _tris.AddRange(tri);
             }
 
-            else if (line.StartsWith("noOutline")) _noOutline = true;
+            else if (line.StartsWith("noOutline"))
+                _noOutline = true;
 
             else if (line.StartsWith("wheel(")) // Phy-addons extension
             {
@@ -713,6 +778,7 @@ public partial class RadParser
                 _currentPoly = _currentPoly.WithPoints(_points.ToArray(), _tris.Count > 0 ? _tris.ToImmutableArray() : null);
                 _points.Clear();
                 _tris.Clear();
+
                 if (_stonecold || _noOutline)
                 {
                     if (_currentPoly.LineType == LineType.Flat)
@@ -739,6 +805,7 @@ public partial class RadParser
                     else
                     {
                         // generic wheel mesh: add to all wheels EXCEPT those that have their own specific meshes
+
                         for (var wi = 0; wi < _phyAddonsWheelMeshes.Count; wi++)
                         {
                             if (!_wheelsWithSpecificPolys.Contains(wi) && _phyAddonsWheelMeshes[wi] is { } sharedList)
@@ -761,14 +828,17 @@ public partial class RadParser
         for (var i = 0; i < _physhotWheelTargets.Count; i++)
         {
             var targets = _physhotWheelTargets[i];
+
             if (targets.Contains(-1) || targets.Contains(wheelIndex))
             {
                 wheelMesh = _wheelMeshes[i];
+
                 return true;
             }
         }
 
         wheelMesh = null;
+
         return false;
     }
 }

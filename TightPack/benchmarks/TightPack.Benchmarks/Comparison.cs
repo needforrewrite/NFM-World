@@ -167,6 +167,7 @@ public static class Comparison
     private static double Measure<T>(Func<T> action, int iterations, out long bytesPerOp)
     {
         var sink = new object?[1];
+
         for (int i = 0; i < Math.Max(2000, iterations / 10); i++)
         {
             sink[0] = action();
@@ -178,16 +179,19 @@ public static class Comparison
 
         var samples = new double[5];
         bytesPerOp = 0;
+
         for (int s = 0; s < samples.Length; s++)
         {
             long before = GC.GetAllocatedBytesForCurrentThread();
             long start = Stopwatch.GetTimestamp();
+
             for (int i = 0; i < iterations; i++)
             {
                 sink[0] = action();
             }
 
             long end = Stopwatch.GetTimestamp();
+
             if (s == samples.Length - 1)
             {
                 bytesPerOp = (GC.GetAllocatedBytesForCurrentThread() - before) / iterations;
@@ -198,6 +202,7 @@ public static class Comparison
 
         GC.KeepAlive(sink);
         Array.Sort(samples);
+
         return samples[samples.Length / 2];
     }
 
@@ -205,6 +210,7 @@ public static class Comparison
     {
         Console.WriteLine($"{"benchmark",-26} {"memorypack",10} {"tightpack",10} {"tp/mp",6} {"mp alloc",9} {"tp alloc",9}");
         Console.WriteLine(new string('-', 78));
+
         foreach (Row row in rows)
         {
             double ratio = row.TightPackNs / row.MemoryPackNs;

@@ -101,6 +101,7 @@ namespace Poly2Tri
         public PointSet(List<TriangulationPoint> bounds)
         {
             //Points = new List<TriangulationPoint>();
+
             foreach (TriangulationPoint p in bounds)
             {
                 Add(p, -1, false);
@@ -159,6 +160,7 @@ namespace Poly2Tri
             // if we already have an instance of the point, then don't bother inserting it again as duplicate points
             // will actually cause some real problems later on.   Still return true though to indicate that the point
             // is successfully "added"
+
             if (mPointMap.ContainsKey(p.VertexCode))
             {
                 return true;
@@ -187,6 +189,7 @@ namespace Poly2Tri
             }
 
             iter.Reset();
+
             while (iter.MoveNext())
             {
                 Add(iter.Current);
@@ -197,6 +200,7 @@ namespace Poly2Tri
         public virtual bool AddRange(List<TriangulationPoint> points)
         {
             bool bOK = true;
+
             foreach (TriangulationPoint p in points)
             {
                 bOK = Add(p, -1, false) && bOK;
@@ -209,6 +213,7 @@ namespace Poly2Tri
         public bool TryGetPoint(double x, double y, out TriangulationPoint p)
         {
             uint vc = TriangulationPoint.CreateVertexCode(x, y, Precision);
+
             if (mPointMap.TryGetValue(vc, out p))
             {
                 return true;
@@ -262,6 +267,7 @@ namespace Poly2Tri
         public void CopyTo(TriangulationPoint[] array, int arrayIndex)
         {
             int numElementsToCopy = Math.Min(Count, array.Length - arrayIndex);
+
             for (int i = 0; i < numElementsToCopy; ++i)
             {
                 array[arrayIndex + i] = mPoints[i] as TriangulationPoint;

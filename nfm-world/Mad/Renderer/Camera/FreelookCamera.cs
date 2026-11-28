@@ -42,6 +42,7 @@ public class FreelookCamera
         var climb = ClimbSpeed * Physics.PHYSICS_MULTIPLIER;
 
         var sc = new SinCosFloat(_yaw);
+
         if (input.Forward)
         {
             _position.X += move * sc.Sin;
@@ -56,11 +57,15 @@ public class FreelookCamera
 
         // Reversing flips the steering, like a car.
         var steer = input.Back ? -1f : 1f;
-        if (input.Left) _yaw -= turn * steer;
-        if (input.Right) _yaw += turn * steer;
+        if (input.Left)
+            _yaw -= turn * steer;
+        if (input.Right)
+            _yaw += turn * steer;
 
-        if (input.Sink) _position.Y += climb;
-        if (input.Rise) _position.Y -= climb;
+        if (input.Sink)
+            _position.Y += climb;
+        if (input.Rise)
+            _position.Y -= climb;
         _position.Y = Math.Clamp(_position.Y, MinY, MaxY);
 
         // A shallow downward tilt (phy's 6 degrees), 1000 units out.

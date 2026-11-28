@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiNavLayer : int
-	{
-		/// <summary>
-		/// Main scrolling layer<br/>
-		/// </summary>
-		Main = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiNavLayer : int
+    {
+        /// <summary>
+        /// Main scrolling layer<br/>
+        /// </summary>
+        Main = unchecked(0),
 
-		/// <summary>
-		/// Menu layer (access with Alt)<br/>
-		/// </summary>
-		Menu = unchecked(1),
+        /// <summary>
+        /// Menu layer (access with Alt)<br/>
+        /// </summary>
+        Menu = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Count = unchecked(2),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Count = unchecked(2),
+    }
 }

@@ -12,9 +12,14 @@ public partial class StageEditorPhase
     {
         base.GameTick();
 
-        if (!_isOpen) return;
+        if (!_isOpen)
+
+            return;
         SyncViewportBounds();
-        if (ActiveTab == null) return;
+
+        if (ActiveTab == null)
+
+            return;
 
         if (EditorModalOpen() || UiWantsKeyboard() || !GameSparker.Game.IsActive)
         {
@@ -22,6 +27,7 @@ public partial class StageEditorPhase
         }
 
         // Handle camera movement with WASD in first-person flying mode
+
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene)
         {
             float yaw = ActiveTab.CameraYaw * (float)Math.PI / 180f;
@@ -81,6 +87,7 @@ public partial class StageEditorPhase
         }
 
         // Update piece transforms in the stage
+
         if (ActiveTab?.Stage != null)
         {
             // GameTick the renderer so StageObjectGameObjects sync position from piece.Obj
@@ -90,6 +97,7 @@ public partial class StageEditorPhase
         // Viewport picking and hierarchy writes change the selection without going through
         // the view, so republish when it changed.
         var stamp = SelectionStamp();
+
         if (stamp != _lastSelectionStamp || _isRectSelecting || _gizmoDragging != GizmoAxis.None)
         {
             _lastSelectionStamp = stamp;
@@ -106,15 +114,22 @@ public partial class StageEditorPhase
         if (_viewportView is null)
         {
             _viewportMin = _viewportMax = default;
+
             return;
         }
 
         var position = _viewportView.LayoutBorderPosition;
         var size = _viewportView.LayoutBorderSize;
-        if (!float.IsFinite(position.X) || !float.IsFinite(position.Y)
-            || !float.IsFinite(size.X) || !float.IsFinite(size.Y) || size.X <= 0 || size.Y <= 0)
+
+        if (!float.IsFinite(position.X)
+            || !float.IsFinite(position.Y)
+            || !float.IsFinite(size.X)
+            || !float.IsFinite(size.Y)
+            || size.X <= 0
+            || size.Y <= 0)
         {
             _viewportMin = _viewportMax = default;
+
             return;
         }
 

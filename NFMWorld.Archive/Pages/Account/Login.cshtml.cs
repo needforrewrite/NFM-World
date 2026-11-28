@@ -30,6 +30,7 @@ public sealed class LoginModel(
     {
         Flow = flow is "register" or "discord" ? flow : "signin";
         ReturnUrl = returnUrl;
+
         return Page();
     }
 
@@ -40,13 +41,16 @@ public sealed class LoginModel(
         var nameKey = "name:" + normalized;
 
         // The same limiter the JSON endpoint uses, so the form cannot bypass it.
+
         if (throttle.IsBlocked(ipKey, out _) || throttle.IsBlocked(nameKey, out _))
         {
             Error = "Too many attempts. Try again in a few minutes.";
+
             return Page();
         }
 
         if (!await VerifyTurnstileAsync("signin"))
+
             return Page();
 
         var user = await Db.Users.FirstOrDefaultAsync(u => u.UsernameNormalized == normalized);
@@ -60,6 +64,7 @@ public sealed class LoginModel(
             AuthEndpoints.Audit(Db, user?.Id, "web_login_failed", null, HttpContext);
             await Db.SaveChangesAsync();
             Error = "Wrong username or password.";
+
             return Page();
         }
 
@@ -79,38 +84,47 @@ public sealed class LoginModel(
     public async Task<IActionResult> OnPostRegisterAsync()
     {
         Flow = "register";
+
         if (options.ReadOnly)
         {
             Error = "This archive is not accepting new accounts.";
+
             return Page();
         }
 
         var ipKey = "ip:" + (HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
         if (throttle.IsBlocked(ipKey, out _))
         {
             Error = "Too many attempts. Try again in a few minutes.";
+
             return Page();
         }
 
         if (!await VerifyTurnstileAsync("register"))
+
             return Page();
 
         if (!UsernamePolicy.TryValidate(Username, out var nameError))
         {
             Error = nameError;
+
             return Page();
         }
 
         if (!PasswordPolicy.TryValidate(RegisterPassword, out var passwordError))
         {
             Error = passwordError;
+
             return Page();
         }
 
         var normalized = UsernamePolicy.Normalize(Username!);
+
         if (await Db.Users.AnyAsync(u => u.UsernameNormalized == normalized))
         {
             Error = "That username is taken.";
+
             return Page();
         }
 
@@ -145,9 +159,12 @@ public sealed class LoginModel(
             HttpContext.RequestAborted,
             HttpContext.Connection.RemoteIpAddress?.ToString()
         );
+
         if (challenge.Accepted)
+
             return true;
         Error = challenge.Message;
+
         return false;
     }
 

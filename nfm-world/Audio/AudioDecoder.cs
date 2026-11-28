@@ -53,6 +53,7 @@ public static class AudioDecoder
             using var copy = new MemoryStream();
             entryStream.CopyTo(copy);
             copy.Position = 0;
+
             return DecodeTrack(copy, Path.GetExtension(entry.Name));
         }
 
@@ -72,6 +73,7 @@ public static class AudioDecoder
         using var stream = VFS.OpenRead(vfsPath);
 
         // Handle ZIP-based containers
+
         if (extension is ".zip" or ".zipo" or ".radq")
         {
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
@@ -81,6 +83,7 @@ public static class AudioDecoder
             using var entryStream = entry.Open();
             using var entryMs = new MemoryStream();
             entryStream.CopyTo(entryMs);
+
             return Decode(entry.Open(), innerExt);
         }
 
@@ -92,45 +95,54 @@ public static class AudioDecoder
     private static DecodeResult DecodeWav(Stream stream)
     {
         var reader = new PcmWavReader(stream);
+
         return ReadToPcm16(reader);
     }
 
     private static DecodeResult DecodeMp3(Stream stream)
     {
         using var reader = new Mp3FileReaderBase(stream, wf => new Mp3FrameDecompressor(wf));
+
         return ReadToPcm16(reader);
     }
 
     private static DecodeResult DecodeOgg(Stream stream)
     {
         if (OperatingSystem.IsBrowser())
+
             throw new NotSupportedException("Ogg decoding needs libsndfile, which is not part of the browser build.");
 
         using var reader = new SoundFileReader(stream);
+
         return ReadToPcm16(reader);
     }
 
     private static DecodeResult DecodeFlac(Stream stream)
     {
         using var reader = new FlacReader(stream);
+
         return ReadToPcm16(reader);
     }
 
     private static DecodeResult DecodeOpus(Stream stream)
     {
         if (OperatingSystem.IsBrowser())
+
             throw new NotSupportedException("Opus decoding needs libsndfile, which is not part of the browser build.");
 
         using var reader = new SoundFileReader(stream);
+
         return ReadToPcm16(reader);
     }
 
     private static DecodeResult DecodeAiff(Stream stream)
     {
         if (OperatingSystem.IsBrowser())
+
             throw new NotSupportedException("AIFF decoding needs libsndfile, which is not part of the browser build.");
 
         using var reader = new AiffFileReader(stream);
+
         return ReadToPcm16(reader);
     }
 
@@ -146,9 +158,11 @@ public static class AudioDecoder
 
         // Read all float samples
         using var allFloats = new PooledList<float>();
+
         using (var floatBuffer = SafeArrayPool<float>.Shared.Rent(4096))
         {
             int samplesRead;
+
             while ((samplesRead = sampleProvider.Read(floatBuffer)) > 0)
             {
                 allFloats.AddRange(floatBuffer.AsSpan(0, samplesRead));
@@ -158,6 +172,7 @@ public static class AudioDecoder
         // Convert float [-1.0, 1.0] to 16-bit PCM
         var floatSamples = allFloats.ToArray();
         var pcmData = SafeArrayPool<byte>.Shared.Rent(floatSamples.Length * 2);
+
         try
         {
             for (int i = 0; i < floatSamples.Length; i++)
@@ -181,6 +196,7 @@ public static class AudioDecoder
         catch
         {
             pcmData.Dispose();
+
             throw;
         }
     }

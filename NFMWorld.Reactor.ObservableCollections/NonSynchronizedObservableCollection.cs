@@ -61,8 +61,7 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     /// <summary>
     /// Occurs when the collection changes, either by adding or removing an item.
     /// </summary>
-    [field: NonSerialized]
-    public virtual event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
+    [field: NonSerialized] public virtual event NotifyCollectionChangedEventHandler<T>? CollectionChanged;
 
     /// <summary>
     /// Called by base class Collection&lt;T&gt; when the list is being cleared;
@@ -133,8 +132,7 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     /// <summary>
     /// PropertyChanged event (per <see cref="INotifyPropertyChanged" />).
     /// </summary>
-    [field: NonSerialized]
-    protected virtual event PropertyChangedEventHandler? PropertyChanged;
+    [field: NonSerialized] protected virtual event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
     /// Raise CollectionChanged event to any listeners.
@@ -148,10 +146,12 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     protected virtual void OnCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
     {
         NotifyCollectionChangedEventHandler<T>? handler = CollectionChanged;
+
         if (handler != null)
         {
             // Not calling BlockReentrancy() here to avoid the SimpleMonitor allocation.
             _blockReentrancyCount++;
+
             try
             {
                 handler(e);
@@ -179,6 +179,7 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
     protected SimpleMonitor BlockReentrancy()
     {
         _blockReentrancyCount++;
+
         return EnsureMonitorInitialized();
     }
 
@@ -194,7 +195,9 @@ public class NonSynchronizedObservableCollection<T> : Collection<T>, INonSynchro
             // invalid for later listeners.  This keeps existing code working
             // (e.g. Selector.SelectedItems).
             NotifyCollectionChangedEventHandler<T>? handler = CollectionChanged;
+
             if (handler is { HasSingleTarget: false })
+
                 throw new InvalidOperationException("Cannot modify the collection during a CollectionChanged event.");
         }
     }

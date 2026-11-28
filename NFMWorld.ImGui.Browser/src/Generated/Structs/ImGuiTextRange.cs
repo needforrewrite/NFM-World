@@ -16,168 +16,184 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// [Internal]<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiTextRange
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe byte* B;
+    /// <summary>
+    /// [Internal]<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiTextRange
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe byte* B;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe byte* E;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiTextRange(byte* b = default, byte* e = default)
-		{
-			B = b;
-			E = e;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe byte* E;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			fixed (ImGuiTextRange* @this = &this)
-			{
-				ImGui.DestroyNative(@this);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiTextRange(byte* b = default, byte* e = default)
+        {
+            B = b;
+            E = e;
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe bool empty()
-		{
-			fixed (ImGuiTextRange* @this = &this)
-			{
-				byte ret = ImGui.emptyNative(@this);
-				return ret != 0;
-			}
-		}
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void split(byte separator, ImVector<ImGuiTextRange>* output)
-		{
-			fixed (ImGuiTextRange* @this = &this)
-			{
-				ImGui.splitNative(@this, separator, output);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            fixed (ImGuiTextRange* @this = &this)
+            {
+                ImGui.DestroyNative(@this);
+            }
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void split(byte separator, ref ImVector<ImGuiTextRange> output)
-		{
-			fixed (ImGuiTextRange* @this = &this)
-			{
-				fixed (ImVector<ImGuiTextRange>* poutput = &output)
-				{
-					ImGui.splitNative(@this, separator, (ImVector<ImGuiTextRange>*)poutput);
-				}
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe bool empty()
+        {
+            fixed (ImGuiTextRange* @this = &this)
+            {
+                byte ret = ImGui.emptyNative(@this);
 
-	}
+                return ret != 0;
+            }
+        }
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiTextRangePtr : IEquatable<ImGuiTextRangePtr>
-	{
-		public ImGuiTextRangePtr(ImGuiTextRange* handle) { Handle = handle; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void split(byte separator, ImVector<ImGuiTextRange> * output)
+        {
+            fixed (ImGuiTextRange* @this = &this)
+            {
+                ImGui.splitNative(@this, separator, output);
+            }
+        }
 
-		public ImGuiTextRange* Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void split(byte separator, ref ImVector<ImGuiTextRange> output)
+        {
+            fixed (ImGuiTextRange* @this = &this)
+            {
+                fixed (ImVector<ImGuiTextRange> * poutput = &output)
+                {
+                    ImGui.splitNative(@this, separator, (ImVector<ImGuiTextRange> *)poutput);
+                }
+            }
+        }
+    }
 
-		public bool IsNull => Handle == null;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiTextRangePtr : IEquatable<ImGuiTextRangePtr>
+    {
+        public ImGuiTextRangePtr(ImGuiTextRange* handle)
+        {
+            Handle = handle;
+        }
 
-		public static ImGuiTextRangePtr Null => new ImGuiTextRangePtr(null);
+        public ImGuiTextRange* Handle;
 
-		public ImGuiTextRange this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public bool IsNull => Handle == null;
 
-		public static implicit operator ImGuiTextRangePtr(ImGuiTextRange* handle) => new ImGuiTextRangePtr(handle);
+        public static ImGuiTextRangePtr Null => new ImGuiTextRangePtr(null);
 
-		public static implicit operator ImGuiTextRange*(ImGuiTextRangePtr handle) => handle.Handle;
+        public ImGuiTextRange this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static bool operator ==(ImGuiTextRangePtr left, ImGuiTextRangePtr right) => left.Handle == right.Handle;
+        public static implicit operator ImGuiTextRangePtr(ImGuiTextRange* handle) => new ImGuiTextRangePtr(handle);
 
-		public static bool operator !=(ImGuiTextRangePtr left, ImGuiTextRangePtr right) => left.Handle != right.Handle;
+        public static implicit operator ImGuiTextRange*(ImGuiTextRangePtr handle) => handle.Handle;
 
-		public static bool operator ==(ImGuiTextRangePtr left, ImGuiTextRange* right) => left.Handle == right;
+        public static bool operator ==(ImGuiTextRangePtr left, ImGuiTextRangePtr right) => left.Handle == right.Handle;
 
-		public static bool operator !=(ImGuiTextRangePtr left, ImGuiTextRange* right) => left.Handle != right;
+        public static bool operator !=(ImGuiTextRangePtr left, ImGuiTextRangePtr right) => left.Handle != right.Handle;
 
-		public bool Equals(ImGuiTextRangePtr other) => Handle == other.Handle;
+        public static bool operator ==(ImGuiTextRangePtr left, ImGuiTextRange* right) => left.Handle == right;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiTextRangePtr handle && Equals(handle);
+        public static bool operator !=(ImGuiTextRangePtr left, ImGuiTextRange* right) => left.Handle != right;
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        public bool Equals(ImGuiTextRangePtr other) => Handle == other.Handle;
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiTextRangePtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte* B { get => Handle->B; set => Handle->B = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte* E { get => Handle->E; set => Handle->E = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			ImGui.DestroyNative(Handle);
-		}
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiTextRangePtr handle && Equals(handle);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe bool empty()
-		{
-			byte ret = ImGui.emptyNative(Handle);
-			return ret != 0;
-		}
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void split(byte separator, ImVector<ImGuiTextRange>* output)
-		{
-			ImGui.splitNative(Handle, separator, output);
-		}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiTextRangePtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte* B
+        {
+            get => Handle->B;
+            set => Handle->B = value;
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void split(byte separator, ref ImVector<ImGuiTextRange> output)
-		{
-			fixed (ImVector<ImGuiTextRange>* poutput = &output)
-			{
-				ImGui.splitNative(Handle, separator, (ImVector<ImGuiTextRange>*)poutput);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte* E
+        {
+            get => Handle->E;
+            set => Handle->E = value;
+        }
 
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            ImGui.DestroyNative(Handle);
+        }
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe bool empty()
+        {
+            byte ret = ImGui.emptyNative(Handle);
+
+            return ret != 0;
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void split(byte separator, ImVector<ImGuiTextRange> * output)
+        {
+            ImGui.splitNative(Handle, separator, output);
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void split(byte separator, ref ImVector<ImGuiTextRange> output)
+        {
+            fixed (ImVector<ImGuiTextRange> * poutput = &output)
+            {
+                ImGui.splitNative(Handle, separator, (ImVector<ImGuiTextRange> *)poutput);
+            }
+        }
+    }
 }

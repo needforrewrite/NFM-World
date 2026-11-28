@@ -46,7 +46,9 @@ public class Mountains : Transform, IRenderable, IImmediateRenderElement, IDispo
 
     public void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
-        if (pass.IsShadow) return;
+        if (pass.IsShadow)
+
+            return;
 
         queue.AddImmediate(SortKey.Create(RenderBucket.Mountains), this);
     }
@@ -81,6 +83,7 @@ public class Mountains : Transform, IRenderable, IImmediateRenderElement, IDispo
     private void Dispose(bool disposing)
     {
         ReleaseUnmanagedResources();
+
         if (disposing)
         {
             _vertexBuffer.Dispose();

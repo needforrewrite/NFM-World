@@ -40,39 +40,50 @@ public sealed class AssetEditModel(
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var redirect = await LoadAsync(id);
+
         if (redirect is not null)
+
             return redirect;
 
         Name = Asset!.Name;
         Description = Asset.Description;
         IsPublic = Asset.IsPublic;
         IsTakedown = Asset.IsTakedown;
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostUpdateAsync(int id)
     {
         var redirect = await LoadAsync(id);
+
         if (redirect is not null)
+
             return redirect;
 
         if (options.ReadOnly)
+
             return Refuse("This archive is not accepting changes.");
 
         if (AssetUpload.NormalizeName(Name) is not { } name)
+
             return Refuse($"Choose a name of at most {AssetUpload.MaxNameLength} characters.");
 
         var description = AssetUpload.NormalizeDescription(Description);
+
         if (AssetUpload.DescriptionTooLong(description))
+
             return Refuse($"The description must be at most {AssetUpload.MaxDescriptionLength} characters.");
 
         // A non-owner moderator may only take a row down or restore it; an admin may change
         // everything, which is the "full CRUD" the role is meant to have.
+
         if (!IsOwner && !Account!.IsAdmin)
         {
             Asset!.IsTakedown = IsTakedown;
             await Db.SaveChangesAsync();
             await HttpContext.PurgeAssetsAsync([Asset.ContentHash]);
+
             return Redirect($"/asset/{Asset.Id}");
         }
 
@@ -87,32 +98,41 @@ public sealed class AssetEditModel(
         await Db.SaveChangesAsync();
         // The download's Content-Disposition carries the name, and the edge holds the old copy.
         await HttpContext.PurgeAssetsAsync([Asset.ContentHash]);
+
         return Redirect($"/asset/{Asset.Id}");
     }
 
     public async Task<IActionResult> OnPostReplaceAsync(int id)
     {
         var redirect = await LoadAsync(id);
+
         if (redirect is not null)
+
             return redirect;
 
         if (options.ReadOnly)
+
             return Refuse("This archive is not accepting changes.");
 
         if (!IsOwner)
+
             return Refuse("Only the author can replace an upload's file.");
 
         if (Replacement is null)
+
             return Refuse("Choose a file.");
 
         if (Replacement.Length > MaxUploadBytes)
         {
             Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+
             return Refuse(AssetUpload.SizeLimitMessage(MaxUploadBytes));
         }
 
         var kind = (byte)Asset!.Type;
+
         if (AssetUpload.CheckClaim(kind, Replacement.FileName) is { } claimError)
+
             return Refuse(claimError);
 
         await using var source = Replacement.OpenReadStream();
@@ -125,12 +145,15 @@ public sealed class AssetEditModel(
             MaxUploadBytes,
             HttpContext.RequestAborted
         );
+
         if (stored.Error is { } validationError)
+
             return Refuse(validationError);
 
         if (string.Equals(stored.Hash, Asset.ContentHash, StringComparison.Ordinal))
         {
             Message = "Those are the bytes already published; nothing changed.";
+
             return Page();
         }
 
@@ -138,7 +161,9 @@ public sealed class AssetEditModel(
             a => a.ContentHash == stored.Hash && a.Id != Asset.Id,
             HttpContext.RequestAborted
         );
+
         if (other is not null)
+
             return Refuse(other.IsListed || other.OwnerId == Account!.Id
                 ? $"Those bytes are already uploaded as \"{other.Name}\"."
                 : "These bytes are already in the Archive.");
@@ -160,16 +185,20 @@ public sealed class AssetEditModel(
         Message = review == AssetReviewStatus.Pending
             ? "The replacement is awaiting verification. Time trials recorded against the old file no longer rank."
             : "The file was replaced. Time trials recorded against the old file no longer rank.";
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
         var redirect = await LoadAsync(id);
+
         if (redirect is not null)
+
             return redirect;
 
         if (options.ReadOnly)
+
             return Refuse("This archive is not accepting changes.");
 
         var path = Asset!.StoragePath;
@@ -188,20 +217,26 @@ public sealed class AssetEditModel(
     private async Task<IActionResult?> LoadAsync(int id)
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         // Deliberately not the public visibility rule: an owner must be able to reach a row they
         // have hidden, and a moderator a row they have taken down.
         Asset = await Db.Assets.Include(a => a.Owner).FirstOrDefaultAsync(a => a.Id == id);
+
         if (Asset is null)
+
             return NotFound();
 
         IsOwner = Asset.OwnerId == Account!.Id;
+
         if (!IsOwner && !Account.IsModerator)
+
             return NotFound();
 
         MaxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(Db, HttpContext.RequestAborted);
         ViewData["Title"] = "Edit " + Asset.Name;
+
         return null;
     }
 
@@ -212,6 +247,7 @@ public sealed class AssetEditModel(
         Description = Asset.Description;
         IsPublic = Asset.IsPublic;
         IsTakedown = Asset.IsTakedown;
+
         return Page();
     }
 

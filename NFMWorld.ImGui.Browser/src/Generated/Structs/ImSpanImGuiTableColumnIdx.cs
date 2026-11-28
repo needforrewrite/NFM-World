@@ -16,33 +16,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImSpanImGuiTableColumnIdx
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe sbyte* Data;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImSpanImGuiTableColumnIdx
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe sbyte* Data;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe sbyte* DataEnd;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImSpanImGuiTableColumnIdx(sbyte* data = default, sbyte* dataEnd = default)
-		{
-			Data = data;
-			DataEnd = dataEnd;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe sbyte* DataEnd;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImSpanImGuiTableColumnIdx(sbyte* data = default, sbyte* dataEnd = default)
+        {
+            Data = data;
+            DataEnd = dataEnd;
+        }
+    }
 }

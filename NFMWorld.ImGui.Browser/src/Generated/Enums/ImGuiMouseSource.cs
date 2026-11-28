@@ -13,30 +13,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiMouseSource : int
-	{
-		/// <summary>
-		/// Input is coming from an actual mouse.<br/>
-		/// </summary>
-		Mouse = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiMouseSource : int
+    {
+        /// <summary>
+        /// Input is coming from an actual mouse.<br/>
+        /// </summary>
+        Mouse = unchecked(0),
 
-		/// <summary>
-		/// Input is coming from a touch screen (no hovering prior to initial press, less precise initial press aiming, dual-axis wheeling possible).<br/>
-		/// </summary>
-		TouchScreen = unchecked(1),
+        /// <summary>
+        /// Input is coming from a touch screen (no hovering prior to initial press, less precise initial press aiming, dual-axis wheeling possible).<br/>
+        /// </summary>
+        TouchScreen = unchecked(1),
 
-		/// <summary>
-		/// Input is coming from a pressuremagnetic pen (often used in conjunction with high-sampling rates).<br/>
-		/// </summary>
-		Pen = unchecked(2),
+        /// <summary>
+        /// Input is coming from a pressuremagnetic pen (often used in conjunction with high-sampling rates).<br/>
+        /// </summary>
+        Pen = unchecked(2),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Count = unchecked(3),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Count = unchecked(3),
+    }
 }

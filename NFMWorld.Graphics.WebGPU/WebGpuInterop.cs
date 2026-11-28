@@ -81,6 +81,7 @@ internal static unsafe class WebGpuInterop
         while (!completed())
         {
             if (DateTime.UtcNow >= deadline)
+
                 return false;
 
             api.InstanceProcessEvents(instance);
@@ -100,6 +101,7 @@ internal static unsafe class WebGpuInterop
     internal static Wg.Instance* CreateInstance(Wg.WebGPU api)
     {
         var descriptor = default(Wg.InstanceDescriptor);
+
         return api.CreateInstance(&descriptor);
     }
 

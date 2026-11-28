@@ -28,6 +28,7 @@ public class AssetCrudTests
         var register = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration(username));
         var token = (await register.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
         return (client, token);
     }
 
@@ -46,9 +47,11 @@ public class AssetCrudTests
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
         int? ownerId = null;
+
         if (owner is not null)
         {
             var user = db.Users.FirstOrDefault(u => u.UsernameNormalized == owner);
+
             if (user is null)
             {
                 user = new User { Username = owner, UsernameNormalized = owner };
@@ -75,6 +78,7 @@ public class AssetCrudTests
         };
         db.Assets.Add(asset);
         await db.SaveChangesAsync();
+
         return asset.Id;
     }
 
@@ -271,6 +275,7 @@ public class AssetCrudTests
 
         int replayId;
         string relative;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -337,6 +342,7 @@ public class AssetCrudTests
         await SeedAssetAsync(factory, "someoneelse", "second", hash: hash);
 
         string relative;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -396,6 +402,7 @@ public class AssetCrudTests
         var (client, _) = await SignedInClient(factory, "artist");
         var id = await SeedAssetAsync(factory, "artist", "existing stage");
         var oversized = new byte[ArchiveSettings.BytesPerMiB + 1];
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -493,6 +500,7 @@ public class AssetCrudTests
         form.Add(new StringContent(name), "name");
         form.Add(new StringContent(description), "description");
         form.Add(new StringContent(isPublic.ToString()), "isPublic");
+
         return form;
     }
 
@@ -668,6 +676,7 @@ public class AssetCrudTests
             },
             writer
         );
+
         return writer.WrittenSpan.ToArray();
     }
 
@@ -687,6 +696,7 @@ public class AssetCrudTests
             },
             writer
         );
+
         return writer.WrittenSpan.ToArray();
     }
 
@@ -743,6 +753,7 @@ public class AssetCrudTests
         form.Add(file, "file", fileName);
         form.Add(new StringContent(name), "name");
         form.Add(new StringContent(type), "type");
+
         return await client.PostAsync("/assets/upload", form);
     }
 
@@ -757,6 +768,7 @@ public class AssetCrudTests
         var file = new ByteArrayContent(bytes);
         file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
         form.Add(file, "file", fileName);
+
         return await client.PutAsync($"/assets/{id}/content", form);
     }
 }

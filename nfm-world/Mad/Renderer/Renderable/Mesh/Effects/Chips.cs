@@ -47,10 +47,12 @@ public class Chips : IDisposable, IImmediateRenderElement
     {
         _triangleCount = 0;
         var tri = 0;
+
         for (var i = 0; i < _car.Mesh.Polys.Length; i++)
         {
             var poly = _car.Mesh.Polys[i];
             ref var chip = ref _chips[i];
+
             if (chip.State != 0)
             {
                 if (chip.State == 1)
@@ -75,6 +77,7 @@ public class Chips : IDisposable, IImmediateRenderElement
                     chip.V1.Z = (chip.V0.Z + chip.Ctmag * (10.0F - URandom.Single() * 20.0F));
                     chip.V2.Z = (chip.V0.Z + chip.Ctmag * (10.0F - URandom.Single() * 20.0F));
                     chip.Delta = new Vector3(0, 0, 0);
+
                     if (!_car.VisuallyWasted)
                     {
                         var vx = (chip.Ctmag * (30.0F - URandom.Single() * 60.0F));
@@ -96,6 +99,7 @@ public class Chips : IDisposable, IImmediateRenderElement
                 chip.V2 += chip.Delta * Physics.PHYSICS_MULTIPLIER;
                 chip.Delta += chip.Velocity * Physics.PHYSICS_MULTIPLIER;
                 chip.Velocity.Y += 7 * Physics.PHYSICS_MULTIPLIER;
+
                 if (chip.V0.Y > World.Ground)
                 {
                     chip.State = 59;
@@ -117,6 +121,7 @@ public class Chips : IDisposable, IImmediateRenderElement
                 {
                     var c = poly.Color;
                     c.ToHSB(out var hue, out var saturation, out var brightness);
+
                     if (brightness > _car.Mesh.Darken)
                     {
                         brightness = _car.Mesh.Darken;
@@ -135,6 +140,7 @@ public class Chips : IDisposable, IImmediateRenderElement
                 _triangleCount++;
 
                 chip.State++;
+
                 if (chip.State == 60)
                 {
                     chip.State = 0;
@@ -150,7 +156,9 @@ public class Chips : IDisposable, IImmediateRenderElement
 
     public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (_triangleCount == 0) return;
+        if (_triangleCount == 0)
+
+            return;
 
         if (_dirty)
         {

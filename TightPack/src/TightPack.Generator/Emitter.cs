@@ -36,7 +36,8 @@ internal static class Emitter
             // Runs on the first static access to the type, which Serialize itself guarantees, so a
             // layout the analyzer got wrong fails loudly instead of writing padding bytes.
             w.Line(
-                "private static readonly bool __tightPackLayout = " +
+                "private static readonly bool __tightPackLayout = "
+                +
                 $"global::TightPack.TightPackBlit.VerifySize<{model.TypeName}>({model.BlittableSize});"
             );
             w.Blank();
@@ -90,9 +91,11 @@ internal static class Emitter
         };
 
         var fields = new List<(string Field, string MemberType, string Expression)>();
+
         for (int i = 0; i < model.Members.Count; i++)
         {
             MemberModel member = model.Members[i];
+
             if (member.FormatterExpression is null)
             {
                 continue;
@@ -105,6 +108,7 @@ internal static class Emitter
         }
 
         var caseRegistrations = new List<string>();
+
         foreach (UnionCaseModel unionCase in model.UnionCases)
         {
             caseRegistrations.Add($"new global::TightPack.TightPackableFormatter<{unionCase.TypeName}>()");
@@ -123,6 +127,7 @@ internal static class Emitter
         }
 
         w.Open($"static {model.SimpleName}()");
+
         foreach (string registration in registrations)
         {
             w.Line($"global::TightPack.TightPackFormatterProvider.Register({registration});");
@@ -140,15 +145,19 @@ internal static class Emitter
     private static void BeginSerialize(CodeWriter w, TypeModel model)
     {
         w.Open(
-            $"static void global::TightPack.ITightPackable<{model.TypeName}>.Serialize<TBufferWriter>(" +
+            $"static void global::TightPack.ITightPackable<{model.TypeName}>.Serialize<TBufferWriter>("
+            +
             $"ref {WriterType} writer, in {model.TypeName} value)"
         );
     }
 
     private static void BeginDeserialize(CodeWriter w, TypeModel model) =>
         w.Open(
-            $"static void global::TightPack.ITightPackable<{model.TypeName}>.Deserialize(" +
-            "ref global::TightPack.TightPackReader reader, ref " + model.TypeName + " value)"
+            $"static void global::TightPack.ITightPackable<{model.TypeName}>.Deserialize("
+            +
+            "ref global::TightPack.TightPackReader reader, ref "
+            + model.TypeName
+            + " value)"
         );
 
     // ----- blittable -----
@@ -169,7 +178,8 @@ internal static class Emitter
         w.Blank();
         w.Open($"if (__header != {model.Members.Count})");
         w.Line(
-            "global::TightPack.TightPackSerializationException.ThrowInvalidMemberCount(" +
+            "global::TightPack.TightPackSerializationException.ThrowInvalidMemberCount("
+            +
             $"typeof({model.TypeName}), {model.Members.Count}, __header);"
         );
         w.Close();
@@ -216,9 +226,11 @@ internal static class Emitter
             w.Open("try");
             // Share the outer state so a circular reference inside this member still resolves.
             w.Line(
-                "var __sw = new global::TightPack.TightPackWriter<global::TightPack.TightPackBufferWriter>(" +
+                "var __sw = new global::TightPack.TightPackWriter<global::TightPack.TightPackBufferWriter>("
+                +
                 "ref __scratch, writer.State, writer.Depth);"
             );
+
             foreach (MemberModel member in model.Members)
             {
                 w.Line($"var __w_{member.Name} = value.{member.Name};");
@@ -256,7 +268,8 @@ internal static class Emitter
         {
             // The instance exists before its members are read, so a cycle can resolve to it.
             w.Open(
-                "if (!reader.TryReadObjectReferenceHeader(" +
+                "if (!reader.TryReadObjectReferenceHeader("
+                +
                 "out byte __header, out object __existing, out bool __isReference))"
             );
             w.Line("value = default;");
@@ -284,7 +297,8 @@ internal static class Emitter
             {
                 w.Open($"if (__header != {model.Members.Count})");
                 w.Line(
-                    "global::TightPack.TightPackSerializationException.ThrowInvalidMemberCount(" +
+                    "global::TightPack.TightPackSerializationException.ThrowInvalidMemberCount("
+                    +
                     $"typeof({model.TypeName}), {model.Members.Count}, __header);"
                 );
                 w.Close();
@@ -294,6 +308,7 @@ internal static class Emitter
             // The in-place path rebuilds a fresh instance so callbacks and member writes observe the
             // real object rather than a caller's previous value.
             bool inPlaceHere = UsesInPlace(model);
+
             if (inPlaceHere)
             {
                 w.Line($"value = new {model.TypeName}();");
@@ -409,6 +424,7 @@ internal static class Emitter
         if (model.Ctor is null)
         {
             var initializers = new List<string>();
+
             for (int i = 0; i < model.Members.Count; i++)
             {
                 initializers.Add($"{model.Members[i].Name} = __m{i}");
@@ -417,18 +433,22 @@ internal static class Emitter
             if (initializers.Count == 0)
             {
                 w.Line($"value = new {model.TypeName}();");
+
                 return;
             }
 
             w.Line($"value = new {model.TypeName} {{ {string.Join(", ", initializers)} }};");
+
             return;
         }
 
         var arguments = new List<string>();
         var bound = new HashSet<int>();
+
         foreach (int index in model.Ctor.ParameterMembers)
         {
             arguments.Add(index >= 0 ? $"__m{index}" : "default");
+
             if (index >= 0)
             {
                 bound.Add(index);
@@ -436,6 +456,7 @@ internal static class Emitter
         }
 
         var extra = new List<string>();
+
         for (int i = 0; i < model.Members.Count; i++)
         {
             if (!bound.Contains(i) && model.Members[i].CanAssign)
@@ -445,6 +466,7 @@ internal static class Emitter
         }
 
         string construction = $"new {model.TypeName}({string.Join(", ", arguments)})";
+
         if (extra.Count != 0)
         {
             construction += " { " + string.Join(", ", extra) + " }";
@@ -474,7 +496,8 @@ internal static class Emitter
         }
 
         w.Line(
-            "global::TightPack.TightPackSerializationException.ThrowUnionValueNotMapped(" +
+            "global::TightPack.TightPackSerializationException.ThrowUnionValueNotMapped("
+            +
             $"value.GetType(), typeof({model.TypeName}));"
         );
         w.Close();
@@ -501,7 +524,8 @@ internal static class Emitter
         w.Close();
         w.Blank();
         w.Line(
-            "global::TightPack.TightPackSerializationException.ThrowInvalidUnionTag(" +
+            "global::TightPack.TightPackSerializationException.ThrowInvalidUnionTag("
+            +
             $"__tag, typeof({model.TypeName}));"
         );
         w.Close();
@@ -551,20 +575,26 @@ internal static class Emitter
         {
             case MemberWriteKind.Scalar:
                 w.Line($"{writerExpr}.Write{member.Method}({valueExpr});");
+
                 break;
             case MemberWriteKind.Enum:
                 w.Line($"{writerExpr}.WriteEnum({valueExpr});");
+
                 break;
             case MemberWriteKind.String:
                 w.Line($"{writerExpr}.WriteString({valueExpr});");
+
                 break;
             case MemberWriteKind.Packable:
                 w.Line($"{writerExpr}.WritePackable(in {valueExpr});");
+
                 break;
             case MemberWriteKind.Formatter when member.FormatterField is not null:
                 w.Line($"{writerExpr}.WriteValueWithFormatter({member.FormatterField}, in {valueExpr});");
+
                 break;
             case MemberWriteKind.Tuple:
+
                 for (int i = 0; i < member.TupleElements!.Count; i++)
                 {
                     MemberModel element = member.TupleElements[i];
@@ -574,6 +604,7 @@ internal static class Emitter
                 break;
             default:
                 w.Line($"{writerExpr}.WriteValue(in {valueExpr});");
+
                 break;
         }
     }
@@ -584,21 +615,27 @@ internal static class Emitter
         {
             case MemberWriteKind.Scalar:
                 w.Line($"{target} = reader.Read{member.Method}();");
+
                 break;
             case MemberWriteKind.Enum:
                 w.Line($"{target} = reader.ReadEnum<{member.TypeName}>();");
+
                 break;
             case MemberWriteKind.String:
                 w.Line($"{target} = reader.ReadString();");
+
                 break;
             case MemberWriteKind.Packable:
                 w.Line($"reader.ReadPackable(ref {target});");
+
                 break;
             case MemberWriteKind.Formatter when member.FormatterField is not null:
                 w.Line($"reader.ReadValueWithFormatter({member.FormatterField}, ref {target});");
+
                 break;
             case MemberWriteKind.Tuple:
                 string tupleLocal = $"{target.Replace(".", "_")}_tuple";
+
                 for (int i = 0; i < member.TupleElements!.Count; i++)
                 {
                     MemberModel element = member.TupleElements[i];
@@ -606,12 +643,16 @@ internal static class Emitter
                     EmitValueRead(w, $"{tupleLocal}{i}", element);
                 }
 
-                w.Line($"{target} = ({member.TypeName})(" +
-                       string.Join(", ", Enumerable.Range(0, member.TupleElements.Count).Select(i => $"{tupleLocal}{i}")) +
+                w.Line($"{target} = ({member.TypeName})("
+                       +
+                       string.Join(", ", Enumerable.Range(0, member.TupleElements.Count).Select(i => $"{tupleLocal}{i}"))
+                       +
                        ");");
+
                 break;
             default:
                 w.Line($"reader.ReadValue(ref {target});");
+
                 break;
         }
     }

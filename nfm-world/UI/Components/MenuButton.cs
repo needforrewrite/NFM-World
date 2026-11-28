@@ -34,11 +34,13 @@ public static class MenuButton
             style: () =>
             {
                 var defaults = Sx.Styles(
-                    backgroundColor: focused.Value || hovered.Value || active?.Invoke() == true ? Theme.MenuHighlight : Theme.MenuFill,
+                    backgroundColor: focused.Value || hovered.Value || active?.Invoke() == true ? Theme.MenuHighlight : Theme
+                        .MenuFill,
                     borderColor: focused.Value || hovered.Value ? new Color(205, 227, 255)
                         : variant == ButtonVariant.Danger ? Theme.DangerBorder : Theme.MenuBorder,
                     opacity: disabled ? 0.5f : 1
                 );
+
                 return style is null ? defaults : defaults.Over(style());
             },
             textStyle: () =>
@@ -49,18 +51,26 @@ public static class MenuButton
                     fontStyle: FontStyle.Plain,
                     foregroundColor: focused.Value || hovered.Value ? new Color(235, 244, 255) : Theme.MenuBlue
                 );
+
                 return textStyle is null ? defaults : defaults.Over(textStyle());
             }
         );
         node.MouseEntered += _ => hovered.Value = !disabled;
         node.MouseLeft += _ => hovered.Value = false;
-        if (disabled) return node;
+
+        if (disabled)
+
+            return node;
+
         return KeyboardNavigation.Bind(
             node,
             key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 onPress();
+
                 return true;
             },
             value => focused.Value = value

@@ -68,6 +68,7 @@ public readonly partial struct CompactIpAddress
         if (address._isv6)
         {
             Span<byte> bytes = stackalloc byte[16];
+
             for (int i = 0; i < 8; i++)
             {
                 BinaryPrimitives.WriteUInt16BigEndian(bytes.Slice(i * 2), address._addressBytes[i]);
@@ -79,6 +80,7 @@ public readonly partial struct CompactIpAddress
         {
             Span<byte> bytes = stackalloc byte[4];
             BinaryPrimitives.WriteUInt32BigEndian(bytes, address._addressOrScopeId);
+
             return new IPAddress(bytes);
         }
     }

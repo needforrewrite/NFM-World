@@ -22,6 +22,7 @@ public static class AccountErasure
     )
     {
         if (target.IsDeleted)
+
             return 0;
 
         var now = DateTimeOffset.UtcNow;
@@ -71,6 +72,7 @@ public static class AccountErasure
             await storage.DeleteIfUnreferencedAsync(path, db, ct);
 
         logger.LogInformation("Erased account {AccountId}", target.Id);
+
         return 1;
     }
 }

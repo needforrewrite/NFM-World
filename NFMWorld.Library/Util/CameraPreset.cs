@@ -33,11 +33,15 @@ public sealed record CameraPreset(string Name, float Fov, int FollowY, int Follo
     public static string ValidateCustomName(string name)
     {
         name = (name ?? "").Trim();
+
         if (name.Length is 0 or > 40 || name.Any(char.IsControl))
+
             throw new ArgumentException("Use a preset name between 1 and 40 characters.");
         if (name.Equals(NFMW.Name, StringComparison.OrdinalIgnoreCase)
             || name.Equals(Classic.Name, StringComparison.OrdinalIgnoreCase))
+
             throw new ArgumentException("World and Classic are built-in presets. Choose another name.");
+
         return name;
     }
 }
@@ -49,6 +53,7 @@ public static class CameraPresetConfig
         var settings = Lines(content).ToArray();
         // Older configs inherited Classic for camera keys they did not explicitly save.
         var camera = settings.Length == 0 ? CameraPreset.NFMW : CameraPreset.Classic;
+
         foreach (var (key, value) in settings)
         {
             switch (key)
@@ -73,13 +78,18 @@ public static class CameraPresetConfig
         var presets = JsonSerializer.Deserialize(json, CameraPresetJsonContext.Default.ListCameraPreset) ?? [];
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<CameraPreset>();
+
         foreach (var preset in presets)
         {
-            if (preset is null || !float.IsFinite(preset.Fov) || preset.Fov <= 0 || preset.Fov >= 180) continue;
+            if (preset is null || !float.IsFinite(preset.Fov) || preset.Fov <= 0 || preset.Fov >= 180)
+
+                continue;
+
             try
             {
                 var name = CameraPreset.ValidateCustomName(preset.Name);
-                if (names.Add(name)) result.Add((preset with { Name = name }).Clamp());
+                if (names.Add(name))
+                    result.Add((preset with { Name = name }).Clamp());
             }
             catch (ArgumentException)
             {
@@ -95,12 +105,19 @@ public static class CameraPresetConfig
     private static IEnumerable<(string Key, string Value)> Lines(string content)
     {
         using var reader = new StringReader(content);
+
         while (reader.ReadLine() is { } line)
         {
             var trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith("//")) continue;
+
+            if (trimmed.Length == 0 || trimmed.StartsWith("//"))
+
+                continue;
             var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 2) yield return (parts[0], parts[1]);
+
+            if (parts.Length == 2)
+
+                yield return (parts[0], parts[1]);
         }
     }
 }

@@ -30,7 +30,10 @@ public class CarPhysicsRampTests
         }
 
         TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
-        if (BackendGameSparker.stage_parts.Count != 0) return;
+
+        if (BackendGameSparker.stage_parts.Count != 0)
+
+            return;
         var n = 0;
         foreach (var part in BackendGameSparker.StageRads)
             BackendGameSparker.stage_parts[n++] = RadParser.ParseRad(
@@ -42,12 +45,14 @@ public class CarPhysicsRampTests
     private static BackendStage Stage(string piece)
     {
         var lines = new List<string>();
-        for (var z = 0; z <= 28000; z += 5600) lines.Add($"set(nfmm/road,0,{z},0)");
+        for (var z = 0; z <= 28000; z += 5600)
+            lines.Add($"set(nfmm/road,0,{z},0)");
         lines.Add($"set(nfmm/{piece},0,30000,0)");
         lines.Add("maxl(3,-20000,0)");
         lines.Add("maxr(3,20000,0)");
         lines.Add("maxb(3,-20000,0)");
         lines.Add("maxt(3,200000,0)");
+
         return new BackendStage("ramp-test", StageLoader.FromLines("ramp-test", lines));
     }
 
@@ -62,30 +67,40 @@ public class CarPhysicsRampTests
         var physics = car.CarPhysics;
         car.Control.Up = true;
         physics.Speed = car.Stats.Swits[2];
-        for (var i = 0; i < 4; i++) physics.Scz[i] = car.Stats.Swits[2];
+        for (var i = 0; i < 4; i++)
+            physics.Scz[i] = car.Stats.Swits[2];
 
         var tps = (int)Math.Round(1 / Physics.PHYSICS_MULTIPLIER);
         double entry = 0, min = double.MaxValue;
         var onRamp = false;
         var air = 0;
         var landedAt = -1;
+
         for (var tick = 0; tick < 3000; tick++)
         {
             FrameTrace.ClearMessages(); // only the game loop clears it
             car.Drive(stage);
+
             if (physics.Wtouch && !physics.Gtouch && !onRamp)
             {
                 onRamp = true;
                 entry = (double)physics.Speed;
             }
 
-            if (!onRamp) continue;
+            if (!onRamp)
+
+                continue;
+
             if (landedAt >= 0)
             {
-                if (tick == landedAt + 21 * tps) return (entry, min, (double)physics.Speed);
+                if (tick == landedAt + 21 * tps)
+
+                    return (entry, min, (double)physics.Speed);
             }
-            else if (!physics.Wtouch) air++;
-            else if (air > 4 * tps) landedAt = tick;
+            else if (!physics.Wtouch)
+                air++;
+            else if (air > 4 * tps)
+                landedAt = tick;
             else
             {
                 air = 0;
@@ -94,6 +109,7 @@ public class CarPhysicsRampTests
         }
 
         Assert.Fail($"{carName} never landed after {piece}");
+
         return default;
     }
 

@@ -38,14 +38,17 @@ public static class YogaDebugger
         // draw a tree of all elements and their layout info in the top-left corner,
         // with a gradient from red to yellow based on depth
         var maxDepth = 0;
+
         foreach (var root in YogaRootsThisFrame)
         {
             maxDepth = Math.Max(maxDepth, GetMaxDepth(root, 0));
+
             continue;
 
             static int GetMaxDepth(Node visual, int depth)
             {
                 var childMax = depth;
+
                 foreach (var child in visual.VisualChildren)
                 {
                     childMax = Math.Max(childMax, GetMaxDepth(child, depth + 1));
@@ -56,6 +59,7 @@ public static class YogaDebugger
         }
 
         var y = 24;
+
         foreach (var root in YogaRootsThisFrame)
         {
             DrawElementAndChildren(root, y, 0);
@@ -97,6 +101,7 @@ public static class YogaDebugger
         static int GetChildCount(View child)
         {
             var count = child.Children.Count;
+
             foreach (var grandChild in child.Children)
             {
                 if (grandChild is View box)
@@ -111,14 +116,17 @@ public static class YogaDebugger
     {
         // draw an outline around every element with a gradient from red to yellow based on depth
         var maxDepth = 0;
+
         foreach (var root in YogaRootsThisFrame)
         {
             maxDepth = Math.Max(maxDepth, GetMaxDepth(root, 0));
+
             continue;
 
             static int GetMaxDepth(Node node, int depth)
             {
                 var childMax = depth;
+
                 foreach (var child in node.VisualChildren)
                 {
                     childMax = Math.Max(childMax, GetMaxDepth(child, depth + 1));
@@ -131,6 +139,7 @@ public static class YogaDebugger
         foreach (var root in YogaRootsThisFrame)
         {
             DrawNodeAndChildren(root, 0);
+
             continue;
 
             void DrawNodeAndChildren(Node visual, int depth)
@@ -172,6 +181,7 @@ public static class YogaDebugger
         var mouseOverNodeTree = YogaRootsThisFrame
             .Select(FindMouseOverNodeTree)
             .MaxBy(n => n.Length);
+
         if (mouseOverNodeTree?.Length > 0)
         {
             for (int i = 0; i < mouseOverNodeTree.Length; i++)
@@ -357,6 +367,7 @@ public static class YogaDebugger
     )
     {
         G.SetColor(color);
+
         if (inner is { } innerRect)
         {
             FillRectExceptForRect(area, innerRect);
@@ -457,6 +468,7 @@ public static class YogaDebugger
     private static Component[] FindMouseOverNodeTree(Node visual)
     {
         // Depth-first search for the node whose border box contains the mouse position, and its parents
+
         if (visual is Component node)
         {
             var rect = new RectangleF(
@@ -465,11 +477,13 @@ public static class YogaDebugger
                 node.LayoutMarginSize.X,
                 node.LayoutMarginSize.Y
             );
+
             if (rect.Contains(_mousePosition))
             {
                 foreach (var child in node.VisualChildren)
                 {
                     var childResult = FindMouseOverNodeTree(child);
+
                     if (childResult.Length > 0)
                     {
                         return [node, .. childResult];
@@ -484,6 +498,7 @@ public static class YogaDebugger
             foreach (var child in visual.VisualChildren)
             {
                 var childResult = FindMouseOverNodeTree(child);
+
                 if (childResult.Length > 0)
                 {
                     return childResult;

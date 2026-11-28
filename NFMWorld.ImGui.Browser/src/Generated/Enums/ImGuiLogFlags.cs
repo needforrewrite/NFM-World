@@ -13,40 +13,40 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiLogFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiLogFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		OutputTty = unchecked(1),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        OutputTty = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		OutputFile = unchecked(2),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        OutputFile = unchecked(2),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		OutputBuffer = unchecked(4),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        OutputBuffer = unchecked(4),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		OutputClipboard = unchecked(8),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        OutputClipboard = unchecked(8),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		OutputMask = unchecked(15),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        OutputMask = unchecked(15),
+    }
 }

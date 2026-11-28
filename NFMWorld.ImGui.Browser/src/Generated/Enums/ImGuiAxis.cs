@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiAxis : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(-1),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiAxis : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(-1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		X = unchecked(0),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        X = unchecked(0),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Y = unchecked(1),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Y = unchecked(1),
+    }
 }

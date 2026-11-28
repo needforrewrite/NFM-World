@@ -12,18 +12,25 @@ public static class SpatialAudio
     public static void UpdateListener(Vector3 position, Vector3 forward, Vector3 up)
     {
         var forwardLength = forward.LengthSquared();
+
         if (!Finite(position)
             || !Finite(forward)
             || !Finite(up)
             || !float.IsFinite(forwardLength)
-            || forwardLength < 0.0001f) return;
+            || forwardLength < 0.0001f)
+
+            return;
         forward = Vector3.Normalize(forward);
         up -= forward * Vector3.Dot(up, forward);
         var upLength = up.LengthSquared();
-        if (!float.IsFinite(upLength) || upLength < 0.0001f) return;
+
+        if (!float.IsFinite(upLength) || upLength < 0.0001f)
+
+            return;
         ListenerPosition = position;
         ListenerForward = forward;
         ListenerUp = Vector3.Normalize(up);
+
         if (OperatingSystem.IsBrowser())
         {
             WebAudioBackend.SetListener(
@@ -50,8 +57,10 @@ public static class SpatialAudio
     internal static byte[] ToMono(ReadOnlySpan<byte> pcm, int channels)
     {
         if (channels <= 0 || pcm.Length % (channels * sizeof(short)) != 0)
+
             throw new ArgumentException("Invalid interleaved PCM data.");
         var mono = new byte[pcm.Length / channels];
+
         for (var frame = 0; frame < mono.Length / sizeof(short); frame++)
         {
             var sum = 0L;

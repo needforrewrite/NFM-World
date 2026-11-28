@@ -21,6 +21,7 @@ public class ManagedEnetTests
             try
             {
                 host.Create(address, 8);
+
                 return (host, address);
             }
             catch (Exception)
@@ -56,6 +57,7 @@ public class ManagedEnetTests
         while (Environment.TickCount64 < deadline)
         {
             if (condition())
+
                 return true;
 
             Thread.Sleep(1);
@@ -100,6 +102,7 @@ public class ManagedEnetTests
                     }
 
                     serverEvents.Clear();
+
                     return peer.State == PeerState.Connected && serverConnected;
                 }
             ),
@@ -124,6 +127,7 @@ public class ManagedEnetTests
                             received.Add(ev.Packet.Data.ToArray());
 
                     serverEvents.Clear();
+
                     return received.Count > 0;
                 }
             ),

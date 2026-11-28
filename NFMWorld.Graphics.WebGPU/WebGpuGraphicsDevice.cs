@@ -187,6 +187,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     private void FlushPendingDestroys()
     {
         if (_pendingDestroys.Count == 0)
+
             return;
 
         foreach (var destroy in _pendingDestroys)
@@ -232,6 +233,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     {
         var error = _lastError;
         _lastError = null;
+
         return error;
     }
 
@@ -251,6 +253,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     internal void Poll(bool waitForWork)
     {
         if (_ext is null)
+
             return;
 
         _ext.DevicePoll(_device, waitForWork, null);
@@ -321,6 +324,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
         // The callback is installed by the descriptor that created the device, so anything wgpu
         // reported before this point was held by the router.
+
         if (_errorRouter is { } router)
         {
             lock (router)
@@ -370,7 +374,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         var ext = new Wgpu(api.Context);
 
         var instance = WebGpuInterop.CreateInstance(api);
+
         if (instance is null)
+
             throw new InvalidOperationException("wgpu-native could not create an instance.");
 
         var surface = CreateSurface(api, instance, description);
@@ -423,7 +429,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         }
 
         var adapterInfo = default(Wg.AdapterInfo);
+
         if (api.AdapterGetInfo(adapter, &adapterInfo) != Wg.Status.Success)
+
             throw new InvalidOperationException("wgpu-native did not report the adapter's identity.");
 
         var adapterName = WebGpuInterop.Read(adapterInfo.Description)
@@ -433,7 +441,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         api.AdapterInfoFreeMembers(adapterInfo);
 
         var limits = default(Wg.Limits);
+
         if (api.AdapterGetLimits(adapter, &limits) != Wg.Status.Success)
+
             throw new InvalidOperationException("wgpu-native did not report the adapter's limits.");
 
         // BC textures are how every RAD model carries its art, and float32 filtering is what the
@@ -456,6 +466,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         var errorCallback = default(Wg.PfnUncapturedErrorCallback);
 
         Wg.UncapturedErrorCallbackInfo errorCallbackInfo = default;
+
         if (errorRouter is not null)
         {
             // An uncaptured error has no wait behind it, so the callback has to stay callable for the
@@ -502,6 +513,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         {
             api.AdapterRelease(adapter);
             api.InstanceRelease(instance);
+
             throw new InvalidOperationException(
                 "wgpu-native could not create a device"
                 + (deviceError is null ? "." : $": {deviceError}")
@@ -576,17 +588,22 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         ArgumentNullException.ThrowIfNull(context);
 
         if (width <= 0 || height <= 0)
+
             throw new ArgumentOutOfRangeException(nameof(width), $"A {width}x{height} back buffer cannot be created.");
 
         var api = new Wg.WebGPU(context);
         var instance = WebGpuInterop.CreateInstance(api);
+
         if (instance is null)
+
             throw new InvalidOperationException("emdawnwebgpu could not create an instance.");
 
         var device = (WgpuDevice*)deviceHandle;
+
         if (device is null)
         {
             api.InstanceRelease(instance);
+
             throw new InvalidOperationException(
                 "The page did not hand over a WebGPU device. main.js requests one from navigator.gpu and "
                 + "parks it on Module.preinitializedWebGPUDevice before the runtime starts."
@@ -605,7 +622,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             api.AdapterInfoFreeMembers(adapterInfo);
 
         var limits = default(Wg.Limits);
+
         if (api.DeviceGetLimits(device, &limits) != Wg.Status.Success)
+
             throw new InvalidOperationException("emdawnwebgpu did not report the device's limits.");
 
         // BC textures are absent in every browser today, so that arm of the format mapping never
@@ -680,7 +699,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     private static WgpuSurface* CreateSurface(Wg.WebGPU api, Wg.Instance* instance, in WebGpuDeviceDescription description)
     {
         var window = description.Window;
+
         if (window.Kind == WebGpuWindowKind.None)
+
             return null;
 
         if (window.Handle == 0)
@@ -727,6 +748,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         };
 
         var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromHwnd };
+
         return api.InstanceCreateSurface(instance, &descriptor);
     }
 
@@ -740,6 +762,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         };
 
         var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromXlib };
+
         return api.InstanceCreateSurface(instance, &descriptor);
     }
 
@@ -753,6 +776,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         };
 
         var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromWayland };
+
         return api.InstanceCreateSurface(instance, &descriptor);
     }
 
@@ -767,6 +791,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         };
 
         var descriptor = new Wg.SurfaceDescriptor { NextInChain = (Wg.ChainedStruct*)&fromLayer };
+
         return api.InstanceCreateSurface(instance, &descriptor);
     }
 
@@ -781,6 +806,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     internal void CheckCreated(bool created, string what, [System.Runtime.CompilerServices.CallerMemberName] string site = "")
     {
         if (created)
+
             return;
 
         throw new InvalidOperationException(
@@ -800,6 +826,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
         var commandBuffer = new WebGpuCommandBuffer(this);
         _activeCommandBuffer = commandBuffer;
+
         return commandBuffer;
     }
 
@@ -851,6 +878,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     public IBuffer CreateBuffer(BufferDesc desc, ReadOnlySpan<byte> initialData = default)
     {
         if (desc.SizeInBytes <= 0)
+
             throw new ArgumentOutOfRangeException(nameof(desc), $"A buffer of {desc.SizeInBytes} bytes cannot be allocated.");
 
         if (initialData.Length > desc.SizeInBytes)
@@ -867,6 +895,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     public ITexture CreateTexture(TextureDesc desc, ReadOnlySpan<byte> initialData = default)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
+
             throw new ArgumentOutOfRangeException(nameof(desc), $"A {desc.Width}x{desc.Height} texture cannot be allocated.");
 
         var texture = new WebGpuTexture(this, desc.Width, desc.Height, desc.Format, desc.RenderTargetable, desc.MipMapped);
@@ -880,6 +909,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         if (desc.Width <= 0 || desc.Height <= 0)
+
             throw new ArgumentOutOfRangeException(
                 nameof(desc),
                 $"A {desc.Width}x{desc.Height} render target cannot be allocated."
@@ -899,6 +929,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         ArgumentNullException.ThrowIfNull(desc.PixelShader);
 
         if (desc.VertexShader is not WebGpuShaderModule vertex)
+
             throw new ArgumentException($"{nameof(desc)}'s vertex shader was not created by this backend.", nameof(desc));
 
         var pixelModule = desc.PixelShader as WebGpuShaderModule;
@@ -915,16 +946,19 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     internal void WriteBuffer(WgpuBuffer* buffer, ulong offset, ReadOnlySpan<byte> data)
     {
         if (data.IsEmpty)
+
             return;
 
         // Copies move whole 4-byte words, so an odd tail - three 16-bit indices, say - is written
         // with the padding <see cref="WebGpuBuffer.GpuSize"/> reserved for it. The padding is never
         // read: it always starts past the buffer's logical size.
         var length = WebGpuInterop.Align(data.Length, 4);
+
         if (length == data.Length)
         {
             fixed (byte* pointer = data)
                 Api.QueueWriteBuffer(_queue, buffer, offset, pointer, (nuint)length);
+
             return;
         }
 
@@ -955,6 +989,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     )
     {
         if (data.IsEmpty)
+
             return;
 
         var rowBytes = texture.Format.RowBytes(width);
@@ -973,6 +1008,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
         byte[]? padded = null;
         ReadOnlySpan<byte> source;
+
         if (pitch == rowBytes && data.Length == required)
         {
             source = data;
@@ -1011,6 +1047,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         ArgumentNullException.ThrowIfNull(texture);
 
         if (texture is not WebGpuTexture webGpuTexture)
+
             throw new ArgumentException($"{nameof(ReadTexture)} needs a texture this backend created.", nameof(texture));
 
         if (_browser)
@@ -1018,6 +1055,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             // A readback needs a MapRead buffer and a mapped-range callback. emdawnwebgpu implements
             // neither (wgpuBufferMapAsync returns a future, and its JS side has no mapAsync path at
             // all), so this fails at buffer creation rather than here unless it is refused.
+
             throw new NotSupportedException(
                 "Reading a texture back is not available on the browser's WebGPU backend: it needs "
                 + "wgpuBufferMapAsync, which emdawnwebgpu does not implement."
@@ -1049,10 +1087,15 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
         }
 
         if (level != 0)
+
             throw new ArgumentOutOfRangeException(nameof(level), level, "Only level 0 is readable through this backend.");
 
-        if (x < 0 || y < 0 || width <= 0 || height <= 0
-            || x + width > webGpuTexture.Width || y + height > webGpuTexture.Height)
+        if (x < 0
+            || y < 0
+            || width <= 0
+            || height <= 0
+            || x + width > webGpuTexture.Width
+            || y + height > webGpuTexture.Height)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(x),
@@ -1063,6 +1106,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
         var rowBytes = webGpuTexture.Format.RowBytes(width);
         var required = rowBytes * height;
+
         if (destination.Length < required)
         {
             throw new ArgumentException(
@@ -1144,7 +1188,9 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
             }
 
             var mappedRange = (byte*)Api.BufferGetConstMappedRange(buffer, 0, (nuint)stagingSize);
+
             if (mappedRange is null)
+
                 throw new InvalidOperationException("wgpu-native returned no mapped range for the readback buffer.");
 
             for (var row = 0; row < height; row++)
@@ -1163,6 +1209,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
     public void Dispose()
     {
         if (Instance is null)
+
             return;
 
         FlushPendingDestroys();
@@ -1192,6 +1239,7 @@ public sealed unsafe class WebGpuGraphicsDevice : IGraphicsDevice
 
         // Null on the browser, where there is no adapter object at all - and the release is
         // unconditional, so passing null aborts inside the native library.
+
         if (Adapter is not null)
         {
             Api.AdapterRelease(Adapter);

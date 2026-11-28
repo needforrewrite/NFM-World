@@ -13,20 +13,20 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiSliderFlagsPrivate : int
-	{
-		/// <summary>
-		/// Should this slider be orientated vertically?<br/>
-		/// </summary>
-		Vertical = unchecked(1048576),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiSliderFlagsPrivate : int
+    {
+        /// <summary>
+        /// Should this slider be orientated vertically?<br/>
+        /// </summary>
+        Vertical = unchecked(1048576),
 
-		/// <summary>
-		/// Consider using g.NextItemData.ItemFlags |= ImGuiItemFlags_ReadOnly instead.<br/>
-		/// </summary>
-		ReadOnly = unchecked(2097152),
-	}
+        /// <summary>
+        /// Consider using g.NextItemData.ItemFlags |= ImGuiItemFlags_ReadOnly instead.<br/>
+        /// </summary>
+        ReadOnly = unchecked(2097152),
+    }
 }

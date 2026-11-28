@@ -169,7 +169,8 @@ public static class ReplayView
         => Sx.Text(
             layout: () => Sx.Styles(maxWidth: 720),
             style: () => Sx.WrappingText(fontSize: 10, foregroundColor: Theme.TextFaint),
-            text: () => $"Frame {state.Frame.Value + 1} / {state.TotalFrames.Value}   ·   " +
+            text: () => $"Frame {state.Frame.Value + 1} / {state.TotalFrames.Value}   ·   "
+                        +
                         "Space play/pause · ←/→ scrub · ,/. frame · 1-4 speed · C camera"
         );
 

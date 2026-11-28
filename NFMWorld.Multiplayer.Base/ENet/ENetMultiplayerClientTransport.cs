@@ -45,6 +45,7 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
         // ENet reports the real outcome as a Connect/Disconnect event on the receive loop,
         // which is also what sets State; until then this stays Connecting.
         State = ClientState.Connecting;
+
         return Task.FromResult(true);
     }
 
@@ -59,6 +60,7 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                 if (_client.CheckEvents(out var netEvent) <= 0)
                 {
                     if (_client.Service(15, out netEvent) <= 0)
+
                         break;
 
                     polled = true;
@@ -67,13 +69,16 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                 switch (netEvent.Type)
                 {
                     case EventType.None:
+
                         break;
 
                     case EventType.Connect:
                         Logging.Info("Client connected to server");
                         State = ClientState.Connected;
+
                         // Only a genuine reconnect: the first Connect also lands here, and
                         // raising it then would make the lobby re-handshake for nothing.
+
                         if (_reconnectAttempted)
                         {
                             _reconnectAttempted = false;
@@ -87,8 +92,10 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                     case EventType.Timeout:
                         Logging.Info("Client disconnected from server");
                         State = ClientState.Disconnected;
+
                         // Reconnect unless the transport is being stopped; a deliberate
                         // leave must not bring the peer back.
+
                         if (_isRunning && !IsStopping)
                         {
                             _reconnectAttempted = true;
@@ -101,6 +108,7 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
                         Logging.Info(
                             $"Packet received from server - Channel ID: {netEvent.ChannelID}, Data length: {netEvent.Packet.Length}"
                         );
+
                         try
                         {
                             ReceivePacket(netEvent.Packet.AsMemory());
@@ -115,6 +123,7 @@ public class ENetMultiplayerClientTransport : BaseMultiplayerClientTransport
             }
 
             // Send queued packets
+
             while (_sendPacketQueue.TryDequeue(out var packet))
             {
                 _peer.Send(0, ref packet);

@@ -13,30 +13,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiDockNodeState : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Unknown = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiDockNodeState : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Unknown = unchecked(0),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		HostWindowHiddenBecauseSingleWindow = unchecked(1),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        HostWindowHiddenBecauseSingleWindow = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		HostWindowHiddenBecauseWindowsAreResizing = unchecked(2),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        HostWindowHiddenBecauseWindowsAreResizing = unchecked(2),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		HostWindowVisible = unchecked(3),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        HostWindowVisible = unchecked(3),
+    }
 }

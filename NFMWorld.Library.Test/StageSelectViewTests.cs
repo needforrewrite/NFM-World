@@ -206,6 +206,7 @@ public class StageSelectViewTests
         using var mounted = Renderer.Mount(() => StageSelectView.Preview(state, NavigationActions(state)));
         var root = (Component)mounted.Root;
         var viewport = new Vector2(1280, 720);
+
         foreach (var busy in new[] { true, false, true, false })
         {
             state.Busy.Value = busy;
@@ -213,6 +214,7 @@ public class StageSelectViewTests
             UiScheduler.Instance.Flush();
             root.LayoutAndRender(viewport);
             var overlay = Descendants(root).SingleOrDefault(node => node.Name == "Stage preview loading");
+
             if (busy)
             {
                 Assert.IsNotNull(overlay);
@@ -223,7 +225,8 @@ public class StageSelectViewTests
                     .Any(node => node.Text == state.Status.Value)
                 );
             }
-            else Assert.IsNull(overlay);
+            else
+                Assert.IsNull(overlay);
         }
     }
 
@@ -331,6 +334,7 @@ public class StageSelectViewTests
         var actions = NavigationActions(state) with { SourceSelected = _ => { }, OnlineSearch = _ => { } };
         using var mounted = Renderer.Mount(() => StageSelectView.Preview(state, actions));
         var root = (Component)mounted.Root;
+
         foreach (var viewport in new[] { new Vector2(1280, 720), new Vector2(640, 360) })
         {
             root.LayoutAndRender(viewport);
@@ -465,11 +469,13 @@ public class StageSelectViewTests
                     )
                 ]
             )
-        ));
+        )
+        );
 
         Renderer.Flush();
         var root = (Component)mounted.Root;
         root.LayoutAndRender(new Vector2(460, windowHeight));
+
         return root;
     }
 
@@ -481,7 +487,9 @@ public class StageSelectViewTests
         foreach (var child in parent.VisualChildren.OfType<Component>())
         {
             yield return child;
+
             foreach (var nested in Descendants(child))
+
                 yield return nested;
         }
     }

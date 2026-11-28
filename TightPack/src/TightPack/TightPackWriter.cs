@@ -63,6 +63,7 @@ public ref struct TightPackWriter<TBufferWriter>
     {
         Commit();
         Span<byte> span = _writer.GetSpan(sizeHint);
+
         if (span.Length < sizeHint)
         {
             TightPackSerializationException.ThrowBufferTooSmall(sizeHint, span.Length);
@@ -144,6 +145,7 @@ public ref struct TightPackWriter<TBufferWriter>
         {
             GetSpan(1)[0] = (byte)tag;
             Advance(1);
+
             return;
         }
 
@@ -338,12 +340,14 @@ public ref struct TightPackWriter<TBufferWriter>
         if (value is null)
         {
             WriteNullCollectionHeader();
+
             return;
         }
 
         if (value.Length == 0)
         {
             WriteCollectionHeader(0);
+
             return;
         }
 
@@ -357,6 +361,7 @@ public ref struct TightPackWriter<TBufferWriter>
         Span<byte> payload = span.Slice(4, maxBytes);
 
         var status = Utf8.FromUtf16(value, payload, out _, out int written, replaceInvalidSequences: false);
+
         if (status != OperationStatus.Done)
         {
             TightPackSerializationException.ThrowMessage(
@@ -372,6 +377,7 @@ public ref struct TightPackWriter<TBufferWriter>
     public void WriteUtf8(scoped ReadOnlySpan<byte> utf8)
     {
         WriteCollectionHeader(utf8.Length);
+
         if (utf8.IsEmpty)
         {
             return;
@@ -391,11 +397,13 @@ public ref struct TightPackWriter<TBufferWriter>
         if (value is null)
         {
             WriteNullCollectionHeader();
+
             return;
         }
 
         int byteLength = checked(value.Length * 2);
         WriteCollectionHeader(byteLength);
+
         if (byteLength == 0)
         {
             return;
@@ -455,10 +463,12 @@ public ref struct TightPackWriter<TBufferWriter>
         if (values is null)
         {
             WriteNullCollectionHeader();
+
             return;
         }
 
         WriteCollectionHeader(values.Length);
+
         if (values.Length == 0)
         {
             return;
@@ -516,11 +526,13 @@ public ref struct TightPackWriter<TBufferWriter>
         if (values is null)
         {
             WriteNullCollectionHeader();
+
             return;
         }
 
         WriteCollectionHeader(values.Length);
         EnsureDepth(typeof(T));
+
         for (int i = 0; i < values.Length; i++)
         {
             T value = values[i]!;
@@ -537,11 +549,13 @@ public ref struct TightPackWriter<TBufferWriter>
         if (values is null)
         {
             WriteNullCollectionHeader();
+
             return;
         }
 
         WriteCollectionHeader(values.Count);
         EnsureDepth(typeof(T));
+
         for (int i = 0; i < values.Count; i++)
         {
             T value = values[i]!;
@@ -566,6 +580,7 @@ public ref struct TightPackWriter<TBufferWriter>
     {
         Span<byte> span = GetSpan(5);
         int i = 0;
+
         while (value >= 0x80)
         {
             span[i++] = (byte)(value | 0x80);
@@ -589,12 +604,14 @@ public ref struct TightPackWriter<TBufferWriter>
             GetSpan(1)[0] = ReferenceId;
             Advance(1);
             WriteVarUInt32(id);
+
             return false;
         }
 
         uint assigned = State.AddReference(value);
         WriteObjectHeader(memberCount);
         WriteVarUInt32(assigned);
+
         return true;
     }
 }

@@ -16,39 +16,36 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiDebugAllocEntry
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int FrameCount;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiDebugAllocEntry
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int FrameCount;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public short AllocCount;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public short AllocCount;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public short FreeCount;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiDebugAllocEntry(int frameCount = default, short allocCount = default, short freeCount = default)
-		{
-			FrameCount = frameCount;
-			AllocCount = allocCount;
-			FreeCount = freeCount;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public short FreeCount;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiDebugAllocEntry(int frameCount = default, short allocCount = default, short freeCount = default)
+        {
+            FrameCount = frameCount;
+            AllocCount = allocCount;
+            FreeCount = freeCount;
+        }
+    }
 }

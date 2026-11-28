@@ -33,6 +33,7 @@ public sealed record BuildInformation(
         )
             ? parsed
             : (DateTimeOffset?)null;
+
         return new BuildInformation(
             timestamp,
             Value("NfmwBuildBranch"),

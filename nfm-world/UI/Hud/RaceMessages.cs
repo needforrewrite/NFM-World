@@ -47,11 +47,13 @@ public sealed class RaceMessages : Component
     protected override void RenderContent(Vector2 position, Vector2 size)
     {
         if (_race.IsPreview || _race is UiState.RaceState state && state.Finished.Value && state.ResultTitle.Value is not null)
+
             return;
         var now = Stopwatch.GetTimestamp();
         var dt = Math.Clamp((float)Stopwatch.GetElapsedTime(_lastFrame, now).TotalSeconds, 0, 0.1f);
         _lastFrame = now;
-        if (!_race.Paused) _clock += dt;
+        if (!_race.Paused)
+            _clock += dt;
 
         DrawLine(_race.StuntMessage, StuntTop, position, size);
         DrawLine(_race.StatusMessage, StatusTop, position, size);
@@ -59,9 +61,14 @@ public sealed class RaceMessages : Component
 
     private void DrawLine(HudMessage? message, float top, Vector2 position, Vector2 size)
     {
-        if (message is not { } value) return;
+        if (message is not { } value)
+
+            return;
         var scale = MathF.Min(size.X / 960, size.Y / 540);
-        if (scale <= 0) return;
+
+        if (scale <= 0)
+
+            return;
 
         var font = new Font(FontFamily.NotoSans, FontStyle.Bold, 16 * scale);
         G.SetFont(font);
@@ -88,7 +95,11 @@ public sealed class RaceMessages : Component
             HudMessageKind.Warning => Theme.Warning,
             _ => Theme.TextSecondary
         };
-        if (!SettingsMenu.HudFlash) return colour;
+
+        if (!SettingsMenu.HudFlash)
+
+            return colour;
+
         return (int)(_clock * BlinkHz) % 2 == 0
             ? colour
             : new Color((byte)(colour.R * BlinkDim), (byte)(colour.G * BlinkDim), (byte)(colour.B * BlinkDim), colour.A);

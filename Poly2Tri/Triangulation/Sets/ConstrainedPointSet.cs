@@ -75,6 +75,7 @@ namespace Poly2Tri
         {
             AddBoundaryConstraints();
             List<TriangulationConstraint> l = new List<TriangulationConstraint>();
+
             for (int i = 0; i < indices.Length; i += 2)
             {
                 TriangulationConstraint tc = new TriangulationConstraint(bounds[i], bounds[i + 1]);
@@ -91,6 +92,7 @@ namespace Poly2Tri
             TriangulationPoint ptLR = null;
             TriangulationPoint ptUR = null;
             TriangulationPoint ptUL = null;
+
             if (!TryGetPoint(MinX, MinY, out ptLL))
             {
                 ptLL = new TriangulationPoint(MinX, MinY);
@@ -141,6 +143,7 @@ namespace Poly2Tri
         public override bool AddRange(List<TriangulationPoint> points)
         {
             bool bOK = true;
+
             foreach (TriangulationPoint p in points)
             {
                 bOK = Add(p, -1, true) && bOK;
@@ -168,10 +171,12 @@ namespace Poly2Tri
                 pts.Add(c);
 
                 // only constrain the points if we actually HAVE a bounding rect
+
                 if (mPoints.Count > 1)
                 {
                     // constrain the points to bounding rect
                     int numPoints = pts[listIdx].Count;
+
                     for (int i = 0; i < numPoints; ++i)
                     {
                         ConstrainPointToBounds(pts[listIdx][i]);
@@ -189,11 +194,13 @@ namespace Poly2Tri
 
                 bool bListOK = true;
                 Point2DList.PolygonError err = pts[listIdx].CheckPolygon();
+
                 while (bListOK && err != PolygonError.None)
                 {
                     if ((err & PolygonError.NotEnoughVertices) == PolygonError.NotEnoughVertices)
                     {
                         bListOK = false;
+
                         continue;
                     }
 
@@ -203,6 +210,7 @@ namespace Poly2Tri
                         //List<Point2DList> l = TriangulationUtil.SplitSelfIntersectingPolygon(pts[listIdx], pts[listIdx].Epsilon);
                         List<Point2DList> l = PolygonUtil.SplitComplexPolygon(pts[listIdx], pts[listIdx].Epsilon);
                         pts.RemoveAt(listIdx);
+
                         foreach (Point2DList newList in l)
                         {
                             Contour c = new Contour(this);
@@ -211,6 +219,7 @@ namespace Poly2Tri
                         }
 
                         err = pts[listIdx].CheckPolygon();
+
                         continue;
                     }
 
@@ -218,6 +227,7 @@ namespace Poly2Tri
                     {
                         pts[listIdx].Simplify(this.Epsilon);
                         err = pts[listIdx].CheckPolygon();
+
                         continue;
                         //err &= ~(PolygonError.Degenerate);
                         //if (pts[listIdx].Count < 3)
@@ -228,12 +238,16 @@ namespace Poly2Tri
                         //}
                     }
 
-                    if ((err & PolygonError.AreaTooSmall) == PolygonError.AreaTooSmall ||
-                        (err & PolygonError.SidesTooCloseToParallel) == PolygonError.SidesTooCloseToParallel ||
-                        (err & PolygonError.TooThin) == PolygonError.TooThin ||
+                    if ((err & PolygonError.AreaTooSmall) == PolygonError.AreaTooSmall
+                        ||
+                        (err & PolygonError.SidesTooCloseToParallel) == PolygonError.SidesTooCloseToParallel
+                        ||
+                        (err & PolygonError.TooThin) == PolygonError.TooThin
+                        ||
                         (err & PolygonError.Unknown) == PolygonError.Unknown)
                     {
                         bListOK = false;
+
                         continue;
                     }
                     // non-convex polygons are ok
@@ -254,20 +268,24 @@ namespace Poly2Tri
 
             bool bOK = true;
             listIdx = 0;
+
             while (listIdx < pts.Count)
             {
                 int numPoints = pts[listIdx].Count;
+
                 if (numPoints < 2)
                 {
                     // should not be possible by this point...
                     ++listIdx;
                     bOK = false;
+
                     continue;
                 }
                 else if (numPoints == 2)
                 {
                     uint constraintCode = TriangulationConstraint.CalculateContraintCode(pts[listIdx][0], pts[listIdx][1]);
                     TriangulationConstraint tc = null;
+
                     if (!mConstraintMap.TryGetValue(constraintCode, out tc))
                     {
                         tc = new TriangulationConstraint(pts[listIdx][0], pts[listIdx][1]);
@@ -299,6 +317,7 @@ namespace Poly2Tri
             }
 
             bool bOK = true;
+
             foreach (TriangulationConstraint tc in constraints)
             {
                 if (ConstrainPointToBounds(tc.P) || ConstrainPointToBounds(tc.Q))
@@ -307,6 +326,7 @@ namespace Poly2Tri
                 }
 
                 TriangulationConstraint tcTmp = null;
+
                 if (!mConstraintMap.TryGetValue(tc.ConstraintCode, out tcTmp))
                 {
                     tcTmp = tc;
@@ -329,6 +349,7 @@ namespace Poly2Tri
             // a valid constraint in the map with the same ConstraintCode, then we're guaranteed that
             // the points are also valid (and have the same coordinates as the ones being passed in with
             // this constrain).  Return true to indicate that we successfully "added" the constraint
+
             if (mConstraintMap.ContainsKey(tc.ConstraintCode))
             {
                 return true;
@@ -337,6 +358,7 @@ namespace Poly2Tri
             // Make sure the constraint is not using points that are duplicates of ones already stored
             // If it is, replace the Constraint Points with the points already stored.
             TriangulationPoint p;
+
             if (TryGetPoint(tc.P.X, tc.P.Y, out p))
             {
                 tc.P = p;
@@ -382,6 +404,7 @@ namespace Poly2Tri
         public int GetNumHoles()
         {
             int numHoles = 0;
+
             foreach (Contour c in mHoles)
             {
                 numHoles += c.GetNumHoles(false);
@@ -405,6 +428,7 @@ namespace Poly2Tri
         public int GetActualHoles(out List<Contour> holes)
         {
             holes = new List<Contour>();
+
             foreach (Contour c in mHoles)
             {
                 c.GetActualHoles(false, ref holes);
@@ -417,6 +441,7 @@ namespace Poly2Tri
         protected void InitializeHoles()
         {
             Contour.InitializeHoles(mHoles, this, this);
+
             foreach (Contour c in mHoles)
             {
                 c.InitializeHoles(this);
@@ -427,6 +452,7 @@ namespace Poly2Tri
         public override bool Initialize()
         {
             InitializeHoles();
+
             return base.Initialize();
         }
 
@@ -441,6 +467,7 @@ namespace Poly2Tri
             base.Prepare(tcx);
 
             Dictionary<uint, TriangulationConstraint>.Enumerator it = mConstraintMap.GetEnumerator();
+
             while (it.MoveNext())
             {
                 TriangulationConstraint tc = it.Current.Value;

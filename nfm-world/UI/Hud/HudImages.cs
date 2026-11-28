@@ -16,6 +16,7 @@ internal static class HudImages
         catch (Exception ex)
         {
             Logging.Error($"Could not load HUD image '{path}': {ex.GetType().Name}: {ex.Message}. Skipping image.");
+
             return null;
         }
     }

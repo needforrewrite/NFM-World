@@ -7,14 +7,17 @@ public class FileUtil
         if (!VFS.DirectoryExists(folder))
         {
             Logging.Info($"Folder not found: {folder}");
+
             return;
         }
 
         var extraFiles = new List<string>();
+
         foreach (var file in VFS.EnumerateFiles(folder))
         {
             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
             var a = fileNames.IndexOf(fileNameWithoutExtension);
+
             if (a != -1)
             {
                 action(VFS.ReadAllBytes(file), a, fileNameWithoutExtension);
@@ -27,6 +30,7 @@ public class FileUtil
         }
 
         var idx = fileNames.Length;
+
         foreach (var file in extraFiles)
         {
             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
@@ -39,6 +43,7 @@ public class FileUtil
         if (!VFS.DirectoryExists(folder))
         {
             Logging.Info($"Folder not found: {folder}");
+
             return;
         }
 
@@ -54,6 +59,7 @@ public class FileUtil
         if (!VFS.DirectoryExists(folder))
         {
             Logging.Info($"Folder not found: {folder}");
+
             return;
         }
 
@@ -65,6 +71,7 @@ public class FileUtil
                 {
                     var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
                     var a = fileNames.IndexOf(fileNameWithoutExtension);
+
                     if (a != -1)
                     {
                         return (Index: a, Result: action(VFS.ReadAllBytes(file), fileNameWithoutExtension));
@@ -72,6 +79,7 @@ public class FileUtil
                     else
                     {
                         Logging.Debug($"Extra file found: {file}");
+
                         return (Index: -1, Result: action(VFS.ReadAllBytes(file), fileNameWithoutExtension));
                     }
                 }
@@ -85,6 +93,7 @@ public class FileUtil
         }
 
         var idx = fileNames.Length;
+
         foreach (var result in extraFiles)
         {
             save(idx++, result);
@@ -96,6 +105,7 @@ public class FileUtil
         if (!VFS.DirectoryExists(folder))
         {
             Logging.Info($"Folder not found: {folder}");
+
             return;
         }
 
@@ -104,6 +114,7 @@ public class FileUtil
             .Select(file =>
                 {
                     var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+
                     return action(VFS.ReadAllBytes(file), fileNameWithoutExtension);
                 }
             )

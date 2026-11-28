@@ -34,7 +34,7 @@ public static class GlassCardUi
         Func<Styles>? style = null,
         Action<ClayDom.Events.MouseEvent>? onmousedown = null,
         params object?[] children
-    )
+        )
         => Sx.View(
             style: () => Merge(style?.Invoke(), color?.Invoke()),
             onmousedown: onmousedown,

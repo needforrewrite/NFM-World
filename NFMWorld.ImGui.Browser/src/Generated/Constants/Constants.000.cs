@@ -13,19 +13,18 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	public unsafe partial class ImGui
-	{
-		public const int CIMGUI_VARGS0 = 1;
+    public unsafe partial class ImGui
+    {
+        public const int CIMGUI_VARGS0 = 1;
 
-		public const int IMGUI_USE_WCHAR32 = 1;
+        public const int IMGUI_USE_WCHAR32 = 1;
 
-		public const int IMGUI_ENABLE_FREETYPE = 1;
+        public const int IMGUI_ENABLE_FREETYPE = 1;
 
-		public const int CIMGUI_DEFINE_ENUMS_AND_STRUCTS = 1;
+        public const int CIMGUI_DEFINE_ENUMS_AND_STRUCTS = 1;
 
-		public const int IM_UNICODE_CODEPOINT_MAX = 0x10FFFF;
+        public const int IM_UNICODE_CODEPOINT_MAX = 0x10FFFF;
 
-		public const int IMGUI_HAS_DOCK = 1;
-
-	}
+        public const int IMGUI_HAS_DOCK = 1;
+    }
 }

@@ -16,104 +16,118 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiDockContext
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiStorage Nodes;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiDockContext
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiStorage Nodes;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<ImGuiDockRequest> Requests;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<ImGuiDockRequest> Requests;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<ImGuiDockNodeSettings> NodesSettings;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<ImGuiDockNodeSettings> NodesSettings;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte WantFullRebuild;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiDockContext(ImGuiStorage nodes = default, ImVector<ImGuiDockRequest> requests = default, ImVector<ImGuiDockNodeSettings> nodesSettings = default, bool wantFullRebuild = default)
-		{
-			Nodes = nodes;
-			Requests = requests;
-			NodesSettings = nodesSettings;
-			WantFullRebuild = wantFullRebuild ? (byte)1 : (byte)0;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte WantFullRebuild;
 
 
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiDockContext(
+            ImGuiStorage nodes = default,
+            ImVector<ImGuiDockRequest> requests = default,
+            ImVector<ImGuiDockNodeSettings> nodesSettings = default,
+            bool wantFullRebuild = default
+        )
+        {
+            Nodes = nodes;
+            Requests = requests;
+            NodesSettings = nodesSettings;
+            WantFullRebuild = wantFullRebuild ? (byte)1 : (byte)0;
+        }
+    }
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiDockContextPtr : IEquatable<ImGuiDockContextPtr>
-	{
-		public ImGuiDockContextPtr(ImGuiDockContext* handle) { Handle = handle; }
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiDockContextPtr : IEquatable<ImGuiDockContextPtr>
+    {
+        public ImGuiDockContextPtr(ImGuiDockContext* handle)
+        {
+            Handle = handle;
+        }
 
-		public ImGuiDockContext* Handle;
+        public ImGuiDockContext* Handle;
 
-		public bool IsNull => Handle == null;
+        public bool IsNull => Handle == null;
 
-		public static ImGuiDockContextPtr Null => new ImGuiDockContextPtr(null);
+        public static ImGuiDockContextPtr Null => new ImGuiDockContextPtr(null);
 
-		public ImGuiDockContext this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public ImGuiDockContext this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static implicit operator ImGuiDockContextPtr(ImGuiDockContext* handle) => new ImGuiDockContextPtr(handle);
+        public static implicit operator ImGuiDockContextPtr(ImGuiDockContext* handle) => new ImGuiDockContextPtr(handle);
 
-		public static implicit operator ImGuiDockContext*(ImGuiDockContextPtr handle) => handle.Handle;
+        public static implicit operator ImGuiDockContext*(ImGuiDockContextPtr handle) => handle.Handle;
 
-		public static bool operator ==(ImGuiDockContextPtr left, ImGuiDockContextPtr right) => left.Handle == right.Handle;
+        public static bool operator ==(ImGuiDockContextPtr left, ImGuiDockContextPtr right) => left.Handle == right.Handle;
 
-		public static bool operator !=(ImGuiDockContextPtr left, ImGuiDockContextPtr right) => left.Handle != right.Handle;
+        public static bool operator !=(ImGuiDockContextPtr left, ImGuiDockContextPtr right) => left.Handle != right.Handle;
 
-		public static bool operator ==(ImGuiDockContextPtr left, ImGuiDockContext* right) => left.Handle == right;
+        public static bool operator ==(ImGuiDockContextPtr left, ImGuiDockContext* right) => left.Handle == right;
 
-		public static bool operator !=(ImGuiDockContextPtr left, ImGuiDockContext* right) => left.Handle != right;
+        public static bool operator !=(ImGuiDockContextPtr left, ImGuiDockContext* right) => left.Handle != right;
 
-		public bool Equals(ImGuiDockContextPtr other) => Handle == other.Handle;
+        public bool Equals(ImGuiDockContextPtr other) => Handle == other.Handle;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiDockContextPtr handle && Equals(handle);
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiDockContextPtr handle && Equals(handle);
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiDockContextPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImGuiStorage Nodes => ref Unsafe.AsRef<ImGuiStorage>(&Handle->Nodes);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<ImGuiDockRequest> Requests => ref Unsafe.AsRef<ImVector<ImGuiDockRequest>>(&Handle->Requests);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<ImGuiDockNodeSettings> NodesSettings => ref Unsafe.AsRef<ImVector<ImGuiDockNodeSettings>>(&Handle->NodesSettings);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref bool WantFullRebuild => ref Unsafe.AsRef<bool>(&Handle->WantFullRebuild);
-	}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiDockContextPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImGuiStorage Nodes => ref Unsafe.AsRef<ImGuiStorage>(&Handle->Nodes);
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<ImGuiDockRequest> Requests => ref Unsafe.AsRef<ImVector<ImGuiDockRequest>>(&Handle->Requests);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<ImGuiDockNodeSettings> NodesSettings => ref Unsafe.AsRef<ImVector<ImGuiDockNodeSettings>>(
+            &Handle->NodesSettings
+        );
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref bool WantFullRebuild => ref Unsafe.AsRef<bool>(&Handle->WantFullRebuild);
+    }
 }

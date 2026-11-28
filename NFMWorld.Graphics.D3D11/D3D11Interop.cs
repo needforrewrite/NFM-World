@@ -70,6 +70,7 @@ internal static class D3D11Interop
     public static void Check(HRESULT hr, string operation, string? detail = null)
     {
         if (hr >= 0)
+
             return;
 
         var message = $"{operation} failed with 0x{hr.Value:X8}.";
@@ -92,6 +93,7 @@ internal static class D3D11Interop
     public static unsafe void Release<T>(ref T* pointer) where T : unmanaged
     {
         if (pointer == null)
+
             return;
 
         ((IUnknown*)pointer)->Release();
@@ -126,6 +128,7 @@ internal static class D3D11Interop
     public static GCHandle PinAscii(string text)
     {
         var bytes = Encoding.ASCII.GetBytes(text + "\0");
+
         return GCHandle.Alloc(bytes, GCHandleType.Pinned);
     }
 

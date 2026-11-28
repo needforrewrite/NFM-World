@@ -73,7 +73,8 @@ public class CrashSoundQueueTests
 
         Assert.AreEqual(2, played.Count);
         Assert.IsFalse(played.Any(sound => sound.Contact.Surface == 17));
-        for (var i = 0; i < CrashSpacingTicks; i++) queue.Flush((_, sound) => played.Add(sound));
+        for (var i = 0; i < CrashSpacingTicks; i++)
+            queue.Flush((_, sound) => played.Add(sound));
         Assert.AreEqual(3, played.Count);
         Assert.AreEqual(3, played.Select(sound => sound.Contact).Distinct().Count());
     }
@@ -90,13 +91,15 @@ public class CrashSoundQueueTests
             CrashSoundContact.Obstacle(0, 0, 10),
             CrashSoundContact.Obstacle(0, 0, 11)
         };
-        foreach (var contact in contacts) queue.Enqueue(source, new(contact, Vector3.Zero, 100, 0));
+        foreach (var contact in contacts)
+            queue.Enqueue(source, new(contact, Vector3.Zero, 100, 0));
         var count = 0;
 
         queue.Flush((_, _) => count++);
 
         Assert.AreEqual(1, count);
-        for (var i = 0; i < CrashSpacingTicks * (contacts.Length - 1); i++) queue.Flush((_, _) => count++);
+        for (var i = 0; i < CrashSpacingTicks * (contacts.Length - 1); i++)
+            queue.Flush((_, _) => count++);
         Assert.AreEqual(2, count);
     }
 
@@ -123,7 +126,8 @@ public class CrashSoundQueueTests
         queue.Flush((_, sound) => played.Add(sound));
         Assert.AreEqual(2, played.Count);
         Assert.AreEqual(200f + CrashSpacingTicks - 1, played[1].Strength);
-        for (var i = 0; i < CrashSpacingTicks * 4; i++) queue.Flush((_, sound) => played.Add(sound));
+        for (var i = 0; i < CrashSpacingTicks * 4; i++)
+            queue.Flush((_, sound) => played.Add(sound));
         Assert.AreEqual(2, played.Count);
     }
 
@@ -133,6 +137,7 @@ public class CrashSoundQueueTests
         var queue = new CrashSoundQueue<object>();
         var source = new object();
         var count = 0;
+
         for (var tick = 0; tick < 120; tick++)
         {
             for (var point = 0; point < 16; point++)
@@ -141,7 +146,8 @@ public class CrashSoundQueueTests
         }
 
         Assert.AreEqual(2, count);
-        for (var i = 0; i < 120; i++) queue.Flush((_, _) => count++);
+        for (var i = 0; i < 120; i++)
+            queue.Flush((_, _) => count++);
         Assert.AreEqual(2, count);
 
         queue.Enqueue(source, new(CrashSoundContact.Cars(0, 0, 1, 0), Vector3.Zero, 100, 0));
@@ -160,13 +166,15 @@ public class CrashSoundQueueTests
         queue.Enqueue(source, first);
         queue.Enqueue(source, second);
         queue.Flush((_, sound) => played.Add(sound));
+
         for (var i = 0; i < CrashSpacingTicks; i++)
         {
             queue.Enqueue(source, second);
             queue.Flush((_, sound) => played.Add(sound));
         }
 
-        for (var i = 0; i < CrashSpacingTicks; i++) queue.Flush((_, sound) => played.Add(sound));
+        for (var i = 0; i < CrashSpacingTicks; i++)
+            queue.Flush((_, sound) => played.Add(sound));
         Assert.AreEqual(2, played.Count);
         Assert.AreEqual(second, played[1]);
     }
@@ -183,8 +191,10 @@ public class CrashSoundQueueTests
         var count = 0;
         queue.Flush((_, _) => count++);
         Assert.AreEqual(1, count);
-        if (resetStage) queue.Clear();
-        else queue.RemoveCar(1);
+        if (resetStage)
+            queue.Clear();
+        else
+            queue.RemoveCar(1);
         for (var i = 0; i < CrashSpacingTicks * 2; i++)
             queue.Flush((_, _) => Assert.Fail("Removed cars and stopped stages must not play delayed crashes."));
     }
@@ -195,6 +205,7 @@ public class CrashSoundQueueTests
         var queue = new CrashSoundQueue<object>();
         var player = new object();
         var otherCar = new object();
+
         for (var wheel = 0; wheel < 4; wheel++)
         {
             queue.Enqueue(player, new(CrashSoundContact.Obstacle(0, wheel, 10), new(wheel, 0, 0), 100 + wheel, 1));
@@ -225,7 +236,8 @@ public class CrashSoundQueueTests
         Assert.AreEqual(1, played.Count(sound => sound.Kind == 0));
 
         var cooldown = Math.Max(1, (int)(3 / Physics.PHYSICS_MULTIPLIER));
-        for (var i = 0; i < cooldown; i++) queue.Flush((_, sound) => played.Add(sound));
+        for (var i = 0; i < cooldown; i++)
+            queue.Flush((_, sound) => played.Add(sound));
         queue.Enqueue(car, new(CrashSoundContact.Obstacle(0, 3, -1), Vector3.Zero, 100, 1));
         queue.Flush((_, sound) => played.Add(sound));
         Assert.AreEqual(2, played.Count(sound => sound.Kind == 1));
@@ -242,8 +254,10 @@ public class CrashSoundQueueTests
         var count = 0;
         queue.Enqueue(car, landing);
         queue.Flush((_, _) => count++);
-        if (resetStage) queue.Clear();
-        else queue.RemoveCar(0);
+        if (resetStage)
+            queue.Clear();
+        else
+            queue.RemoveCar(0);
         queue.Enqueue(car, landing);
         queue.Flush((_, _) => count++);
         Assert.AreEqual(2, count);
@@ -279,14 +293,17 @@ public class CrashSoundQueueTests
         queue.Enqueue(source, new(CrashSoundContact.Obstacle(1, 0, 7), Vector3.One, 100, 0));
         queue.Flush((_, _) => count++);
         Assert.AreEqual(1, count);
-        for (var i = 1; i < CrashSpacingTicks; i++) queue.Flush((_, _) => count++);
+        for (var i = 1; i < CrashSpacingTicks; i++)
+            queue.Flush((_, _) => count++);
         Assert.AreEqual(2, count);
 
         var cooldown = Math.Max(1, (int)(2 / Physics.PHYSICS_MULTIPLIER));
-        for (var i = 0; i < cooldown; i++) queue.Flush((_, _) => count++);
+        for (var i = 0; i < cooldown; i++)
+            queue.Flush((_, _) => count++);
         queue.Enqueue(source, impact);
         queue.Flush((_, _) => count++);
-        for (var i = 0; i < CrashSpacingTicks; i++) queue.Flush((_, _) => count++);
+        for (var i = 0; i < CrashSpacingTicks; i++)
+            queue.Flush((_, _) => count++);
         Assert.AreEqual(3, count);
     }
 

@@ -38,6 +38,7 @@
                 {
                     throw new IndexOutOfRangeException();
                 }
+
                 return data[index];
             }
             set
@@ -46,6 +47,7 @@
                 {
                     throw new IndexOutOfRangeException();
                 }
+
                 data[index] = value;
             }
         }
@@ -95,6 +97,7 @@
                 capacity = value;
 
                 // Clear the rest of the data
+
                 for (int i = size; i < capacity; i++)
                 {
                     data[i] = default;

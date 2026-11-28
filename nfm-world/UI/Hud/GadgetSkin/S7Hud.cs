@@ -16,13 +16,16 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         Position();
         Anchor(HudAnchor.TopRight);
         Status();
-        if (!Race.TimeTrial && Race.Racers.Count > 1) Opponents();
-        if (Race.Opponents == 0 && Race.LapSplits.Count > 1) Chronometer();
+        if (!Race.TimeTrial && Race.Racers.Count > 1)
+            Opponents();
+        if (Race.Opponents == 0 && Race.LapSplits.Count > 1)
+            Chronometer();
         Anchor(HudAnchor.Top);
         Arrow();
         Anchor(HudAnchor.BottomLeft);
         Radar();
-        if (Race.MusicTrack is { } track) TrackVisor(track);
+        if (Race.MusicTrack is { } track)
+            TrackVisor(track);
         Anchor(HudAnchor.BottomRight);
         Speedometer();
     }
@@ -44,6 +47,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         Text(Race.HasPosition ? "Position:" : "Pos:", 32, 42, 14, white, FontFamily.Adventure, false);
 
         var blue = Snap(50, 204, 255);
+
         if (Race.TotalLaps > 0)
         {
             Text("Lap:", 15, 22, 14, white, FontFamily.Adventure, false);
@@ -53,7 +57,9 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         if (!Race.TimeTrial)
             Text($"{Race.Wasted} / {Race.Opponents}", 160, 22, 14, blue, FontFamily.Adventure, false);
 
-        if (!Race.HasPosition) return;
+        if (!Race.HasPosition)
+
+            return;
         var pos = Race.Position;
         var alive = Race.TotalRacers - Race.Wasted;
         var suffix = $"{OrdinalSuffix(pos)} / {alive}";
@@ -82,6 +88,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         var dam = damage * 116;
         var damagePercent = (int)(damage * 100);
         var barColor = dam > 90 ? Snap(255, 0, 0) : dam > 50 ? Snap(250, 140, 0) : Snap(255, 255, 0);
+
         if (dam > 0)
         {
             ClipRect(669, 14, 116, 14);
@@ -122,10 +129,16 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         var accent = Snap(50, 204, 255, 220);
         var white = Snap(250, 250, 250);
         var row = 0;
+
         foreach (var racer in Race.Racers)
         {
-            if (racer.Wasted) continue;
-            if (row >= maxRows) break;
+            if (racer.Wasted)
+
+                continue;
+
+            if (row >= maxRows)
+
+                break;
             var y = 60 + 30 * row;
             Span<float> xs = [682, 793, 787, 676];
             Span<float> ys = [y, y, y + 25, y + 25];
@@ -152,7 +165,9 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
 
     private void Arrow()
     {
-        if (Race.ArrowAngle is not { } angle) return;
+        if (Race.ArrowAngle is not { } angle)
+
+            return;
         var white = Snap(250, 250, 250);
         var accent = Race.ArrowAtCars ? Snap(50, 204, 255) : Snap(80, 230, 30);
         var dark = Race.ArrowAtCars ? Snap(0, 154, 205, 220) : Snap(50, 150, 20, 220);
@@ -204,6 +219,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         var shifted = new float[values.Length];
         for (var i = 0; i < values.Length; i++)
             shifted[i] = values[i] + delta;
+
         return shifted;
     }
 
@@ -211,7 +227,9 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
 
     private void Radar()
     {
-        if (Race.ClientPosition is null) return;
+        if (Race.ClientPosition is null)
+
+            return;
         var side = S(172);
         var x = X(6);
         var y = Y(290);
@@ -240,6 +258,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         Line(Snap(50, 50, 50), 713, 65, 713, 65 + h - 1);
 
         var cumulative = 0;
+
         for (var i = 0; i < rows; i++)
         {
             cumulative += splits[i];
@@ -267,6 +286,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         var l = Gauge(SpeedoX, SpeedoY, -120, 80, SpeedoScale);
         var r = Gauge(SpeedoX, SpeedoY, 120, 80, SpeedoScale);
         const int b = 3;
+
         return (
             [l.X + b, l.X + b, l.X + b - 3, r.X - b + 3, r.X - b, r.X - b],
             [l.Y, l.Y + 14, l.Y + 17, r.Y + 17, r.Y + 14, r.Y]
@@ -278,6 +298,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         var l = Gauge(SpeedoX, SpeedoY, -120, 80, SpeedoScale);
         var r = Gauge(SpeedoX, SpeedoY, 120, 80, SpeedoScale);
         var skirt = new float[Skirt.X.Length * 2];
+
         for (var i = 0; i < Skirt.X.Length; i++)
         {
             skirt[i * 2] = Skirt.X[i];
@@ -332,6 +353,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         _needle = Race.IsPreview ? degrees : Ease(_needle, degrees, Dt);
 
         // Ticks: long every 30°, two short between.
+
         for (var n = mins; n <= maxs; n += 30)
         {
             var a = Gauge(px, py, n, 70, scl);
@@ -340,6 +362,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         }
 
         for (var offset = 10; offset <= 20; offset += 10)
+
         for (var n = mins + offset; n <= maxs; n += 30)
         {
             var a = Gauge(px, py, n, 80, scl);
@@ -348,6 +371,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         }
 
         // The labels around the rim, dark once the needle has passed them.
+
         for (var n = mins; n <= maxs; n += 30)
         {
             var step = (n - mins) / 30;
@@ -394,6 +418,7 @@ internal sealed class S7Hud(IHudData race) : GadgetHud(race)
         RectOutline(accent, 1, -10, y, 35 + dist, 40);
 
         // phy's double chevron tail, offset by the text width.
+
         for (var k = 0; k < 2; k++)
         {
             var o = 15 + dist + k * 12;

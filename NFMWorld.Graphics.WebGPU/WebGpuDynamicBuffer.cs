@@ -65,6 +65,7 @@ internal sealed unsafe class WebGpuDynamicBuffer : IDisposable
         // The cursor is only kept a multiple of the ring's own alignment, so a stricter request has
         // to move the start; advancing by a ring-aligned length keeps that invariant for later calls.
         var offset = WebGpuInterop.Align(_cursor, align);
+
         if (offset + length > _capacity)
         {
             var capacity = Math.Max(_capacity * 2, offset + length);
@@ -73,6 +74,7 @@ internal sealed unsafe class WebGpuDynamicBuffer : IDisposable
         }
 
         _cursor = offset + length;
+
         return offset;
     }
 
@@ -112,6 +114,7 @@ internal sealed unsafe class WebGpuDynamicBuffer : IDisposable
     public void Dispose()
     {
         if (_handle is null)
+
             return;
 
         _device.Api.BufferDestroy(_handle);

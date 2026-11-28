@@ -54,6 +54,7 @@ public class RaceRestartTests
     {
         TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
         var factory = GamemodeFactory.Create("nfmm/timetrial");
+
         try
         {
             var stage = new StageLoader { nlaps = 1 };

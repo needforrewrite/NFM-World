@@ -34,7 +34,9 @@ public partial class WorldGame
         var scaleOverride = args.FirstOrDefault(arg => arg.StartsWith("--sx-scale=", StringComparison.Ordinal));
         var scale = scaleOverride is not null ? float.Parse(scaleOverride[11..], CultureInfo.InvariantCulture)
             : config.TryGetProperty("scale", out var s) ? s.GetSingle() : height / 720f;
+
         if (width is < 320 or > 7680 || height is < 240 or > 4320 || !float.IsFinite(scale) || scale is < 0.25f or > 4f)
+
             throw new ArgumentOutOfRangeException(nameof(args), "Unsupported harness dimensions or scale.");
         var output = Path.GetFullPath(
             config.GetProperty("output").GetString()!,
@@ -93,12 +95,15 @@ public partial class WorldGame
             "race-hud" => new FixturePhase(() => RaceHudFixture(config)),
             _ => throw new InvalidOperationException($"Unknown harness view: {viewName}")
         };
+
         if (config.TryGetProperty("pieceCount", out var count))
         {
             if (phase is not StageEditorPhase)
+
                 throw new InvalidOperationException("pieceCount requires the stage-editor view.");
             var tab = new StageEditorTab { TabName = "Layout fixture", Stage = new EditorStage() };
             var rad = new NFMWorldLibrary.Rad.Rad3d([], false, "fixture/road");
+
             for (var i = 0; i < count.GetInt32(); i++)
             {
                 var obj = NFMWorldLibrary.Backend.StageObject.CreateDefaultObject(
@@ -111,7 +116,8 @@ public partial class WorldGame
 
             tab.ActivePieceId = 0;
             tab.SelectedPieceIds.Add(0);
-            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags
+            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance
+                                                          | System.Reflection.BindingFlags
                 .NonPublic;
             ((List<StageEditorTab>)typeof(StageEditorPhase).GetField("_tabs", fields)!.GetValue(phase)!).Add(tab);
             typeof(StageEditorPhase).GetField("_activeTabIndex", fields)!.SetValue(phase, 0);
@@ -120,9 +126,11 @@ public partial class WorldGame
         if (config.TryGetProperty("modelTab", out var modelTab))
         {
             if (phase is not ModelEditorPhase modelEditor)
+
                 throw new InvalidOperationException("modelTab requires the model-editor view.");
             var isStage = modelTab.GetString() == "stage";
-            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags
+            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance
+                                                          | System.Reflection.BindingFlags
                 .NonPublic;
             ((List<NFMWorld.UI.ModelEditorTab>)typeof(ModelEditorPhase).GetField("_tabs", fields)!.GetValue(modelEditor)!)
                 .Add(
@@ -142,6 +150,7 @@ public partial class WorldGame
         if (config.TryGetProperty("stockParts", out var stockParts) && stockParts.GetBoolean())
         {
             if (phase is not StageEditorPhase stageEditor)
+
                 throw new InvalidOperationException("stockParts requires the stage-editor view.");
             const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance
                                                           | System.Reflection.BindingFlags.NonPublic;
@@ -149,6 +158,7 @@ public partial class WorldGame
                     StageEditorPhase
                 )
                 .GetField("_availableParts", fields)!.GetValue(stageEditor)!;
+
             foreach (var file in NFMWorldLibrary.BackendGameSparker.StageRads)
             {
                 var path = $"data/models/nfmm/stage/{file}.rad";
@@ -163,8 +173,10 @@ public partial class WorldGame
         if (config.TryGetProperty("onlineParts", out var onlineParts) && onlineParts.GetBoolean())
         {
             if (phase is not StageEditorPhase stageEditor)
+
                 throw new InvalidOperationException("onlineParts requires the stage-editor view.");
-            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags
+            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance
+                                                          | System.Reflection.BindingFlags
                 .NonPublic;
             var hash = new string('b', 64);
             var reference = NFMWorldLibrary.Radpack.RadpackReader.ArchivePrefix + hash;
@@ -206,8 +218,11 @@ public partial class WorldGame
         IEnumerable<Component> Nodes(Component parent)
         {
             yield return parent;
+
             foreach (var child in parent.VisualChildren.OfType<Component>())
+
             foreach (var node in Nodes(child))
+
                 yield return node;
         }
 
@@ -218,6 +233,7 @@ public partial class WorldGame
             if (step.TryGetProperty("target", out var name))
             {
                 var node = Find(name.GetString()!);
+
                 return node.LayoutBorderPosition + node.LayoutBorderSize / 2;
             }
 
@@ -242,9 +258,11 @@ public partial class WorldGame
         void WaitUntil(Func<bool> ready)
         {
             var elapsed = System.Diagnostics.Stopwatch.StartNew();
+
             while (!ready())
             {
                 if (elapsed.Elapsed > TimeSpan.FromSeconds(10))
+
                     throw new InvalidOperationException("Timed out waiting for asynchronous UI work.");
                 Render();
                 Thread.Sleep(5);
@@ -254,12 +272,15 @@ public partial class WorldGame
         void Save(string name)
         {
             if (Path.GetFileName(name) != name)
+
                 throw new InvalidOperationException("Capture names must be plain file names.");
             game._device.ReadTexture(target.ColorTexture, 0, 0, width, height, pixels);
+
             if (game._device.HasBottomLeftFramebufferOrigin)
             {
                 var stride = width * 4;
                 var row = new byte[stride];
+
                 for (var y = 0; y < height / 2; y++)
                 {
                     pixels.AsSpan(y * stride, stride).CopyTo(row);
@@ -303,6 +324,7 @@ public partial class WorldGame
         }
 
         Render();
+
         foreach (var step in config.GetProperty("steps").EnumerateArray())
         {
             switch (step.GetProperty("action").GetString())
@@ -312,6 +334,7 @@ public partial class WorldGame
                     var point = Point(step);
                     ui.HandleMouseMoved((int)point.X, (int)point.Y, MouseButtons.None, false, false, false);
                     NFMWorld.Reactor.Sx.Renderer.Flush();
+
                     if (step.GetProperty("action").GetString() == "click")
                     {
                         // A step may ask for the secondary button, which is how a context menu opens.
@@ -327,6 +350,7 @@ public partial class WorldGame
                 case "text":
                     foreach (var character in step.GetProperty("value").GetString()!)
                         ui.HandleKeyTyped(character);
+
                     break;
                 case "key":
                     var key = Enum.Parse<Key>(step.GetProperty("value").GetString()!);
@@ -336,84 +360,118 @@ public partial class WorldGame
                     var heldKeys = ctrl ? default(Keys) | Key.LControlKey : default(Keys);
                     ui.HandleKeyPressed(key, heldKeys);
                     ui.HandleKeyReleased(key, heldKeys);
+
                     break;
                 case "assert-input-aligned":
                     var field = Find(step.GetProperty("target").GetString()!);
                     var otherField = Find(step.GetProperty("anchor").GetString()!);
                     var input = field.VisualChildren.OfType<NFMWorld.Reactor.TextInput>().Single();
                     var otherInput = otherField.VisualChildren.OfType<NFMWorld.Reactor.TextInput>().Single();
+
                     if (Math.Abs(input.LayoutBorderPosition.X - otherInput.LayoutBorderPosition.X) > 1
                         || Math.Abs(input.LayoutBorderSize.X - otherInput.LayoutBorderSize.X) > 1)
+
                         throw new InvalidOperationException($"Inputs do not align: {step}");
+
                     break;
                 case "assert-min-height":
-                    if (Find(step.GetProperty("target").GetString()!).LayoutBorderSize.Y < step.GetProperty("height").GetSingle()
+
+                    if (Find(step.GetProperty("target").GetString()!).LayoutBorderSize.Y
+                        < step.GetProperty("height").GetSingle()
                         * scale)
+
                         throw new InvalidOperationException($"Control was squeezed: {step}");
+
                     break;
                 case "assert-vertical-scroll":
+
                     if (Find(step.GetProperty("target").GetString()!).ScrollableHeight < 0.5f)
+
                         throw new InvalidOperationException(
                             $"Expected the target to have content to scroll: {step}"
                         );
+
                     break;
                 case "assert-no-horizontal-scroll":
                     var scrolled = Find(step.GetProperty("target").GetString()!);
+
                     if (scrolled.ScrollableWidth > 0.5f)
+
                         throw new InvalidOperationException(
                             $"Expected no horizontal overflow, found {scrolled.ScrollableWidth}: {step}"
                         );
+
                     break;
                 case "assert-size":
                     var sized = Find(step.GetProperty("target").GetString()!);
+
                     if (step.TryGetProperty("width", out var expectedWidth)
                         && Math.Abs(sized.LayoutBorderSize.X - expectedWidth.GetSingle() * scale) > 1)
+
                         throw new InvalidOperationException(
                             $"Expected width {expectedWidth.GetSingle() * scale}, got {sized.LayoutBorderSize.X}: {step}"
                         );
                     if (step.TryGetProperty("height", out var expectedHeight)
                         && Math.Abs(sized.LayoutBorderSize.Y - expectedHeight.GetSingle() * scale) > 1)
+
                         throw new InvalidOperationException(
                             $"Expected height {expectedHeight.GetSingle() * scale}, got {sized.LayoutBorderSize.Y}: {step}"
                         );
+
                     break;
                 case "assert-hover":
+
                     if (!Find(step.GetProperty("target").GetString()!).IsHovered)
+
                         throw new InvalidOperationException($"Expected hovered target: {step}");
+
                     break;
                 case "assert-same-height":
                     var firstPanel = Find(step.GetProperty("target").GetString()!);
                     var secondPanel = Find(step.GetProperty("anchor").GetString()!);
+
                     if (Math.Abs(firstPanel.LayoutBorderSize.Y - secondPanel.LayoutBorderSize.Y) > 1)
+
                         throw new InvalidOperationException($"Expected panels to share the same height: {step}");
+
                     break;
                 case "assert-aligned":
                     var popup = Find(step.GetProperty("target").GetString()!);
                     var anchor = Find(step.GetProperty("anchor").GetString()!);
+
                     if (Math.Abs(popup.LayoutBorderPosition.X - anchor.LayoutBorderPosition.X) > 1)
+
                         throw new InvalidOperationException(
                             $"Popup X={popup.LayoutBorderPosition.X}, anchor X={anchor.LayoutBorderPosition.X}"
                         );
+
                     break;
                 case "assert-pixel":
                     var sampleNode = Find(step.GetProperty("target").GetString()!);
-                    var sampleX = (int)(sampleNode.LayoutBorderPosition.X + sampleNode.LayoutBorderSize.X
+                    var sampleX = (int)(sampleNode.LayoutBorderPosition.X
+                                        + sampleNode.LayoutBorderSize.X
                                         * step.GetProperty("u").GetSingle());
-                    var sampleY = (int)(sampleNode.LayoutBorderPosition.Y + sampleNode.LayoutBorderSize.Y
+                    var sampleY = (int)(sampleNode.LayoutBorderPosition.Y
+                                        + sampleNode.LayoutBorderSize.Y
                                         * step.GetProperty("v").GetSingle());
-                    if (game._device.HasBottomLeftFramebufferOrigin) sampleY = height - 1 - sampleY;
+                    if (game._device.HasBottomLeftFramebufferOrigin)
+                        sampleY = height - 1 - sampleY;
                     game._device.ReadTexture(target.ColorTexture, sampleX, sampleY, 1, 1, pixels.AsSpan(0, 4));
                     var rgb = step.GetProperty("rgb");
                     var matchesColor = Math.Abs(pixels[0] - rgb[0].GetInt32()) <= 4
                                        && Math.Abs(pixels[1] - rgb[1].GetInt32()) <= 4
                                        && Math.Abs(pixels[2] - rgb[2].GetInt32()) <= 4;
                     var excludeColor = step.TryGetProperty("exclude", out var exclude) && exclude.GetBoolean();
+
                     if (matchesColor == excludeColor)
+
                         throw new InvalidOperationException($"Unexpected pixel ({pixels[0]}, {pixels[1]}, {pixels[2]}): {step}");
+
                     break;
                 case "wait-visible":
                     var visibleName = step.GetProperty("target").GetString()!;
                     WaitUntil(() => Nodes(ui.ActiveRoot!).Any(node => node.Name == visibleName && node.IsDisplayed));
+
                     break;
                 case "wait-text":
                     var textName = step.GetProperty("target").GetString()!;
@@ -422,24 +480,34 @@ public partial class WorldGame
                                     && string.Concat(textNode.VisualChildren.OfType<TextNode>().Select(node => node.Text))
                         .Contains(expectedText, StringComparison.Ordinal)
                     );
+
                     break;
                 case "assert-visible":
+
                     if (!Find(step.GetProperty("target").GetString()!).IsDisplayed)
+
                         throw new InvalidOperationException($"Expected visible target: {step}");
+
                     break;
                 case "assert-text":
                     var label = Find(step.GetProperty("target").GetString()!);
                     var actualText = string.Concat(label.VisualChildren.OfType<TextNode>().Select(node => node.Text));
+
                     if (!actualText.Contains(step.GetProperty("value").GetString()!, StringComparison.Ordinal))
+
                         throw new InvalidOperationException($"Expected text was not shown: {step}; actual: {actualText}");
+
                     break;
                 case "assert-count":
                     var countPrefix = step.GetProperty("prefix").GetString()!;
                     var nodeCount = Nodes(ui.ActiveRoot!).Count(
                         node => node.Name?.StartsWith(countPrefix, StringComparison.Ordinal) == true
                     );
+
                     if (nodeCount != step.GetProperty("count").GetInt32())
+
                         throw new InvalidOperationException($"Unexpected node count {nodeCount}: {step}");
+
                     break;
                 case "scroll":
                     var scrollPoint = Point(step);
@@ -452,10 +520,13 @@ public partial class WorldGame
                         false,
                         false
                     );
+
                     break;
                 case "capture":
+
                     break;
                 default:
+
                     throw new InvalidOperationException($"Unknown harness action: {step}");
             }
 
@@ -492,7 +563,10 @@ public partial class WorldGame
         var logo = TheGraphics.G.LoadImage("data/images/logo.svg");
         var messages = new MessageWindow();
 
-        void OfferUpdate() => messages.ShowYesNo("Update available", "Download NFM World v1.10.0?", result =>
+        void OfferUpdate() => messages.ShowYesNo(
+            "Update available",
+            "Download NFM World v1.10.0?",
+            result =>
             {
                 if (result == MessageWindow.MessageResult.Yes)
                     messages.ShowProgress("Downloading update", () => "Downloading… 42%", () => { });
@@ -621,17 +695,25 @@ public partial class WorldGame
             Navigate: page => garage.Page.Value = page,
             ActivateHome: index =>
             {
-                if (index < 0 || index >= GarageView.HomeEntries.Count) return;
+                if (index < 0 || index >= GarageView.HomeEntries.Count)
+
+                    return;
                 garage.HomeCursor.Value = index;
                 var entry = GarageView.HomeEntries[index];
-                if (!entry.Enabled) return;
+
+                if (!entry.Enabled)
+
+                    return;
+
                 switch (entry.Action)
                 {
                     case GarageHomeAction.ChangeCar:
                         garage.Page.Value = GaragePage.Cars;
+
                         break;
                     case GarageHomeAction.CustomizeCar:
                         garage.Page.Value = GaragePage.Colors;
+
                         break;
                 }
             },
@@ -651,7 +733,9 @@ public partial class WorldGame
     private static Node? StageSelectLocalFixture()
     {
         var ids = MenuPreferences.GetStages(VFS);
+
         if (ids.Length == 0)
+
             return null;
 
         var names = MenuPreferences.GetStageNames(VFS);
@@ -664,15 +748,16 @@ public partial class WorldGame
         var stages = ids
             .Where(id => id.StartsWith(collection + "/", StringComparison.OrdinalIgnoreCase))
             .Select(id => new StageOption(
-                    id,
-                    names.TryGetValue(id, out var name) ? name : id[(id.LastIndexOf('/') + 1)..]
-                )
+                id,
+                names.TryGetValue(id, out var name) ? name : id[(id.LastIndexOf('/') + 1)..]
+            )
             )
             .ToArray();
 
         StageOption[] StagesIn(string collectionId)
         {
             var search = state.Search.Value.Trim();
+
             return ids
                 .Where(id => id.StartsWith(collectionId + "/", StringComparison.OrdinalIgnoreCase))
                 .Where(id => search.Length == 0
@@ -681,9 +766,9 @@ public partial class WorldGame
                                  && name.Contains(search, StringComparison.OrdinalIgnoreCase))
                 )
                 .Select(id => new StageOption(
-                        id,
-                        names.TryGetValue(id, out var name) ? name : id[(id.LastIndexOf('/') + 1)..]
-                    )
+                    id,
+                    names.TryGetValue(id, out var name) ? name : id[(id.LastIndexOf('/') + 1)..]
+                )
                 )
                 .ToArray();
         }
@@ -741,6 +826,7 @@ public partial class WorldGame
             state.GamemodeFields.Value = fields;
 
             var defaults = new Dictionary<string, string>();
+
             foreach (var field in fields)
             {
                 if (!defaults.ContainsKey(field.Name))
@@ -837,6 +923,7 @@ public partial class WorldGame
     {
         var lobby = SeedLobbyRoom();
         lobby.Page.Value = LobbyPage.Room;
+
         return LobbyView.Build(LobbyActions(lobby));
     }
 
@@ -856,6 +943,7 @@ public partial class WorldGame
         var previewName = new Signal<string?>(null);
         var preview = new StageSelectState();
         preview.DescriptionLines.Value = ["Keep the inside line at the final hall."];
+
         return LobbyView.Build(
             LobbyActions(lobby) with
             {
@@ -1135,8 +1223,11 @@ public partial class WorldGame
                 var session = lobby.Sessions.Value.First(match => match.Id == id);
                 var settings = session.Settings.Select(setting =>
                     {
-                        if (setting.Field is not { } field || field.Name != name) return setting;
+                        if (setting.Field is not { } field || field.Name != name)
+
+                            return setting;
                         var choice = field.Choices.First(option => option.Value == value);
+
                         return setting with { RawValue = value, Value = choice.Label };
                     }
                 ).ToArray();
@@ -1180,7 +1271,8 @@ public partial class WorldGame
                 "archive/" + i.ToString("x2") + new string('a', 62),
                 $"Public Stage {i}",
                 i % 4 == 0 ? "a-rather-long-author-name" : "another-author"
-            ))
+            )
+            )
             .ToArray();
 
     /// <summary>
@@ -1294,7 +1386,9 @@ public partial class WorldGame
             "archive/" + new string((char)('e' + i % 10), 64),
             $"Public Stage {i}",
             "another-author"
-        ))).ToArray();
+        )
+        )
+        ).ToArray();
 
         state.Collections.Value = ["nfmm", "user"];
         state.Collection.Value = "nfmm";
@@ -1316,6 +1410,7 @@ public partial class WorldGame
                 SearchChanged: query =>
                 {
                     if (state.OnlineSource.Value)
+
                         return;
 
                     var search = query.Trim();
@@ -1387,6 +1482,7 @@ public partial class WorldGame
     private static Node TextInputFixture()
     {
         var text = new SignalsDotnet.Signal<string>("hello world");
+
         return Sx.View(
             style: () => Sx.Styles(
                 width: 100.Percent(),
@@ -1463,6 +1559,7 @@ public partial class WorldGame
             "\n",
             Enumerable.Range(0, 60).Select(i => $"line {i}: the quick brown fox jumps over the lazy dog")
         );
+
         return Sx.View(
             style: () => Sx.Styles(
                 width: 100.Percent(),
@@ -1532,7 +1629,8 @@ public partial class WorldGame
         );
 
         var http = new HttpClient(new ReplayUploadHandler());
-        const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags
+        const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.Instance
+                                                      | System.Reflection.BindingFlags
             .NonPublic;
         var account = new NFMWorld.Accounts.AccountManager();
         typeof(NFMWorld.Accounts.AccountManager).GetField("_http", fields)!.SetValue(account, http);
@@ -1544,6 +1642,7 @@ public partial class WorldGame
             .GetField("Content", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
             .GetValue(null)!;
         typeof(NFMWorldLibrary.Content.ArchiveContentClient).GetField("_http", fields)!.SetValue(content.Value, http);
+
         return phase;
     }
 
@@ -1552,15 +1651,21 @@ public partial class WorldGame
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request.RequestUri!.AbsolutePath.StartsWith("/assets/meta/", StringComparison.Ordinal))
+
                 return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
                 {
-                    Content = new StringContent(JsonSerializer.Serialize(new
+                    Content = new StringContent(
+                        JsonSerializer.Serialize(new
                     {
                         id = 1, name = "harness", type = "Stage", contentHash = request.RequestUri.Segments[^1],
                         sizeBytes = 3, eligible = true
-                    }), System.Text.Encoding.UTF8, "application/json")
+                    }),
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    )
                 });
             if (request.RequestUri.AbsolutePath == "/tt/upload")
+
                 return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest)
                 {
                     Content = new StringContent(
@@ -1569,6 +1674,7 @@ public partial class WorldGame
                         "application/json"
                     )
                 });
+
             throw new InvalidOperationException("Unexpected harness request: " + request.RequestUri.AbsolutePath);
         }
     }
@@ -1679,7 +1785,8 @@ public partial class WorldGame
                 "Local only",
                 true,
                 false
-            ))
+            )
+            )
         ).ToArray();
 
         var online = new[]
@@ -1713,7 +1820,8 @@ public partial class WorldGame
                 $"driver{i}  ·  replay #{50 - i}",
                 true,
                 false
-            ))
+            )
+            )
         ).ToArray();
 
         local = local.Select((entry, index) => entry with
@@ -1749,6 +1857,7 @@ public partial class WorldGame
                                         || e.Car.Contains(query, StringComparison.OrdinalIgnoreCase)
                             )
                             .ToArray();
+
                         return;
                     }
 
@@ -1794,6 +1903,7 @@ public partial class WorldGame
 
         var recording = new NFMWorldLibrary.Files.SavedTimeTrial("fixture/car", "fixture/stage", new StageLoader(), rad);
         var source = new NFMWorldLibrary.Backend.BackendCar(rad, 0, 0, 0, true);
+
         foreach (var heading in new[] { 0, 90, 180, 270 })
         {
             source.CarPhysics.Cxz = (fix64)heading;
@@ -1804,6 +1914,7 @@ public partial class WorldGame
         var replay = NFMWorldLibrary.Files.SavedTimeTrial.Load(recording.ToBytes())!;
         var car = new NFMWorldLibrary.Backend.BackendCar(rad, 0, 0, 0, true);
         var lines = new List<string> { $"version {replay.Version}" };
+
         for (var i = 0; i < replay.DemoData.Ticks.Count; i++)
         {
             replay.DemoData.Ticks[i].ApplyToCar(car);
@@ -1894,13 +2005,15 @@ public partial class WorldGame
         race.LapSplits.AddRange([61_234, 58_913, 63_457]);
         var solo = config.TryGetProperty("solo", out var so) && so.GetBoolean();
         race.Racers.Clear();
+
         if (solo)
         {
             race.Opponents = 0;
             race.Wasted = 0;
         }
-        else race.Racers.AddRange(
-            [
+        else
+            race.Racers.AddRange(
+                [
                 new HudRacer(1, "DragShot", 0.31f, false, false, 1),
                 new HudRacer(2, "You", 0.42f, true, false, 0),
                 new HudRacer(3, "Tornado", 0.66f, false, false, 2),
@@ -1908,9 +2021,10 @@ public partial class WorldGame
                 new HudRacer(5, "Drumstick", 0.12f, false, false, 4),
                 new HudRacer(6, "LaFerrari", 0.55f, false, true, 5)
             ]
-        );
+            );
 
         race.Markers.Clear();
+
         for (var i = 0; i < race.Racers.Count; i++)
         {
             var racer = race.Racers[i];
@@ -1933,6 +2047,7 @@ public partial class WorldGame
         race.TrackCenter = (0, 0);
         race.TargetCheckpoint = (4000, 0);
         race.Checkpoints.Clear();
+
         for (var i = 0; i < 8; i++)
         {
             var angle = i * MathF.Tau / 8;
@@ -1960,6 +2075,7 @@ public partial class WorldGame
         );
         // BuildHud resets the skin from the saved setting; the fixture picks one after mount.
         race.Skin.Value = HudSkinId.Normalize(skin);
+
         return node;
     }
 }

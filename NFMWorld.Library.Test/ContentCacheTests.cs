@@ -25,6 +25,7 @@ public class ContentCacheTests
             Calls++;
             var hash = request.RequestUri!.AbsolutePath.Split('/').Last();
             var bytes = respond(hash);
+
             return Task.FromResult(
                 bytes is null
                     ? new HttpResponseMessage(HttpStatusCode.NotFound)
@@ -50,6 +51,7 @@ public class ContentCacheTests
             writer
         );
         var bytes = writer.WrittenSpan.ToArray();
+
         return (bytes, Convert.ToHexStringLower(SHA256.HashData(bytes)));
     }
 
@@ -117,6 +119,7 @@ public class ContentCacheTests
             writer
         );
         var bytes = writer.WrittenSpan.ToArray();
+
         return (bytes, Convert.ToHexStringLower(SHA256.HashData(bytes)));
     }
 
@@ -163,6 +166,7 @@ public class ContentCacheTests
     {
         using var http = new HttpClient(new MetadataFailureHandler(status));
         using var client = new ArchiveContentClient("https://archive.example/", http);
+
         if (status == HttpStatusCode.NotFound)
             Assert.IsNull(await client.MetadataAsync(new string('a', 64), CancellationToken.None));
         else

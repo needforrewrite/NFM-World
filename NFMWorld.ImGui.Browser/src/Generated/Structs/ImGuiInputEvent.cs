@@ -16,180 +16,195 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEvent
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		[StructLayout(LayoutKind.Explicit)]
-		public partial struct ImGuiInputEventUnion
-		{
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public ImGuiInputEventMousePos MousePos;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEvent
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        [StructLayout(LayoutKind.Explicit)]
+        public partial struct ImGuiInputEventUnion
+        {
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public ImGuiInputEventMousePos MousePos;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public ImGuiInputEventMouseWheel MouseWheel;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public ImGuiInputEventMouseWheel MouseWheel;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public ImGuiInputEventMouseButton MouseButton;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public ImGuiInputEventMouseButton MouseButton;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public ImGuiInputEventMouseViewport MouseViewport;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public ImGuiInputEventMouseViewport MouseViewport;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public ImGuiInputEventKey Key;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public ImGuiInputEventKey Key;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public ImGuiInputEventText Text;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public ImGuiInputEventText Text;
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			[FieldOffset(0)]
-			public ImGuiInputEventAppFocused AppFocused;
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            [FieldOffset(0)] public ImGuiInputEventAppFocused AppFocused;
 
 
-			/// <summary>
-			/// To be documented.
-			/// </summary>
-			public unsafe ImGuiInputEventUnion(ImGuiInputEventMousePos mousePos = default, ImGuiInputEventMouseWheel mouseWheel = default, ImGuiInputEventMouseButton mouseButton = default, ImGuiInputEventMouseViewport mouseViewport = default, ImGuiInputEventKey key = default, ImGuiInputEventText text = default, ImGuiInputEventAppFocused appFocused = default)
-			{
-				MousePos = mousePos;
-				MouseWheel = mouseWheel;
-				MouseButton = mouseButton;
-				MouseViewport = mouseViewport;
-				Key = key;
-				Text = text;
-				AppFocused = appFocused;
-			}
+            /// <summary>
+            /// To be documented.
+            /// </summary>
+            public unsafe ImGuiInputEventUnion(
+                ImGuiInputEventMousePos mousePos = default,
+                ImGuiInputEventMouseWheel mouseWheel = default,
+                ImGuiInputEventMouseButton mouseButton = default,
+                ImGuiInputEventMouseViewport mouseViewport = default,
+                ImGuiInputEventKey key = default,
+                ImGuiInputEventText text = default,
+                ImGuiInputEventAppFocused appFocused = default
+            )
+            {
+                MousePos = mousePos;
+                MouseWheel = mouseWheel;
+                MouseButton = mouseButton;
+                MouseViewport = mouseViewport;
+                Key = key;
+                Text = text;
+                AppFocused = appFocused;
+            }
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiInputEventType Type;
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiInputSource Source;
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint EventId;
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiInputEventUnion Union;
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte AddedByTestEngine;
 
 
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEvent(
+            ImGuiInputEventType type = default,
+            ImGuiInputSource source = default,
+            uint eventId = default,
+            ImGuiInputEventUnion union = default,
+            bool addedByTestEngine = default
+        )
+        {
+            Type = type;
+            Source = source;
+            EventId = eventId;
+            Union = union;
+            AddedByTestEngine = addedByTestEngine ? (byte)1 : (byte)0;
+        }
+    }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiInputEventType Type;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiInputEventPtr : IEquatable<ImGuiInputEventPtr>
+    {
+        public ImGuiInputEventPtr(ImGuiInputEvent* handle)
+        {
+            Handle = handle;
+        }
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiInputSource Source;
+        public ImGuiInputEvent* Handle;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint EventId;
+        public bool IsNull => Handle == null;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiInputEventUnion Union;
+        public static ImGuiInputEventPtr Null => new ImGuiInputEventPtr(null);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte AddedByTestEngine;
+        public ImGuiInputEvent this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
+        public static implicit operator ImGuiInputEventPtr(ImGuiInputEvent* handle) => new ImGuiInputEventPtr(handle);
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEvent(ImGuiInputEventType type = default, ImGuiInputSource source = default, uint eventId = default, ImGuiInputEventUnion union = default, bool addedByTestEngine = default)
-		{
-			Type = type;
-			Source = source;
-			EventId = eventId;
-			Union = union;
-			AddedByTestEngine = addedByTestEngine ? (byte)1 : (byte)0;
-		}
+        public static implicit operator ImGuiInputEvent*(ImGuiInputEventPtr handle) => handle.Handle;
 
+        public static bool operator ==(ImGuiInputEventPtr left, ImGuiInputEventPtr right) => left.Handle == right.Handle;
 
-	}
+        public static bool operator !=(ImGuiInputEventPtr left, ImGuiInputEventPtr right) => left.Handle != right.Handle;
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiInputEventPtr : IEquatable<ImGuiInputEventPtr>
-	{
-		public ImGuiInputEventPtr(ImGuiInputEvent* handle) { Handle = handle; }
+        public static bool operator ==(ImGuiInputEventPtr left, ImGuiInputEvent* right) => left.Handle == right;
 
-		public ImGuiInputEvent* Handle;
+        public static bool operator !=(ImGuiInputEventPtr left, ImGuiInputEvent* right) => left.Handle != right;
 
-		public bool IsNull => Handle == null;
+        public bool Equals(ImGuiInputEventPtr other) => Handle == other.Handle;
 
-		public static ImGuiInputEventPtr Null => new ImGuiInputEventPtr(null);
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiInputEventPtr handle && Equals(handle);
 
-		public ImGuiInputEvent this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		public static implicit operator ImGuiInputEventPtr(ImGuiInputEvent* handle) => new ImGuiInputEventPtr(handle);
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiInputEventPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImGuiInputEventType Type => ref Unsafe.AsRef<ImGuiInputEventType>(&Handle->Type);
 
-		public static implicit operator ImGuiInputEvent*(ImGuiInputEventPtr handle) => handle.Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImGuiInputSource Source => ref Unsafe.AsRef<ImGuiInputSource>(&Handle->Source);
 
-		public static bool operator ==(ImGuiInputEventPtr left, ImGuiInputEventPtr right) => left.Handle == right.Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref uint EventId => ref Unsafe.AsRef<uint>(&Handle->EventId);
 
-		public static bool operator !=(ImGuiInputEventPtr left, ImGuiInputEventPtr right) => left.Handle != right.Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImGuiInputEvent.ImGuiInputEventUnion Union => ref Unsafe.AsRef<ImGuiInputEvent.ImGuiInputEventUnion>(
+            &Handle->Union
+        );
 
-		public static bool operator ==(ImGuiInputEventPtr left, ImGuiInputEvent* right) => left.Handle == right;
-
-		public static bool operator !=(ImGuiInputEventPtr left, ImGuiInputEvent* right) => left.Handle != right;
-
-		public bool Equals(ImGuiInputEventPtr other) => Handle == other.Handle;
-
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiInputEventPtr handle && Equals(handle);
-
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
-
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiInputEventPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImGuiInputEventType Type => ref Unsafe.AsRef<ImGuiInputEventType>(&Handle->Type);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImGuiInputSource Source => ref Unsafe.AsRef<ImGuiInputSource>(&Handle->Source);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref uint EventId => ref Unsafe.AsRef<uint>(&Handle->EventId);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImGuiInputEvent.ImGuiInputEventUnion Union => ref Unsafe.AsRef<ImGuiInputEvent.ImGuiInputEventUnion>(&Handle->Union);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref bool AddedByTestEngine => ref Unsafe.AsRef<bool>(&Handle->AddedByTestEngine);
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref bool AddedByTestEngine => ref Unsafe.AsRef<bool>(&Handle->AddedByTestEngine);
+    }
 }

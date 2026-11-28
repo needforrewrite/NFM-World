@@ -30,12 +30,16 @@ internal sealed class MenuStageSurvey
         var minimum = new Vector3(float.MaxValue);
         var maximum = new Vector3(float.MinValue);
         var localBounds = new Dictionary<Rad3d, Bounds>();
+
         foreach (var piece in stage.Pieces.OfType<StageObject>())
         {
             if (!localBounds.TryGetValue(piece.Rad, out var local))
             {
                 var points = piece.Rad.Polys.SelectMany(poly => poly.Points).ToArray();
-                if (points.Length == 0) continue;
+
+                if (points.Length == 0)
+
+                    continue;
                 local = new Bounds(points.Aggregate(Vector3.Min), points.Aggregate(Vector3.Max));
                 localBounds.Add(piece.Rad, local);
             }
@@ -44,6 +48,7 @@ internal sealed class MenuStageSurvey
             var position = (Vector3)piece.Position;
             var low = new Vector3(float.MaxValue);
             var high = new Vector3(float.MinValue);
+
             for (var corner = 0; corner < 8; corner++)
             {
                 var point = new Vector3(
@@ -57,7 +62,10 @@ internal sealed class MenuStageSurvey
             }
 
             _obstacles.Add(new Bounds(low, high));
-            if (piece.OriginalPlacement.IsWall) continue;
+
+            if (piece.OriginalPlacement.IsWall)
+
+                continue;
             minimum = Vector3.Min(minimum, low);
             maximum = Vector3.Max(maximum, high);
         }
@@ -69,6 +77,7 @@ internal sealed class MenuStageSurvey
         }
 
         var nodes = stage.Nodes.Select(node => (Vector3)node.Position).ToArray();
+
         if (nodes.Length > 0)
         {
             minimum = nodes.Aggregate(Vector3.Min) - new Vector3(1000, 0, 1000);
@@ -94,25 +103,33 @@ internal sealed class MenuStageSurvey
         }
 
         for (var first = 0; first < nodes.Length - 1; first++)
+
         for (var last = first + 1; last < Math.Min(nodes.Length, first + 9); last++)
         {
             var road = new MenuRoadSegment(nodes[first], nodes[last], first);
-            if (road.Length < 8000 || Math.Abs(road.Direction.Y) > 0.08f) continue;
+
+            if (road.Length < 8000 || Math.Abs(road.Direction.Y) > 0.08f)
+
+                continue;
             var previous = -1f;
             var straight = true;
+
             for (var i = first; i <= last; i++)
             {
                 var along = Vector3.Dot(nodes[i] - road.Start, road.Direction);
+
                 if (along < previous || Vector3.Distance(nodes[i], road.Start + road.Direction * along) > 350)
                 {
                     straight = false;
+
                     break;
                 }
 
                 previous = along;
             }
 
-            if (straight) Roads.Add(road);
+            if (straight)
+                Roads.Add(road);
         }
     }
 
@@ -132,16 +149,23 @@ internal sealed class MenuStageSurvey
                 && obstacle.Max.Z >= minimum.Z
                 && obstacle.Min.Z <= maximum.Z)
                 ceiling = Math.Min(ceiling, obstacle.Min.Y);
+
         return ceiling;
     }
 
     public bool IsClear(Vector3 from, Vector3 to, float clearance)
     {
-        if (Math.Max(from.Y, to.Y) > 250 - clearance) return false;
+        if (Math.Max(from.Y, to.Y) > 250 - clearance)
+
+            return false;
+
         foreach (var obstacle in _obstacles)
         {
             var padding = new Vector3(clearance);
-            if (Intersects(from, to, obstacle.Min - padding, obstacle.Max + padding)) return false;
+
+            if (Intersects(from, to, obstacle.Min - padding, obstacle.Max + padding))
+
+                return false;
         }
 
         return true;
@@ -152,15 +176,20 @@ internal sealed class MenuStageSurvey
         var direction = to - from;
         var entry = 0f;
         var exit = 1f;
+
         for (var axis = 0; axis < 3; axis++)
         {
             var origin = axis == 0 ? from.X : axis == 1 ? from.Y : from.Z;
             var delta = axis == 0 ? direction.X : axis == 1 ? direction.Y : direction.Z;
             var low = axis == 0 ? minimum.X : axis == 1 ? minimum.Y : minimum.Z;
             var high = axis == 0 ? maximum.X : axis == 1 ? maximum.Y : maximum.Z;
+
             if (Math.Abs(delta) < 0.0001f)
             {
-                if (origin < low || origin > high) return false;
+                if (origin < low || origin > high)
+
+                    return false;
+
                 continue;
             }
 
@@ -168,7 +197,10 @@ internal sealed class MenuStageSurvey
             var b = (high - origin) / delta;
             entry = Math.Max(entry, Math.Min(a, b));
             exit = Math.Min(exit, Math.Max(a, b));
-            if (entry > exit) return false;
+
+            if (entry > exit)
+
+                return false;
         }
 
         return true;

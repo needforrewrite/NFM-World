@@ -14,10 +14,12 @@ public class LoadingWorkTests
 
         LoadingWork.Update();
         Assert.AreEqual(0, steps);
-        for (var attempt = 0; attempt < 16 && steps == 0; attempt++) LoadingWork.Update();
+        for (var attempt = 0; attempt < 16 && steps == 0; attempt++)
+            LoadingWork.Update();
         Assert.AreEqual(1, steps);
         Assert.IsFalse(task.IsCompleted);
-        for (var attempt = 0; attempt < 16 && !task.IsCompleted; attempt++) LoadingWork.Update();
+        for (var attempt = 0; attempt < 16 && !task.IsCompleted; attempt++)
+            LoadingWork.Update();
         Assert.IsTrue(task.IsCompleted);
         task.GetAwaiter().GetResult();
         Assert.AreEqual(2, steps);

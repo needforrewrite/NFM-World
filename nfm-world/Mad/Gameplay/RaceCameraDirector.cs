@@ -51,6 +51,7 @@ public sealed class RaceCameraDirector
                 car.Stats.Swits[2],
                 target
             );
+
             return;
         }
 
@@ -65,6 +66,7 @@ public sealed class RaceCameraDirector
                     (float)car.CarPhysics.Speed,
                     car.Stats.Swits[2]
                 );
+
                 break;
             case ViewMode.FollowStatic:
                 _playerFollowCamera.Follow(
@@ -75,15 +77,19 @@ public sealed class RaceCameraDirector
                     (float)car.CarPhysics.Speed,
                     car.Stats.Swits[2]
                 );
+
                 break;
             case ViewMode.Around:
                 _playerAroundCamera.Around(camera, car);
+
                 break;
             case ViewMode.Watch:
                 _watchCamera.Watch(camera, car, (float)car.CarPhysics.Mxz);
+
                 break;
             case ViewMode.Freelook:
                 _freelookCamera.Fly(camera, Navigation);
+
                 break;
         }
     }

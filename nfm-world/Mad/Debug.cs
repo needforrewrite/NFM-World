@@ -51,7 +51,9 @@ public static class Debug
         Matrix projection
     )
     {
-        if (vertices.Length == 0) return;
+        if (vertices.Length == 0)
+
+            return;
 
         var buffer = EnsureLineBuffer(device, vertices.Length);
         cb.UpdateBuffer(buffer, MemoryMarshal.AsBytes(vertices));
@@ -81,11 +83,14 @@ public static class Debug
         Camera activeCamera
     )
     {
-        if (boxes.Length == 0) return;
+        if (boxes.Length == 0)
+
+            return;
 
         // 12 edges per box, 2 vertices each.
         var vertices = new PositionColorVertex[boxes.Length * 24];
         var cursor = 0;
+
         foreach (var (min, max) in boxes)
         {
             AddWireBoxEdges(vertices.AsSpan(), ref cursor, min, max, color);
@@ -98,11 +103,13 @@ public static class Debug
 
         var baseVertices = vertices.AsSpan(0, cursor);
         var offsetVertices = new PositionColorVertex[cursor];
+
         foreach (var offset in offsets)
         {
             if (offset == Vector3.Zero)
             {
                 DrawLines(cb, device, baseVertices, Matrix.Identity, activeCamera.ViewMatrix, activeCamera.ProjectionMatrix);
+
                 continue;
             }
 
@@ -159,12 +166,14 @@ public static class Debug
     )
     {
         int neededVertices = 0;
+
         foreach (var piece in pieces)
         {
             neededVertices += 24;
         }
 
         if (neededVertices == 0)
+
             return;
 
         if (_selectionOutlineVertices.Length < neededVertices)
@@ -188,6 +197,7 @@ public static class Debug
             );
 
             var localOutline = GetOrCreateOutlineEdges(piece.Rad);
+
             for (int i = 0; i < localOutline.Length; i++)
             {
                 var world = Vector3.Transform(localOutline[i], rotationMatrix) + position;
@@ -196,6 +206,7 @@ public static class Debug
         }
 
         if (cursor == 0)
+
             return;
 
         DrawLines(
@@ -211,6 +222,7 @@ public static class Debug
     private static Vector3[] GetOrCreateOutlineEdges(Rad3d rad)
     {
         if (SelectionOutlineLocalEdges.TryGetValue(rad, out var cached))
+
             return cached;
 
         float minX = float.MaxValue;
@@ -234,6 +246,7 @@ public static class Debug
         }
 
         // Fallback for malformed assets with no poly points.
+
         if (minX > maxX)
         {
             float r = rad.MaxRadius > 0 ? rad.MaxRadius : 500f;
@@ -263,6 +276,7 @@ public static class Debug
         };
 
         SelectionOutlineLocalEdges[rad] = lines;
+
         return lines;
     }
 
@@ -334,6 +348,7 @@ public static class Debug
 
         // Rotation ring (circle of line segments at piece Y level)
         const int ringSegs = 32;
+
         for (int i = 0; i < ringSegs; i++)
         {
             float a0 = i / (float)ringSegs * (2f * MathF.PI);
@@ -393,16 +408,20 @@ public static class Debug
         Vector2 mousePos
     )
     {
-        if (gizmoDragging != GizmoAxis.None) return;
+        if (gizmoDragging != GizmoAxis.None)
+
+            return;
 
         float closestDist = 20f; // hover threshold in pixels
         gizmoHovered = GizmoAxis.None;
 
         // Check X arrow
+
         if (WorldToScreen(piecePos, out var ss0, activeCamera)
             && WorldToScreen(piecePos + new Vector3(gizmoMetrics.ArrowLength, 0, 0), out var ss1, activeCamera))
         {
             float d = DistanceToSegment(mousePos, ss0, ss1);
+
             if (d < closestDist)
             {
                 closestDist = d;
@@ -411,10 +430,12 @@ public static class Debug
         }
 
         // Check Y arrow (up)
+
         if (WorldToScreen(piecePos, out ss0, activeCamera)
             && WorldToScreen(piecePos + new Vector3(0, -gizmoMetrics.ArrowLength, 0), out ss1, activeCamera))
         {
             float d = DistanceToSegment(mousePos, ss0, ss1);
+
             if (d < closestDist)
             {
                 closestDist = d;
@@ -423,10 +444,12 @@ public static class Debug
         }
 
         // Check Z arrow
+
         if (WorldToScreen(piecePos, out ss0, activeCamera)
             && WorldToScreen(piecePos + new Vector3(0, 0, gizmoMetrics.ArrowLength), out ss1, activeCamera))
         {
             float d = DistanceToSegment(mousePos, ss0, ss1);
+
             if (d < closestDist)
             {
                 closestDist = d;
@@ -436,15 +459,18 @@ public static class Debug
 
         // Check rotation ring (test each segment)
         const int ringSegs = 32;
+
         for (int i = 0; i < ringSegs; i++)
         {
             float a0 = i / (float)ringSegs * (2f * MathF.PI);
             float a1 = (i + 1) / (float)ringSegs * (2f * MathF.PI);
             var p0 = piecePos + new Vector3(MathF.Cos(a0) * gizmoMetrics.RotRadius, 0, MathF.Sin(a0) * gizmoMetrics.RotRadius);
             var p1 = piecePos + new Vector3(MathF.Cos(a1) * gizmoMetrics.RotRadius, 0, MathF.Sin(a1) * gizmoMetrics.RotRadius);
+
             if (WorldToScreen(p0, out ss0, activeCamera) && WorldToScreen(p1, out ss1, activeCamera))
             {
                 float d = DistanceToSegment(mousePos, ss0, ss1);
+
                 if (d < closestDist)
                 {
                     closestDist = d;
@@ -460,6 +486,7 @@ public static class Debug
         var ap = p - a;
         float t = Vector2.Dot(ap, ab) / Vector2.Dot(ab, ab);
         t = Math.Clamp(t, 0f, 1f);
+
         return Vector2.Distance(p, a + t * ab);
     }
 
@@ -470,12 +497,16 @@ public static class Debug
         var height = GameSparker.Game.Window.Height;
         var clip = Vector4.Transform(new Vector4(worldPos, 1f), activeCamera.ViewMatrix * activeCamera.ProjectionMatrix);
         screenPos = default;
-        if (clip.W <= 0f) return false;
+
+        if (clip.W <= 0f)
+
+            return false;
         var ndc = new Vector3(clip.X / clip.W, clip.Y / clip.W, clip.Z / clip.W);
         screenPos = new Vector2(
             (ndc.X + 1f) * 0.5f * width,
             (1f - ndc.Y) * 0.5f * height
         );
+
         return true;
     }
 
@@ -512,6 +543,7 @@ public static class Debug
         projectedAxisLength = 0f;
 
         if (!WorldToScreen(piecePos, out var ss0, activeCamera))
+
             return false;
 
         if (WorldToScreen(piecePos + new Vector3(axisLength, 0, 0), out var ssX, activeCamera))
@@ -543,9 +575,12 @@ public static class Debug
 
         foreach (var poly in rad.Polys)
         {
-            if (poly.Points.Length < 3) continue;
+            if (poly.Points.Length < 3)
+
+                continue;
 
             var startIndex = (uint)fillVerts.Count;
+
             for (int i = 0; i < poly.Points.Length; i++)
             {
                 fillVerts.Add(new PositionColorVertex(poly.Points[i], fillColor));
@@ -598,7 +633,10 @@ public static class Debug
 
         foreach (var poly in rad.Polys)
         {
-            if (poly.Points.Length < 2) continue;
+            if (poly.Points.Length < 2)
+
+                continue;
+
             for (int i = 0; i < poly.Points.Length; i++)
             {
                 int next = (i + 1) % poly.Points.Length;

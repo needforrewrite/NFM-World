@@ -14,7 +14,9 @@ public static class HudText
     public static void Validate(string template)
     {
         foreach (var part in Parse(template))
+
             if (part.Token && !Tokens.Contains(part.Text))
+
                 throw new FormatException($"Unknown HUD token '{{{part.Text}}}'.");
     }
 
@@ -22,13 +24,21 @@ public static class HudText
     {
         Validate(template);
         var parts = Parse(template).ToArray();
-        if (parts.All(part => !part.Token)) return _ => template;
+
+        if (parts.All(part => !part.Token))
+
+            return _ => template;
         var showsLaps = parts.Any(part => part.Token && part.Text is "lap" or "totalLaps");
+
         return data =>
         {
-            if (showsLaps && data.TotalLaps == 0) return "";
+            if (showsLaps && data.TotalLaps == 0)
+
+                return "";
             var text = new StringBuilder();
-            foreach (var part in parts) text.Append(part.Token ? Value(part.Text, data) : part.Text);
+            foreach (var part in parts)
+                text.Append(part.Token ? Value(part.Text, data) : part.Text);
+
             return text.ToString();
         };
     }
@@ -38,13 +48,27 @@ public static class HudText
         for (var offset = 0; offset < template.Length;)
         {
             var start = template.IndexOf('{', offset);
-            if (start < 0) start = template.Length;
+            if (start < 0)
+                start = template.Length;
             var literal = template[offset..start];
-            if (literal.Contains('}')) throw new FormatException("Unmatched '}' in HUD text.");
-            if (literal.Length > 0) yield return (false, literal);
-            if (start == template.Length) yield break;
+
+            if (literal.Contains('}'))
+
+                throw new FormatException("Unmatched '}' in HUD text.");
+
+            if (literal.Length > 0)
+
+                yield return (false, literal);
+
+            if (start == template.Length)
+
+                yield break;
             var end = template.IndexOf('}', start + 1);
-            if (end < 0) throw new FormatException("Unmatched '{' in HUD text.");
+
+            if (end < 0)
+
+                throw new FormatException("Unmatched '{' in HUD text.");
+
             yield return (true, template[(start + 1)..end]);
             offset = end + 1;
         }
@@ -74,6 +98,7 @@ public static class HudText
     public static string FormatTime(int ms)
     {
         ms = Math.Max(0, ms);
+
         return FormattableString.Invariant($"{ms / 60000:00}:{ms / 1000 % 60:00}.{ms % 1000:000}");
     }
 }

@@ -18,18 +18,21 @@ public class WheelMeshBuilder
     public WheelMeshBuilder(Rad3dWheelDef wheelDef, Rad3dRimsDef? rimsN)
     {
         _wheelDef = wheelDef;
+
         if ((wheelDef.Rims ?? rimsN) is { } rims)
         {
             _rc[0] = rims.Color.R;
             _rc[1] = rims.Color.G;
             _rc[2] = rims.Color.B;
             _size = rims.Size / 10.0F;
+
             if (_size < 0.0F)
             {
                 _size = 0.0F;
             }
 
             _depth = rims.Depth / 10.0F;
+
             if (_depth / _size > 41.0F)
             {
                 _depth = _size * 41.0F;
@@ -71,6 +74,7 @@ public class WheelMeshBuilder
         float offcx = 0;
         var w10 = width / 10.0F;
         var h10 = height / 10.0F;
+
         if (rotates == 11)
         {
             offcx = (cx + 4.0F * w10);
@@ -78,6 +82,7 @@ public class WheelMeshBuilder
 
         // Sparkat = (int) (h10 * 24.0F);
         // Ground = (int) (cy + 13.0F * h10);
+
         for (var i = 0; i < 20; i++)
         {
             x[i] = (cx - 4.0F * w10);
@@ -339,6 +344,7 @@ public class WheelMeshBuilder
         )
         {
             var verts = new Vector3[n];
+
             for (var vi = 0; vi < n; vi++)
             {
                 verts[vi] = new Vector3(x[vi], y[vi], z[vi]);

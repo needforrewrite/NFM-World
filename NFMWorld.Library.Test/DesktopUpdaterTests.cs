@@ -49,9 +49,13 @@ public class DesktopUpdaterTests
     {
         using var fixture = new Fixture();
         var next = await PackageStaging.Extract(fixture.Archive(), fixture.Staged, New, Rid, default);
-        Assert.ThrowsExactly<IOException>(() => fixture.Apply(next, path =>
+        Assert.ThrowsExactly<IOException>(() => fixture.Apply(
+            next,
+            path =>
             {
-                if (path == InstallLayout.Manifest) throw new IOException("Injected write failure");
+                if (path == InstallLayout.Manifest)
+
+                    throw new IOException("Injected write failure");
             }
         )
         );
@@ -87,6 +91,7 @@ public class DesktopUpdaterTests
     {
         using var fixture = new Fixture();
         string archive;
+
         if (tar)
         {
             archive = Path.Combine(fixture.Root, "unsafe.tar.gz");
@@ -94,7 +99,8 @@ public class DesktopUpdaterTests
             using var writer = new TarWriter(gzip);
             writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "../escaped.txt") { DataStream = new MemoryStream([1]) });
         }
-        else archive = fixture.Archive("../escaped.txt");
+        else
+            archive = fixture.Archive("../escaped.txt");
 
         await Assert.ThrowsExactlyAsync<InvalidDataException>(
             () => PackageStaging.Extract(archive, fixture.Staged, New, tar ? "linux-x64" : Rid, default)
@@ -120,6 +126,7 @@ public class DesktopUpdaterTests
     {
         using var fixture = new Fixture();
         var next = await PackageStaging.Extract(fixture.Archive(), fixture.Staged, New, Rid, default);
+
         try
         {
             Directory.CreateSymbolicLink(Path.Combine(fixture.Root, "new"), fixture.Staged);
@@ -196,13 +203,17 @@ public class DesktopUpdaterTests
 
     private static HttpClient ReleaseClient(string tag, bool draft, bool prerelease) => new(new Handler(_ => new StringContent(
         JsonSerializer.Serialize(
-            new GitHubRelease(tag, draft, prerelease, [new(
-                ReleaseChannel.AssetName(Rid),
-                "uploaded",
-                1,
-            "sha256:" + new string('0', 64),
-                $"https://github.com/needforrewrite/NFM-World/releases/download/{tag}/{ReleaseChannel.AssetName(Rid)}"
-            )]
+            new GitHubRelease(
+                tag,
+                draft,
+                prerelease,
+                [new(
+                    ReleaseChannel.AssetName(Rid),
+                    "uploaded",
+                    1,
+                    "sha256:" + new string('0', 64),
+                    $"https://github.com/needforrewrite/NFM-World/releases/download/{tag}/{ReleaseChannel.AssetName(Rid)}"
+                )]
             ),
             UpdateJson.Default.GitHubRelease
         )
@@ -241,7 +252,8 @@ public class DesktopUpdaterTests
                 [InstallLayout.Logo] = "logo", ["data/gamemodes/plugin.dll"] = "previous plugin", ["obsolete.txt"] = "obsolete",
                 ["edited.txt"] = "stock"
             };
-            foreach (var (path, text) in previous) Write(path, text);
+            foreach (var (path, text) in previous)
+                Write(path, text);
             _old = Manifest(Old, previous);
             Write(InstallLayout.Manifest, JsonSerializer.Serialize(_old, UpdateJson.Default.InstallManifest));
             Write("edited.txt", "locally edited");
@@ -257,9 +269,11 @@ public class DesktopUpdaterTests
                 [InstallLayout.Logo] = "logo", ["data/gamemodes/plugin.dll"] = "next plugin", ["new/fresh.txt"] = "fresh"
             };
             next.Add(InstallLayout.Manifest, JsonSerializer.Serialize(Manifest(New, next), UpdateJson.Default.InstallManifest));
-            if (extra is not null) next.Add(extra, "bad");
+            if (extra is not null)
+                next.Add(extra, "bad");
             var archive = Path.Combine(_temp.FullName, "asset.zip");
             using var zip = ZipFile.Open(archive, ZipArchiveMode.Create);
+
             foreach (var (path, text) in next)
             {
                 using var output = zip.CreateEntry(path).Open();

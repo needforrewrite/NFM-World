@@ -60,6 +60,7 @@ public class AroundStageCamera
     private void FollowStage(PerspectiveCamera camera, BackendStage stage)
     {
         camera.Fov = 90f * _focus;
+
         if (Math.Abs(_focus - _gofocus) > 0.005)
         {
             if (_focus > _gofocus)
@@ -86,6 +87,7 @@ public class AroundStageCamera
         if (_pointCount >= 45 * Physics.PHYSICS_MULTIPLIER)
         {
             _point++;
+
             if (_point >= stage.Nodes.Count)
             {
                 _point = 0;
@@ -99,6 +101,7 @@ public class AroundStageCamera
         }
 
         _yaw += 1f * Physics.PHYSICS_MULTIPLIER;
+
         if (_yaw >= 360)
         {
             _yaw -= 360;
@@ -138,6 +141,7 @@ public class AroundStageCamera
         }
 
         _yaw += 3 * Physics.PHYSICS_MULTIPLIER;
+
         if (_yaw >= 360)
         {
             _yaw -= 360;

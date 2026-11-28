@@ -47,12 +47,14 @@ public class FollowCamera
         // z: roll = xy
         _angle.Pitch = AngleSingle.FromDegrees(-10);
         var i28 = 2 + Math.Abs(_bcxz) / 4;
+
         if (i28 > 20)
         {
             i28 = 20;
         }
 
         var interpolateAngle = true;
+
         if (lookback != _oldlookback)
         {
             _oldlookback = lookback;

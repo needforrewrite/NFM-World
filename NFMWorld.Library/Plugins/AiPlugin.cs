@@ -48,12 +48,15 @@ public sealed class AiPlugin
     public static AiPlugin? Load(string id, string path)
     {
         var assembly = PluginAssembly.Load(id, path);
+
         if (assembly is null)
+
             return null;
 
         if (assembly.Assembly.GetCustomAttribute<AiAttribute>() is not { } attribute)
         {
             assembly.Unload();
+
             return null;
         }
 

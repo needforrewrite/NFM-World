@@ -41,9 +41,12 @@ public sealed class TurnstileVerifier(
     public static string? FindConfigurationProblem(IConfiguration configuration, IWebHostEnvironment environment)
     {
         if (environment.IsDevelopment())
+
             return null;
         if (string.IsNullOrWhiteSpace(configuration["TURNSTILE_SECRET"]))
+
             return "TURNSTILE_SECRET is not set";
+
         return string.IsNullOrWhiteSpace(configuration["TURNSTILE_HOSTNAMES"])
             ? "TURNSTILE_HOSTNAMES is not set"
             : null;
@@ -56,12 +59,16 @@ public sealed class TurnstileVerifier(
         var hostnames = Hostnames();
 
         if (string.IsNullOrWhiteSpace(token))
+
             return Reject(action, "no challenge token was submitted");
         if (token.Length > 2048)
+
             return Reject(action, "the challenge token is longer than 2048 characters");
         if (string.IsNullOrWhiteSpace(secret))
+
             return Unavailable(action, "TURNSTILE_SECRET is not set");
         if (!development && hostnames.Length == 0)
+
             return Unavailable(action, "TURNSTILE_HOSTNAMES is not set");
 
         try
@@ -76,6 +83,7 @@ public sealed class TurnstileVerifier(
             // only place the reason appears, so it is read before the status is judged.
             var body = await response.Content.ReadAsStringAsync(ct);
             VerificationResult? result = null;
+
             try
             {
                 result = JsonSerializer.Deserialize<VerificationResult>(body);
@@ -85,25 +93,32 @@ public sealed class TurnstileVerifier(
             }
 
             if (result?.Errors is { Length: > 0 } errors && errors.Any(IsOurFault))
+
                 return Unavailable(action, "siteverify rejected our request: " + string.Join(", ", errors));
 
             if (!response.IsSuccessStatusCode)
+
                 return Unavailable(action, $"siteverify answered HTTP {(int)response.StatusCode}");
 
             if (result is not { Success: true })
             {
                 var codes = result?.Errors is { Length: > 0 } refused ? string.Join(", ", refused) : "no error code";
+
                 return Reject(action, $"siteverify refused the token ({codes}) for remoteip '{remoteIp ?? "<none>"}'");
             }
 
             // Cloudflare's test credentials omit the action and report a dummy hostname.
+
             if (development)
+
                 return TurnstileOutcome.Pass;
 
             if (result.Action != action)
+
                 return Reject(action, $"the token was solved for action '{result.Action ?? "<none>"}'");
 
             var hostname = result.Hostname;
+
             if (hostname is null || !HostnameAllowed(hostname, hostnames))
             {
                 return Reject(
@@ -115,6 +130,7 @@ public sealed class TurnstileVerifier(
             }
 
             if (IsLocalhost(hostname))
+
                 return Reject(action, $"the token was solved on the loopback hostname '{hostname}'");
 
             return TurnstileOutcome.Pass;
@@ -134,13 +150,19 @@ public sealed class TurnstileVerifier(
     private static bool HostnameAllowed(string hostname, string[] allowed)
     {
         hostname = hostname.TrimEnd('.');
+
         foreach (var entry in allowed)
         {
             var allowedHost = entry.TrimEnd('.');
+
             if (hostname.Equals(allowedHost, StringComparison.OrdinalIgnoreCase))
+
                 return true;
+
             // "example.com" covers "sub.example.com", never "notexample.com".
+
             if (hostname.EndsWith("." + allowedHost, StringComparison.OrdinalIgnoreCase))
+
                 return true;
         }
 
@@ -158,6 +180,7 @@ public sealed class TurnstileVerifier(
     private TurnstileOutcome Reject(string action, string reason)
     {
         logger.LogWarning("Turnstile refused a {Action} attempt: {Reason}", action, reason);
+
         return new TurnstileOutcome(false, Error);
     }
 
@@ -165,6 +188,7 @@ public sealed class TurnstileVerifier(
     private TurnstileOutcome Unavailable(string action, string reason)
     {
         logger.LogError("Turnstile could not check a {Action} attempt: {Reason}", action, reason);
+
         return new TurnstileOutcome(false, UnavailableError);
     }
 
@@ -175,6 +199,7 @@ public sealed class TurnstileVerifier(
     private static bool IsLocalhost(string hostname)
     {
         hostname = hostname.TrimEnd('.');
+
         return hostname.Equals("localhost", StringComparison.OrdinalIgnoreCase)
                || hostname.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase)
                || IPAddress.TryParse(hostname, out var ip) && IPAddress.IsLoopback(ip);

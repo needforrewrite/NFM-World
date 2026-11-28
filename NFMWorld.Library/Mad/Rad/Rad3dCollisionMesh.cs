@@ -18,6 +18,7 @@ public readonly partial record struct Rad3dCollisionMesh(
     private static int CalculateHashCode(f64Vector3[] vertices, ushort[] indices)
     {
         var hashCode = new HashCode();
+
         foreach (var vertex in vertices)
         {
             hashCode.Add(vertex);
@@ -37,6 +38,7 @@ public readonly partial record struct Rad3dCollisionMesh(
     )
     {
         var aabbs = new (f64Vector3 min, f64Vector3 max)[indices.Length / 3];
+
         for (var i = 0; i < indices.Length; i += 3)
         {
             ref readonly var v0 = ref vertices[indices[i]];
@@ -56,13 +58,19 @@ public readonly partial record struct Rad3dCollisionMesh(
 
     public bool Equals(Rad3dCollisionMesh other)
     {
-        if (!Vertices.SequenceEqual(other.Vertices)) return false;
+        if (!Vertices.SequenceEqual(other.Vertices))
+
+            return false;
+
         return Indices.SequenceEqual(other.Indices);
     }
 
     public bool Equals(Rad3dCollisionMesh? other)
     {
-        if (other is null) return false;
+        if (other is null)
+
+            return false;
+
         return Equals(other.Value);
     }
 }

@@ -22,6 +22,7 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                     var (text, options) = pair;
 
                     var filePath = text.Path;
+
                     if (!filePath.EndsWith(".fx", StringComparison.OrdinalIgnoreCase))
                     {
                         return false;
@@ -91,12 +92,14 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                     // via Bind() rather than on the module itself.
                     sb.AppendLine($"internal sealed class {effectName}");
                     sb.AppendLine("{");
+
                     using (sb.Indent())
                     {
                         sb.AppendLine("public IShaderModule Module { get; }");
                         sb.AppendLine();
                         sb.AppendLine($"public {effectName}(byte[] effectCode)");
                         sb.AppendLine("{");
+
                         using (sb.Indent())
                         {
                             sb.AppendLine("Module = FNA3DGraphicsDevice.LoadEffectModule(effectCode);");
@@ -119,10 +122,12 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
 
                     sb.AppendLine($"internal readonly struct {effectName}Parameters");
                     sb.AppendLine("{");
+
                     using (sb.Indent())
                     {
                         sb.AppendLine($"internal {effectName}Parameters(ShaderReflection reflection)");
                         sb.AppendLine("{");
+
                         using (sb.Indent())
                         {
                             foreach (var statement in tree.Root.Statements())
@@ -131,6 +136,7 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                                 {
                                     if (declaration.Type.BaseType is HLSLBaseType.Sampler or HLSLBaseType.Sampler2D
                                         or HLSLBaseType.SamplerCube)
+
                                         continue;
 
                                     // A "texture" declaration resolves against ShaderReflection.Textures
@@ -153,6 +159,7 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                             {
                                 if (declaration.Type.BaseType is HLSLBaseType.Sampler or HLSLBaseType.Sampler2D
                                     or HLSLBaseType.SamplerCube)
+
                                     continue;
 
                                 sb.AppendLine($"public {declaration.Type.BaseType}EffectParameter {declaration.Name} {{ get; }}");
@@ -165,10 +172,12 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                         sb.AppendLine("// no-ops on a negative slot.");
                         sb.AppendLine("private static int SlotOf(ShaderReflection reflection, string name)");
                         sb.AppendLine("{");
+
                         using (sb.Indent())
                         {
                             sb.AppendLine("foreach (var uniform in reflection.Uniforms)");
                             sb.AppendLine("{");
+
                             using (sb.Indent())
                             {
                                 sb.AppendLine("if (uniform.Name == name) return uniform.Offset;");
@@ -182,10 +191,12 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                         sb.AppendLine();
                         sb.AppendLine("private static int TextureSlotOf(ShaderReflection reflection, string name)");
                         sb.AppendLine("{");
+
                         using (sb.Indent())
                         {
                             sb.AppendLine("foreach (var texture in reflection.Textures)");
                             sb.AppendLine("{");
+
                             using (sb.Indent())
                             {
                                 sb.AppendLine("if (texture.Name == name) return texture.Slot;");

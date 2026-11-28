@@ -46,6 +46,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _stageNames = MenuPreferences.GetStageNames(VFS);
 
         if (_allStages.Length == 0)
+
             throw new DirectoryNotFoundException(
                 "No playable stages were found in data/stages. Check that the game assets are installed."
             );
@@ -81,6 +82,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _state.PreviewName.Value = _state.Stages.Value.FirstOrDefault(stage => stage.Id == _loadedStage)?.Label
                                    ?? CurrentStage.Backend.Name;
         ShowDescription(CurrentStage.Backend.StageLoader);
+
         if (_state.Selected.Value != StageName)
         {
             if (!_state.OnlineSource.Value)
@@ -95,7 +97,8 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _state.Busy.Value = false;
         _state.ConfirmEnabled.Value = true;
         _state.Status.Value = "";
-        if (_confirmAfterLoad) StageSelected?.Invoke(this, StageName!);
+        if (_confirmAfterLoad)
+            StageSelected?.Invoke(this, StageName!);
         _confirmAfterLoad = false;
     }
 
@@ -121,21 +124,25 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private static string CollectionOf(string stageId)
     {
         var slash = stageId.IndexOf('/');
+
         return slash < 0 ? "stages" : stageId[..slash];
     }
 
     private string StageLabel(string stageId)
     {
         if (_stageNames.TryGetValue(stageId, out var name))
+
             return name;
 
         var slash = stageId.LastIndexOf('/');
+
         return slash < 0 ? stageId : stageId[(slash + 1)..];
     }
 
     private void SetOnlineSource(bool online)
     {
         if (_state.OnlineSource.Value == online)
+
             return;
 
         _onlineCancellation?.Cancel();
@@ -156,6 +163,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         if (online)
         {
             _ = SearchOnlineAsync("");
+
             return;
         }
 
@@ -177,16 +185,18 @@ public class StageSelectPhase : BaseStageRenderingPhase
         {
             var page = await ContentClient.SearchAsync(query, "Stage", 40, null, cancellation.Token);
             await LoadingWork.NextFrame;
+
             if (generation != _onlineGeneration)
+
                 return;
 
             var options = page.Items
                 .Where(item => item.Eligible)
                 .Select(item => new StageOption(
-                        RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
-                        item.Name,
-                        item.AuthorByline
-                    )
+                    RadpackReader.ArchivePrefix + item.ContentHash.ToLowerInvariant(),
+                    item.Name,
+                    item.AuthorByline
+                )
                 )
                 .ToArray();
 
@@ -196,7 +206,9 @@ public class StageSelectPhase : BaseStageRenderingPhase
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             await LoadingWork.NextFrame;
+
             if (generation != _onlineGeneration)
+
                 return;
 
             _state.Stages.Value = [];
@@ -213,6 +225,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private void SelectCollection(string collection)
     {
         if (_state.OnlineSource.Value || _state.Collection.Value == collection)
+
             return;
 
         _state.Collection.Value = collection;
@@ -228,19 +241,25 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private void SelectStage(string stageId)
     {
         var option = _state.Stages.Value.FirstOrDefault(stage => stage.Id == stageId);
+
         if (option is null)
+
             return;
 
         _state.Selected.Value = stageId;
         _state.ConfirmEnabled.Value = true;
         _state.Status.Value = "";
-        if (stageId == _loadedStage && !IsStageLoading) return;
+
+        if (stageId == _loadedStage && !IsStageLoading)
+
+            return;
         _state.DescriptionLines.Value = [];
 
         if (RadpackReader.IsArchiveId(stageId))
         {
             // Archive stages have to be downloaded and verified before the preview can read them.
             PrepareStage(stageId, confirmAfter: false);
+
             return;
         }
 
@@ -268,18 +287,22 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private void Confirm()
     {
         if (!_state.ConfirmEnabled.Value || IsStageLoading)
+
             return;
 
         var selected = _state.Selected.Value;
+
         if (string.IsNullOrEmpty(selected))
         {
             _state.Status.Value = "Pick a stage first.";
+
             return;
         }
 
         if (selected != _loadedStage)
         {
             PrepareStage(selected, confirmAfter: true);
+
             return;
         }
 
@@ -289,6 +312,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
     private void RefreshStages(bool loadPreview)
     {
         if (_state.OnlineSource.Value)
+
             return;
 
         var query = _state.Search.Value.Trim();
@@ -302,12 +326,16 @@ public class StageSelectPhase : BaseStageRenderingPhase
             .ToArray();
 
         _state.Stages.Value = stages;
-        if (!loadPreview) return;
+
+        if (!loadPreview)
+
+            return;
 
         if (stages.Length == 0)
         {
             _state.Selected.Value = "";
             _state.ConfirmEnabled.Value = false;
+
             return;
         }
 
@@ -329,6 +357,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
             _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
 
         if (_state.DescriptionLines.Value.Count == 0)
+
             return;
 
         // A slow bob; the briefing is meant to hover over the course, not sit on it.
@@ -341,6 +370,7 @@ public class StageSelectPhase : BaseStageRenderingPhase
         base.KeyPressed(key, imguiWantsKeyboard, keys);
 
         if (imguiWantsKeyboard)
+
             return;
 
         StageSelectView.HandlePreviewKey(_state, _actions, key);

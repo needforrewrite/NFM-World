@@ -40,6 +40,7 @@ public class AiPluginTests
     private static AiPlugin? Load(string id)
     {
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+
         return AiPlugin.Load(id, $"data/ais/{id}/ai.dll");
     }
 
@@ -148,6 +149,7 @@ public class AiPluginTests
         Assert.IsNotNull(plugin);
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -187,6 +189,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -223,6 +226,7 @@ public class AiPluginTests
         Assert.IsNotNull(plugin);
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -268,6 +272,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -294,6 +299,7 @@ public class AiPluginTests
         Assert.IsNotNull(plugin);
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -325,6 +331,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -351,6 +358,7 @@ public class AiPluginTests
         Assert.IsNotNull(plugin);
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -380,6 +388,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -403,6 +412,7 @@ public class AiPluginTests
         );
         Assert.IsNotNull(plugin);
         BaseClientGamemode? gamemode = null;
+
         try
         {
             gamemode = plugin.CreateClient(
@@ -421,7 +431,8 @@ public class AiPluginTests
                 new Dictionary<string, object> { ["simulation"] = simulation }
             );
             gamemode.Begin();
-            for (var i = 0; i < 10; i++) gamemode.GameTick();
+            for (var i = 0; i < 10; i++)
+                gamemode.GameTick();
             gamemode.KeyPressed(Key.R, default);
             gamemode.Reset();
             gamemode.GameTick();
@@ -456,6 +467,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -492,6 +504,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -513,6 +526,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -530,7 +544,9 @@ public class AiPluginTests
             for (var i = 0; i < starts.Length; i++)
             {
                 // The human has no driver in this harness; only the bots can be judged.
+
                 if (!gamemode.Players[i].Info.IsBot)
+
                     continue;
 
                 var botCar = starts[i];
@@ -547,6 +563,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -570,6 +587,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -596,6 +614,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -619,6 +638,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -652,6 +672,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -675,6 +696,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -705,6 +727,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -727,6 +750,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -753,6 +777,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -774,6 +799,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -797,6 +823,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -816,6 +843,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -829,6 +857,7 @@ public class AiPluginTests
             botCar.CarPhysics.DamagePoints = botCar.CarPhysics.Stat.Maxmag * 9 / 10;
 
             var advanced = false;
+
             for (var i = 0; i < 3000 && !advanced; i++)
             {
                 gamemode.GameTick();
@@ -844,6 +873,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -866,6 +896,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -880,6 +911,7 @@ public class AiPluginTests
             botCar.CarPhysics.DamagePoints = botCar.CarPhysics.Stat.Maxmag * 9 / 10;
 
             var advanced = false;
+
             for (var i = 0; i < 2500 && !advanced; i++)
             {
                 gamemode.GameTick();
@@ -895,6 +927,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -917,6 +950,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -940,6 +974,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -958,6 +993,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -971,6 +1007,7 @@ public class AiPluginTests
             botCar.CarPhysics.DamagePoints = botCar.CarPhysics.Stat.Maxmag * 9 / 10;
 
             var advanced = false;
+
             for (var i = 0; i < 3000 && !advanced; i++)
             {
                 gamemode.GameTick();
@@ -985,6 +1022,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -1007,6 +1045,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -1030,6 +1069,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -1053,6 +1093,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -1068,6 +1109,7 @@ public class AiPluginTests
             // The far corner can only be reached by driving the top of the loop; a straight
             // line from the first gate to the second crosses the infield instead.
             var reachedFarCorner = false;
+
             for (var i = 0; i < 2500 && botCar.TotalCheckpoint < 2; i++)
             {
                 gamemode.GameTick();
@@ -1089,6 +1131,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -1111,6 +1154,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -1137,6 +1181,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -1159,6 +1204,7 @@ public class AiPluginTests
         var plugin = Load("classic")!;
         BaseClientGamemode? gamemode = null;
         var carName = $"sandbox-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -1172,6 +1218,7 @@ public class AiPluginTests
             var pinned = botCar.Position;
 
             var reversed = false;
+
             for (var i = 0; i < 400 && !reversed; i++)
             {
                 botCar.Position = pinned;
@@ -1186,6 +1233,7 @@ public class AiPluginTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();
@@ -1203,6 +1251,7 @@ public class AiPluginTests
         public StraightStage()
         {
             var mesh = new Rad3d([], CarStats.Default, [], null, [], [], false, [], "test/path");
+
             for (var i = 0; i < 20; i++)
             {
                 var kind = i == 19 ? AiNodeKind.CheckPoint : AiNodeKind.Road;
@@ -1360,7 +1409,8 @@ public class AiPluginTests
         public FixRoadStage()
         {
             var mesh = new Rad3d([], CarStats.Default, [], null, [], [], false, [], "test/fixroad");
-            var points = new List<(int X, int Z, AiNodeKind Kind)>
+            var points = new List<(int X, int Z, AiNodeKind Kind)
+                         >
             {
                 (0, 0, AiNodeKind.Road),
                 (0, 6000, AiNodeKind.Road),
@@ -1491,6 +1541,7 @@ public class AiPluginTests
         public FixHoopStage()
         {
             var mesh = new Rad3d([], CarStats.Default, [], null, [], [], false, [], "test/fixhoop");
+
             for (var i = 0; i < 21; i++)
             {
                 var node = StageObject.CreateDefaultObject(
@@ -1551,6 +1602,7 @@ public class AiPluginTests
             {
                 new() { PlayerName = "Human", CarName = carName, Color = default, IsBot = false, IsClientPlayer = true }
             };
+
             for (var i = 0; i < bots; i++)
             {
                 players.Add(
@@ -1567,6 +1619,7 @@ public class AiPluginTests
         public override void Begin()
         {
             base.Begin();
+
             for (var i = 0; i < Players.Count; i++)
             {
                 var player = Players[i];

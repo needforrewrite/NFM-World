@@ -23,16 +23,19 @@ public sealed class DeletionModel(
     public async Task<IActionResult> OnGetAsync()
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         RequestedAt = Account!.DeletionRequestedAt;
         EraseAt = RequestedAt is { } requested ? requested + options.DeletionGracePeriod : null;
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostRequestAsync()
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         var outcome = await moderation.ApplyAsync(
@@ -45,12 +48,14 @@ public sealed class DeletionModel(
         Status = outcome.Ok
             ? "Deletion requested. You can cancel it until the erase date."
             : outcome.Error;
+
         return await OnGetAsync();
     }
 
     public async Task<IActionResult> OnPostCancelAsync()
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
 
         var outcome = await moderation.ApplyAsync(
@@ -61,6 +66,7 @@ public sealed class DeletionModel(
         );
 
         Status = outcome.Ok ? "Deletion cancelled." : outcome.Error;
+
         return await OnGetAsync();
     }
 }

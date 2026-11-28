@@ -25,7 +25,8 @@ public class LobbyChatRoutingTests
         public void SendPacketToClient<T>(uint clientIndex, T packet, bool reliable = true)
             where T : IPacketServerToClient<T>
         {
-            if (packet is S2C_LobbyChatMessage chat) Chat.Add((clientIndex, chat));
+            if (packet is S2C_LobbyChatMessage chat)
+                Chat.Add((clientIndex, chat));
         }
 
         public void SendPacketToClients<T>(
@@ -34,7 +35,9 @@ public class LobbyChatRoutingTests
             bool reliable = true
         ) where T : IPacketServerToClient<T>
         {
-            if (packet is not S2C_LobbyChatMessage chat) return;
+            if (packet is not S2C_LobbyChatMessage chat)
+
+                return;
             foreach (var index in clientIndices)
                 Chat.Add((index, chat));
         }
@@ -60,6 +63,7 @@ public class LobbyChatRoutingTests
     {
         var players = new PlayerRegistry();
         var transport = new RecordingTransport();
+
         return (players, transport, new ChatManager(transport, players));
     }
 
@@ -76,6 +80,7 @@ public class LobbyChatRoutingTests
         player.Name = name;
         player.Color = new Color3(10, 20, 30);
         player.InSession = session is { } id ? ((byte)0, id) : null;
+
         return player;
     }
 

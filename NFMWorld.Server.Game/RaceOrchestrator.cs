@@ -121,6 +121,7 @@ public class RaceOrchestrator : IDisposable
         foreach (var (_, session) in _sessions)
         {
             var gm = session.ServerGamemode;
+
             if (gm == null)
             {
                 while (session.PendingImpacts.TryDequeue(out _))
@@ -129,6 +130,7 @@ public class RaceOrchestrator : IDisposable
 
                 while (session.PendingAttach.TryDequeue(out var finishedClient))
                     SendAttach(session, null, finishedClient);
+
                 continue;
             }
 
@@ -141,6 +143,7 @@ public class RaceOrchestrator : IDisposable
 
             // The last racer to load starts the race from here rather than from its attach, so
             // its baseline is sent ahead of the start notice like every other attach.
+
             if (!session.RaceStarted
                 && !session.ResultsBroadcasted
                 && session.LoadedCount >= session.PlayerCount)
@@ -157,6 +160,7 @@ public class RaceOrchestrator : IDisposable
 
             gm.GameTick();
             var snapshot = gm.GetStateSnapshot();
+
             if (!session.ResultsBroadcasted && snapshot is { IsFinished: true, IsProvisional: false, Results: { } results })
             {
                 // To this race's clients only: the GM runs many sessions, and a broadcast
@@ -178,6 +182,7 @@ public class RaceOrchestrator : IDisposable
                 session.ServerGamemode = null;
                 session.Factory?.End();
                 session.Factory = null;
+
                 continue;
             }
 
@@ -189,6 +194,7 @@ public class RaceOrchestrator : IDisposable
             // Only before the race starts: a racer leaving mid-race lowers LoadedCount below
             // PlayerCount for good, and without RaceStarted here the abandoned race fired at the
             // deadline and told everyone still driving that the Game Master had gone.
+
             if (!session.RaceStarted
                 && !session.ResultsBroadcasted
                 && session.ServerGamemode is not null
@@ -226,6 +232,7 @@ public class RaceOrchestrator : IDisposable
                 new S2C_GameFinished { Results = session.LastResults },
                 reliable: true
             );
+
             return;
         }
 
@@ -291,9 +298,11 @@ public class RaceOrchestrator : IDisposable
     private void ReportToLobby(RaceSession session, RaceResults results, RaceLiveState? finalState = null)
     {
         var lobby = Environment.GetEnvironmentVariable("LOBBY_RESULTS_URL");
+
         if (string.IsNullOrEmpty(lobby))
         {
             Logging.Info("[GM] No LOBBY_RESULTS_URL configured; the lobby is not told this race ended.");
+
             return;
         }
 
@@ -352,31 +361,41 @@ public class RaceOrchestrator : IDisposable
         // A connection leaving is the only notice this server gets that a racer walked out:
         // the client drops the transport on quit instead of sending a forfeit. The gamemode
         // must hear it, or the race keeps ticking for a player who is not there.
+
         foreach (var (_, session) in _sessions)
         {
             if (!session.Clients.TryRemove(clientIndex, out var clientId))
+
                 continue;
             session.LastChat.TryRemove(clientId, out _);
 
             // Only a racer was counted as loaded. A spectator was given a throwaway id and
             // never incremented the count, so decrementing for one would undercount the race.
             var isRacer = session.PlayerInfos.Values.Any(p => p.Id == clientId);
+
             if (isRacer)
             {
                 lock (session.ChatLock)
                 {
-                    if (session.Departures.ContainsKey(clientId)) return;
+                    if (session.Departures.ContainsKey(clientId))
+
+                        return;
                     var reason = _transport.GetDisconnectReason(clientIndex);
+
                     foreach (var info in session.PlayerInfos.Values.Where(
                         p => p.Id == clientId || (p.IsBot && p.OwnerId == clientId)
                     ))
                     {
                         var departure =
                             new S2C_PlayerLeft { PlayerId = info.Id, Reason = reason, Announce = info.Id == clientId };
-                        if (!session.Departures.TryAdd(info.Id, departure)) continue;
+
+                        if (!session.Departures.TryAdd(info.Id, departure))
+
+                            continue;
                         session.PlayerWasted[info.Id] = true;
                         _transport.SendPacketToClients(session.Clients.Keys.ToArray(), departure, reliable: true);
-                        if (departure.Announce) SendSystemChat(session, PlayerDeparture.Message(info.PlayerName, reason));
+                        if (departure.Announce)
+                            SendSystemChat(session, PlayerDeparture.Message(info.PlayerName, reason));
                     }
 
                     session.LoadedCount = Math.Max(0, session.LoadedCount - 1);
@@ -385,6 +404,7 @@ public class RaceOrchestrator : IDisposable
             }
 
             Logging.Info($"[GM] {(isRacer ? "Client" : "Spectator")} {clientId} left the race");
+
             return;
         }
     }
@@ -402,18 +422,23 @@ public class RaceOrchestrator : IDisposable
                 if (TryFindSession(e.ClientIndex, out var hitSession, out var hitClient)
                     && hitSession.PendingImpacts.Count < 256)
                     hitSession.PendingImpacts.Enqueue((hitClient, impact));
+
                 break;
             case C2S_RaceLoaded raceLoaded:
                 HandleRaceLoaded(e.ClientIndex, raceLoaded);
+
                 break;
             case C2S_PlayerState playerState:
                 HandlePlayerState(e.ClientIndex, playerState);
+
                 break;
             case C2S_ClientEvent clientEvent:
                 HandleClientEvent(e.ClientIndex, clientEvent);
+
                 break;
             case C2S_RaceChat chat:
                 HandleRaceChat(e.ClientIndex, chat);
+
                 break;
         }
     }
@@ -424,26 +449,45 @@ public class RaceOrchestrator : IDisposable
     {
         while (session.PendingImpacts.TryDequeue(out var entry))
         {
-            if (!session.RaceStarted || session.ResultsBroadcasted || session.Stage is not { } stage) continue;
+            if (!session.RaceStarted || session.ResultsBroadcasted || session.Stage is not { } stage)
+
+                continue;
             var packet = entry.Packet;
             var playerId = packet.PlayerId == Guid.Empty ? entry.Sender : packet.PlayerId;
+
             if (!session.PlayerInfos.Values.Any(p => p.Id == playerId
                                                      && (p.Id == entry.Sender || p.IsBot && p.OwnerId == entry.Sender)
-            )) continue;
+            ))
+
+                continue;
             if (session.Departures.ContainsKey(playerId)
-                || !session.PlayerPositions.TryGetValue(playerId, out var position)) continue;
-            if (stage.GetDestructible(packet.Impact.PieceId) is not { IsDestroyed: false } obj) continue;
+                || !session.PlayerPositions.TryGetValue(playerId, out var position))
+
+                continue;
+            if (stage.GetDestructible(packet.Impact.PieceId) is not { IsDestroyed: false } obj)
+
+                continue;
             var velocity = packet.Impact.Velocity;
             var impulse = packet.Impact.Impulse;
             static bool Bounded(f64Vector3 v) => Math.Abs((double)v.X) <= 10_000
-                                                 && Math.Abs((double)v.Y) <= 10_000 && Math.Abs((double)v.Z) <= 10_000;
+                                                 && Math.Abs((double)v.Y) <= 10_000
+                                                 && Math.Abs((double)v.Z) <= 10_000;
 
-            if (!Bounded(velocity) || !Bounded(impulse)) continue;
-            if ((position - obj.Position).LengthNoOverflow() > obj.MaxRadius + 1500) continue;
-            if (impulse.LengthNoOverflow() > velocity.LengthNoOverflow() * 2 + 20) continue;
+            if (!Bounded(velocity) || !Bounded(impulse))
+
+                continue;
+            if ((position - obj.Position).LengthNoOverflow() > obj.MaxRadius + 1500)
+
+                continue;
+            if (impulse.LengthNoOverflow() > velocity.LengthNoOverflow() * 2 + 20)
+
+                continue;
             var key = (playerId, packet.Impact.PieceId);
             var now = Environment.TickCount64;
-            if (session.LastImpacts.TryGetValue(key, out var last) && now - last < 150) continue;
+
+            if (session.LastImpacts.TryGetValue(key, out var last) && now - last < 150)
+
+                continue;
             session.LastImpacts[key] = now;
             if (stage.DamageObject(packet.Impact) is { } state)
                 _transport.SendPacketToClients(
@@ -456,18 +500,30 @@ public class RaceOrchestrator : IDisposable
 
     private void HandleRaceChat(uint clientIndex, C2S_RaceChat chat)
     {
-        if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
+        if (!TryFindSession(clientIndex, out var session, out var clientId))
+
+            return;
         var message = RaceChat.Normalize(chat.Message);
-        if (message.Length == 0) return;
+
+        if (message.Length == 0)
+
+            return;
+
         lock (session.ChatLock)
         {
             var player = session.PlayerInfos.Values.FirstOrDefault(p => p.Id == clientId);
             var spectator = session.Spectators.TryGetValue(clientId, out var identity);
-            if (spectator ? identity.Muted : player.Id != clientId || player.Banned || player.Muted) return;
+
+            if (spectator ? identity.Muted : player.Id != clientId || player.Banned || player.Muted)
+
+                return;
 
             var senderId = spectator ? identity.PlayerId : clientId;
             var now = Environment.TickCount64;
-            if (session.LastChat.TryGetValue(senderId, out var last) && now - last < 500) return;
+
+            if (session.LastChat.TryGetValue(senderId, out var last) && now - last < 500)
+
+                return;
             session.LastChat[senderId] = now;
             var watching = spectator || session.PlayerWasted.TryGetValue(clientId, out var wasted) && wasted;
             var name = spectator ? identity.Name : player.PlayerName;
@@ -480,7 +536,8 @@ public class RaceOrchestrator : IDisposable
                 MessageId = ++session.NextChatId
             };
             session.ChatHistory.Enqueue(packet);
-            while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
+            while (session.ChatHistory.Count > RaceChat.HistoryLimit)
+                session.ChatHistory.Dequeue();
             _transport.SendPacketToClients(session.Clients.Keys.ToArray(), packet, reliable: true);
             ReportChatToLobby(session, packet);
         }
@@ -493,7 +550,9 @@ public class RaceOrchestrator : IDisposable
     public void HandleLobbyChat(Lobby2RaceServer_Chat chat)
     {
         var session = _sessions.Values.FirstOrDefault(s => s.MatchKey == chat.MatchKey);
+
         if (session is null)
+
             return;
 
         var packet = new S2C_RaceChat
@@ -503,14 +562,17 @@ public class RaceOrchestrator : IDisposable
             Message = RaceChat.Normalize(chat.Message),
             Color = chat.Color
         };
+
         if (packet.Message.Length == 0)
+
             return;
 
         lock (session.ChatLock)
         {
             packet.MessageId = ++session.NextChatId;
             session.ChatHistory.Enqueue(packet);
-            while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
+            while (session.ChatHistory.Count > RaceChat.HistoryLimit)
+                session.ChatHistory.Dequeue();
             _transport.SendPacketToClients(session.Clients.Keys.ToArray(), packet, reliable: true);
         }
     }
@@ -524,10 +586,13 @@ public class RaceOrchestrator : IDisposable
     private static void ReportLiveStateIfDue(RaceSession session, IServerGamemode gamemode)
     {
         if (!session.RaceStarted || session.ResultsBroadcasted)
+
             return;
 
         var now = Environment.TickCount64;
+
         if (now - session.LastLiveReport < LiveReportIntervalMs)
+
             return;
 
         session.LastLiveReport = now;
@@ -547,15 +612,18 @@ public class RaceOrchestrator : IDisposable
     private static RaceLiveState CaptureLiveState(RaceSession session, IServerGamemode gamemode)
     {
         var standings = (gamemode as PluginServerGamemode)?.GetLiveState()?.Standings;
+
         lock (session.ChatLock)
         {
             standings ??= StandingsFromFrames(session);
+
             return new RaceLiveState
             {
                 Standings = [.. standings.Select(standing =>
                     {
                         var hasFrame = session.CarReadings.TryGetValue(standing.PlayerId, out var reading);
                         var maxDamage = session.CarDamageLimits.GetValueOrDefault(standing.CarName);
+
                         return standing with
                     {
                         TotalLaps = session.Stage?.Nlaps ?? 0,
@@ -577,6 +645,7 @@ public class RaceOrchestrator : IDisposable
             {
                 var player = slot.Value;
                 session.CarReadings.TryGetValue(player.Id, out var reading);
+
                 return new RaceLiveStanding
             {
                 PlayerId = player.Id,
@@ -600,13 +669,16 @@ public class RaceOrchestrator : IDisposable
 
     private static double DistanceToCheckpoint(RaceSession session, RaceLiveStanding standing)
     {
-        if (session.Stage is not { } stage || standing.Checkpoint >= stage.Checkpoints.Count
+        if (session.Stage is not { } stage
+            || standing.Checkpoint >= stage.Checkpoints.Count
             || !session.PlayerPositions.TryGetValue(standing.PlayerId, out var position))
+
             return double.PositiveInfinity;
 
         var target = stage.Checkpoints[standing.Checkpoint].Position;
         var dx = (double)position.X - (double)target.X;
         var dz = (double)position.Z - (double)target.Z;
+
         return dx * dx + dz * dz;
     }
 
@@ -634,23 +706,29 @@ public class RaceOrchestrator : IDisposable
     private static void PostToLobby(string path, string overrideVariable, byte[] body)
     {
         var endpoint = Environment.GetEnvironmentVariable(overrideVariable);
+
         if (string.IsNullOrEmpty(endpoint))
         {
             var results = Environment.GetEnvironmentVariable("LOBBY_RESULTS_URL");
+
             if (string.IsNullOrEmpty(results) || !Uri.TryCreate(results, UriKind.Absolute, out var resultsUri))
+
                 return;
             endpoint = new Uri(resultsUri.GetLeftPart(UriPartial.Authority) + path).ToString();
         }
 
         var keyId = Environment.GetEnvironmentVariable("HMAC_KEY_ID") ?? "primary";
         var secretText = Environment.GetEnvironmentVariable("HMAC_SECRET_KEY");
+
         if (string.IsNullOrEmpty(secretText))
         {
             Logging.Warning("[GM] HMAC_SECRET_KEY is not configured; the lobby relay is off.");
+
             return;
         }
 
         byte[] secret;
+
         try
         {
             secret = Convert.FromBase64String(secretText);
@@ -658,6 +736,7 @@ public class RaceOrchestrator : IDisposable
         catch (FormatException)
         {
             Logging.Warning("[GM] HMAC_SECRET_KEY is not valid base64; the lobby relay is off.");
+
             return;
         }
 
@@ -698,8 +777,12 @@ public class RaceOrchestrator : IDisposable
     {
         try
         {
-            if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
-            if (session.Departures.ContainsKey(clientId)) return;
+            if (!TryFindSession(clientIndex, out var session, out var clientId))
+
+                return;
+            if (session.Departures.ContainsKey(clientId))
+
+                return;
             session.ServerGamemode?.OnClientEvent(clientId, clientEvent.Payload.Span);
         }
         finally
@@ -713,18 +796,25 @@ public class RaceOrchestrator : IDisposable
         // A token belongs to one player for the life of the session. It stays reclaimable so a
         // client whose connection dropped can attach again, but the *same* player may not use it
         // to occupy a second slot.
+
         if (!_joinTokens.TryGetValue(raceLoaded.JoinToken, out var entry))
         {
             Logging.Warning($"[GM] Invalid join token from client {clientIndex}");
+
             return;
         }
 
         var session = entry.Session;
-        if (entry.ClientId == Guid.Empty) return;
+
+        if (entry.ClientId == Guid.Empty)
+
+            return;
+
         lock (session.ChatLock)
         {
             foreach (var message in session.ChatHistory)
                 _transport.SendPacketToClient(clientIndex, message, reliable: true);
+
             foreach (var departure in session.Departures.Values)
             {
                 var history = departure;
@@ -743,11 +833,13 @@ public class RaceOrchestrator : IDisposable
         // the struct default is 0, which is a real slot, so every second player looked
         // attached and was never counted as loaded.
         uint? existingIndex = null;
+
         foreach (var (index, id) in session.Clients)
         {
             if (id == clientId)
             {
                 existingIndex = index;
+
                 break;
             }
         }
@@ -761,11 +853,13 @@ public class RaceOrchestrator : IDisposable
             Logging.Info($"[GM] Client {clientId} re-attached");
             // Reconnected mid-race, so it is as behind as a fresh attach and needs the same thing.
             session.PendingAttach.Enqueue(clientIndex);
+
             return;
         }
 
         session.Clients[clientIndex] = clientId;
-        if (!spectator && !session.Departures.ContainsKey(clientId)) session.LoadedCount++;
+        if (!spectator && !session.Departures.ContainsKey(clientId))
+            session.LoadedCount++;
 
         Logging.Info(
             $"[GM] Client {clientId} loaded ({session.LoadedCount}/{session.PlayerCount})"
@@ -777,30 +871,38 @@ public class RaceOrchestrator : IDisposable
 
     private void HandlePlayerState(uint clientIndex, C2S_PlayerState playerState)
     {
-        if (!TryFindSession(clientIndex, out var session, out var clientId)) return;
+        if (!TryFindSession(clientIndex, out var session, out var clientId))
+
+            return;
 
         // A peer's state is relayed verbatim to the other clients and fed to the physics
         // angle-normalisation loops, so an absurd angle (or speed) from one client would
         // freeze every client in the race. Drop the packet rather than pass it on.
+
         if (!IsSanePlayerState(playerState.State))
+
             return;
 
         // An empty id means the sender's own car. Anything else names a player, and a client
         // may only speak for the bots it owns - otherwise it could drive another human's car.
         var reportedId = clientId;
+
         if (playerState.PlayerId != Guid.Empty)
         {
             var owned = false;
+
             foreach (var info in session.PlayerInfos.Values)
             {
                 if (info.Id == playerState.PlayerId && info.IsBot && info.OwnerId == clientId)
                 {
                     owned = true;
+
                     break;
                 }
             }
 
             if (!owned)
+
                 return;
 
             reportedId = playerState.PlayerId;
@@ -810,27 +912,37 @@ public class RaceOrchestrator : IDisposable
         // frame: the gamemode decides who died when, but only the car's owner knows it died.
         var frame = playerState.State.CarFrame;
         var pos = frame.CarPosition;
-        if (!session.PlayerInfos.Values.Any(p => p.Id == reportedId)) return;
+
+        if (!session.PlayerInfos.Values.Any(p => p.Id == reportedId))
+
+            return;
+
         lock (session.ChatLock)
         {
-            if (session.Departures.ContainsKey(reportedId)) return;
+            if (session.Departures.ContainsKey(reportedId))
+
+                return;
             if (!session.WastedTracker.TryUpdate(
                 reportedId,
                 playerState.State.Ticks,
                 frame.TheBitFlags.Wasted,
-                    out var newlyWasted
-            )) return;
+                out var newlyWasted
+            ))
+
+                return;
             session.PlayerPositions[reportedId] = new f64Vector3(pos.X, pos.Y, pos.Z);
             session.PlayerWasted[reportedId] = frame.TheBitFlags.Wasted;
             session.CarReadings[reportedId] = (frame.RacePosition.Lap, frame.RacePosition.CheckpointInlap,
                 (byte)Math.Round(Math.Clamp((float)frame.Power, 0, 100)), frame.Damage);
-            if (newlyWasted && RaceWastedTracker.Message(session.PlayerInfos, reportedId, playerState.State
-                .DamageSource
+            if (newlyWasted
+                && RaceWastedTracker.Message(session.PlayerInfos, reportedId, playerState.State
+                    .DamageSource
             ) is { } message)
                 SendSystemChat(session, message);
         }
 
         var others = session.Clients.Keys.Where(idx => idx != clientIndex).ToArray();
+
         if (others.Length > 0)
         {
             _transport.SendPacketToClients(
@@ -854,7 +966,8 @@ public class RaceOrchestrator : IDisposable
             Color = new Color3(255, 230, 80), MessageId = ++session.NextChatId
         };
         session.ChatHistory.Enqueue(announcement);
-        while (session.ChatHistory.Count > RaceChat.HistoryLimit) session.ChatHistory.Dequeue();
+        while (session.ChatHistory.Count > RaceChat.HistoryLimit)
+            session.ChatHistory.Dequeue();
         _transport.SendPacketToClients(session.Clients.Keys.ToArray(), announcement, reliable: true);
         ReportChatToLobby(session, announcement);
     }
@@ -873,8 +986,10 @@ public class RaceOrchestrator : IDisposable
                && Math.Abs((double)stunt.TotalStuntXz) <= maxAngle
                && Math.Abs((double)stunt.TotalStuntXy) <= maxAngle
                && Math.Abs((double)stunt.TotalStuntZy) <= maxAngle
-               && stunt.Powerup >= 0 && (double)stunt.Powerup <= maxAngle
-               && state.DamageSource >= 0 && state.DamageSource <= MatchGameplayInfo.MaxPlayers
+               && stunt.Powerup >= 0
+               && (double)stunt.Powerup <= maxAngle
+               && state.DamageSource >= 0
+               && state.DamageSource <= MatchGameplayInfo.MaxPlayers
                && Math.Abs((double)rotation.Xz) <= maxAngle
                && double.IsFinite((double)rotation.Pzy)
                && Math.Abs((double)rotation.Pzy) <= maxAngle
@@ -905,6 +1020,7 @@ public class RaceOrchestrator : IDisposable
             );
 
             if (!result.Ok)
+
                 throw new InvalidOperationException($"Could not prepare '{item.Id}': {result.Error}");
         }
 
@@ -914,17 +1030,24 @@ public class RaceOrchestrator : IDisposable
     public Guid RegisterSpectator(Lobby2RaceServer_RegisterSpectator request)
     {
         if (!_joinTokens.TryGetValue(request.SessionToken, out var entry)
-            || !entry.Spectator || entry.ClientId != Guid.Empty || entry.Session.ResultsBroadcasted
-            || request.PlayerId == Guid.Empty || string.IsNullOrWhiteSpace(request.Name))
+            || !entry.Spectator
+            || entry.ClientId != Guid.Empty
+            || entry.Session.ResultsBroadcasted
+            || request.PlayerId == Guid.Empty
+            || string.IsNullOrWhiteSpace(request.Name))
+
             throw new InvalidOperationException("The race is no longer available to watch.");
         var session = entry.Session;
+
         lock (session.ChatLock)
         {
             var identity = (request.PlayerId, request.Name, request.Color, request.Muted);
+
             if (session.SpectatorTokens.TryGetValue(request.PlayerId, out var existing)
                 && _joinTokens.TryGetValue(existing, out var registered))
             {
                 session.Spectators[registered.ClientId] = identity;
+
                 return existing;
             }
 
@@ -933,6 +1056,7 @@ public class RaceOrchestrator : IDisposable
             session.SpectatorTokens[request.PlayerId] = token;
             session.Spectators.Add(spectatorId, identity);
             _joinTokens.TryAdd(token, (session, 0, spectatorId, true));
+
             return token;
         }
     }
@@ -943,6 +1067,7 @@ public class RaceOrchestrator : IDisposable
         {
             var model = BackendGameSparker.FindLoadedCar(carName)
                         ?? RadpackReader.TryReadModel(carName, RadpackType.Car, out _);
+
             return model?.Stats.Maxmag ?? 0;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
@@ -956,7 +1081,9 @@ public class RaceOrchestrator : IDisposable
         // The lobby is trusted infrastructure, but its roster is still assembled from client
         // claims. Reject before any stage object is constructed, so nothing can be loaded from a
         // path a player chose.
+
         if (MultiplayerContentPolicy.ValidateMatch(raceParams.MatchGameplayInfo) is { } refusal)
+
             throw new InvalidOperationException(refusal);
 
         EnsureContentPrepared(raceParams.MatchGameplayInfo);
@@ -988,7 +1115,9 @@ public class RaceOrchestrator : IDisposable
         {
             // A bot has no client to hand a token to; its state arrives from the client that
             // simulates it, under the bot's own player id.
+
             if (playerInfo.IsBot || playerInfo.Banned)
+
                 continue;
 
             var token = Guid.NewGuid();
@@ -1049,11 +1178,13 @@ public class RaceOrchestrator : IDisposable
     private static void EnsureContentPrepared(MatchGameplayInfo info)
     {
         if (RadpackReader.IsArchiveId(info.StageName) && !ContentCache.IsPrepared(info.StageName))
+
             throw new InvalidOperationException($"Stage '{info.StageName}' has not been prepared.");
 
         if (!RadpackReader.IsArchiveId(info.StageName)
             && !VFS.FileExists($"data/stages/{info.StageName}.txt")
             && !VFS.FileExists($"data/stages/{info.StageName}.radpack"))
+
             throw new InvalidOperationException($"Stage '{info.StageName}' is not installed on this server.");
     }
 
@@ -1067,12 +1198,14 @@ public class RaceOrchestrator : IDisposable
             {
                 session = s;
                 clientId = id;
+
                 return true;
             }
         }
 
         session = null;
         clientId = Guid.Empty;
+
         return false;
     }
 
@@ -1083,6 +1216,7 @@ public class RaceOrchestrator : IDisposable
         // End() on all server gamemodes before tearing down. Sessions whose race
         // already finished have had both released already, so both are null-guarded
         // here (and End() itself is idempotent).
+
         foreach (var (_, session) in _sessions)
         {
             session.ServerGamemode?.End();

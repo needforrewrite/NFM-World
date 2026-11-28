@@ -34,6 +34,7 @@ public class UiScaleTextTests
     private static Text MakeLabel(bool sized)
     {
         var t = new Text { Name = "label" };
+
         if (sized)
         {
             t.Styles = t.Styles with { Width = 100, Height = 20 };
@@ -41,6 +42,7 @@ public class UiScaleTextTests
 
         t.TextStyles = t.TextStyles with { FontSize = 12f };
         t.TextContent = "hello";
+
         return t;
     }
 
@@ -48,6 +50,7 @@ public class UiScaleTextTests
     {
         Assert.IsTrue(t.LaidOutComplexText.HasValue, "text should have been measured");
         Assert.IsTrue(t.LaidOutComplexText.Value.Elements.Count > 0, "text should have laid out one element");
+
         return t.LaidOutComplexText.Value.Elements[0].FontSize ?? -1f;
     }
 

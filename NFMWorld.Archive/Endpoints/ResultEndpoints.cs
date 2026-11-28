@@ -37,6 +37,7 @@ public static class ResultEndpoints
             ) =>
             {
                 byte[] body;
+
                 try
                 {
                     body = await TrustedServerAuth.ReadBodyAsync(request, MaxBodyBytes, ct);
@@ -47,10 +48,13 @@ public static class ResultEndpoints
                 }
 
                 var error = auth.Verify("POST", "/results/match", body, request.Headers.Authorization, out var keyId);
+
                 if (error is not null)
+
                     return Results.Json(new { error }, statusCode: StatusCodes.Status401Unauthorized);
 
                 MatchResultRequest? result;
+
                 try
                 {
                     result = JsonSerializer.Deserialize<MatchResultRequest>(body, JsonOptions);
@@ -64,11 +68,14 @@ public static class ResultEndpoints
                     || string.IsNullOrEmpty(result.MatchKey)
                     || result.Players is null
                     || result.Players.Length == 0)
+
                     return Results.BadRequest(new { error = "Malformed result." });
 
                 // The match key is the idempotency key: a retried report is acknowledged and ignored,
                 // rather than rating the same match twice.
+
                 if (await db.Matches.AnyAsync(m => m.MatchKey == result.MatchKey, ct))
+
                     return Results.Ok(new { status = "already recorded" });
 
                 await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -86,6 +93,7 @@ public static class ResultEndpoints
 
                 var rated = new List<(User User, Rating Rating, int Position)>();
                 var humanCount = result.Players.Count(p => !p.IsBot);
+
                 foreach (var player in result.Players)
                 {
                     // A bot or an anonymous player has no account to attribute the result to; the
@@ -107,11 +115,14 @@ public static class ResultEndpoints
 
                     // Elo between humans only: a lobby with one human and bots has no opponent to rate
                     // against, and rating it would farm points for playing alone.
+
                     if (user is null || humanCount < 2)
+
                         continue;
 
                     var rating = await db.Ratings
                         .FirstOrDefaultAsync(r => r.UserId == user.Id && r.Gamemode == result.Gamemode, ct);
+
                     if (rating is null)
                     {
                         rating = new Rating { UserId = user.Id, User = user, Gamemode = result.Gamemode };
@@ -138,6 +149,7 @@ public static class ResultEndpoints
     private static void ApplyElo(List<(User User, Rating Rating, int Position)> participants)
     {
         if (participants.Count < 2)
+
             return;
 
         var deltas = new Dictionary<int, double>();
@@ -149,6 +161,7 @@ public static class ResultEndpoints
             foreach (var b in participants)
             {
                 if (a.User.Id == b.User.Id)
+
                     continue;
 
                 var expected = 1 / (1 + Math.Pow(10, (b.Rating.Elo - a.Rating.Elo) / 400.0));

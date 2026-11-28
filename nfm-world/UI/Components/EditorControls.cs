@@ -117,6 +117,7 @@ public static class EditorControls
                     borderColor: new Color(128, 170, 255, 65),
                     borderRadius: 6
                 );
+
                 return style is null ? result : result.Over(style());
             },
             text: value,
@@ -125,6 +126,7 @@ public static class EditorControls
             onsubmit: onSubmit is null ? null : _ => onSubmit(),
             textStyle: textStyle ?? (() => Sx.TextStyles(fontSize: 11))
         );
+
         return input;
     }
 
@@ -161,6 +163,7 @@ public static class EditorControls
         style: () =>
         {
             var result = Sx.Styles(flexDirection: FlexDirection.Row, alignItems: Align.Center, gapColumn: 6, flexShrink: 0);
+
             return style is null ? result : result.Over(style());
         },
         children:
@@ -184,12 +187,14 @@ public static class EditorControls
         style: () =>
         {
             var result = Sx.Styles(width: width, flexShrink: 0, flexDirection: FlexDirection.Column, gapRow: 2);
+
             return style is null ? result : result.Over(style());
         },
         children:
         [
             Sx.Text(
-                style: titleStyle ?? (() => Sx.TextStyles(
+                style: titleStyle
+                ?? (() => Sx.TextStyles(
                     fontSize: 10,
                     fontStyle: FontStyle.Bold,
                     foregroundColor: EditorPalette.Blue
@@ -239,7 +244,8 @@ public static class EditorControls
                     maxWidth: 220,
                     minWidth: 100,
                     flexShrink: 0,
-                    backgroundColor: active() ? EditorPalette.PanelSoft : hovered.Value ? new Color(22, 42, 80, 110) : Theme.Transparent,
+                    backgroundColor: active() ? EditorPalette.PanelSoft : hovered.Value ? new Color(22, 42, 80, 110) : Theme
+                        .Transparent,
                     borderTop: 1,
                     borderLeft: 1,
                     borderRight: 1,
@@ -259,6 +265,7 @@ public static class EditorControls
                     borderRight: 1,
                     borderColor: new Color(128, 170, 255, 30)
                 );
+
                 return style is null ? result : result.Over(style());
             },
             onmouseenter: _ => hovered.Value = true,
@@ -297,6 +304,7 @@ public static class EditorControls
                 )
             ]
         );
+
         return keyboardNavigation ? KeyboardNavigation.Bind(
             tab,
             key => { if (key is not (Key.Enter or Key.Space)) return false; select(); return true; },
@@ -311,26 +319,30 @@ public static class EditorControls
         Action? onDismiss = null,
         Func<Styles>? style = null,
         Func<string?>? name = null
-    ) => Sx.Show(open, () => Sx.View(
-        name: name,
-        style: () =>
-        {
-            var result = Sx.Styles(
-                position: Position.Absolute,
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                alignItems: Align.Center,
-                justifyContent: Justify.Center,
-                backgroundColor: new Color(3, 8, 20, 175),
-                zIndex: 30
-            );
-            return style is null ? result : result.Over(style());
-        },
-        onmousedown: e => { if (onDismiss is null) e.StopPropagation(); else onDismiss(); },
-        children: content()
-    ));
+    ) => Sx.Show(
+        open,
+        () => Sx.View(
+            name: name,
+            style: () =>
+            {
+                var result = Sx.Styles(
+                    position: Position.Absolute,
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    alignItems: Align.Center,
+                    justifyContent: Justify.Center,
+                    backgroundColor: new Color(3, 8, 20, 175),
+                    zIndex: 30
+                );
+
+                return style is null ? result : result.Over(style());
+            },
+            onmousedown: e => { if (onDismiss is null) e.StopPropagation(); else onDismiss(); },
+            children: content()
+        )
+    );
 
     public static Node DialogPanel(Func<Node[]> content, Func<Styles>? style = null) => Sx.View(
         style: () =>
@@ -351,6 +363,7 @@ public static class EditorControls
                 borderColor: EditorPalette.Border,
                 borderRadius: 12
             );
+
             return style is null ? result : result.Over(style());
         },
         onmousedown: e => e.StopPropagation(),

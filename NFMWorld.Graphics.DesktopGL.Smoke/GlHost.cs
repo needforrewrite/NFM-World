@@ -38,6 +38,7 @@ internal sealed class GlHost : IDisposable
     public GlHost(int width, int height)
     {
         if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
         SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -50,6 +51,7 @@ internal sealed class GlHost : IDisposable
         SDL.SDL_GL_SetAttribute(SDL.SDL_GLAttr.SDL_GL_STENCIL_SIZE, 8);
 
         if (!SDL.SDL_GL_LoadLibrary(null))
+
             throw new InvalidOperationException($"SDL_GL_LoadLibrary failed: {SDL.SDL_GetError()}");
 
         // Hidden, so a test run does not put a window on somebody's screen - but created, because
@@ -66,7 +68,9 @@ internal sealed class GlHost : IDisposable
         );
 
         _context = SDL.SDL_GL_CreateContext(_window.Handle);
+
         if (_context == IntPtr.Zero)
+
             throw new InvalidOperationException($"SDL_GL_CreateContext failed: {SDL.SDL_GetError()}");
 
         // Nothing presents: the window is never shown, and every check reads pixels back through

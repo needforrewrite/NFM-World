@@ -56,6 +56,7 @@ public class GamemodeHudWidgetTests
         Assert.IsNotNull(plugin);
         BaseClientGamemode? gamemode = null;
         var carName = $"widget-test/{Guid.NewGuid():N}";
+
         try
         {
             var car = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], carName);
@@ -87,6 +88,7 @@ public class GamemodeHudWidgetTests
         finally
         {
             BackendGameSparker.dynamic_models.Remove(carName);
+
             try
             {
                 gamemode?.End();

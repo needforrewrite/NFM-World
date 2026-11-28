@@ -16,13 +16,19 @@ internal sealed class MenuAttractDrive : IDisposable
     public MenuAttractDrive(ClientStage stage, ObservableUnlimitedArray<BackendCar> sceneCars, MenuRoadSegment road)
     {
         _sceneCars = sceneCars;
+
         if (stage.Backend.Nodes.Count < 2
             || stage.Backend.Checkpoints.Count == 0
-            || !BackendGameSparker.cars.TryGetValue(Collection.NFMM, out var models)) return;
+            || !BackendGameSparker.cars.TryGetValue(Collection.NFMM, out var models))
+
+            return;
         var random = new System.Random();
         var selected = models.Where(model => model.Wheels.Length > 0)
             .OrderBy(_ => random.Next()).Take(6).ToArray();
-        if (selected.Length < 2) return;
+
+        if (selected.Length < 2)
+
+            return;
         var nextCheckpoint = 0;
         while (nextCheckpoint < stage.Backend.Checkpoints.Count - 1
                && stage.Backend.Nodes.IndexOf(stage.Backend.Checkpoints[nextCheckpoint]) <= road.StartNode)
@@ -30,14 +36,15 @@ internal sealed class MenuAttractDrive : IDisposable
         var side = Vector3.Normalize(new Vector3(road.Direction.Z, 0, -road.Direction.X));
         var heading = -MathF.Atan2(road.Direction.X, road.Direction.Z) * 180 / MathF.PI;
         var players = selected.Select((model, i) => new ClientSidePlayerInfo(
-                $"Attract {i + 1}",
-                model.FileName,
-                default,
-                true,
-                i == 0
-            )
+            $"Attract {i + 1}",
+            model.FileName,
+            default,
+            true,
+            i == 0
+        )
         ).ToArray();
         _gamemode = new AttractGamemode(new ClientGamemodeParameters { Players = players }, new AttractContext(stage));
+
         try
         {
             foreach (var player in _gamemode.Players)
@@ -70,6 +77,7 @@ internal sealed class MenuAttractDrive : IDisposable
         catch
         {
             Dispose();
+
             throw;
         }
     }
@@ -83,7 +91,11 @@ internal sealed class MenuAttractDrive : IDisposable
     {
         var gamemode = _gamemode;
         _gamemode = null;
-        if (gamemode == null) return;
+
+        if (gamemode == null)
+
+            return;
+
         foreach (var player in gamemode.Players)
         {
             if (player.Car is { } car)
@@ -115,9 +127,12 @@ internal sealed class MenuAttractDrive : IDisposable
         {
             CheckPointHelper.CalculatePositions(CurrentStage, Players);
             _physics.GameTick();
+
             foreach (var player in Players)
             {
-                if (player.Car is not { } car) continue;
+                if (player.Car is not { } car)
+
+                    continue;
                 CheckPointHelper.HandleCheckPoint(CurrentStage, car);
                 FixHoopHelper.HandleFixHoops(CurrentStage, car);
             }

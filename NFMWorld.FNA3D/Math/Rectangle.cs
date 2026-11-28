@@ -84,13 +84,10 @@ namespace NFMWorld.FNA3D
         /// </remarks>
         public Point Center
         {
-            get
-            {
-                return new Point(
+            get { return new Point(
                     X + (Width / 2),
                     Y + (Height / 2)
-                );
-            }
+                ); }
         }
 
         /// <summary>
@@ -120,9 +117,7 @@ namespace NFMWorld.FNA3D
 
         internal string DebugDisplayString
         {
-            get
-            {
-                return string.Concat(
+            get { return string.Concat(
                     X.ToString(),
                     " ",
                     Y.ToString(),
@@ -130,8 +125,7 @@ namespace NFMWorld.FNA3D
                     Width.ToString(),
                     " ",
                     Height.ToString()
-                );
-            }
+                ); }
         }
 
         #endregion
@@ -351,6 +345,7 @@ namespace NFMWorld.FNA3D
         {
             Rectangle rectangle;
             Intersect(ref value1, ref value2, out rectangle);
+
             return rectangle;
         }
 
@@ -389,6 +384,7 @@ namespace NFMWorld.FNA3D
         {
             int x = Math.Min(value1.X, value2.X);
             int y = Math.Min(value1.Y, value2.Y);
+
             return new Rectangle(
                 x,
                 y,

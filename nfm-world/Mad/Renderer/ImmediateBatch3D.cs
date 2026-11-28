@@ -90,6 +90,7 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
     public void DrawTriangles(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices)
     {
         if (colors.Length != positions.Length)
+
             throw new ArgumentException("colors must be the same length as positions.", nameof(colors));
 
         var translucent = false;
@@ -109,6 +110,7 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
     public void DrawLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<Color> colors, ReadOnlySpan<int> indices)
     {
         if (colors.Length != positions.Length)
+
             throw new ArgumentException("colors must be the same length as positions.", nameof(colors));
         AddLines(positions, indices, default, colors);
     }
@@ -117,6 +119,7 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
     private void AddLines(ReadOnlySpan<Vector3> positions, ReadOnlySpan<int> indices, Color color, ReadOnlySpan<Color> colors)
     {
         if (indices.Length % 2 != 0)
+
             throw new ArgumentException("indices length must be a multiple of 2.", nameof(indices));
         Validate(positions.Length, indices);
 
@@ -126,6 +129,7 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
         var vertices = _lines.Vertices;
         var vi = _lines.VertexCount;
         var ii = _lines.IndexCount;
+
         for (var i = 0; i < indices.Length; i += 2)
         {
             int a = indices[i], b = indices[i + 1];
@@ -158,11 +162,13 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
     private Batch<PositionColorVertex> ReserveTriangles(int vertexCount, ReadOnlySpan<int> indices, bool translucent)
     {
         if (indices.Length % 3 != 0)
+
             throw new ArgumentException("indices length must be a multiple of 3.", nameof(indices));
         Validate(vertexCount, indices);
 
         var batch = translucent ? _alpha : _opaque;
         batch.Reserve(vertexCount, indices.Length);
+
         return batch;
     }
 
@@ -171,6 +177,7 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
         foreach (var index in indices)
         {
             if ((uint)index >= (uint)vertexCount)
+
                 throw new ArgumentOutOfRangeException(
                     nameof(indices),
                     $"Index {index} is out of range for {vertexCount} vertices."
@@ -205,7 +212,9 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
 
     private void FlushTriangles(ICommandBuffer cb, Batch<PositionColorVertex> batch, IPipelineState pipeline, Camera camera)
     {
-        if (batch.IndexCount == 0) return;
+        if (batch.IndexCount == 0)
+
+            return;
 
         batch.Upload(cb, device);
         cb.SetPipeline(pipeline);
@@ -221,7 +230,9 @@ public sealed class ImmediateBatch3D(IGraphicsDevice device) : IGraphics3D, IDis
 
     private void FlushLines(ICommandBuffer cb, Camera camera)
     {
-        if (_lines.IndexCount == 0) return;
+        if (_lines.IndexCount == 0)
+
+            return;
 
         _identityInstance ??= device.CreateBuffer(
             new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, InstanceData.Stride),

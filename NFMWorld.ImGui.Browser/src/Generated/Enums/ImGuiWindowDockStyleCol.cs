@@ -13,55 +13,55 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiWindowDockStyleCol : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Text = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiWindowDockStyleCol : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Text = unchecked(0),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		TabHovered = unchecked(1),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        TabHovered = unchecked(1),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		TabFocused = unchecked(2),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        TabFocused = unchecked(2),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		TabSelected = unchecked(3),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        TabSelected = unchecked(3),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		TabSelectedOverline = unchecked(4),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        TabSelectedOverline = unchecked(4),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		TabDimmed = unchecked(5),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        TabDimmed = unchecked(5),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		TabDimmedSelected = unchecked(6),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        TabDimmedSelected = unchecked(6),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		TabDimmedSelectedOverline = unchecked(7),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        TabDimmedSelectedOverline = unchecked(7),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		Count = unchecked(8),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        Count = unchecked(8),
+    }
 }

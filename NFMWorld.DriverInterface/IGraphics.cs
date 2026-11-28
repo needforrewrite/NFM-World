@@ -31,9 +31,12 @@ public interface IGraphics
 
     void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
     {
-        if (n < 1) return;
+        if (n < 1)
+
+            return;
         BeginPath();
         MoveTo(x[0], y[0]);
+
         for (int i = 1; i < n; i++)
         {
             LineTo(x[i], y[i]);
@@ -45,9 +48,12 @@ public interface IGraphics
 
     void DrawPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
     {
-        if (n < 1) return;
+        if (n < 1)
+
+            return;
         BeginPath();
         MoveTo(x[0], y[0]);
+
         for (int i = 1; i < n; i++)
         {
             LineTo(x[i], y[i]);
@@ -244,20 +250,26 @@ public interface IGraphics
 
         // Normalize sweep direction/length the way Canvas2D's ellipse() does.
         float da = a1 - a0;
+
         if (ccw)
         {
-            if (da > 0.0f) da -= TWO_PI;
-            if (da < -TWO_PI) da = -TWO_PI;
+            if (da > 0.0f)
+                da -= TWO_PI;
+            if (da < -TWO_PI)
+                da = -TWO_PI;
         }
         else
         {
-            if (da < 0.0f) da += TWO_PI;
-            if (da > TWO_PI) da = TWO_PI;
+            if (da < 0.0f)
+                da += TWO_PI;
+            if (da > TWO_PI)
+                da = TWO_PI;
         }
 
         // Split into <=90 degree segments for a good bezier approximation.
         int nsegs = (int)MathF.Ceiling(MathF.Abs(da) / (NVG_PI * 0.5f));
-        if (nsegs < 1) nsegs = 1;
+        if (nsegs < 1)
+            nsegs = 1;
         float delta = da / nsegs;
 
         float cosr = MathF.Cos(rotation), sinr = MathF.Sin(rotation);
@@ -440,15 +452,18 @@ public interface IGraphics
 
         void Corner(float cx, float cy, float rx, float ry, float a0, float a1, bool ccw, ref bool hasCurrentPoint)
         {
-            if (rx <= 0 || ry <= 0) LineTo(cx, cy);
-            else Ellipse(cx, cy, rx, ry, 0, a0, a1, ccw, ref hasCurrentPoint);
+            if (rx <= 0 || ry <= 0)
+                LineTo(cx, cy);
+            else
+                Ellipse(cx, cy, rx, ry, 0, a0, a1, ccw, ref hasCurrentPoint);
         }
 
         if (!reverse)
         {
             MoveTo(x + tl.Rx, y);
             hasCurrentPoint = true;
-            if (hole) MarkHole();
+            if (hole)
+                MarkHole();
             LineTo(x + w - tr.Rx, y);
             Corner(x + w - tr.Rx, y + tr.Ry, tr.Rx, tr.Ry, -MathF.PI / 2, 0, false, ref hasCurrentPoint);
             LineTo(x + w, y + h - br.Ry);
@@ -462,7 +477,8 @@ public interface IGraphics
         {
             MoveTo(x + tl.Rx, y);
             hasCurrentPoint = true;
-            if (hole) MarkHole();
+            if (hole)
+                MarkHole();
             Corner(x + tl.Rx, y + tl.Ry, tl.Rx, tl.Ry, 1.5f * MathF.PI, MathF.PI, true, ref hasCurrentPoint);
             LineTo(x, y + h - bl.Ry);
             Corner(x + bl.Rx, y + h - bl.Ry, bl.Rx, bl.Ry, MathF.PI, MathF.PI / 2, true, ref hasCurrentPoint);

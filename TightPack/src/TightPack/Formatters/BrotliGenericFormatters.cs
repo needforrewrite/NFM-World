@@ -23,6 +23,7 @@ public sealed class BrotliFormatter<T> : TightPackFormatter<T>
     public override void Serialize<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, in T? value)
     {
         var inner = TightPackBufferWriter.Rent();
+
         try
         {
             var innerWriter = new TightPackWriter<TightPackBufferWriter>(ref inner);
@@ -42,23 +43,28 @@ public sealed class BrotliFormatter<T> : TightPackFormatter<T>
     public override void Deserialize(ref TightPackReader reader, ref T? value)
     {
         int uncompressedLength = reader.ReadInt32();
+
         if (uncompressedLength < 0)
         {
             value = default;
+
             return;
         }
 
         byte[]? compressed = reader.ReadByteArray();
+
         if (compressed is null)
         {
             value = default;
+
             return;
         }
 
         if (uncompressedLength > BrotliFormatter.DefaultDecompressionSizeLimit)
         {
             TightPackSerializationException.ThrowMessage(
-                $"Compressed payload declares {uncompressedLength} bytes, over the " +
+                $"Compressed payload declares {uncompressedLength} bytes, over the "
+                +
                 $"{BrotliFormatter.DefaultDecompressionSizeLimit}-byte limit."
             );
         }
@@ -102,6 +108,7 @@ public sealed class BrotliStringFormatter : TightPackFormatter<string>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -114,16 +121,20 @@ public sealed class BrotliStringFormatter : TightPackFormatter<string>
     public override void Deserialize(ref TightPackReader reader, ref string? value)
     {
         int uncompressedLength = reader.ReadInt32();
+
         if (uncompressedLength < 0)
         {
             value = null;
+
             return;
         }
 
         byte[]? compressed = reader.ReadByteArray();
+
         if (compressed is null)
         {
             value = null;
+
             return;
         }
 
@@ -137,6 +148,7 @@ public sealed class BrotliStringFormatter : TightPackFormatter<string>
         if (uncompressedLength == 0)
         {
             value = string.Empty;
+
             return;
         }
 

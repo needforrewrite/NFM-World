@@ -97,6 +97,7 @@ public sealed class FaudioMusic : IRadicalMusic
 
             // Time-stretch at load rather than resampling on the voice: the requested tempo
             // multiplier is a tempo change, and playing it back fast would transpose the music.
+
             if (Math.Abs(tempomul - 1.0) > 0.01)
             {
                 _stretchedPcm = TempoStretcher.Process(result.PcmData, result.SampleRate, (int)result.Channels, tempomul);
@@ -113,6 +114,7 @@ public sealed class FaudioMusic : IRadicalMusic
 
             // Dispose() short-circuits on !_readable, so a buffer stretched before the failure
             // has to be returned to the pool here or it leaks.
+
             if (_hasStretchedPcm)
             {
                 _stretchedPcm.Dispose();
@@ -120,7 +122,10 @@ public sealed class FaudioMusic : IRadicalMusic
             }
 
             _decoded.Dispose();
-            if (throwOnError) throw;
+
+            if (throwOnError)
+
+                throw;
         }
         finally
         {
@@ -131,7 +136,9 @@ public sealed class FaudioMusic : IRadicalMusic
 
     public void SetPaused(bool p0)
     {
-        if (!_readable || _voice == IntPtr.Zero) return;
+        if (!_readable || _voice == IntPtr.Zero)
+
+            return;
 
         if (p0)
             FAudio.FAudioSourceVoice_Stop(_voice, 0, 0);
@@ -141,7 +148,9 @@ public sealed class FaudioMusic : IRadicalMusic
 
     public void Dispose()
     {
-        if (!_readable) return;
+        if (!_readable)
+
+            return;
         _readable = false;
 
         var stretched = _hasStretchedPcm ? _stretchedPcm : default;
@@ -161,10 +170,12 @@ public sealed class FaudioMusic : IRadicalMusic
         }
 
         var engine = FaudioEngine.Instance;
+
         if (_voice != IntPtr.Zero && engine is not null)
         {
             engine.FadeOutAndDestroy(_voice, ReleasePcm);
             _voice = IntPtr.Zero;
+
             return;
         }
 
@@ -178,7 +189,9 @@ public sealed class FaudioMusic : IRadicalMusic
 
     public void Play()
     {
-        if (!_readable) return;
+        if (!_readable)
+
+            return;
 
         // A voice is single-use once its buffers are flushed, and the pitch/volume state from a
         // previous run must not leak into this one, so start from a fresh voice each Play -
@@ -186,16 +199,21 @@ public sealed class FaudioMusic : IRadicalMusic
         DestroyVoice();
 
         var engine = FaudioEngine.Instance;
+
         if (engine is null)
+
             return; // no audio device - play silently rather than failing
 
         _voice = engine.CreateSourceVoice(_decoded.SampleRate, (int)_decoded.Channels);
+
         if (_voice == IntPtr.Zero)
+
             return;
 
         if (!TrySubmitBuffer())
         {
             DestroyVoice();
+
             return;
         }
 
@@ -211,7 +229,9 @@ public sealed class FaudioMusic : IRadicalMusic
     private bool TrySubmitBuffer()
     {
         var pcm = PcmToPlay;
+
         if (pcm.Array is not { } array || pcm.Count == 0)
+
             return false;
 
         _pcmHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
@@ -251,7 +271,9 @@ public sealed class FaudioMusic : IRadicalMusic
     {
         IRadicalMusic.CurrentVolume = vol;
 
-        if (_voice == IntPtr.Zero) return;
+        if (_voice == IntPtr.Zero)
+
+            return;
 
         FAudio.FAudioVoice_SetVolume(_voice, vol, 0);
     }
@@ -259,9 +281,11 @@ public sealed class FaudioMusic : IRadicalMusic
     public float GetVolume()
     {
         if (_voice == IntPtr.Zero)
+
             return 0f;
 
         FAudio.FAudioVoice_GetVolume(_voice, out var volume);
+
         return volume;
     }
 

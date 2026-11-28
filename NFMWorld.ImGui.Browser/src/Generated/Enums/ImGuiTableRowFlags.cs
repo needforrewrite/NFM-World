@@ -13,20 +13,20 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiTableRowFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiTableRowFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Identify header row (set default background color + width of its contents accounted differently for auto column width)<br/>
-		/// </summary>
-		Headers = unchecked(1),
-	}
+        /// <summary>
+        /// Identify header row (set default background color + width of its contents accounted differently for auto column width)<br/>
+        /// </summary>
+        Headers = unchecked(1),
+    }
 }

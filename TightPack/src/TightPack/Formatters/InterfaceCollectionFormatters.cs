@@ -15,6 +15,7 @@ internal static class InterfaceCollections
     {
         writer.WriteCollectionHeader(count);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         foreach (T item in items)
         {
             T? value = item;
@@ -31,6 +32,7 @@ internal static class InterfaceCollections
 
         var result = new List<T>(length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;
@@ -51,6 +53,7 @@ internal static class InterfaceCollections
 
         var result = new HashSet<T>(length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;
@@ -72,6 +75,7 @@ internal static class InterfaceCollections
         var result = new Dictionary<TKey, TValue>(length);
         var keyFormatter = TightPackFormatterProvider.GetFormatter<TKey>();
         var valueFormatter = TightPackFormatterProvider.GetFormatter<TValue>();
+
         for (int i = 0; i < length; i++)
         {
             TKey? key = default;
@@ -96,6 +100,7 @@ internal static class InterfaceCollections
         writer.WriteCollectionHeader(count);
         var keyFormatter = TightPackFormatterProvider.GetFormatter<TKey>();
         var valueFormatter = TightPackFormatterProvider.GetFormatter<TValue>();
+
         foreach (var pair in value)
         {
             TKey? key = pair.Key;
@@ -115,6 +120,7 @@ public sealed class InterfaceListFormatter<T> : TightPackFormatter<IList<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -134,6 +140,7 @@ public sealed class IReadOnlyListFormatter<T> : TightPackFormatter<IReadOnlyList
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -153,6 +160,7 @@ public sealed class InterfaceCollectionFormatter<T> : TightPackFormatter<ICollec
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -175,6 +183,7 @@ public sealed class IReadOnlyCollectionFormatter<T> : TightPackFormatter<IReadOn
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -198,6 +207,7 @@ public sealed class InterfaceDictionaryFormatter<TKey, TValue> : TightPackFormat
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -222,12 +232,14 @@ public sealed class IReadOnlyDictionaryFormatter<TKey, TValue>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Count);
         var keyFormatter = TightPackFormatterProvider.GetFormatter<TKey>();
         var valueFormatter = TightPackFormatterProvider.GetFormatter<TValue>();
+
         foreach (var pair in value)
         {
             TKey? key = pair.Key;
@@ -250,6 +262,7 @@ public sealed class InterfaceSetFormatter<T> : TightPackFormatter<ISet<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -269,6 +282,7 @@ public sealed class IReadOnlySetFormatter<T> : TightPackFormatter<IReadOnlySet<T
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 

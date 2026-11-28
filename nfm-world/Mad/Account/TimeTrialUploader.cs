@@ -49,10 +49,11 @@ public static class TimeTrialUploader
                 var completion = new TimeTrialCompletion(
                     recording.StageName,
                     recording.CarName,
-                recording.DemoData.Ticks.Count,
+                    recording.DemoData.Ticks.Count,
                     recording.Version ?? 0,
                     bytes
                 );
+
                 return Prepare(completion, account, recording);
             }
         );
@@ -68,9 +69,11 @@ public static class TimeTrialUploader
         }
 
         replay ??= SavedTimeTrial.Load(completion.Recording);
+
         if (replay is null)
         {
             Logging.Warning("[TT] Could not read the completed recording; it will not be submitted.");
+
             return new Prepared(null, [], "That recording could not be read.");
         }
 
@@ -88,7 +91,9 @@ public static class TimeTrialUploader
             account?.Username,
             account is null ? "pending" : "preparing"
         );
+
         if (submission is null)
+
             return new Prepared(null, [], "The submission queue is full. The recording is still saved locally.");
 
         return new Prepared(submission, completion.Recording);
@@ -119,6 +124,7 @@ public static class TimeTrialUploader
     public static async Task DeleteAsync(string file)
     {
         await Gate.WaitAsync().ConfigureAwait(false);
+
         try
         {
             await LocalWork.Enqueue(() => TimeTrialSubmissions.DeleteRecording(file)).ConfigureAwait(false);
@@ -140,27 +146,37 @@ public static class TimeTrialUploader
             {
                 var recording = VFS.ReadAllBytes(file);
                 var replay = SavedTimeTrial.Load(recording);
+
                 if (replay is null)
+
                     return new Prepared(null, [], "That recording could not be read.");
                 var existing = TimeTrialSubmissions.FindRecording(TimeTrialSubmissions.List(), recording);
+
                 if (existing is not null)
+
                     return new Prepared(existing, recording);
-                return Prepare(new TimeTrialCompletion(
-                    replay.StageName,
-                    replay.CarName,
-                replay.DemoData.Ticks.Count,
-                    replay.Version ?? 0,
-                    recording
-                ), account, replay
+
+                return Prepare(
+                    new TimeTrialCompletion(
+                        replay.StageName,
+                        replay.CarName,
+                        replay.DemoData.Ticks.Count,
+                        replay.Version ?? 0,
+                        recording
+                    ),
+                    account,
+                    replay
                 );
             }
         );
+
         return SubmitAsync(prepared, account);
     }
 
     private static async Task<RequestResult> SubmitAsync(Task<Prepared> work, Account? account)
     {
         var prepared = await work.ConfigureAwait(false);
+
         return prepared.Submission is { } submission
             ? await UploadAsync(submission, prepared.Recording, account).ConfigureAwait(false)
             : new RequestResult(prepared.Error, false);
@@ -183,10 +199,13 @@ public static class TimeTrialUploader
     private static async Task<RequestResult> UploadAsync(PendingSubmission submission, byte[] recording, Account? account)
     {
         await Gate.WaitAsync().ConfigureAwait(false);
+
         try
         {
             if (TimeTrialSubmissions.ReadRecording(submission) is null)
+
                 return new RequestResult("This recording is no longer saved locally.", false);
+
             if (account is null)
             {
                 return Finish(submission, "pending", "Sign in to submit this recording. It is still saved locally.", false);
@@ -194,6 +213,7 @@ public static class TimeTrialUploader
 
             // A run belongs to the account that finished it. Signing in as somebody else later
             // must not silently submit it in their name.
+
             if (submission.Account is { } owner
                 && !string.Equals(owner, account.Username, StringComparison.OrdinalIgnoreCase))
             {
@@ -226,10 +246,12 @@ public static class TimeTrialUploader
                     .ConfigureAwait(false);
                 var car = carIsStock ? null : await Content.Value.MetadataAsync(carHash, CancellationToken.None)
                     .ConfigureAwait(false);
+
                 if ((!stageIsStock && stage is null) || (!carIsStock && car is null))
                 {
                     var missing = !stageIsStock
                                   && stage is null ? $"stage '{submission.StageName}'" : $"car '{submission.CarName}'";
+
                     return Finish(
                         submission,
                         "publish-required",
@@ -251,6 +273,7 @@ public static class TimeTrialUploader
                 submission.CarName,
                 account
             ).ConfigureAwait(false);
+
             return Finish(
                 submission,
                 result.Success ? "uploaded" : "pending",
@@ -271,6 +294,7 @@ public static class TimeTrialUploader
             Logging.Info($"[TT] {submission.StageName} / {submission.CarName}: {message}");
         else
             Logging.Warning($"[TT] {submission.StageName} / {submission.CarName}: {message}");
+
         return new RequestResult(message, success);
     }
 }

@@ -30,42 +30,52 @@ public static class StagePileBuilder
         // Outer ring: eight points around a circle of a random radius each.
         var outerX = new int[8];
         var outerZ = new int[8];
+
         for (var i = 0; i < 8; i++)
         {
             var r = (float)(50.0 + 100.0 * random.NextDouble());
+
             switch (i)
             {
                 case 0:
                     outerX[i] = -(int)(r * f * 0.7071f);
                     outerZ[i] = (int)(r * f * 0.7071f);
+
                     break;
                 case 1:
                     outerX[i] = 0;
                     outerZ[i] = (int)(r * f);
+
                     break;
                 case 2:
                     outerX[i] = (int)(r * f * 0.7071f);
                     outerZ[i] = (int)(r * f * 0.7071f);
+
                     break;
                 case 3:
                     outerX[i] = (int)(r * f);
                     outerZ[i] = 0;
+
                     break;
                 case 4:
                     outerX[i] = (int)(r * f * 0.7071f);
                     outerZ[i] = -(int)(r * f * 0.7071f);
+
                     break;
                 case 5:
                     outerX[i] = 0;
                     outerZ[i] = -(int)(r * f);
+
                     break;
                 case 6:
                     outerX[i] = -(int)(r * f * 0.7071f);
                     outerZ[i] = -(int)(r * f * 0.7071f);
+
                     break;
                 default:
                     outerX[i] = -(int)(r * f);
                     outerZ[i] = 0;
+
                     break;
             }
         }
@@ -74,6 +84,7 @@ public static class StagePileBuilder
         var innerX = new int[8];
         var innerZ = new int[8];
         var innerY = new int[8];
+
         for (var i = 0; i < 8; i++)
         {
             innerX[i] = (int)(outerX[i] * (0.2 + 0.4 * random.NextDouble()));
@@ -82,6 +93,7 @@ public static class StagePileBuilder
         }
 
         // Round the blob off: each ring point is pulled towards its neighbours' midpoint.
+
         for (var i = 0; i < 8; i++)
         {
             var prev = i == 0 ? 7 : i - 1;
@@ -213,17 +225,21 @@ public static class StagePileBuilder
             {
                 case 0:
                     lowZ = z - radz;
+
                     break;
                 case 1:
                     lowX = x - radx;
+
                     break;
                 case 2:
                     highZ = z + radz;
                     zy = -zy;
+
                     break;
                 default:
                     highX = x + radx;
                     xy = -xy;
+
                     break;
             }
 
@@ -240,7 +256,8 @@ public static class StagePileBuilder
         }
 
         var topY = 0;
-        foreach (var t in innerY) topY += t;
+        foreach (var t in innerY)
+            topY += t;
         topY /= 8;
 
         boxes[4] = new Rad3dBoxDef(
@@ -260,8 +277,11 @@ public static class StagePileBuilder
     /// <summary>phy clamps a pile box's slope to 40°.</summary>
     private static int Slope(int rise, int run)
     {
-        if (run == 0) return 0;
+        if (run == 0)
+
+            return 0;
         var degrees = (int)(MathF.Atan((float)rise / run) * (180f / MathF.PI));
+
         return Math.Clamp(degrees, -40, 40);
     }
 }

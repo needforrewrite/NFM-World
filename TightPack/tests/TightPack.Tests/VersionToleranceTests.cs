@@ -25,6 +25,7 @@ public sealed class VersionToleranceTests
         // Drop the last member, keeping each remaining length prefix intact.
         var older = new List<byte> { 2 };
         int index = 1;
+
         for (int i = 0; i < 2; i++)
         {
             int start = index;
@@ -92,10 +93,12 @@ public sealed class VersionToleranceTests
     {
         int result = 0;
         int shift = 0;
+
         while (true)
         {
             byte b = buffer[index++];
             result |= (b & 0x7F) << shift;
+
             if ((b & 0x80) == 0)
             {
                 return result;

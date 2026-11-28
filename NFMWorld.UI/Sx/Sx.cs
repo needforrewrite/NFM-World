@@ -214,7 +214,7 @@ public static class Sx
         int? tabIndex = null,
         Action<View>? onmount = null,
         params object?[] children
-    )
+        )
     {
         var view = new View();
         ApplyStyle(view, style);
@@ -253,7 +253,7 @@ public static class Sx
         Func<string?>? text = null,
         Func<Styles>? layout = null,
         params object?[] children
-    )
+        )
     {
         var node = new Text();
         ApplyTextStyle(node, style);
@@ -263,6 +263,7 @@ public static class Sx
             node.Bind(b => b.Bind(text, value => node.TextContent = value));
 
         AddChildren(node, children);
+
         return node;
     }
 
@@ -291,6 +292,7 @@ public static class Sx
             node.Bind(b => b.Bind(text, value => node.SetTextExternal(value ?? "")));
 
         node.TextChanged = onchange;
+
         return node;
     }
 
@@ -303,7 +305,7 @@ public static class Sx
         char? maskCharacter = null,
         Func<TextStyles>? textStyle = null,
         params object?[] children
-    )
+        )
     {
         var node = new TextInput();
         ApplyStyle(node, style);
@@ -326,6 +328,7 @@ public static class Sx
         node.Submitted = onsubmit;
 
         AddChildren(node, children);
+
         return node;
     }
 
@@ -342,6 +345,7 @@ public static class Sx
         // (Display.Contents is dropped from the layout pass entirely).
         var host = new View();
         host.MakeFlowHost();
+
         return host;
     }
 
@@ -361,6 +365,7 @@ public static class Sx
         void Mount(bool condition)
         {
             if (scope.IsDisposed || mounted == condition)
+
                 return;
 
             mounted = condition;
@@ -371,6 +376,7 @@ public static class Sx
             branchScope = next;
 
             var content = Renderer.RunInScope(next, () => condition ? then() : otherwise?.Invoke());
+
             if (content is not null)
             {
                 scope.Adopt(next);
@@ -391,6 +397,7 @@ public static class Sx
         host.Bind(s => s.Bind(when, Mount));
         host.Own(scope);
         host.Disposing += () => branchScope?.Dispose();
+
         return host;
     }
 
@@ -413,6 +420,7 @@ public static class Sx
         void Update(IReadOnlyList<T> items)
         {
             if (scope.IsDisposed)
+
                 return;
 
             var seen = new HashSet<T>(EqualityComparer<T>.Default);
@@ -423,6 +431,7 @@ public static class Sx
                 seen.Add(item);
 
                 if (rows.ContainsKey(item))
+
                     continue;
 
                 var rowScope = new RenderScope();
@@ -435,6 +444,7 @@ public static class Sx
             foreach (var (item, entry) in rows.ToArray())
             {
                 if (seen.Contains(item))
+
                     continue;
 
                 // Release row effects before detaching its nodes.
@@ -447,6 +457,7 @@ public static class Sx
             // a reused row keeps its old slot, so changing which items a page has (the
             // menu's BACK, whose delegate compares equal on every page) leaves them in
             // the previous order.
+
             for (var target = 0; target < items.Count; target++)
             {
                 var node = rows[items[target]].Node;
@@ -497,7 +508,9 @@ public static class Sx
         void Update()
         {
             var nextKey = key.Value;
+
             if (mounted && EqualityComparer<TKey>.Default.Equals(currentKey, nextKey))
+
                 return;
 
             if (!branches.TryGetValue(nextKey, out var build))
@@ -526,6 +539,7 @@ public static class Sx
         host.Bind(b => b.Bind(() => key.Value, _ => Update()));
         host.Own(owner);
         host.Disposing += () => currentScope?.Dispose();
+
         return host;
     }
 
@@ -534,6 +548,7 @@ public static class Sx
     private static void ApplyStyle(Component component, Func<Styles>? style)
     {
         if (style is null)
+
             return;
 
         component.Bind(b => b.Bind(style, value => component.Styles = value));
@@ -542,6 +557,7 @@ public static class Sx
     private static void ApplyTextStyle(Text text, Func<TextStyles>? style)
     {
         if (style is null)
+
             return;
 
         text.Bind(b => b.Bind(style, value => text.TextStyles = value));
@@ -574,21 +590,27 @@ public static class Sx
         switch (child)
         {
             case null:
+
                 break;
             case Node node:
                 parent.AddChild(node);
+
                 break;
             case string text:
                 parent.AddChild(new TextNode { Text = text });
+
                 break;
             case Func<object?> slot:
                 parent.AddChild(MountSlot(slot));
+
                 break;
             case System.Collections.IEnumerable items:
                 foreach (var item in items)
                     AddChild(parent, item);
+
                 break;
             default:
+
                 throw new ArgumentException($"Unsupported child {child.GetType().Name} on {parent.GetType().Name}.");
         }
     }
@@ -609,6 +631,7 @@ public static class Sx
         (RenderScope Scope, object? Content) Build()
         {
             var next = new RenderScope();
+
             return (next, Renderer.RunInScope(next, slot));
         }
 
@@ -617,13 +640,16 @@ public static class Sx
             if (scope.IsDisposed)
             {
                 built.Scope.Dispose();
+
                 return;
             }
 
             var node = Materialize(built.Content);
+
             if (ReferenceEquals(current, node))
             {
                 built.Scope.Dispose();
+
                 return;
             }
 
@@ -638,6 +664,7 @@ public static class Sx
         anchor.Bind(b => b.Bind(Build, Mount));
         anchor.Own(scope);
         anchor.Disposing += () => slotScope?.Dispose();
+
         return anchor;
     }
 

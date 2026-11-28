@@ -22,7 +22,8 @@ internal static class LoadingWork
 
         public void Report(string label)
         {
-            if (!_stopped) Operations[_id] = label;
+            if (!_stopped)
+                Operations[_id] = label;
         }
 
         public void Dispose() => Operations.TryRemove(_id, out _);
@@ -30,6 +31,7 @@ internal static class LoadingWork
         public Operation Start()
         {
             Report(label);
+
             return this;
         }
     }
@@ -47,7 +49,9 @@ internal static class LoadingWork
 
         public void OnCompleted(Action continuation)
         {
-            lock (QueueGate) if (!_stopped) Pending.Enqueue(continuation);
+            lock (QueueGate)
+                if (!_stopped)
+                    Pending.Enqueue(continuation);
         }
     }
 
@@ -58,10 +62,12 @@ internal static class LoadingWork
         FrameId++;
         var count = Ready.Count;
         var timer = Stopwatch.StartNew();
-        while (count-- > 0 && timer.ElapsedMilliseconds < 4 && Ready.TryDequeue(out var action)) action();
+        while (count-- > 0 && timer.ElapsedMilliseconds < 4 && Ready.TryDequeue(out var action))
+            action();
         var incoming = Pending.Count;
         // Render the indicator before running newly queued uploads.
-        while (incoming-- > 0 && Pending.TryDequeue(out var incomingAction)) Ready.Enqueue(incomingAction);
+        while (incoming-- > 0 && Pending.TryDequeue(out var incomingAction))
+            Ready.Enqueue(incomingAction);
         Status.Value = string.Join(" · ", Operations.OrderBy(pair => pair.Key).Select(pair => pair.Value).Distinct());
     }
 

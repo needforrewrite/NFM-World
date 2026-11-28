@@ -47,9 +47,13 @@ public sealed class FetchFileSystem : IVirtualFileSystem
     {
         var normalized = Normalize(path);
         var bytes = _fetch(normalized);
-        if (bytes is null) return null;
+
+        if (bytes is null)
+
+            return null;
 
         Register(normalized);
+
         return new MemoryStream(bytes, writable: false);
     }
 
@@ -63,7 +67,9 @@ public sealed class FetchFileSystem : IVirtualFileSystem
     {
         LoadPaths();
         var prefix = Normalize(path).TrimEnd('/');
-        if (prefix.Length > 0) prefix += "/";
+        if (prefix.Length > 0)
+            prefix += "/";
+
         return _known.Keys.Any(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -71,7 +77,9 @@ public sealed class FetchFileSystem : IVirtualFileSystem
     {
         LoadPaths();
         var prefix = Normalize(path).TrimEnd('/');
-        if (prefix.Length > 0) prefix += "/";
+        if (prefix.Length > 0)
+            prefix += "/";
+
         return _known.Keys.Where(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
                                         && (searchOption == SearchOption.AllDirectories || !key[prefix.Length..].Contains('/'))
                                         && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(
@@ -84,8 +92,11 @@ public sealed class FetchFileSystem : IVirtualFileSystem
 
     private void LoadPaths()
     {
-        if (_pathsLoaded || _listPaths == null) return;
-        foreach (var path in _listPaths()) Register(path);
+        if (_pathsLoaded || _listPaths == null)
+
+            return;
+        foreach (var path in _listPaths())
+            Register(path);
         _pathsLoaded = true;
     }
 
@@ -96,6 +107,7 @@ public sealed class FetchFileSystem : IVirtualFileSystem
         var normalized = path.Replace('\\', '/').TrimStart('/');
         while (normalized.StartsWith("./", StringComparison.Ordinal))
             normalized = normalized[2..];
+
         return normalized;
     }
 }

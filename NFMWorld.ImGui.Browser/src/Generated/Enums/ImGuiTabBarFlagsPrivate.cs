@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiTabBarFlagsPrivate : int
-	{
-		/// <summary>
-		/// Part of a dock node [we don't use this in the master branch but it facilitate branch syncing to keep this around]<br/>
-		/// </summary>
-		DockNode = unchecked(1048576),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiTabBarFlagsPrivate : int
+    {
+        /// <summary>
+        /// Part of a dock node [we don't use this in the master branch but it facilitate branch syncing to keep this around]<br/>
+        /// </summary>
+        DockNode = unchecked(1048576),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		IsFocused = unchecked(2097152),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        IsFocused = unchecked(2097152),
 
-		/// <summary>
-		/// FIXME: Settings are handled by the docking system, this only request the tab bar to mark settings dirty when reordering tabs<br/>
-		/// </summary>
-		SaveSettings = unchecked(4194304),
-	}
+        /// <summary>
+        /// FIXME: Settings are handled by the docking system, this only request the tab bar to mark settings dirty when reordering tabs<br/>
+        /// </summary>
+        SaveSettings = unchecked(4194304),
+    }
 }

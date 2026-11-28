@@ -42,6 +42,7 @@ public static class MyContentView
         {
             if (canNavigate())
                 _navigation.UpdateFocus(this);
+
             return base.OnPostLayout();
         }
     }
@@ -164,6 +165,7 @@ public static class MyContentView
                     text: () => UiState.MyContent.Status.Value
                 );
                 status.Name = "My content status";
+
                 return status;
             }
         );
@@ -349,7 +351,8 @@ public static class MyContentView
                                 ButtonVariant.Danger
                             )
                         ]
-                    ))
+                    )
+                    )
                 ]
             )
         );
@@ -590,8 +593,11 @@ public static class MyContentView
             node,
             key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 UiState.MyContent.EditPublic.Value = !UiState.MyContent.EditPublic.Value;
+
                 return true;
             },
             _ => { }
@@ -607,6 +613,7 @@ public static class MyContentView
         {
             var changed = base.OnPostLayout();
             navigation.UpdateFocus(this);
+
             return changed;
         }
     }

@@ -33,6 +33,7 @@ internal static class Helpers
         public int IndexOf(char value, int startIndex)
         {
             var idx = span[startIndex..].IndexOf(value);
+
             return idx == -1 ? -1 : idx + startIndex;
         }
     }

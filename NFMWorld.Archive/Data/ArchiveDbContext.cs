@@ -26,12 +26,14 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         UpdateAssetTags();
+
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         UpdateAssetTags();
+
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
@@ -39,7 +41,8 @@ public sealed class ArchiveDbContext(DbContextOptions<ArchiveDbContext> options)
     {
         foreach (var entry in ChangeTracker.Entries<Asset>())
         {
-            if (entry.State == EntityState.Added ||
+            if (entry.State == EntityState.Added
+                ||
                 (entry.State == EntityState.Modified && entry.Property(a => a.Description).IsModified))
             {
                 entry.Entity.Tags = AssetTags.Extract(entry.Entity.Description);

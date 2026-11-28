@@ -73,6 +73,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
             public bool MoveNext()
             {
                 _currentIndex++;
+
                 return _currentIndex < quadNodeArray.Length;
             }
 
@@ -128,6 +129,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
     public new void TrimExcess()
     {
         base.TrimExcess();
+
         if (_nodes is { } nodes)
         {
             foreach (var t in nodes)
@@ -153,6 +155,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
             [3] = new QuadNode<T>(level + 1, new f64Bounds(x + subWidth, y + subHeight, subWidth, subHeight)) // SE
         };
         _nodes = nodes;
+
         return nodes;
     }
 
@@ -191,6 +194,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
                 if (index != -1)
                 {
                     nodes[index].Insert(obj);
+
                     return;
                 }
             }
@@ -204,10 +208,12 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
                 nodes = Split();
 
             int i = 0;
+
             while (i < Count)
             {
                 var entry = this[i];
                 int index = GetIndex(entry.Bounds);
+
                 if (index != -1)
                 {
                     nodes[index].Insert(entry);
@@ -224,6 +230,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
     public void Retrieve(List<T> returnObjects, f64Bounds area)
     {
         int index = GetIndex(area);
+
         if (index != -1 && _nodes is { } nodes)
         {
             nodes[index].Retrieve(returnObjects, area);
@@ -241,6 +248,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
         }
 
         var span = CollectionsMarshal.AsSpan(this);
+
         foreach (ref readonly var obj in span)
         {
             if (obj.Bounds.Intersects(area))
@@ -251,9 +259,11 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
     public IEnumerable<T> RetrieveEnumerable(f64Bounds area)
     {
         int index = GetIndex(area);
+
         if (index != -1 && _nodes is { } nodes)
         {
             foreach (var obj in nodes[index].RetrieveEnumerable(area))
+
                 yield return obj;
         }
         else
@@ -265,6 +275,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
                     if (t._bounds.Intersects(area))
                     {
                         foreach (var obj in t.RetrieveEnumerable(area))
+
                             yield return obj;
                     }
                 }
@@ -274,6 +285,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
         foreach (var obj in this)
         {
             if (obj.Bounds.Intersects(area))
+
                 yield return obj;
         }
     }
@@ -283,6 +295,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
         if (_nodes is { } nodes)
         {
             int index = GetIndex(new f64Bounds(x, y, 0, 0));
+
             if (index != -1)
             {
                 nodes[index].RetrievePoint(returnObjects, x, y);
@@ -298,6 +311,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
         }
 
         var span = CollectionsMarshal.AsSpan(this);
+
         foreach (ref readonly var obj in span)
         {
             if (obj.Bounds.Contains(x, y))
@@ -310,9 +324,11 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
         if (_nodes is { } nodes)
         {
             int index = GetIndex(new f64Bounds(x, y, 0, 0));
+
             if (index != -1)
             {
                 foreach (var obj in nodes[index].RetrievePointEnumerable(x, y))
+
                     yield return obj;
             }
             else
@@ -322,6 +338,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
                     if (t._bounds.Contains(x, y))
                     {
                         foreach (var obj in t.RetrievePointEnumerable(x, y))
+
                             yield return obj;
                     }
                 }
@@ -331,6 +348,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
         foreach (var obj in this)
         {
             if (obj.Bounds.Contains(x, y))
+
                 yield return obj;
         }
     }
@@ -338,6 +356,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
     public int CountObjects()
     {
         int count = Count;
+
         if (_nodes is { } nodes)
         {
             foreach (var t in nodes)
@@ -350,6 +369,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
     public void GetAllObjects(List<T> list)
     {
         list.AddRange(this);
+
         if (_nodes is { } nodes)
         {
             foreach (var t in nodes)
@@ -360,6 +380,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
     public IEnumerable<T> EnumerateObjects()
     {
         foreach (var obj in this)
+
             yield return obj;
 
         if (_nodes is { } nodes)
@@ -367,6 +388,7 @@ internal class QuadNode<T>(int level, f64Bounds bounds) : List<T>
             foreach (var t in nodes)
             {
                 foreach (var obj in t.EnumerateObjects())
+
                     yield return obj;
             }
         }
@@ -407,6 +429,7 @@ public class QuadTree<T> where T : IQuadObject
     {
         var returnObjects = new List<T>();
         _root.Retrieve(returnObjects, area);
+
         return returnObjects;
     }
 
@@ -419,6 +442,7 @@ public class QuadTree<T> where T : IQuadObject
     {
         var returnObjects = new List<T>();
         _root.RetrievePoint(returnObjects, x, y);
+
         return returnObjects;
     }
 
@@ -436,6 +460,7 @@ public class QuadTree<T> where T : IQuadObject
     {
         var list = new List<T>();
         _root.GetAllObjects(list);
+
         return list;
     }
 

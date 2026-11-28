@@ -85,6 +85,7 @@ internal static class TypeParser
         cancellationToken.ThrowIfCancellationRequested();
 
         Location? location = symbol.Locations.FirstOrDefault(l => l.IsInSource);
+
         if (location is null)
         {
             return null;
@@ -94,18 +95,21 @@ internal static class TypeParser
             a.AttributeClass?.ToDisplayString() == Namespace + ".TightPackableAttribute");
 
         GenerateKind kind = ReadGenerateKind(attribute, compilation);
+
         if (kind == GenerateKind.NoGenerate)
         {
             return null;
         }
 
         // A value type has no identity to track, so reference tracking would only add boxing.
+
         if (kind == GenerateKind.CircularReference && symbol.IsValueType)
         {
             kind = GenerateKind.VersionTolerant;
         }
 
         // Union attributes are what make a type a union, so the enum value is optional.
+
         if (kind == GenerateKind.Object && HasUnionAttribute(symbol))
         {
             kind = GenerateKind.Union;
@@ -114,10 +118,12 @@ internal static class TypeParser
         if (!IsPartial(symbol))
         {
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.NotPartial, location, symbol.Name));
+
             return null;
         }
 
         var containers = new List<string>();
+
         for (INamedTypeSymbol? outer = symbol.ContainingType; outer is not null; outer = outer.ContainingType)
         {
             if (!IsPartial(outer))
@@ -125,6 +131,7 @@ internal static class TypeParser
                 context.ReportDiagnostic(
                     Diagnostic.Create(Diagnostics.NoPartialContainers, location, symbol.Name, outer.Name)
                 );
+
                 return null;
             }
 
@@ -171,6 +178,7 @@ internal static class TypeParser
                 TightPackWire.MaxMembers
             )
             );
+
             return null;
         }
 
@@ -193,6 +201,7 @@ internal static class TypeParser
         //
         // Proved before the constructor check because a blitted value is rebuilt from its image,
         // which can also produce a readonly field with no assignment and no constructor.
+
         if (kind == GenerateKind.Object
             && symbol.IsValueType
             && IsBlitShaped(symbol, model)
@@ -203,8 +212,11 @@ internal static class TypeParser
 
             // A callback would have to run after the image write, and the generated deserialize path
             // returns the blitted value as-is. Refusing keeps the shape honest rather than dropping them.
-            if (model.OnSerializing.Count != 0 || model.OnSerialized.Count != 0
-                || model.OnDeserializing.Count != 0 || model.OnDeserialized.Count != 0)
+
+            if (model.OnSerializing.Count != 0
+                || model.OnSerialized.Count != 0
+                || model.OnDeserializing.Count != 0
+                || model.OnDeserialized.Count != 0)
             {
                 model.Blittable = false;
                 model.BlittableSize = 0;
@@ -229,6 +241,7 @@ internal static class TypeParser
     )
     {
         var tags = new HashSet<ushort>();
+
         foreach (AttributeData attribute in symbol.GetAttributes())
         {
             if (attribute.AttributeClass?.ToDisplayString() != Namespace + ".TightPackUnionAttribute")
@@ -248,6 +261,7 @@ internal static class TypeParser
                 context.ReportDiagnostic(
                     Diagnostic.Create(Diagnostics.DuplicateUnionTag, location, symbol.Name, tag)
                 );
+
                 return false;
             }
 
@@ -260,6 +274,7 @@ internal static class TypeParser
                     caseType.ToDisplayString()
                 )
                 );
+
                 return false;
             }
 
@@ -271,6 +286,7 @@ internal static class TypeParser
         }
 
         model.UnionCases.Sort((a, b) => a.Tag.CompareTo(b.Tag));
+
         return true;
     }
 
@@ -288,6 +304,7 @@ internal static class TypeParser
         if (enumerable is null)
         {
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.CollectionShape, location, symbol.Name));
+
             return false;
         }
 
@@ -309,10 +326,12 @@ internal static class TypeParser
                 element.ToDisplayString()
             )
             );
+
             return false;
         }
 
         model.Members.Add(member);
+
         return true;
     }
 
@@ -330,6 +349,7 @@ internal static class TypeParser
         // Members inherited from a base class are part of the payload, so they are collected first:
         // the base type's declaration order carries into every derived type.
         var hierarchy = new List<INamedTypeSymbol>();
+
         for (INamedTypeSymbol? current = symbol; current is not null; current = current.BaseType)
         {
             if (current.SpecialType is SpecialType.System_Object or SpecialType.System_ValueType
@@ -342,6 +362,7 @@ internal static class TypeParser
         }
 
         for (int layer = 0; layer < hierarchy.Count; layer++)
+
             foreach (ISymbol member in hierarchy[layer].GetMembers())
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -362,6 +383,7 @@ internal static class TypeParser
                 }
 
                 bool included = HasAttribute(member, "TightPackIncludeAttribute");
+
                 if (!included && member.DeclaredAccessibility != Accessibility.Public)
                 {
                     continue;
@@ -390,6 +412,7 @@ internal static class TypeParser
                 else
                 {
                     var property = (IPropertySymbol)member;
+
                     if (property.IsIndexer || property.RefKind != RefKind.None)
                     {
                         continue;
@@ -402,6 +425,7 @@ internal static class TypeParser
 
                     // A getter-only property has nowhere to put a deserialized value, so it is only
                     // serialized when a constructor parameter can supply it or the author opts in.
+
                     if (property.SetMethod is null && !included && !HasConstructorParameter(symbol, property.Name))
                     {
                         continue;
@@ -429,16 +453,18 @@ internal static class TypeParser
                 IsRequired = member is IFieldSymbol { IsRequired: true }
                     or IPropertySymbol { IsRequired: true },
             };
+
                 if (!Classify(memberType, memberModel, compilation, member))
                 {
                     context.ReportDiagnostic(Diagnostic.Create(
-                    Diagnostics.UnsupportedMember,
+                        Diagnostics.UnsupportedMember,
                         location,
                         symbol.Name,
                         member.Name,
                         memberType.ToDisplayString()
                     )
                     );
+
                     return false;
                 }
 
@@ -475,6 +501,7 @@ internal static class TypeParser
     private static bool TryInlineTuple(INamedTypeSymbol tuple, MemberModel model, Compilation compilation)
     {
         var elements = new List<MemberModel>();
+
         foreach (IFieldSymbol element in tuple.TupleElements)
         {
             var elementModel = new MemberModel
@@ -492,6 +519,7 @@ internal static class TypeParser
 
             // An element that still needs a formatter adds a static field per element for no gain
             // over the tuple formatter, so only the direct-write kinds are worth inlining.
+
             if (elementModel.WriteKind is MemberWriteKind.Formatter)
             {
                 return false;
@@ -502,6 +530,7 @@ internal static class TypeParser
 
         model.WriteKind = MemberWriteKind.Tuple;
         model.TupleElements = elements;
+
         return true;
     }
 
@@ -517,6 +546,7 @@ internal static class TypeParser
         if (type is ITypeParameterSymbol)
         {
             model.WriteKind = MemberWriteKind.Formatter;
+
             return true;
         }
 
@@ -524,6 +554,7 @@ internal static class TypeParser
         {
             model.WriteKind = MemberWriteKind.Enum;
             model.Method = "";
+
             return true;
         }
 
@@ -531,12 +562,14 @@ internal static class TypeParser
         {
             model.WriteKind = MemberWriteKind.Scalar;
             model.Method = scalar.Method;
+
             return true;
         }
 
         if (metadataName == "System.String")
         {
             model.WriteKind = MemberWriteKind.String;
+
             return true;
         }
 
@@ -544,12 +577,14 @@ internal static class TypeParser
         {
             model.WriteKind = MemberWriteKind.Formatter;
             model.FormatterExpression = InstantiateFormatter(formatterType!);
+
             return true;
         }
 
         // A tuple's elements are classified individually so the emitter writes them straight to the
         // writer. Going through ValueTupleFormatter instead resolves an element formatter per
         // element, which measured ~2.7ns of the ~6.4ns an element cost.
+
         if (type is INamedTypeSymbol { IsTupleType: true, Arity: >= 1 and <= 8 } tuple
             && TryInlineTuple(tuple, model, compilation))
         {
@@ -562,12 +597,14 @@ internal static class TypeParser
             {
                 model.WriteKind = MemberWriteKind.Formatter;
                 model.FormatterExpression = BuildFormatterExpression(type);
+
                 return true;
             }
 
             if (IsPackable(named, compilation))
             {
                 model.WriteKind = MemberWriteKind.Packable;
+
                 return true;
             }
 
@@ -575,6 +612,7 @@ internal static class TypeParser
             {
                 model.WriteKind = MemberWriteKind.Formatter;
                 model.FormatterExpression = BuildFormatterExpression(type);
+
                 return true;
             }
         }
@@ -583,18 +621,21 @@ internal static class TypeParser
         {
             model.WriteKind = MemberWriteKind.Formatter;
             model.FormatterExpression = BuildFormatterExpression(type);
+
             return true;
         }
 
         // Opt-in runtime resolution: the member type may get a formatter from the provider. The
         // attribute works per member, and on the declaring type for types built from assemblies that
         // do not reference TightPack and so cannot carry [TightPackable].
+
         if (owner is not null
             && (HasAttribute(owner, "TightPackAllowSerializeAttribute")
                 || (owner.ContainingType is { } container
                     && HasAttribute(container, "TightPackAllowSerializeAttribute"))))
         {
             model.WriteKind = MemberWriteKind.Formatter;
+
             return true;
         }
 
@@ -624,6 +665,7 @@ internal static class TypeParser
         }
 
         string name = MetaName(type.OriginalDefinition);
+
         return name is "System.Collections.Generic.List<T>"
             or "System.Collections.Generic.Stack<T>"
             or "System.Collections.Generic.Queue<T>"
@@ -708,6 +750,7 @@ internal static class TypeParser
         }
 
         // Tuples are matched by shape, not by name: a tuple symbol displays as "(int A, float B)".
+
         if (named.IsTupleType)
         {
             return Formatter("ValueTupleFormatter", named.TupleElements.Select(e => e.Type).ToArray());
@@ -726,6 +769,7 @@ internal static class TypeParser
         }
 
         ITypeSymbol[] arguments = underlying.TypeArguments.ToArray();
+
         return MetaName(underlying.OriginalDefinition) switch
         {
             "System.Collections.Generic.List<T>" => Formatter("ListFormatter", arguments),
@@ -804,7 +848,8 @@ internal static class TypeParser
     private static string Formatter(string name, ITypeSymbol argument) => Formatter(name, new[] { argument });
 
     private static string Formatter(string name, ITypeSymbol[] arguments) =>
-        $"new global::TightPack.Formatters.{name}<" +
+        $"new global::TightPack.Formatters.{name}<"
+        +
         $"{string.Join(", ", arguments.Select(a => a.ToDisplayString(FullyQualified)))}>()";
 
     /// <summary>
@@ -824,7 +869,8 @@ internal static class TypeParser
             if (argument is INamedTypeSymbol named && IsPackable(named, compilation))
             {
                 model.DependentFormatters.Add(
-                    "global::TightPack.TightPackFormatterProvider.Register(" +
+                    "global::TightPack.TightPackFormatterProvider.Register("
+                    +
                     $"new global::TightPack.TightPackableFormatter<{named.ToDisplayString(FullyQualified)}>());"
                 );
             }
@@ -939,11 +985,13 @@ internal static class TypeParser
                 context.ReportDiagnostic(
                     Diagnostic.Create(Diagnostics.NoParameterlessConstructor, location, symbol.Name)
                 );
+
                 return false;
             }
         }
 
         var byName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
         for (int i = 0; i < model.Members.Count; i++)
         {
             byName[model.Members[i].Name] = i;
@@ -960,6 +1008,7 @@ internal static class TypeParser
 
             // A parameterless constructor plus members that accept a plain assignment is the
             // simplest rebuild path; anything else needs a matching constructor.
+
             if (parameterless is not null && model.Members.TrueForAll(m => m.CanAssignDirect))
             {
                 return true;
@@ -979,9 +1028,12 @@ internal static class TypeParser
             // Without a constructor the generator builds the value through an object initializer,
             // which is enough for a value type or a type with a parameterless constructor - and for
             // an init-only member, since the initializer runs before the constructor returns.
-            bool hasParameterless = symbol.IsValueType || symbol.InstanceConstructors.Any(
-                c => c.Parameters.Length == 0 && c.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal
-            );
+            bool hasParameterless = symbol.IsValueType
+                                    || symbol.InstanceConstructors.Any(
+                                        c => c.Parameters.Length == 0
+                                             && c.DeclaredAccessibility is Accessibility
+                                            .Public or Accessibility.Internal
+                                    );
 
             if (hasParameterless && model.Members.TrueForAll(m => m.CanAssign))
             {
@@ -989,10 +1041,12 @@ internal static class TypeParser
             }
 
             context.ReportDiagnostic(Diagnostic.Create(Diagnostics.NoUsableConstructor, location, symbol.Name));
+
             return false;
         }
 
         var ctor = new CtorModel();
+
         foreach (IParameterSymbol parameter in chosen.Parameters)
         {
             ctor.ParameterTypes.Add(parameter.Type.ToDisplayString(FullyQualified));
@@ -1000,6 +1054,7 @@ internal static class TypeParser
         }
 
         model.Ctor = ctor;
+
         return true;
     }
 
@@ -1008,11 +1063,13 @@ internal static class TypeParser
         foreach (IParameterSymbol parameter in ctor.Parameters)
         {
             MemberModel? match = null;
+
             foreach (MemberModel member in members)
             {
                 if (string.Equals(member.Name, parameter.Name, StringComparison.OrdinalIgnoreCase))
                 {
                     match = member;
+
                     break;
                 }
             }
@@ -1062,6 +1119,7 @@ internal static class TypeParser
         }
 
         TypedConstant first = attribute.ConstructorArguments[0];
+
         if (first.Type?.ToDisplayString() != Namespace + ".GenerateType")
         {
             return GenerateKind.Object;
@@ -1089,7 +1147,8 @@ internal static class TypeParser
                     current.GetAttributes().First(a =>
                         a.AttributeClass?.ToDisplayString() == Namespace + ".TightPackableAttribute"),
                     compilation
-                ) != GenerateKind.NoGenerate;
+                )
+                       != GenerateKind.NoGenerate;
             }
         }
 
@@ -1123,6 +1182,7 @@ internal static class TypeParser
     private static bool IsBlitShaped(INamedTypeSymbol symbol, TypeModel model)
     {
         var fields = new List<IFieldSymbol>();
+
         for (ITypeSymbol? current = symbol; current is not null; current = current.BaseType)
         {
             foreach (IFieldSymbol field in current.GetMembers().OfType<IFieldSymbol>())
@@ -1169,11 +1229,13 @@ internal static class TypeParser
                 && attribute.ConstructorArguments[0].Value is INamedTypeSymbol named)
             {
                 formatterType = named;
+
                 return true;
             }
         }
 
         formatterType = null;
+
         return false;
     }
 
@@ -1209,6 +1271,7 @@ internal static class TypeParser
     private static int GetDeclarationIndex(ISymbol member)
     {
         Location? location = member.Locations.FirstOrDefault(l => l.IsInSource);
+
         return location?.SourceSpan.Start ?? int.MaxValue;
     }
 
@@ -1233,6 +1296,7 @@ internal static class TypeParser
 
         // Only a class declaration may carry "sealed"; emitting it on a container breaks the
         // partial declaration, and a nested struct is never sealed.
+
         if (symbol.IsSealed && symbol.TypeKind == TypeKind.Class && !symbol.IsRecord)
         {
             parts.Add("sealed");
@@ -1263,6 +1327,7 @@ internal static class TypeParser
     private static string BuildHintName(INamedTypeSymbol symbol)
     {
         var parts = new List<string>();
+
         for (INamedTypeSymbol? current = symbol; current is not null; current = current.ContainingType)
         {
             parts.Insert(0, current.Name);
@@ -1270,6 +1335,7 @@ internal static class TypeParser
 
         string name = string.Join(".", parts);
         var builder = new System.Text.StringBuilder(name.Length);
+
         foreach (char c in name)
         {
             builder.Append(char.IsLetterOrDigit(c) ? c : '_');

@@ -69,6 +69,7 @@ public class YogaScrollFlexTests
         var rows = list.VisualChildren.SelectMany(row => row.VisualChildren).OfType<Component>().ToArray();
 
         Assert.AreEqual(20, rows.Length, "every stage rendered a row");
+
         foreach (var row in rows)
         {
             Assert.IsTrue(

@@ -41,6 +41,7 @@ public static class TempoStretcher
         outputStream.CopyTo(outputMemory);
         var resultPool = SafeArrayPool<byte>.Shared.Rent((int)outputMemory.Length);
         outputMemory.GetReadOnlySequence().CopyTo(resultPool);
+
         return resultPool;
     }
 }

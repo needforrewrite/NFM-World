@@ -105,6 +105,7 @@ public class CarWheelsTests
     public void PreferencesSurviveReloadAndAreReturnedAsIndependentCopies()
     {
         var root = Path.Combine(Path.GetTempPath(), "NFMWorld-wheels-" + Guid.NewGuid().ToString("N"));
+
         try
         {
             var fs = new VirtualFS();
@@ -128,7 +129,8 @@ public class CarWheelsTests
         finally
         {
             CarWheels.Load(new VirtualFS());
-            if (Directory.Exists(root)) Directory.Delete(root, true);
+            if (Directory.Exists(root))
+                Directory.Delete(root, true);
         }
     }
 
@@ -171,6 +173,7 @@ public class CarWheelsTests
             20,
             [poly, poly with { ColNum = null }]
         )];
+
         return rad;
     }
 }

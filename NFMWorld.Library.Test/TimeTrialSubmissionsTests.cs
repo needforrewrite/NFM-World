@@ -175,6 +175,7 @@ public class TimeTrialSubmissionsTests
     {
         var bytes = new byte[64];
         Random.Shared.NextBytes(bytes);
+
         return bytes;
     }
 }

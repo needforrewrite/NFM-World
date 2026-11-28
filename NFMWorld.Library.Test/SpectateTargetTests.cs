@@ -23,6 +23,7 @@ public class LockTargetTests
             index
         );
         player.Car = car;
+
         return player;
     }
 

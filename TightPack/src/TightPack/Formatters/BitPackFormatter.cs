@@ -18,10 +18,12 @@ public sealed class BitPackFormatter : TightPackFormatter<bool[]>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Length);
+
         if (value.Length == 0)
         {
             return;
@@ -29,6 +31,7 @@ public sealed class BitPackFormatter : TightPackFormatter<bool[]>
 
         int packed = 0;
         int bit = 0;
+
         foreach (bool item in value)
         {
             if (item)
@@ -55,18 +58,21 @@ public sealed class BitPackFormatter : TightPackFormatter<bool[]>
         if (!reader.TryReadPackedCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         if (length == 0)
         {
             value = [];
+
             return;
         }
 
         // Eight elements share one byte, so the count cannot be bounded by the remaining buffer.
         // The group count can: it must fit, or the payload is truncated.
         int groups = (length + 31) / 32;
+
         if (reader.Remaining < groups * sizeof(int))
         {
             TightPackSerializationException.ThrowInvalidCollection(groups * sizeof(int), reader.Remaining);
@@ -75,6 +81,7 @@ public sealed class BitPackFormatter : TightPackFormatter<bool[]>
         var result = new bool[length];
         int packed = 0;
         int bit = 0;
+
         for (int i = 0; i < length; i++)
         {
             if (bit == 0)
@@ -83,6 +90,7 @@ public sealed class BitPackFormatter : TightPackFormatter<bool[]>
             }
 
             result[i] = (packed & (1 << bit)) != 0;
+
             if (++bit == 32)
             {
                 bit = 0;

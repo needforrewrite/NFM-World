@@ -22,9 +22,12 @@ public sealed record ModerationActionRequest(
         get
         {
             if (DurationSeconds is not { } seconds)
+
                 return null;
             if (seconds <= 0 || seconds > (long)TimeSpan.FromDays(3650).TotalSeconds)
+
                 return null;
+
             return TimeSpan.FromSeconds(seconds);
         }
     }
@@ -60,15 +63,20 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
         var now = DateTimeOffset.UtcNow;
 
         if (actor.IsBanned(now))
+
             return new ModerationOutcome(false, "Your account is banned.", null);
 
         var target = await db.Users.FirstOrDefaultAsync(u => u.Id == request.TargetUserId, ct);
+
         if (target is null)
+
             return new ModerationOutcome(false, "No such account.", null);
 
         if (request.Duration is { } duration && duration <= TimeSpan.Zero)
+
             return new ModerationOutcome(false, "The duration must be positive.", target);
         if (request.Duration is { } tooLong && tooLong > MaxDuration)
+
             return new ModerationOutcome(false, "The duration is too long.", target);
 
         // Self-service deletion is the caller acting on themselves. Everything else needs staff
@@ -77,9 +85,12 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
                            && actor.Id == target.Id;
         var uploaderVerification = request.Action is ModerationActionKind.VerifyUploader or ModerationActionKind
             .RevokeUploaderVerification;
+
         if (uploaderVerification && !actor.IsAdmin)
+
             return new ModerationOutcome(false, "This needs an administrator.", target);
         if (!selfDeletion && !uploaderVerification && !Roles.CanModerate(actor, target))
+
             return new ModerationOutcome(false, "You may not moderate that account.", target);
 
         switch (request.Action)
@@ -90,8 +101,11 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
             case ModerationActionKind.SetPassword:
             case ModerationActionKind.SetRole:
             case ModerationActionKind.DeleteErase:
+
                 if (actor.Id != target.Id && !Roles.CanAdminister(actor, target))
+
                     return new ModerationOutcome(false, "This needs an administrator.", target);
+
                 break;
 
             case ModerationActionKind.Unlist:
@@ -104,15 +118,18 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
             case ModerationActionKind.Mute:
             case ModerationActionKind.TempMute:
             case ModerationActionKind.Unmute:
+
                 break;
 
             case ModerationActionKind.DeleteRequest:
             case ModerationActionKind.DeleteCancel:
             case ModerationActionKind.VerifyUploader:
             case ModerationActionKind.RevokeUploaderVerification:
+
                 break;
 
             default:
+
                 return new ModerationOutcome(false, "Unsupported action.", target);
         }
 
@@ -120,53 +137,67 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
         {
             case ModerationActionKind.Kick:
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.TempKick:
+
                 if (request.Duration is not { } kickLength)
+
                     return new ModerationOutcome(false, "A temporary kick needs a duration.", target);
                 target.KickedUntil = now + kickLength;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.Ban:
                 target.BannedUntil = DateTimeOffset.MaxValue;
                 target.BanReason = request.Reason;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.TempBan:
+
                 if (request.Duration is not { } banLength)
+
                     return new ModerationOutcome(false, "A temporary ban needs a duration.", target);
                 target.BannedUntil = now + banLength;
                 target.BanReason = request.Reason;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.Unban:
                 target.BannedUntil = null;
                 target.BanReason = null;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.Mute:
                 target.MutedUntil = DateTimeOffset.MaxValue;
                 target.MuteReason = request.Reason;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.TempMute:
+
                 if (request.Duration is not { } muteLength)
+
                     return new ModerationOutcome(false, "A temporary mute needs a duration.", target);
                 target.MutedUntil = now + muteLength;
                 target.MuteReason = request.Reason;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.Unmute:
                 target.MutedUntil = null;
                 target.MuteReason = null;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.Unlist:
@@ -181,21 +212,30 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
                 await db.Assets.Where(a => a.OwnerId == target.Id)
                     .ExecuteUpdateAsync(s => s.SetProperty(a => a.IsTakedown, isTakedown), ct);
                 await http.PurgeAssetsAsync(hashes);
+
                 break;
             }
 
             case ModerationActionKind.Rename:
+
                 if (await RenameAsync(target, request.Argument, ct) is { } renameError)
+
                     return new ModerationOutcome(false, renameError, target);
+
                 break;
 
             case ModerationActionKind.SetPassword:
+
                 if (await SetPasswordAsync(target, request.Argument, ct) is { } passwordError)
+
                     return new ModerationOutcome(false, passwordError, target);
+
                 break;
 
             case ModerationActionKind.SetRole:
+
                 if (!Enum.TryParse<UserRole>(request.Argument, ignoreCase: true, out var role))
+
                     return new ModerationOutcome(
                         false,
                         "The role must be one of: " + string.Join(", ", Enum.GetNames<UserRole>()) + ".",
@@ -203,23 +243,31 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
                     );
                 target.Role = role;
                 Bump(target);
+
                 break;
 
             case ModerationActionKind.VerifyUploader:
             case ModerationActionKind.RevokeUploaderVerification:
+
                 if (target.IsDeleted)
+
                     return new ModerationOutcome(false, "That account is already erased.", target);
                 target.IsVerifiedUploader = request.Action == ModerationActionKind.VerifyUploader;
+
                 break;
 
             case ModerationActionKind.DeleteRequest:
+
                 if (target.IsDeleted)
+
                     return new ModerationOutcome(false, "That account is already erased.", target);
                 target.DeletionRequestedAt = now;
+
                 break;
 
             case ModerationActionKind.DeleteCancel:
                 target.DeletionRequestedAt = null;
+
                 break;
 
             case ModerationActionKind.DeleteErase:
@@ -227,9 +275,11 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
                 // the tombstone one, and the audit trail must still say who was erased.
                 await WriteAuditAsync(actor, target, request, http, expiresAt: null, ct);
                 await AccountErasure.EraseAsync(db, storage, target, logger, ct);
+
                 return new ModerationOutcome(true, null, target);
 
             default:
+
                 return new ModerationOutcome(false, "Unsupported action.", target);
         }
 
@@ -242,6 +292,7 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
             ct
         );
         await db.SaveChangesAsync(ct);
+
         return new ModerationOutcome(true, null, target);
     }
 
@@ -283,6 +334,7 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
     private async Task<string?> RenameAsync(User target, string? argument, CancellationToken ct)
     {
         if (!UsernamePolicy.TryValidate(argument, out var nameError))
+
             return nameError;
 
         var normalized = UsernamePolicy.Normalize(argument!);
@@ -290,24 +342,30 @@ public sealed class ModerationService(ArchiveDbContext db, FileStorage storage, 
             u => u.UsernameNormalized == normalized && u.Id != target.Id,
             ct
         );
+
         if (taken)
+
             return "That username is taken.";
 
         target.Username = argument!;
         target.UsernameNormalized = normalized;
+
         // Deliberately no SecurityStamp bump: renaming must not sign the account out.
+
         return null;
     }
 
     private async Task<string?> SetPasswordAsync(User target, string? argument, CancellationToken ct)
     {
         if (!PasswordPolicy.TryValidate(argument, out var passwordError))
+
             return passwordError;
 
         target.PasswordHash = PasswordHasher.Hash(argument!);
         target.SecurityStamp++;
         await db.Sessions.Where(s => s.UserId == target.Id).ExecuteDeleteAsync(ct);
         Bump(target);
+
         return null;
     }
 }

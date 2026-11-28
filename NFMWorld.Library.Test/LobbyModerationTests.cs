@@ -71,7 +71,9 @@ public class LobbyModerationTests
         {
             Requests++;
             var path = request.RequestUri?.AbsolutePath ?? "";
+
             if (path == "/auth/verify")
+
                 return Task.FromResult(VerifyResponse(request.Headers.Authorization?.ToString()));
 
             return Task.FromResult(Accepted());
@@ -94,6 +96,7 @@ public class LobbyModerationTests
     private static HttpResponseMessage VerifyResponse(string? bearer)
     {
         var token = bearer?.Split(' ')[^1] ?? "";
+
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent.Create(

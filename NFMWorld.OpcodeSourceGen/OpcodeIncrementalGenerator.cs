@@ -93,7 +93,9 @@ public class OpcodeIncrementalGenerator : IIncrementalGenerator
                         {
                             foreach (var (@namespace, name, _, opcode, isStruct, isRecord) in c2s)
                             {
-                                if (@namespace is null || name is null || opcode is null) continue;
+                                if (@namespace is null || name is null || opcode is null)
+
+                                    continue;
 
                                 sb.AppendLine($"{opcode} => DeserializePacket<{name}>(data),");
                             }
@@ -120,7 +122,9 @@ public class OpcodeIncrementalGenerator : IIncrementalGenerator
                         {
                             foreach (var (@namespace, name, _, opcode, isStruct, isRecord) in s2c)
                             {
-                                if (@namespace is null || name is null || opcode is null) continue;
+                                if (@namespace is null || name is null || opcode is null)
+
+                                    continue;
 
                                 sb.AppendLine($"{opcode} => DeserializePacket<{name}>(data),");
                             }
@@ -139,6 +143,7 @@ public class OpcodeIncrementalGenerator : IIncrementalGenerator
                 ctx.AddSource($"MultiplayerUtils.g.cs", sb.ToString());
             }
         );
+
         return;
 
         static (string? Namespace, string? Name, string? FullName, sbyte? Opcode, bool IsStruct, bool IsRecord) ReadPacket(
@@ -157,6 +162,7 @@ public class OpcodeIncrementalGenerator : IIncrementalGenerator
             // sbyte silently produced a null opcode and an uncompilable bundle. Convert
             // instead, and leave null only for a value that really is not an integral.
             sbyte? opcode = null;
+
             if (ctx.Attributes.FirstOrDefault()?.ConstructorArguments.FirstOrDefault() is { } argument
                 && argument.Value is not null)
             {
@@ -181,6 +187,7 @@ public class OpcodeIncrementalGenerator : IIncrementalGenerator
             // No opcode means the attribute argument was not an integral, which is a source
             // error the developer needs to see - emitting `Opcode => ` with a null would
             // fail later with a message about the generated file.
+
             if (packetInfo is { Namespace: not null, Name: not null, Opcode: null })
             {
                 ctx.ReportDiagnostic(
@@ -190,6 +197,7 @@ public class OpcodeIncrementalGenerator : IIncrementalGenerator
                         packetInfo.FullName ?? packetInfo.Name
                     )
                 );
+
                 return;
             }
 

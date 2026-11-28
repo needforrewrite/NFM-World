@@ -29,19 +29,24 @@ internal sealed class ColorSpectrumSlider(
 
     protected override void OnMouseDragged(MouseDragEvent e)
     {
-        if (e.Button == (byte)MouseButton.Primary) SetFromPointer(e.Position.X);
+        if (e.Button == (byte)MouseButton.Primary)
+            SetFromPointer(e.Position.X);
     }
 
     protected override void OnMouseReleased(MouseEvent e)
     {
-        if (e.Button == MouseButton.Primary) interactionChanged?.Invoke(false);
+        if (e.Button == MouseButton.Primary)
+            interactionChanged?.Invoke(false);
     }
 
     private void SetFromPointer(float x)
     {
         var inset = 4 * G.Scale;
         var width = LayoutContentSize.X - inset * 2;
-        if (width <= 0) return;
+
+        if (width <= 0)
+
+            return;
         var progress = Math.Clamp((x - LayoutContentPosition.X - inset) / width, 0, 1);
         onChange(Minimum + progress * (1 - Minimum));
     }
@@ -63,7 +68,9 @@ internal sealed class ColorSpectrumSlider(
             _ => [Sample(slot.Saturation.Value, (float)Minimum), Sample(slot.Saturation.Value, 1)]
         };
         G.SaveState();
+
         // Draw two-colour segments: the graphics adapter truncates longer gradients.
+
         for (var i = 0; i < colors.Length - 1; i++)
         {
             var start = (int)(x + width * i / (colors.Length - 1));

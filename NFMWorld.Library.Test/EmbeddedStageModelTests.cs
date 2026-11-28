@@ -112,6 +112,7 @@ public class EmbeddedStageModelTests
         // VFS mounts accumulate across the whole run and the first mount wins, so each test needs
         // its own stage name (the caller's) to land on its own unmounted directory.
         NFMWorldLibrary.TheVFS.VFS.MountDirectory(root);
+
         return new StageLoader(testName);
     }
 
@@ -120,6 +121,7 @@ public class EmbeddedStageModelTests
         using var output = new MemoryStream();
         using (var stream = new ZLibStream(output, CompressionLevel.Fastest, leaveOpen: true))
             stream.Write(data);
+
         return output.ToArray();
     }
 }

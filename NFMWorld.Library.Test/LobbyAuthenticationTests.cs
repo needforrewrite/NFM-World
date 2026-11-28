@@ -72,6 +72,7 @@ public class LobbyAuthenticationTests
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Requests++;
+
             return respond();
         }
     }

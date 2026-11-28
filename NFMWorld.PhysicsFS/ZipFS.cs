@@ -13,6 +13,7 @@ namespace NFMWorld.PhysicsFS
         public ZipFS(string zipPath)
         {
             if (!File.Exists(zipPath))
+
                 throw new FileNotFoundException($"Zip file not found: {zipPath}");
 
             _archive = ZipFile.OpenRead(zipPath);
@@ -34,7 +35,10 @@ namespace NFMWorld.PhysicsFS
             foreach (var entry in _archive.Entries)
             {
                 var fullName = entry.FullName.Replace('\\', '/').TrimEnd('/');
-                if (fullName.Length == 0) continue;
+
+                if (fullName.Length == 0)
+
+                    continue;
 
                 if (string.IsNullOrEmpty(entry.Name))
                 {
@@ -49,6 +53,7 @@ namespace NFMWorld.PhysicsFS
 
                 // Walk up and register all ancestor directories
                 var parent = GetParentDirectory(fullName);
+
                 while (parent is not null)
                 {
                     dirs.Add(parent);
@@ -61,6 +66,7 @@ namespace NFMWorld.PhysicsFS
             static string? GetParentDirectory(string path)
             {
                 var idx = path.LastIndexOf('/');
+
                 return idx > 0 ? path[..idx] : null;
             }
         }
@@ -73,13 +79,17 @@ namespace NFMWorld.PhysicsFS
             {
                 var normalized = Normalize(path);
                 var entry = _archive.GetEntry(normalized);
-                if (entry is null) return null;
+
+                if (entry is null)
+
+                    return null;
 
                 // Zip entries share a seekable backing stream; callers receive independent copies.
                 using var src = entry.Open();
                 var ms = new MemoryStream((int)entry.Length);
                 src.CopyTo(ms);
                 ms.Position = 0;
+
                 return ms;
             }
         }
@@ -94,6 +104,7 @@ namespace NFMWorld.PhysicsFS
         public bool DirectoryExists(string path)
         {
             var normalized = Normalize(path).TrimEnd('/');
+
             return normalized.Length == 0 || _directories.Contains(normalized);
         }
 
@@ -104,19 +115,23 @@ namespace NFMWorld.PhysicsFS
         )
         {
             var prefix = Normalize(path).TrimEnd('/');
-            if (prefix.Length > 0) prefix += "/";
+            if (prefix.Length > 0)
+                prefix += "/";
 
             var regex = WildcardToRegex(searchPattern);
 
             foreach (var entry in _entries)
             {
                 if (!entry.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+
                     continue;
 
                 var relative = entry[prefix.Length..];
 
                 // TopDirectoryOnly: skip entries nested in subdirectories
+
                 if (searchOption == SearchOption.TopDirectoryOnly && relative.Contains('/'))
+
                     continue;
 
                 // Match the filename portion against the search pattern
@@ -125,6 +140,7 @@ namespace NFMWorld.PhysicsFS
                     : relative; // already just the filename
 
                 if (regex.IsMatch(fileName))
+
                     yield return entry;
             }
         }
@@ -132,17 +148,22 @@ namespace NFMWorld.PhysicsFS
         public IEnumerable<string> EnumerateDirectories(string path)
         {
             var prefix = Normalize(path).TrimEnd('/');
-            if (prefix.Length > 0) prefix += "/";
+            if (prefix.Length > 0)
+                prefix += "/";
 
             // The index holds every ancestor, so only the entries one level below the prefix are
             // this directory's own children.
+
             foreach (var dir in _directories)
             {
                 if (!dir.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+
                     continue;
 
                 var relative = dir[prefix.Length..];
+
                 if (relative.Length == 0 || relative.Contains('/'))
+
                     continue;
 
                 yield return dir;
@@ -169,6 +190,7 @@ namespace NFMWorld.PhysicsFS
             var escaped = Regex.Escape(pattern)
                 .Replace(@"\*", ".*")
                 .Replace(@"\?", ".");
+
             return new Regex($"^{escaped}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         }
     }

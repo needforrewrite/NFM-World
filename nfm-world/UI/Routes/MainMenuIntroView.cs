@@ -18,6 +18,7 @@ public static class MainMenuIntroView
     )
     {
         var state = UiState.MainMenu;
+
         return Sx.View(
             style: () => Sx.Styles(width: 100.Percent(), height: 100.Percent()),
             children:
@@ -132,6 +133,7 @@ public static class MainMenuIntroView
         protected override void RenderContent(Vector2 position, Vector2 size)
         {
             if (NFMWorld.UI.Components.SettingsView.ScenePreviewActive)
+
                 return;
 
             G.SetLinearGradient(

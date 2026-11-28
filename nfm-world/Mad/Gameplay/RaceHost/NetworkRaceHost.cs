@@ -67,6 +67,7 @@ public sealed class NetworkRaceHost : IRaceHost
     {
         // The join token is not presented until the Game Master has confirmed the packet layout:
         // an older one would read the token's bytes as something else entirely.
+
         if (!_sentRaceLoaded && IsConnected && _transport.HandshakeAccepted)
         {
             _sentRaceLoaded = true;
@@ -86,26 +87,33 @@ public sealed class NetworkRaceHost : IRaceHost
             {
                 case S2C_StagePieceState piece:
                     StagePieceStateReceived?.Invoke(piece.State, !piece.Snapshot);
+
                     break;
                 case S2C_PlayerLeft departure:
                     PlayerLeft?.Invoke(departure);
+
                     break;
                 case S2C_RaceChat chat:
                     ChatReceived?.Invoke(chat);
+
                     break;
                 case S2C_RaceCanStart:
                     RaceCanStart?.Invoke();
+
                     break;
                 case S2C_RaceFailedToStart:
                     RaceFailedToStart?.Invoke();
+
                     break;
                 case S2C_PlayerState playerState:
                     // An id not in this match (version skew, a late join, a replayed or
                     // malicious packet) must not throw in the game loop.
                     if (_playerIndexById.TryGetValue(playerState.PlayerId, out var carIndex))
                         PlayerStateReceived?.Invoke(carIndex, playerState.State);
+
                     break;
                 case S2C_ServerEvent serverEvent:
+
                     try
                     {
                         ServerEventReceived?.Invoke(serverEvent.Payload);
@@ -117,6 +125,7 @@ public sealed class NetworkRaceHost : IRaceHost
 
                     break;
                 case S2C_ServerState serverState:
+
                     try
                     {
                         ServerStateReceived?.Invoke(serverState.Payload);
@@ -129,6 +138,7 @@ public sealed class NetworkRaceHost : IRaceHost
                     break;
                 case S2C_GameFinished gameFinished:
                     GameFinished?.Invoke(gameFinished.Results);
+
                     break;
             }
         }

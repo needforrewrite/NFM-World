@@ -50,6 +50,7 @@ public partial class NonSynchronizedObservableList<T> : IList<T>, IReadOnlyNonSy
     public void AddRange(IEnumerable<T> items)
     {
         var index = list.Count;
+
         using (var xs = new CloneCollection<T>(items))
         {
             // to avoid iterate twice, require copy before insert.
@@ -149,6 +150,7 @@ public partial class NonSynchronizedObservableList<T> : IList<T>, IReadOnlyNonSy
         {
             list.RemoveAt(index);
             CollectionChanged?.Invoke(NotifyCollectionChangedEventArgs<T>.Remove(item, index));
+
             return true;
         }
         else
@@ -167,7 +169,9 @@ public partial class NonSynchronizedObservableList<T> : IList<T>, IReadOnlyNonSy
     public void RemoveRange(int index, int count)
     {
         var range = CollectionsMarshal.AsSpan(list).Slice(index, count);
+
         // require copy before remove
+
         using (var xs = new CloneCollection<T>(range))
         {
             list.RemoveRange(index, count);

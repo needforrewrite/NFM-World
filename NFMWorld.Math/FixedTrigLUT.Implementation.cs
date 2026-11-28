@@ -20,6 +20,7 @@ public static partial class FixedTrigLUT
         var sinA = fix64.FromRaw(SinTable[index]);
         var sinB = fix64.FromRaw(SinTable[nextIndex]);
         var delta = sinB - sinA;
+
         return sinA + (delta * frac);
     }
 

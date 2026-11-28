@@ -106,9 +106,11 @@ public static class StageSelectView
     public static bool ClearSearch()
     {
         if (SearchDraft.Value.Length == 0)
+
             return false;
 
         SearchDraft.Value = "";
+
         return true;
     }
 
@@ -116,10 +118,13 @@ public static class StageSelectView
     {
         if (FocusManager.FocusedNode is TextInput or TextArea)
         {
-            if (key != Key.Escape) return false;
+            if (key != Key.Escape)
+
+                return false;
             ClearSearch();
             actions.SearchChanged("");
             FocusManager.ClearFocus();
+
             return true;
         }
 
@@ -127,17 +132,23 @@ public static class StageSelectView
         {
             case Key.Left:
                 state.BrowsingCollections.Value = !state.OnlineSource.Value;
+
                 break;
             case Key.Right:
                 state.BrowsingCollections.Value = false;
+
                 break;
             case Key.Up:
             case Key.Down:
                 var delta = key == Key.Up ? -1 : 1;
+
                 if (state.BrowsingCollections.Value && !state.OnlineSource.Value)
                 {
                     var collections = state.Collections.Value;
-                    if (collections.Count == 0) break;
+
+                    if (collections.Count == 0)
+
+                        break;
                     var index = collections.ToList().IndexOf(state.Collection.Value);
                     var next = index < 0 ? (delta > 0 ? 0 : collections.Count - 1)
                         : (index + delta + collections.Count) % collections.Count;
@@ -146,7 +157,10 @@ public static class StageSelectView
                 else
                 {
                     var stages = state.Stages.Value;
-                    if (stages.Count == 0) break;
+
+                    if (stages.Count == 0)
+
+                        break;
                     var index = stages.ToList().FindIndex(stage => stage.Id == state.Selected.Value);
                     var next = index < 0 ? (delta > 0 ? 0 : stages.Count - 1)
                         : (index + delta + stages.Count) % stages.Count;
@@ -155,12 +169,18 @@ public static class StageSelectView
 
                 break;
             case Key.Enter:
-                if (state.BrowsingCollections.Value) state.BrowsingCollections.Value = false;
-                else if (state.ConfirmEnabled.Value && !state.Busy.Value) actions.Confirm();
+                if (state.BrowsingCollections.Value)
+                    state.BrowsingCollections.Value = false;
+                else if (state.ConfirmEnabled.Value && !state.Busy.Value)
+                    actions.Confirm();
+
                 break;
             case Key.Escape:
-                if (ClearSearch()) actions.SearchChanged("");
-                else actions.Back();
+                if (ClearSearch())
+                    actions.SearchChanged("");
+                else
+                    actions.Back();
+
                 break;
             default: return false;
         }
@@ -178,21 +198,30 @@ public static class StageSelectView
             var categories = !state.OnlineSource.Value && (sideBySide || state.BrowsingCollections.Value);
             ScrollSelection(categories ? "Stage collection " + state.Collection.Value : null, ref _lastCategory);
             ScrollSelection(sideBySide || !categories ? "Stage row " + state.Selected.Value : null, ref _lastStage);
+
             return base.OnPostLayout();
         }
 
         private void ScrollSelection(string? name, ref Component? previous)
         {
             var target = name is null ? null : Find(this, name);
-            if (target is not null && !ReferenceEquals(target, previous)) target.ScrollIntoView();
+            if (target is not null && !ReferenceEquals(target, previous))
+                target.ScrollIntoView();
             previous = target;
         }
 
         private static Component? Find(Node root, string name)
         {
-            if (root is Component component && component.Name == name) return component;
+            if (root is Component component && component.Name == name)
+
+                return component;
+
             foreach (var child in root.VisualChildren)
-                if (Find(child, name) is { } found) return found;
+
+                if (Find(child, name) is { } found)
+
+                    return found;
+
             return null;
         }
     }
@@ -213,22 +242,27 @@ public static class StageSelectView
         };
         root.AddChild(Sidebar(state, actions, title));
         root.AddChild(Content(state, actions));
+
         return root;
     }
 
     public static bool HandlePreviewKey(StageSelectState state, Actions actions, Key key)
     {
         if (FocusManager.FocusedNode is TextInput or TextArea)
+
             return HandleKey(state, actions, key);
+
         switch (key)
         {
             case Key.PageUp when actions.SourceSelected is not null:
             case Key.PageDown when actions.SourceSelected is not null:
                 actions.SourceSelected(key == Key.PageDown);
+
                 return true;
             case Key.Left:
             case Key.Right:
                 MovePreview(state, actions, key == Key.Left ? -1 : 1, collection: false);
+
                 return true;
             case Key.Up:
             case Key.Down:
@@ -238,19 +272,24 @@ public static class StageSelectView
                     key == Key.Up ? -1 : 1,
                     collection: !state.OnlineSource.Value && state.Collections.Value.Count > 1
                 );
+
                 return true;
             case Key.Escape when state.BrowserOpen.Value && ClearSearch():
                 actions.SearchChanged("");
+
                 return true;
             case Key.Escape when state.BrowserOpen.Value:
             case Key.Tab:
                 TogglePreviewBrowser(state);
+
                 return true;
             case Key.Enter:
                 if (state.ConfirmEnabled.Value && !state.Busy.Value)
                     actions.Confirm();
+
                 return true;
             default:
+
                 return HandleKey(state, actions, key);
         }
     }
@@ -260,7 +299,10 @@ public static class StageSelectView
         if (collection)
         {
             var items = state.Collections.Value;
-            if (items.Count == 0) return;
+
+            if (items.Count == 0)
+
+                return;
             var index = items.ToList().IndexOf(state.Collection.Value);
             var next = index < 0 ? (delta > 0 ? 0 : items.Count - 1) : (index + delta + items.Count) % items.Count;
             actions.CollectionSelected(items[next]);
@@ -268,10 +310,14 @@ public static class StageSelectView
         else
         {
             var items = state.Stages.Value;
-            if (items.Count == 0) return;
+
+            if (items.Count == 0)
+
+                return;
             var index = items.ToList().FindIndex(stage => stage.Id == state.Selected.Value);
             var next = index < 0 ? (delta > 0 ? 0 : items.Count - 1) : (index + delta + items.Count) % items.Count;
-            if (items[next].Id != state.Selected.Value) actions.StageSelected(items[next].Id);
+            if (items[next].Id != state.Selected.Value)
+                actions.StageSelected(items[next].Id);
         }
     }
 
@@ -311,7 +357,8 @@ public static class StageSelectView
                     ]
                 )
             ]
-        ));
+        )
+        );
         var title = Sx.Text(
             style: () => Sx.WrappingText(
                 fontSize: 30,
@@ -330,26 +377,31 @@ public static class StageSelectView
         );
         title.Name = "Stage preview title";
         root.AddChild(title);
-        root.AddChild(Sx.Show(() => state.Busy.Value, () => Sx.View(
-            name: () => "Stage preview loading",
-            style: () => Sx.Styles(
-                position: Position.Absolute,
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                alignItems: Align.Center,
-                justifyContent: Justify.Center,
-                backgroundColor: new Color(0, 0, 0, 145),
-                zIndex: 900,
-                pointerEvents: false
-            ),
-            children: new LoadingSpinner
+        root.AddChild(Sx.Show(
+            () => state.Busy.Value,
+            () => Sx.View(
+                name: () => "Stage preview loading",
+                style: () => Sx.Styles(
+                    position: Position.Absolute,
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    alignItems: Align.Center,
+                    justifyContent: Justify.Center,
+                    backgroundColor: new Color(0, 0, 0, 145),
+                    zIndex: 900,
+                    pointerEvents: false
+                ),
+                children: new LoadingSpinner
             {
                 Radius = 16,
                 Styles = Sx.Styles(width: 56, height: 56, flexShrink: 0)
             }
-        )));
+            )
+        )
+        );
+
         return root;
     }
 
@@ -388,14 +440,17 @@ public static class StageSelectView
                     ),
                     name: () => "Stage preview start"
                 ),
-                Sx.Show(() => !state.Busy.Value && state.Status.Value.Length > 0, () => Sx.Text(
-                    style: () => Sx.WrappingText(
-                        fontSize: 11,
-                        foregroundColor: Theme.MenuTextBlue
-                    ),
-                    layout: () => Sx.Styles(width: 100.Percent()),
-                    text: () => state.Status.Value
-                )),
+                Sx.Show(
+                    () => !state.Busy.Value && state.Status.Value.Length > 0,
+                    () => Sx.Text(
+                        style: () => Sx.WrappingText(
+                            fontSize: 11,
+                            foregroundColor: Theme.MenuTextBlue
+                        ),
+                        layout: () => Sx.Styles(width: 100.Percent()),
+                        text: () => state.Status.Value
+                    )
+                ),
                 Restriction(state)
             ]
         );
@@ -431,15 +486,18 @@ public static class StageSelectView
                     Radius = 16,
                     Styles = Sx.Styles(width: 48, height: 48, flexShrink: 0)
                 }),
-                Sx.Show(() => state.Status.Value.Length > 0, () => Sx.Text(
-                    style: () => Sx.WrappingText(
-                        fontSize: 13,
-                        foregroundColor: Theme.MenuTextBlue,
-                        horizontalAlignment: TextHorizontalAlignment.Center
-                    ),
-                    layout: () => Sx.Styles(width: 90.Percent()),
-                    text: () => state.Status.Value
-                ))
+                Sx.Show(
+                    () => state.Status.Value.Length > 0,
+                    () => Sx.Text(
+                        style: () => Sx.WrappingText(
+                            fontSize: 13,
+                            foregroundColor: Theme.MenuTextBlue,
+                            horizontalAlignment: TextHorizontalAlignment.Center
+                        ),
+                        layout: () => Sx.Styles(width: 90.Percent()),
+                        text: () => state.Status.Value
+                    )
+                )
             ]
         );
 
@@ -447,7 +505,9 @@ public static class StageSelectView
     {
         protected override void RenderContent(Vector2 position, Vector2 size)
         {
-            if (image() is not { } frame || size.X <= 0 || size.Y <= 0) return;
+            if (image() is not { } frame || size.X <= 0 || size.Y <= 0)
+
+                return;
             var scale = Math.Min(size.X / frame.Width, size.Y / frame.Height);
             var displayedSize = new Vector2(frame.Width, frame.Height) * scale;
             TheGraphics.G.DrawImageTransformed(
@@ -516,6 +576,7 @@ public static class StageSelectView
             style: () =>
             {
                 var open = state.BrowserOpen.Value;
+
                 return PreviewPanelStyle().Over(Sx.Styles(
                     width: open ? 16.Percent() : 174,
                     minWidth: 156,
@@ -527,20 +588,24 @@ public static class StageSelectView
                     flexDirection: FlexDirection.Column,
                     gapRow: 8,
                     borderRight: 1
-                ));
+                )
+                );
             },
             children:
             [
-                Sx.Show(() => state.BrowserOpen.Value, () => Sx.Text(
-                    style: () => Sx.TextStyles(
-                        fontSize: 18,
-                        fontFamily: FontFamily.Adventure,
-                        foregroundColor: Theme.MenuBlue,
-                        horizontalAlignment: TextHorizontalAlignment.Center
-                    ),
-                    layout: () => Sx.Styles(flexShrink: 0),
-                    text: () => "Select Stage"
-                )),
+                Sx.Show(
+                    () => state.BrowserOpen.Value,
+                    () => Sx.Text(
+                        style: () => Sx.TextStyles(
+                            fontSize: 18,
+                            fontFamily: FontFamily.Adventure,
+                            foregroundColor: Theme.MenuBlue,
+                            horizontalAlignment: TextHorizontalAlignment.Center
+                        ),
+                        layout: () => Sx.Styles(flexShrink: 0),
+                        text: () => "Select Stage"
+                    )
+                ),
                 Sx.View(
                     style: () => Sx.Styles(alignItems: Align.Center, justifyContent: Justify.SpaceBetween, flexShrink: 0),
                     children:
@@ -594,7 +659,8 @@ public static class StageSelectView
                 paddingTop: 5,
                 paddingBottom: 5,
                 borderTop: 1
-            )),
+            )
+            ),
             children:
             [
                 Sx.View(
@@ -779,7 +845,9 @@ public static class StageSelectView
         // A host with no archive search cannot leave LOCAL, so it gets no picker at all rather
         // than two buttons where one does nothing. The empty view keeps the node name so a test
         // (and the debugger) can still see that the picker exists and takes no space.
+
         if (actions.SourceSelected is null || actions.OnlineSearch is null)
+
             return Sx.View(
                 name: () => "Stage select source",
                 style: () => Sx.Styles(height: 0, flexShrink: 0)
@@ -855,7 +923,8 @@ public static class StageSelectView
             ),
             onmousedown: _ =>
             {
-                if (!sideBySide) state.BrowsingCollections.Value = true;
+                if (!sideBySide)
+                    state.BrowsingCollections.Value = true;
                 actions.CollectionSelected(collection);
             },
             onmouseenter: _ => hovered.Value = true,
@@ -986,6 +1055,7 @@ public static class StageSelectView
                 .MeasureText(Heading(_state)).X;
             if (width > 0 && LayoutContentSize.X > 0)
                 _fontSize.Value = Math.Clamp(22 * (LayoutContentSize.X - 2 * scale) / width, 1, 22);
+
             return base.OnPostLayout();
         }
     }
@@ -1002,13 +1072,16 @@ public static class StageSelectView
     private static string Heading(StageSelectState state)
     {
         var selected = state.Selected.Value;
+
         foreach (var stage in state.Stages.Value)
         {
             if (stage.Id == selected)
+
                 return stage.Label;
         }
 
         if (state.OnlineSource.Value)
+
             return "Public stages";
 
         return string.IsNullOrEmpty(state.Collection.Value)
@@ -1061,6 +1134,7 @@ public static class StageSelectView
                 if (state.OnlineSource.Value)
                 {
                     actions.OnlineSearch?.Invoke(SearchDraft.Value);
+
                     return;
                 }
 
@@ -1069,6 +1143,7 @@ public static class StageSelectView
             }
         );
         input.Name = "Stage select search";
+
         return input;
     }
 

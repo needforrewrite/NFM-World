@@ -40,6 +40,7 @@ public class HostileGamemode : PluginGamemode
     public static object OpenASocket()
     {
         using var client = new System.Net.Sockets.TcpClient();
+
         return client.Connected;
     }
 
@@ -74,6 +75,7 @@ public class HostileGamemode : PluginGamemode
     public static bool ReadAPrivateField()
     {
         var keys = default(Keys);
+
         return LowBits(ref keys) != UInt128.Zero;
     }
 
@@ -110,6 +112,7 @@ public class HostileGamemode : PluginGamemode
     {
         var payload = SerializeACollectionEvent();
         var restored = TightPackSerializer.Deserialize<HostileCollectionEvent>(payload);
+
         return restored.Grid!;
     }
 

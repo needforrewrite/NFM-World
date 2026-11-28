@@ -10,7 +10,9 @@ public static class StockAssetCleanup
     {
         var seeded = await db.Assets.Where(asset => asset.OwnerId == null && asset.Description == LegacyDescription)
             .ToListAsync(ct);
+
         if (seeded.Count == 0)
+
             return 0;
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -20,6 +22,7 @@ public static class StockAssetCleanup
             await storage.DeleteIfUnreferencedAsync(path, db, ct);
         await transaction.CommitAsync(ct);
         logger.LogInformation("Removed {Count} previously seeded stock assets", seeded.Count);
+
         return seeded.Count;
     }
 }

@@ -46,6 +46,7 @@ internal static unsafe class Program
         if (!OperatingSystem.IsWindows())
         {
             Console.WriteLine("SMOKE: skipped - this backend is Win32-only.");
+
             return 0;
         }
 
@@ -67,6 +68,7 @@ internal static unsafe class Program
         if (args.Contains("--benchmark"))
         {
             BenchmarkUniformUploads(device);
+
             return _failures == 0 ? 0 : 1;
         }
 
@@ -86,6 +88,7 @@ internal static unsafe class Program
 
         Console.WriteLine();
         Console.WriteLine(_failures == 0 ? "SMOKE: pass" : $"SMOKE: FAILED ({_failures} failure(s))");
+
         return _failures == 0 ? 0 : 1;
     }
 
@@ -166,6 +169,7 @@ internal static unsafe class Program
 
         var commandBuffer = device.AcquireCommandBuffer();
         var refused = false;
+
         try
         {
             commandBuffer.UpdateTexture(texture, 1, 1, 2, 2, new byte[2 * 2 * 4]);
@@ -222,6 +226,7 @@ internal static unsafe class Program
 
         var cb2 = device.AcquireCommandBuffer();
         var refused = false;
+
         try
         {
             cb2.UpdateBuffer(staticBuffer, payload, 0);
@@ -245,6 +250,7 @@ internal static unsafe class Program
         var first = device.AcquireCommandBuffer();
 
         var refused = false;
+
         try
         {
             device.AcquireCommandBuffer();
@@ -259,6 +265,7 @@ internal static unsafe class Program
         device.Submit(first);
 
         var submitRefused = false;
+
         try
         {
             device.Submit(first);
@@ -280,6 +287,7 @@ internal static unsafe class Program
         // one exception turns into a failed acquire every frame, and the loop reports the wrong fault.
         var abandonedRecovered = true;
         string? abandonedError = null;
+
         try
         {
             NFMWorld.Graphics.IGraphicsDevice abstraction = device;
@@ -427,13 +435,17 @@ internal static unsafe class Program
     private static void CheckUniformBlock(string name, D3D11PipelineState pipeline)
     {
         var reflection = pipeline.Reflection;
+
         if (reflection.Uniforms.Count == 0)
+
             return;
 
         var compiled = D3D11Reflector.ReflectUniformBlock(pipeline.VertexShader.VertexBytecode);
+
         if (compiled is null)
         {
             Report("BUNDLE", $"{name}: the compiled vertex shader declares a _Global constant buffer", false);
+
             return;
         }
 
@@ -451,6 +463,7 @@ internal static unsafe class Program
 
         var mismatched = new List<string>();
         var missing = new List<string>();
+
         foreach (var uniform in reflection.Uniforms)
         {
             if (!compiled.Members.TryGetValue(uniform.Name, out var offset))
@@ -793,6 +806,7 @@ internal static unsafe class Program
         // the resolve into that buffer is part of what a present does here - and the texel is BGRA,
         // since the back buffer format is B8G8R8A8.
         var pixel = ReadBackBufferPixel(device, swapchain.BackBuffer);
+
         if (pixel is not null)
         {
             Report(
@@ -804,6 +818,7 @@ internal static unsafe class Program
         }
 
         var presented = true;
+
         try
         {
             swapchain.Present();
@@ -836,6 +851,7 @@ internal static unsafe class Program
         device.Submit(afterResize);
 
         var presentedAgain = true;
+
         try
         {
             swapchain.Present();
@@ -867,26 +883,30 @@ internal static unsafe class Program
         {
             _modules = new D3D11ShaderModule[2];
             Pipelines = new D3D11PipelineState[2];
+
             for (var index = 0; index < 2; index++)
             {
                 var block = "cbuffer Globals : register(b0) { float4 Tint : packoffset(c0); float4 Geometry : packoffset(c1);"
                             + (index == 0 ? " };" : " float4 Tail : packoffset(c4); };");
-                var vertex = block + """
-                                     struct Input { float2 Position : POSITION0; float2 UV : TEXCOORD0; };
-                                     struct Output { float4 Position : SV_Position; float2 UV : TEXCOORD0; };
-                                     Output main(Input input) {
-                                         Output output;
-                                         output.Position = float4(input.Position * Geometry.zw + Geometry.xy, 0, 1);
-                                         output.UV = input.UV;
-                                         return output;
-                                     }
-                                     """;
-                var pixel = block + """
-                                    Texture2D Image : register(t0);
-                                    SamplerState ImageSampler : register(s0);
-                                    float4 main(float4 position : SV_Position, float2 uv : TEXCOORD0) : SV_Target {
-                                        return Image.Sample(ImageSampler, uv) * Tint
-                                    """ + (index == 0 ? "; }" : " + Tail; }");
+                var vertex = block
+                             + """
+                               struct Input { float2 Position : POSITION0; float2 UV : TEXCOORD0; };
+                               struct Output { float4 Position : SV_Position; float2 UV : TEXCOORD0; };
+                               Output main(Input input) {
+                                   Output output;
+                                   output.Position = float4(input.Position * Geometry.zw + Geometry.xy, 0, 1);
+                                   output.UV = input.UV;
+                                   return output;
+                               }
+                               """;
+                var pixel = block
+                            + """
+                              Texture2D Image : register(t0);
+                              SamplerState ImageSampler : register(s0);
+                              float4 main(float4 position : SV_Position, float2 uv : TEXCOORD0) : SV_Target {
+                                  return Image.Sample(ImageSampler, uv) * Tint
+                              """
+                            + (index == 0 ? "; }" : " + Tail; }");
                 var uniforms = new List<UniformParam>
                 {
                     new("Tint", 0, 16, UniformType.Vector4),
@@ -959,8 +979,10 @@ internal static unsafe class Program
 
         public void Dispose()
         {
-            foreach (var pipeline in Pipelines) pipeline.Dispose();
-            foreach (var module in _modules) module.Dispose();
+            foreach (var pipeline in Pipelines)
+                pipeline.Dispose();
+            foreach (var module in _modules)
+                module.Dispose();
             Vertices.Dispose();
             TextureA.Dispose();
             TextureB.Dispose();
@@ -975,11 +997,13 @@ internal static unsafe class Program
         using var target = device.CreateRenderTarget(new RenderTargetDesc(128, 16, TextureFormat.Rgba8));
         var cb = (D3D11CommandBuffer)device.AcquireCommandBuffer();
         var before = cb.UniformBufferCreationCount;
+
         for (var frame = 0; frame < 2; frame++)
         {
             cb.SetRenderTarget(target);
             cb.SetViewport(new Viewport(0, 0, 128, 16));
             cb.Clear(ClearOptions.Color, new ColorRgba(0, 0, 0, 0));
+
             for (var draw = 0; draw < 8; draw++)
             {
                 cb.SetViewport(new Viewport(draw * 16, 0, 16, 16));
@@ -992,6 +1016,7 @@ internal static unsafe class Program
                 );
                 if (draw is 1 or 4)
                     SubmissionFixture.SetVector(cb, 0, new Vector4(0.5f));
+
                 if (draw == 3)
                 {
                     SubmissionFixture.SetVector(cb, 0, new Vector4(0.25f));
@@ -1017,6 +1042,7 @@ internal static unsafe class Program
             (int R, int G, int B)[] expected =
                 [(255, 0, 0), (128, 0, 0), (0, 255, 0), (64, 64, 32),
                  (128, 128, 32), (0, 0, 255), (255, 0, 0), (255, 0, 0)];
+
             for (var draw = 0; draw < expected.Length; draw++)
             {
                 var at = (8 * 128 + draw * 16 + 4) * 4;
@@ -1024,7 +1050,8 @@ internal static unsafe class Program
                 Report(
                     "REBIND",
                     $"frame {frame}, draw {draw}: pipeline/block/texture/sampler/uniform changes preserve pixels",
-                    Math.Abs(pixels[at] - color.R) <= 1 && Math.Abs(pixels[at + 1] - color.G) <= 1
+                    Math.Abs(pixels[at] - color.R) <= 1
+                    && Math.Abs(pixels[at + 1] - color.G) <= 1
                     && Math.Abs(pixels[at + 2] - color.B) <= 1
                 );
             }
@@ -1034,6 +1061,7 @@ internal static unsafe class Program
                 "vertex-stage geometry uniform changes coverage independently of pixel-stage tint",
                 pixels[(8 * 128 + 5 * 16 + 12) * 4 + 2] == 0
             );
+
             if (frame == 0)
             {
                 Report(
@@ -1111,6 +1139,7 @@ internal static unsafe class Program
         var cb = (D3D11CommandBuffer)device.AcquireCommandBuffer();
         cb.SetRenderTarget(target);
         cb.SetViewport(new Viewport(0, 0, 1, 1));
+
         for (var pipeline = 0; pipeline < 2; pipeline++)
         {
             fixture.Bind(cb, pipeline);
@@ -1120,6 +1149,7 @@ internal static unsafe class Program
         // Both reference implementations live only here; native buffers are created before timing.
         var buffers = new ID3D11Buffer*[4];
         byte[][] payloads = [new byte[32], new byte[80]];
+
         for (var i = 0; i < 2; i++)
         {
             var geometry = new Vector4(0, 0, 1, 1);
@@ -1127,6 +1157,7 @@ internal static unsafe class Program
         }
 
         byte[] pixel = new byte[4];
+
         try
         {
             for (var i = 0; i < buffers.Length; i++)
@@ -1147,7 +1178,9 @@ internal static unsafe class Program
             Console.WriteLine($"BENCH: {draws} alternating 32/80-byte uploads + both-stage binds + 1px draws per sample");
             Console.WriteLine("BENCH: round 0 warms each path; rounds 1..4 reverse order to reduce ordering bias.");
             var binding = stackalloc ID3D11Buffer*[1];
+
             for (var round = 0; round < 5; round++)
+
             for (var order = 0; order < 3; order++)
             {
                 var mode = (round & 1) == 0 ? order : 2 - order;
@@ -1155,10 +1188,12 @@ internal static unsafe class Program
                 cb.SetRenderTarget(target);
                 var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
                 var start = Stopwatch.GetTimestamp();
+
                 for (var draw = 0; draw < draws; draw++)
                 {
                     var index = draw & 1;
                     var tint = new Vector4((draw & 2) == 0 ? 1 : 0.5f, 1, 1, 1);
+
                     if (mode == 0)
                     {
                         cb.SetPipeline(fixture.Pipelines[index]);
@@ -1172,16 +1207,19 @@ internal static unsafe class Program
                         var payload = payloads[index];
                         MemoryMarshal.Write(payload.AsSpan(), in tint);
                         var buffer = buffers[index + (mode == 2 ? 2 : 0)];
+
                         if (mode == 1)
                         {
                             D3D11_MAPPED_SUBRESOURCE mapped;
-                            D3D11Interop.Check(device.Context->Map(
-                                (ID3D11Resource*)buffer,
-                                0,
-                                D3D11_MAP.D3D11_MAP_WRITE_DISCARD,
-                                0,
-                                &mapped
-                            ), "Map (benchmark)"
+                            D3D11Interop.Check(
+                                device.Context->Map(
+                                    (ID3D11Resource*)buffer,
+                                    0,
+                                    D3D11_MAP.D3D11_MAP_WRITE_DISCARD,
+                                    0,
+                                    &mapped
+                                ),
+                                "Map (benchmark)"
                             );
                             payload.AsSpan().CopyTo(new Span<byte>(mapped.pData, payload.Length));
                             device.Context->Unmap((ID3D11Resource*)buffer, 0);
@@ -1247,6 +1285,7 @@ internal static unsafe class Program
         if (source is null)
         {
             Console.WriteLine("           the swapchain has no back buffer to read");
+
             return null;
         }
 
@@ -1265,6 +1304,7 @@ internal static unsafe class Program
         };
 
         ID3D11Texture2D* staging = null;
+
         try
         {
             D3D11Interop.Check(
@@ -1294,6 +1334,7 @@ internal static unsafe class Program
             {
                 var pixel = new byte[4];
                 new ReadOnlySpan<byte>((byte*)mapped.pData, 4).CopyTo(pixel);
+
                 return pixel;
             }
             finally
@@ -1304,6 +1345,7 @@ internal static unsafe class Program
         catch (InvalidOperationException e)
         {
             Console.WriteLine($"           {e.Message}");
+
             return null;
         }
         finally
@@ -1324,6 +1366,7 @@ internal static unsafe class Program
         foreach (var uniform in pipeline.Reflection.Uniforms)
         {
             if (uniform.Name == name)
+
                 return uniform.Offset;
         }
 
@@ -1416,12 +1459,15 @@ internal static unsafe class Program
         get
         {
             var imgui = ImGuiFullbright.Create();
+
             yield return new Bundle("ImGuiFullbright", imgui.Vertex, imgui.Pixel, imgui.Reflection, [ImGuiLayout]);
 
             var ground = GroundFullbright.Create();
+
             yield return new Bundle("GroundFullbright", ground.Vertex, ground.Pixel, ground.Reflection, [PositionColorLayout]);
 
             var mountains = MountainsFullbright.Create();
+
             yield return new Bundle(
                 "MountainsFullbright",
                 mountains.Vertex,
@@ -1431,12 +1477,15 @@ internal static unsafe class Program
             );
 
             var sky = SkyFullbright.Create();
+
             yield return new Bundle("SkyFullbright", sky.Vertex, sky.Pixel, sky.Reflection, [PositionColorLayout]);
 
             var poly = PolyBasic.Create();
+
             yield return new Bundle("PolyBasic", poly.Vertex, poly.Pixel, poly.Reflection, [PolyLayout, InstanceLayout]);
 
             var polyShadow = PolyCreateShadowMap.Create();
+
             yield return new Bundle(
                 "PolyCreateShadowMap",
                 polyShadow.Vertex,
@@ -1446,9 +1495,11 @@ internal static unsafe class Program
             );
 
             var nvgSimple = NvgSimple.Create();
+
             yield return new Bundle("NvgSimple", nvgSimple.Vertex, nvgSimple.Pixel, nvgSimple.Reflection, [NvgLayout]);
 
             var particle = ParticleFullbright.Create();
+
             yield return new Bundle(
                 "ParticleFullbright",
                 particle.Vertex,
@@ -1578,9 +1629,11 @@ internal static unsafe class Program
     {
         const int size = 320;
         string fontPath = Path.Combine(AppContext.BaseDirectory, "NotoSans-Regular.ttf");
+
         if (!File.Exists(fontPath))
         {
             Report("MSDF", $"font present at {fontPath}", false);
+
             return;
         }
 
@@ -1631,8 +1684,10 @@ internal static unsafe class Program
                 new AposColor(255, 255, 255)
             );
             var black = new Apos.Shapes.Gradient(Vector2.Zero, new AposColor(0, 0, 0), Vector2.One, new AposColor(0, 0, 0));
+
             // One draw carrying the fill and the band together, which is what DrawStringOutlined
             // does. The fill-only arm is the plain DrawString the ink bound is checked against.
+
             if (outlined)
             {
                 batch.DrawString(font, traced, pen, emSize, white, black, outlineWidth, aaSize: aaSize);
@@ -1662,6 +1717,7 @@ internal static unsafe class Program
 
             var pixels = new byte[size * size * 4];
             device.ReadTexture(target.ColorTexture!, 0, 0, size, size, pixels);
+
             return pixels;
         }
 
@@ -1704,34 +1760,46 @@ internal static unsafe class Program
         // exactly 1/2 - the same letter drawn lighter and fading away slower on both sides.
         CheckFillEdgeProfile(Render(false, 48f, back: new ColorRgba(0f, 0f, 0f, 1f)), size);
         var outlined = Render(true, fontSize, true, 10f, 1.5f, 1f);
+
         // The outline must not leave ink standing away from the glyph. A 1px band with its fade
         // reaches at most two pixels past the letter's own ink, so a dark pixel with no ink of the
         // fill pass within two pixels of it is a stray - the specks the median's false near-edge
         // readings paint outside the letter.
+
         foreach (bool msaa in new[] { false, true })
         {
             var inkOnly = msaa ? Render(false, fontSize, true, 10f, 1.5f, 0f, msaa: true) : fillOnly;
             var ringed = msaa ? Render(true, fontSize, true, 10f, 1.5f, 1f, msaa: true) : outlined;
             int strays = 0;
             var strayAt = new List<(int X, int Y)>();
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    if (Value(ringed, size, x, y) >= 110) continue;
+                    if (Value(ringed, size, x, y) >= 110)
+
+                        continue;
                     bool nearInk = false;
+
                     for (int dy = -2; dy <= 2 && !nearInk; dy++)
+
                     for (int dx = -2; dx <= 2 && !nearInk; dx++)
                     {
                         int nx = x + dx, ny = y + dy;
-                        if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
-                        if (Value(inkOnly, size, nx, ny) > 140) nearInk = true;
+
+                        if (nx < 0 || ny < 0 || nx >= size || ny >= size)
+
+                            continue;
+                        if (Value(inkOnly, size, nx, ny) > 140)
+                            nearInk = true;
                     }
 
                     if (!nearInk)
                     {
                         strays++;
-                        if (strayAt.Count < 8) strayAt.Add((x, y));
+                        if (strayAt.Count < 8)
+                            strayAt.Add((x, y));
                     }
                 }
             }
@@ -1752,15 +1820,20 @@ internal static unsafe class Program
         // a step between the band and the letter turns those pixels solid black or solid white
         // instead, which is an aliased inner edge on every letter.
         int edges = 0, stepped = 0;
+
         for (int y = 0; y < size; y++)
         {
             for (int x = 0; x < size; x++)
             {
                 int alone = Value(fillOnly, size, x, y);
-                if (alone < 159 || alone > 223) continue;
+
+                if (alone < 159 || alone > 223)
+
+                    continue;
                 edges++;
                 float coverage = (alone - 127) / 128f;
-                if (Math.Abs(Value(outlined, size, x, y) - coverage * 255f) > 30f) stepped++;
+                if (Math.Abs(Value(outlined, size, x, y) - coverage * 255f) > 30f)
+                    stepped++;
             }
         }
 
@@ -1813,19 +1886,26 @@ internal static unsafe class Program
     {
         int partial = 0;
         long sum = 0;
+
         for (int y = 1; y < size - 1; y++)
         {
             for (int x = 1; x < size - 1; x++)
             {
                 int v = Value(pixels, size, x, y);
-                if (v <= 8 || v >= 247) continue;
+
+                if (v <= 8 || v >= 247)
+
+                    continue;
                 // Only pixels with an edge on both sides, which is a fade pixel and not a corner's
                 // two-dimensional smear: the neighbours across it are solid fill and background.
                 int l = Value(pixels, size, x - 1, y), r = Value(pixels, size, x + 1, y);
                 int u = Value(pixels, size, x, y - 1), d = Value(pixels, size, x, y + 1);
                 bool acrossY = (l >= 247 && r <= 8) || (l <= 8 && r >= 247);
                 bool acrossX = (u >= 247 && d <= 8) || (u <= 8 && d >= 247);
-                if (!acrossY && !acrossX) continue;
+
+                if (!acrossY && !acrossX)
+
+                    continue;
                 partial ++;
                 sum += v;
             }
@@ -1835,11 +1915,14 @@ internal static unsafe class Program
         // A letter's body is not merely near-white: the fill is solid inside it, and anything less
         // reads as a translucent letter however sharp its edge is.
         int solid = 0, deepest = 0;
+
         for (int y = 0; y < size; y++)
+
         for (int x = 0; x < size; x++)
         {
             int v = Value(pixels, size, x, y);
-            if (v >= 250) solid++;
+            if (v >= 250)
+                solid++;
             deepest = Math.Max(deepest, v);
         }
 
@@ -1857,6 +1940,7 @@ internal static unsafe class Program
     {
         int gaps = 0;
         var first = new List<(int X, int Y)>();
+
         for (int phase = 0; phase < 4; phase++)
         {
             var found = Gaps(renderOnBlue(10f + phase / 4f), size);
@@ -1885,11 +1969,14 @@ internal static unsafe class Program
         bool Letter(int x, int y) => Red(x, y) >= 200;
 
         var found = new List<(int, int)>();
+
         for (int y = 1; y < size - 1; y++)
         {
             for (int x = 1; x < size - 1; x++)
             {
-                if (Background(x, y) < 77) continue;
+                if (Background(x, y) < 77)
+
+                    continue;
                 if ((Band(x - 1, y) && Letter(x + 1, y))
                     || (Letter(x - 1, y) && Band(x + 1, y))
                     || (Band(x, y - 1) && Letter(x, y + 1))
@@ -1919,11 +2006,14 @@ internal static unsafe class Program
 
         // The outermost ink the frame holds, and the box the band could reach at most.
         int minX = size, minY = size, maxX = -1, maxY = -1;
+
         for (int y = 0; y < size; y++)
         {
             for (int x = 0; x < size; x++)
             {
-                if (Math.Abs(Value(pixels, size, x, y) - 128) <= 24) continue;
+                if (Math.Abs(Value(pixels, size, x, y) - 128) <= 24)
+
+                    continue;
                 minX = Math.Min(minX, x);
                 maxX = Math.Max(maxX, x);
                 minY = Math.Min(minY, y);
@@ -1970,19 +2060,26 @@ internal static unsafe class Program
     )
     {
         int worst = 0, worstAt = -1, over = 0, body = 0;
+
         for (int phase = 0; phase < 4; phase++)
         {
             var mine = render(false, fontSize, true, 9f + phase / 4f, 1.5f, 0f);
             var drawn = render(true, fontSize, true, 9f + phase / 4f, 1.5f, 1f);
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
                     int alone = Value(mine, size, x, y);
-                    if (alone < 245 || NearFade(mine, size, x, y)) continue;
+
+                    if (alone < 245 || NearFade(mine, size, x, y))
+
+                        continue;
                     body++;
                     int drop = alone - Value(drawn, size, x, y);
-                    if (drop > 20) over++;
+                    if (drop > 20)
+                        over++;
+
                     if (drop > worst)
                     {
                         worst = drop;
@@ -2013,11 +2110,17 @@ internal static unsafe class Program
     private static bool NearFade(byte[] pixels, int size, int x, int y)
     {
         for (int dy = -1; dy <= 1; dy++)
+
         for (int dx = -1; dx <= 1; dx++)
         {
             int nx = x + dx, ny = y + dy;
-            if (nx < 0 || ny < 0 || nx >= size || ny >= size) return true;
-            if (Value(pixels, size, nx, ny) < 245) return true;
+
+            if (nx < 0 || ny < 0 || nx >= size || ny >= size)
+
+                return true;
+            if (Value(pixels, size, nx, ny) < 245)
+
+                return true;
         }
 
         return false;
@@ -2037,6 +2140,7 @@ internal static unsafe class Program
         for (int i = 0; i < pixels.Length; i += 4)
             if (Math.Max(pixels[i], Math.Max(pixels[i + 1], pixels[i + 2])) > 200)
                 lit++;
+
         return lit;
     }
 }
@@ -2086,6 +2190,7 @@ internal sealed unsafe class SmokeWindow : IDisposable
     {
         var window = new SmokeWindow();
         window.Register(width, height);
+
         return window;
     }
 
@@ -2124,9 +2229,11 @@ internal sealed unsafe class SmokeWindow : IDisposable
         };
 
         _atom = Windows.RegisterClassExW(&windowClass);
+
         if (_atom == 0)
         {
             _classNamePin.Free();
+
             throw new InvalidOperationException(
                 $"RegisterClassExW failed with {Marshal.GetLastWin32Error()}; the class name "
                 + $"'{ClassName}' may already be registered in this process."
@@ -2152,6 +2259,7 @@ internal sealed unsafe class SmokeWindow : IDisposable
         {
             var error = Marshal.GetLastWin32Error();
             Dispose();
+
             throw new InvalidOperationException($"CreateWindowExW failed with {error}.");
         }
 

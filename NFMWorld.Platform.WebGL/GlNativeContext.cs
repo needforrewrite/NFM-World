@@ -13,6 +13,7 @@
 // Generated from the shim's prototypes. When the backend starts calling something new, add the
 // wrapper to webgl_shim.c and regenerate this file and the export list in
 // NFMWorld.Browser.csproj - hand-editing the three separately is how they drift apart.
+
 #nullable enable
 using System.Runtime.InteropServices;
 using Silk.NET.Core.Contexts;
@@ -33,6 +34,7 @@ internal sealed unsafe class GlNativeContext : INativeContext
     public bool TryGetProcAddress(string proc, out nint addr, int? slot = null)
     {
         addr = Lookup(proc);
+
         return addr != IntPtr.Zero;
     }
 
@@ -140,7 +142,6 @@ internal sealed unsafe class GlNativeContext : INativeContext
         "glStencilFuncSeparate" => (nint)(delegate* unmanaged<uint, uint, int, uint, void>)&W_glStencilFuncSeparate,
         "glStencilOpSeparate" => (nint)(delegate* unmanaged<uint, uint, uint, uint, void>)&W_glStencilOpSeparate,
         "glTexSubImage2D" => (nint)(delegate* unmanaged<uint, int, int, int, int, int, uint, uint, void*, void>)&W_glTexSubImage2D,
-
         "glGetString" => (nint)(delegate* unmanaged<uint, byte*>)&W_glGetString,
         "glGetStringi" => (nint)(delegate* unmanaged<uint, uint, byte*>)&W_glGetStringi,
         _ => IntPtr.Zero,
@@ -318,10 +319,26 @@ internal sealed unsafe class GlNativeContext : INativeContext
     internal static extern void glGetShaderiv(uint shader, uint pname, int* values);
 
     [DllImport(Lib, EntryPoint = "nfmw_glGetActiveAttrib")]
-    internal static extern void glGetActiveAttrib(uint program, uint index, int bufSize, int* length, int* size, uint* type, byte* name);
+    internal static extern void glGetActiveAttrib(
+        uint program,
+        uint index,
+        int bufSize,
+        int* length,
+        int* size,
+        uint* type,
+        byte* name
+    );
 
     [DllImport(Lib, EntryPoint = "nfmw_glGetActiveUniform")]
-    internal static extern void glGetActiveUniform(uint program, uint index, int bufSize, int* length, int* size, uint* type, byte* name);
+    internal static extern void glGetActiveUniform(
+        uint program,
+        uint index,
+        int bufSize,
+        int* length,
+        int* size,
+        uint* type,
+        byte* name
+    );
 
     [DllImport(Lib, EntryPoint = "nfmw_glGetProgramInfoLog")]
     internal static extern void glGetProgramInfoLog(uint program, int bufSize, int* length, byte* infoLog);
@@ -369,7 +386,17 @@ internal sealed unsafe class GlNativeContext : INativeContext
     internal static extern void glStencilOp(uint sfail, uint dpfail, uint dppass);
 
     [DllImport(Lib, EntryPoint = "nfmw_glTexImage2D")]
-    internal static extern void glTexImage2D(uint target, int level, int internalformat, int w, int h, int border, uint format, uint type, void* pixels);
+    internal static extern void glTexImage2D(
+        uint target,
+        int level,
+        int internalformat,
+        int w,
+        int h,
+        int border,
+        uint format,
+        uint type,
+        void* pixels
+    );
 
     [DllImport(Lib, EntryPoint = "nfmw_glTexParameteri")]
     internal static extern void glTexParameteri(uint target, uint pname, int param);
@@ -408,7 +435,14 @@ internal sealed unsafe class GlNativeContext : INativeContext
     internal static extern void glVertexAttribIPointer(uint index, int size, uint type, int stride, void* pointer);
 
     [DllImport(Lib, EntryPoint = "nfmw_glVertexAttribPointer")]
-    internal static extern void glVertexAttribPointer(uint index, int size, uint type, byte normalized, int stride, void* pointer);
+    internal static extern void glVertexAttribPointer(
+        uint index,
+        int size,
+        uint type,
+        byte normalized,
+        int stride,
+        void* pointer
+    );
 
     [DllImport(Lib, EntryPoint = "nfmw_glViewport")]
     internal static extern void glViewport(int x, int y, int w, int h);
@@ -468,7 +502,12 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glBufferData(uint target, nint size, void* data, uint usage) => glBufferData(target, size, data, usage);
 
     [UnmanagedCallersOnly]
-    private static void W_glBufferSubData(uint target, nint offset, nint size, void* data) => glBufferSubData(target, offset, size, data);
+    private static void W_glBufferSubData(uint target, nint offset, nint size, void* data) => glBufferSubData(
+        target,
+        offset,
+        size,
+        data
+    );
 
     [UnmanagedCallersOnly]
     private static uint W_glCheckFramebufferStatus(uint target) => glCheckFramebufferStatus(target);
@@ -537,16 +576,32 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glDrawArrays(uint mode, int first, int count) => glDrawArrays(mode, first, count);
 
     [UnmanagedCallersOnly]
-    private static void W_glDrawArraysInstanced(uint mode, int first, int count, int instances) => glDrawArraysInstanced(mode, first, count, instances);
+    private static void W_glDrawArraysInstanced(uint mode, int first, int count, int instances) => glDrawArraysInstanced(
+        mode,
+        first,
+        count,
+        instances
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glDrawBuffers(int n, uint* bufs) => glDrawBuffers(n, bufs);
 
     [UnmanagedCallersOnly]
-    private static void W_glDrawElements(uint mode, int count, uint type, void* indices) => glDrawElements(mode, count, type, indices);
+    private static void W_glDrawElements(uint mode, int count, uint type, void* indices) => glDrawElements(
+        mode,
+        count,
+        type,
+        indices
+    );
 
     [UnmanagedCallersOnly]
-    private static void W_glDrawElementsInstanced(uint mode, int count, uint type, void* indices, int instances) => glDrawElementsInstanced(mode, count, type, indices, instances);
+    private static void W_glDrawElementsInstanced(uint mode, int count, uint type, void* indices, int instances) => glDrawElementsInstanced(
+        mode,
+        count,
+        type,
+        indices,
+        instances
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glEnable(uint cap) => glEnable(cap);
@@ -561,7 +616,13 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glFlush() => glFlush();
 
     [UnmanagedCallersOnly]
-    private static void W_glFramebufferTexture2D(uint target, uint attachment, uint textarget, uint texture, int level) => glFramebufferTexture2D(target, attachment, textarget, texture, level);
+    private static void W_glFramebufferTexture2D(uint target, uint attachment, uint textarget, uint texture, int level) => glFramebufferTexture2D(
+        target,
+        attachment,
+        textarget,
+        texture,
+        level
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glFrontFace(uint mode) => glFrontFace(mode);
@@ -606,22 +667,52 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glGetShaderiv(uint shader, uint pname, int* values) => glGetShaderiv(shader, pname, values);
 
     [UnmanagedCallersOnly]
-    private static void W_glGetActiveAttrib(uint program, uint index, int bufSize, int* length, int* size, uint* type, byte* name) => glGetActiveAttrib(program, index, bufSize, length, size, type, name);
+    private static void W_glGetActiveAttrib(uint program, uint index, int bufSize, int* length, int* size, uint* type, byte* name)
+        => glGetActiveAttrib(program, index, bufSize, length, size, type, name);
 
     [UnmanagedCallersOnly]
-    private static void W_glGetActiveUniform(uint program, uint index, int bufSize, int* length, int* size, uint* type, byte* name) => glGetActiveUniform(program, index, bufSize, length, size, type, name);
+    private static void W_glGetActiveUniform(
+        uint program,
+        uint index,
+        int bufSize,
+        int* length,
+        int* size,
+        uint* type,
+        byte* name
+    ) => glGetActiveUniform(program, index, bufSize, length, size, type, name);
 
     [UnmanagedCallersOnly]
-    private static void W_glGetProgramInfoLog(uint program, int bufSize, int* length, byte* infoLog) => glGetProgramInfoLog(program, bufSize, length, infoLog);
+    private static void W_glGetProgramInfoLog(uint program, int bufSize, int* length, byte* infoLog) => glGetProgramInfoLog(
+        program,
+        bufSize,
+        length,
+        infoLog
+    );
 
     [UnmanagedCallersOnly]
-    private static void W_glGetShaderInfoLog(uint shader, int bufSize, int* length, byte* infoLog) => glGetShaderInfoLog(shader, bufSize, length, infoLog);
+    private static void W_glGetShaderInfoLog(uint shader, int bufSize, int* length, byte* infoLog) => glGetShaderInfoLog(
+        shader,
+        bufSize,
+        length,
+        infoLog
+    );
 
     [UnmanagedCallersOnly]
-    private static void W_glGetActiveUniformBlockiv(uint program, uint index, uint pname, int* values) => glGetActiveUniformBlockiv(program, index, pname, values);
+    private static void W_glGetActiveUniformBlockiv(uint program, uint index, uint pname, int* values) => glGetActiveUniformBlockiv(
+        program,
+        index,
+        pname,
+        values
+    );
 
     [UnmanagedCallersOnly]
-    private static void W_glGetActiveUniformsiv(uint program, int count, uint* indices, uint pname, int* values) => glGetActiveUniformsiv(program, count, indices, pname, values);
+    private static void W_glGetActiveUniformsiv(uint program, int count, uint* indices, uint pname, int* values) => glGetActiveUniformsiv(
+        program,
+        count,
+        indices,
+        pname,
+        values
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glLinkProgram(uint program) => glLinkProgram(program);
@@ -636,13 +727,25 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glReadBuffer(uint src) => glReadBuffer(src);
 
     [UnmanagedCallersOnly]
-    private static void W_glReadPixels(int x, int y, int w, int h, uint format, uint type, void* pixels) => glReadPixels(x, y, w, h, format, type, pixels);
+    private static void W_glReadPixels(int x, int y, int w, int h, uint format, uint type, void* pixels) => glReadPixels(
+        x,
+        y,
+        w,
+        h,
+        format,
+        type,
+        pixels
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glSamplerParameteri(uint sampler, uint pname, int param) => glSamplerParameteri(sampler, pname, param);
 
     [UnmanagedCallersOnly]
-    private static void W_glSamplerParameterf(uint sampler, uint pname, float param) => glSamplerParameterf(sampler, pname, param);
+    private static void W_glSamplerParameterf(uint sampler, uint pname, float param) => glSamplerParameterf(
+        sampler,
+        pname,
+        param
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glScissor(int x, int y, int w, int h) => glScissor(x, y, w, h);
@@ -657,7 +760,17 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glStencilOp(uint sfail, uint dpfail, uint dppass) => glStencilOp(sfail, dpfail, dppass);
 
     [UnmanagedCallersOnly]
-    private static void W_glTexImage2D(uint target, int level, int internalformat, int w, int h, int border, uint format, uint type, void* pixels) => glTexImage2D(target, level, internalformat, w, h, border, format, type, pixels);
+    private static void W_glTexImage2D(
+        uint target,
+        int level,
+        int internalformat,
+        int w,
+        int h,
+        int border,
+        uint format,
+        uint type,
+        void* pixels
+    ) => glTexImage2D(target, level, internalformat, w, h, border, format, type, pixels);
 
     [UnmanagedCallersOnly]
     private static void W_glTexParameteri(uint target, uint pname, int param) => glTexParameteri(target, pname, param);
@@ -684,7 +797,11 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glUniform1uiv(int location, int count, uint* value) => glUniform1uiv(location, count, value);
 
     [UnmanagedCallersOnly]
-    private static void W_glUniformBlockBinding(uint program, uint index, uint binding) => glUniformBlockBinding(program, index, binding);
+    private static void W_glUniformBlockBinding(uint program, uint index, uint binding) => glUniformBlockBinding(
+        program,
+        index,
+        binding
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glUseProgram(uint program) => glUseProgram(program);
@@ -693,16 +810,34 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glVertexAttribDivisor(uint index, uint divisor) => glVertexAttribDivisor(index, divisor);
 
     [UnmanagedCallersOnly]
-    private static void W_glVertexAttribIPointer(uint index, int size, uint type, int stride, void* pointer) => glVertexAttribIPointer(index, size, type, stride, pointer);
+    private static void W_glVertexAttribIPointer(uint index, int size, uint type, int stride, void* pointer) => glVertexAttribIPointer(
+        index,
+        size,
+        type,
+        stride,
+        pointer
+    );
 
     [UnmanagedCallersOnly]
-    private static void W_glVertexAttribPointer(uint index, int size, uint type, byte normalized, int stride, void* pointer) => glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+    private static void W_glVertexAttribPointer(uint index, int size, uint type, byte normalized, int stride, void* pointer) => glVertexAttribPointer(
+        index,
+        size,
+        type,
+        normalized,
+        stride,
+        pointer
+    );
 
     [UnmanagedCallersOnly]
     private static void W_glViewport(int x, int y, int w, int h) => glViewport(x, y, w, h);
 
     [UnmanagedCallersOnly]
-    private static void W_glShaderSource(uint shader, int count, byte** strings, int* lengths) => glShaderSource(shader, count, strings, lengths);
+    private static void W_glShaderSource(uint shader, int count, byte** strings, int* lengths) => glShaderSource(
+        shader,
+        count,
+        strings,
+        lengths
+    );
 
     [UnmanagedCallersOnly]
     private static int W_glGetAttribLocation(uint program, byte* name) => glGetAttribLocation(program, name);
@@ -723,7 +858,17 @@ internal sealed unsafe class GlNativeContext : INativeContext
     private static void W_glStencilOpSeparate(uint a, uint b, uint c, uint d) => glStencilOpSeparate(a, b, c, d);
 
     [UnmanagedCallersOnly]
-    private static void W_glTexSubImage2D(uint t, int l, int x, int y, int w, int h, uint f, uint ty, void* p) => glTexSubImage2D(t, l, x, y, w, h, f, ty, p);
+    private static void W_glTexSubImage2D(uint t, int l, int x, int y, int w, int h, uint f, uint ty, void* p) => glTexSubImage2D(
+        t,
+        l,
+        x,
+        y,
+        w,
+        h,
+        f,
+        ty,
+        p
+    );
 
     [DllImport(Lib, EntryPoint = "nfmw_glGetString")]
     private static extern byte* glGetString(uint name);

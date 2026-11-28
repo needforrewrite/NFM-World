@@ -12,12 +12,15 @@ public sealed partial class ClassicAi
         {
             case StuntPhase.Takeoff:
                 TakeOff(car);
+
                 break;
             case StuntPhase.Flipping:
                 FlyAndWaitForLanding(car);
+
                 break;
             case StuntPhase.Landing:
                 Land(car);
+
                 break;
         }
     }
@@ -69,6 +72,7 @@ public sealed partial class ClassicAi
             _driver.Flip = -1;
             _driver.FlipAfter = 0;
             _driver.FlipReverses = false;
+
             return;
         }
 
@@ -148,7 +152,9 @@ public sealed partial class ClassicAi
         // Scy points down, so unlike the original's wheelSpeedY a fall is positive here.
         var height = World.Ground - car.Position.Y;
         var fall = (mad.SummedWheelVelocity.Y * (fix64)100) / (height + 5);
+
         if (fall <= _driver.LandingMargin)
+
             return;
 
         _driver.PressedUp = false;

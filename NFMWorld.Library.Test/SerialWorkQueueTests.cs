@@ -18,9 +18,11 @@ public class SerialWorkQueueTests
                 started.Set();
                 release.Wait();
                 writes.Add(1);
+
                 return Environment.CurrentManagedThreadId;
             }
         );
+
         try
         {
             Assert.IsTrue(started.Wait(TimeSpan.FromSeconds(5)));

@@ -22,7 +22,9 @@ public class CarModelValidatorTests
     public void EveryShippedCar_IsPublishable()
     {
         var checkedCars = 0;
+
         foreach (var directory in new[] { "nfmm", "world", "elo", "football" })
+
         foreach (var path in TheVFS.VFS.EnumerateFiles($"data/models/{directory}/cars", "*.rad"))
         {
             var name = path[(path.LastIndexOf('/') + 1)..^".rad".Length];
@@ -159,13 +161,16 @@ public class CarModelValidatorTests
     private static Rad3d Car(string wheels, params (string Name, string? Line)[] overrides)
     {
         var lines = new List<string>();
+
         foreach (var statLine in StatLines)
         {
             var name = statLine[..statLine.IndexOf('(')];
+
             if (overrides.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { Name: not null } o)
             {
                 if (o.Line is not null)
                     lines.Add(o.Line);
+
                 continue;
             }
 

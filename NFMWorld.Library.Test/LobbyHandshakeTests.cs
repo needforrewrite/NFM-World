@@ -77,6 +77,7 @@ public class LobbyHandshakeTests
 
             Assert.IsTrue(await rig.Client.WaitForStateAsync(ClientState.Connected), "the client never connected");
             rig.ClientIndex = await rig.WaitForClientIndexAsync();
+
             return rig;
         }
 
@@ -85,6 +86,7 @@ public class LobbyHandshakeTests
             while (!_cts.IsCancellationRequested)
             {
                 HttpListenerContext ctx;
+
                 try
                 {
                     ctx = await _listener.GetContextAsync();
@@ -105,9 +107,11 @@ public class LobbyHandshakeTests
         private async Task<uint> WaitForClientIndexAsync()
         {
             var deadline = Environment.TickCount64 + 5000;
+
             while (Environment.TickCount64 < deadline)
             {
                 if (_server.Connections.Count > 0)
+
                     return _server.Connections.First();
                 await Task.Delay(10);
             }
@@ -128,11 +132,13 @@ public class LobbyHandshakeTests
     private static async Task<T> WaitForAsync<T>(IMultiplayerClientTransport client, int milliseconds = 5000)
     {
         var deadline = Environment.TickCount64 + milliseconds;
+
         while (Environment.TickCount64 < deadline)
         {
             foreach (var packet in client.GetNewPackets())
             {
                 if (packet is T typed)
+
                     return typed;
             }
 
@@ -178,6 +184,7 @@ public class LobbyHandshakeTests
         var seen = 0;
         S2C_LobbyState? state = null;
         var deadline = Environment.TickCount64 + 8000;
+
         while (Environment.TickCount64 < deadline && seen < count)
         {
             foreach (var packet in rig.Client.GetNewPackets())
@@ -211,6 +218,7 @@ public class LobbyHandshakeTests
         Assert.IsTrue((await WaitForAsync<S2C_Authenticated>(rig.Client)).Accepted);
 
         var second = rig.ConnectAnother();
+
         try
         {
             Assert.IsTrue(await second.WaitForStateAsync(ClientState.Connected), "the second client never connected");
@@ -268,9 +276,9 @@ public class LobbyHandshakeTests
                     for (var i = 0; i < perWriter; i++)
                     {
                         rig.Server.SendPacketToClient(
-                        rig.ClientIndex,
-                        new S2C_LobbyChatMessage { SenderId = Guid.Empty, Sender = "w", Message = $"{w}:{i}" }
-                    );
+                            rig.ClientIndex,
+                            new S2C_LobbyChatMessage { SenderId = Guid.Empty, Sender = "w", Message = $"{w}:{i}" }
+                        );
                     }
                 }
             )
@@ -279,6 +287,7 @@ public class LobbyHandshakeTests
 
         var seen = 0;
         var deadline = Environment.TickCount64 + 8000;
+
         while (Environment.TickCount64 < deadline && seen < total)
         {
             foreach (var packet in rig.Client.GetNewPackets())
@@ -303,9 +312,11 @@ internal static class TransportWaitExtensions
     )
     {
         var deadline = Environment.TickCount64 + milliseconds;
+
         while (Environment.TickCount64 < deadline)
         {
             if (client.State == state)
+
                 return true;
             await Task.Delay(10);
         }

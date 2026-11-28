@@ -21,10 +21,16 @@ public sealed class RaceChatState
 
     public void Receive(string sender, string message, Color color, long messageId = 0, bool isGame = false)
     {
-        if (messageId > 0 && messageId <= _lastReceivedId) return;
+        if (messageId > 0 && messageId <= _lastReceivedId)
+
+            return;
         var text = RaceChat.Normalize(message);
-        if (text.Length == 0) return;
-        if (messageId > 0) _lastReceivedId = messageId;
+
+        if (text.Length == 0)
+
+            return;
+        if (messageId > 0)
+            _lastReceivedId = messageId;
         Lines.Value = Lines.Value.TakeLast(RaceChat.HistoryLimit - 1)
             .Append(new RaceChatLine(++_nextId, sender, text, color, isGame)).ToArray();
     }

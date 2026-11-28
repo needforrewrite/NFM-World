@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiHoveredFlagsPrivate : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		DelayMask = unchecked(245760),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiHoveredFlagsPrivate : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        DelayMask = unchecked(245760),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		AllowedMaskForIsWindowHovered = unchecked(12479),
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        AllowedMaskForIsWindowHovered = unchecked(12479),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		AllowedMaskForIsItemHovered = unchecked(262048),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        AllowedMaskForIsItemHovered = unchecked(262048),
+    }
 }

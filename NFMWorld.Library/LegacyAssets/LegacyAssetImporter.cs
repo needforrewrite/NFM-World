@@ -59,6 +59,7 @@ public static class LegacyAssetImporter
         catch (Exception ex) when (ex is FormatException or InvalidDataException)
         {
             Logging.Error($"Could not decode an embedded stage model: {ex.Message}");
+
             return null;
         }
     }
@@ -66,12 +67,17 @@ public static class LegacyAssetImporter
     /// <summary>Extracts the <c>.rad</c> text from a <c>.radq</c> payload, or null if it is not one.</summary>
     public static string? DecodeRadq(ReadOnlySpan<byte> payload)
     {
-        if (TryReadZip(payload, out var rad)) return rad;
+        if (TryReadZip(payload, out var rad))
+
+            return rad;
 
         // Legacy windowed skip: the zip body starts at 20, then every further byte at 40.
+
         foreach (var skip in (ReadOnlySpan<int>)[20, 40])
         {
-            if (payload.Length > skip && TryReadZip(payload[skip..], out rad)) return rad;
+            if (payload.Length > skip && TryReadZip(payload[skip..], out rad))
+
+                return rad;
         }
 
         return null;
@@ -83,10 +89,15 @@ public static class LegacyAssetImporter
     /// </summary>
     public static string? TryReadLocal(string kind, string name)
     {
-        if (SafeName(name) is not { } safe) return null;
+        if (SafeName(name) is not { } safe)
+
+            return null;
 
         var path = $"data/legacy/{kind}/{safe}.radq";
-        if (!TheVFS.VFS.FileExists(path)) return null;
+
+        if (!TheVFS.VFS.FileExists(path))
+
+            return null;
 
         try
         {
@@ -95,6 +106,7 @@ public static class LegacyAssetImporter
         catch (Exception ex)
         {
             Logging.Error($"Could not read legacy asset '{path}': {ex.Message}");
+
             return null;
         }
     }
@@ -106,9 +118,13 @@ public static class LegacyAssetImporter
     public static string? TryFetch(string kind, string name)
     {
         // The legacy host stored names with underscores.
-        if (SafeName(name.Replace(' ', '_')) is not { } safe) return null;
+
+        if (SafeName(name.Replace(' ', '_')) is not { } safe)
+
+            return null;
 
         var payload = Download((kind == "cars" ? CarsHost : TracksHost) + safe + ".radq");
+
         return payload is null ? null : DecodeRadq(payload);
     }
 
@@ -118,19 +134,28 @@ public static class LegacyAssetImporter
     /// </summary>
     public static string? TryFetchModel(string label)
     {
-        if (label.Length < 5 || label[3] != ':') return null;
-        if (SafeName(label[4..]) is not { } safe) return null;
+        if (label.Length < 5 || label[3] != ':')
+
+            return null;
+        if (SafeName(label[4..]) is not { } safe)
+
+            return null;
 
         switch (label[..3])
         {
             case "phy":
+
                 // Plain .rad text, no zip.
+
                 return Download(PhyModelHost + safe + ".rad") is { } rad ? Encoding.UTF8.GetString(rad) : null;
             case "ds":
+
                 return Download(DsModelHost + safe + ".rad.zip") is { } zip ? DecodeRadq(zip) : null;
             case "nfm":
+
                 return TryFetch("cars", safe);
             default:
+
                 return null;
         }
     }
@@ -138,13 +163,17 @@ public static class LegacyAssetImporter
     private static byte[]? Download(string url)
     {
         // No synchronous HTTP on the browser's main thread; a missing asset simply stays missing.
-        if (OperatingSystem.IsBrowser()) return null;
+
+        if (OperatingSystem.IsBrowser())
+
+            return null;
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
             || !AllowedHosts.Contains(uri.Host, StringComparer.OrdinalIgnoreCase))
         {
             Logging.Error($"Refusing to download legacy asset from untrusted host: {url}");
+
             return null;
         }
 
@@ -157,9 +186,11 @@ public static class LegacyAssetImporter
                     // Sync from the caller's perspective (stages load synchronously), but the stage
                     // loading thread is not the UI thread, so this cannot block a frame.
                     using var response = Http.GetAsync(u).GetAwaiter().GetResult();
+
                     if (!response.IsSuccessStatusCode)
                     {
                         Logging.Info($"Legacy asset {u} answered {(int)response.StatusCode}.");
+
                         return null;
                     }
 
@@ -168,6 +199,7 @@ public static class LegacyAssetImporter
                 catch (Exception ex)
                 {
                     Logging.Info($"Could not download legacy asset '{u}': {ex.Message}");
+
                     return null;
                 }
             }
@@ -186,6 +218,7 @@ public static class LegacyAssetImporter
         if (content.Headers.ContentLength is { } declared && declared > limit)
         {
             Logging.Info($"Refusing legacy asset {url}: {declared} bytes over the {limit}-byte limit.");
+
             return null;
         }
 
@@ -193,11 +226,13 @@ public static class LegacyAssetImporter
         using var buffer = new MemoryStream();
         var chunk = new byte[16 * 1024];
         int read;
+
         while ((read = stream.Read(chunk, 0, chunk.Length)) > 0)
         {
             if (buffer.Length + read > limit)
             {
                 Logging.Info($"Refusing legacy asset {url}: it exceeded the {limit}-byte limit.");
+
                 return null;
             }
 
@@ -219,17 +254,21 @@ public static class LegacyAssetImporter
         var wrapped = input.Read(header) == 2
                       && (header[0] & 0x0F) == 8
                       && ((header[0] << 8) | header[1]) % 31 == 0;
-        if (!wrapped) input.Position = 0;
+        if (!wrapped)
+            input.Position = 0;
 
         using var inflate = new DeflateStream(input, CompressionMode.Decompress);
         using var output = new MemoryStream();
         var chunk = new byte[16 * 1024];
         int read;
+
         // A small payload can inflate to gigabytes. A .rad is far under this cap, so stopping
         // here refuses a decompression bomb rather than letting it exhaust memory.
+
         while ((read = inflate.Read(chunk, 0, chunk.Length)) > 0)
         {
             if (output.Length + read > MaxAssetBytes)
+
                 throw new InvalidDataException($"Embedded model inflates past {MaxAssetBytes} bytes.");
             output.Write(chunk, 0, read);
         }
@@ -240,28 +279,44 @@ public static class LegacyAssetImporter
     /// <summary>Rejects anything that could escape the fixed URL template.</summary>
     private static string? SafeName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name)) return null;
-        if (name.Length > 128) return null;
-        if (name.AsSpan().IndexOfAny("\\/:*?\"<>|") >= 0) return null;
-        if (name.Contains("..", StringComparison.Ordinal)) return null;
+        if (string.IsNullOrWhiteSpace(name))
+
+            return null;
+        if (name.Length > 128)
+
+            return null;
+        if (name.AsSpan().IndexOfAny("\\/:*?\"<>|") >= 0)
+
+            return null;
+        if (name.Contains("..", StringComparison.Ordinal))
+
+            return null;
+
         return name;
     }
 
     private static bool TryReadZip(ReadOnlySpan<byte> payload, out string? rad)
     {
         rad = null;
+
         // PK\x03\x04
+
         if (payload.Length < 4 || payload[0] != 0x50 || payload[1] != 0x4B || payload[2] != 0x03)
+
             return false;
 
         try
         {
             using var archive = new ZipArchive(new MemoryStream(payload.ToArray()), ZipArchiveMode.Read);
             var entry = archive.Entries.FirstOrDefault();
-            if (entry is null) return false;
+
+            if (entry is null)
+
+                return false;
 
             using var reader = new StreamReader(entry.Open(), Encoding.UTF8);
             rad = reader.ReadToEnd();
+
             return true;
         }
         catch (InvalidDataException)

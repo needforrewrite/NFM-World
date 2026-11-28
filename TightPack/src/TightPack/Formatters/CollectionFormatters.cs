@@ -13,6 +13,7 @@ public sealed class NullableFormatter<T> : TightPackFormatter<T?>
         if (!value.HasValue)
         {
             writer.WriteBoolean(false);
+
             return;
         }
 
@@ -25,6 +26,7 @@ public sealed class NullableFormatter<T> : TightPackFormatter<T?>
         if (!reader.ReadBoolean())
         {
             value = null;
+
             return;
         }
 
@@ -43,11 +45,13 @@ public sealed class ArrayFormatter<T> : TightPackFormatter<T?[]?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < value.Length; i++)
         {
             formatter.Serialize(ref writer, in value[i]);
@@ -59,17 +63,20 @@ public sealed class ArrayFormatter<T> : TightPackFormatter<T?[]?>
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         if (length == 0)
         {
             value = [];
+
             return;
         }
 
         var result = new T?[length];
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             formatter.Deserialize(ref reader, ref result[i]);
@@ -88,11 +95,13 @@ public sealed class ListFormatter<T> : TightPackFormatter<List<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Count);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < value.Count; i++)
         {
             T? item = value[i];
@@ -105,11 +114,13 @@ public sealed class ListFormatter<T> : TightPackFormatter<List<T>?>
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         var result = new List<T>(length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;
@@ -132,11 +143,13 @@ public sealed class GenericCollectionFormatter<TCollection, TElement> : TightPac
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Count);
         var formatter = TightPackFormatterProvider.GetFormatter<TElement>();
+
         foreach (TElement item in value)
         {
             TElement? element = item;
@@ -149,11 +162,13 @@ public sealed class GenericCollectionFormatter<TCollection, TElement> : TightPac
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = default;
+
             return;
         }
 
         var result = new TCollection();
         var formatter = TightPackFormatterProvider.GetFormatter<TElement>();
+
         for (int i = 0; i < length; i++)
         {
             TElement? item = default;
@@ -174,11 +189,13 @@ public sealed class HashSetFormatter<T> : TightPackFormatter<HashSet<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Count);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         foreach (T item in value)
         {
             T? element = item;
@@ -191,11 +208,13 @@ public sealed class HashSetFormatter<T> : TightPackFormatter<HashSet<T>?>
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         var result = new HashSet<T>(length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;
@@ -217,12 +236,14 @@ public sealed class DictionaryFormatter<TKey, TValue> : TightPackFormatter<Dicti
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         writer.WriteCollectionHeader(value.Count);
         var keyFormatter = TightPackFormatterProvider.GetFormatter<TKey>();
         var valueFormatter = TightPackFormatterProvider.GetFormatter<TValue>();
+
         foreach (var pair in value)
         {
             TKey key = pair.Key;
@@ -237,12 +258,14 @@ public sealed class DictionaryFormatter<TKey, TValue> : TightPackFormatter<Dicti
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         var result = new Dictionary<TKey, TValue>(length);
         var keyFormatter = TightPackFormatterProvider.GetFormatter<TKey>();
         var valueFormatter = TightPackFormatterProvider.GetFormatter<TValue>();
+
         for (int i = 0; i < length; i++)
         {
             TKey? key = default;
@@ -287,6 +310,7 @@ public sealed class BitArrayFormatter : TightPackFormatter<BitArray?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -302,11 +326,13 @@ public sealed class BitArrayFormatter : TightPackFormatter<BitArray?>
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = null;
+
             return;
         }
 
         byte[]? bytes = reader.ReadBlittableArray<byte>();
         var result = new BitArray(length);
+
         for (int i = 0; i < length; i++)
         {
             int index = i >> 3;
@@ -330,11 +356,13 @@ public sealed class EnumerableFormatter<T> : TightPackFormatter<IEnumerable<T>?>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
         // The length header is a true count, so an unsized sequence is materialised once.
         IEnumerable<T> sequence = value;
+
         if (!value.TryGetNonEnumeratedCount(out int count))
         {
             var items = new List<T>(value);
@@ -344,6 +372,7 @@ public sealed class EnumerableFormatter<T> : TightPackFormatter<IEnumerable<T>?>
 
         writer.WriteCollectionHeader(count);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         foreach (T item in sequence)
         {
             T? element = item;

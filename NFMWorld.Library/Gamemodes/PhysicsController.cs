@@ -15,6 +15,7 @@ public partial class PhysicsController(IReadOnlyList<ClientSidePlayer> players, 
         for (var i = 0; i < players.Count; i++)
         {
             var player = players[i];
+
             if (player.Car is not { HasLeftRace: true } && player.Bot is { } bot)
             {
                 bot.RunAi();
@@ -22,9 +23,11 @@ public partial class PhysicsController(IReadOnlyList<ClientSidePlayer> players, 
         }
 
         // Inter-car collision at original tickrate (21.4 TPS)
+
         if (++_newTick == Physics.OriginalTicksPerNewTick)
         {
             for (int i = 0; i < players.Count; i++)
+
             for (int j = 0; j < players.Count; j++)
             {
                 if (i != j && players[i].Car is { } leftCar && players[j].Car is { } rightCar)

@@ -24,6 +24,7 @@ public static class PasswordHasher
     {
         var salt = RandomNumberGenerator.GetBytes(SaltBytes);
         var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Iterations, HashAlgorithmName.SHA512, HashBytes);
+
         return $"{Prefix}${Iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
     }
 
@@ -31,13 +32,17 @@ public static class PasswordHasher
     public static bool Verify(string password, string stored)
     {
         var parts = stored.Split('$');
+
         if (parts.Length != 4 || parts[0] != Prefix)
+
             return false;
 
         if (!int.TryParse(parts[1], out var iterations) || iterations <= 0)
+
             return false;
 
         byte[] salt, expected;
+
         try
         {
             salt = Convert.FromBase64String(parts[2]);
@@ -55,6 +60,7 @@ public static class PasswordHasher
             HashAlgorithmName.SHA512,
             expected.Length
         );
+
         return CryptographicOperations.FixedTimeEquals(actual, expected);
     }
 

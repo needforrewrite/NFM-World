@@ -52,6 +52,7 @@ namespace NFMWorld.Api
         {
             var settings = new System.Text.Json.JsonSerializerOptions();
             UpdateJsonSerializerSettings(settings);
+
             return settings;
         }
 
@@ -100,6 +101,7 @@ namespace NFMWorld.Api
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
@@ -110,7 +112,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: ""
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -126,12 +129,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -141,6 +146,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<HealthResponse>(
@@ -148,6 +154,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -167,6 +174,7 @@ namespace NFMWorld.Api
                                 response_.Content,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             throw new ApiException(
                                 "The HTTP status code of the response was not expected (" + status_ + ").",
                                 status_,
@@ -215,11 +223,13 @@ namespace NFMWorld.Api
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     if (authorization == null)
+
                         throw new System.ArgumentNullException("authorization");
                     request_.Headers.TryAddWithoutValidation(
                         "Authorization",
@@ -231,6 +241,7 @@ namespace NFMWorld.Api
                     content_.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary_);
 
                     if (file == null)
+
                         throw new System.ArgumentNullException("file");
                     else
                     {
@@ -246,6 +257,7 @@ namespace NFMWorld.Api
                     }
 
                     if (metadata == null)
+
                         throw new System.ArgumentNullException("metadata");
                     else
                     {
@@ -260,7 +272,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "assets/create"
                     urlBuilder_.Append("assets/create");
 
@@ -277,12 +290,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -292,6 +307,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<CreateAssetResponse>(
@@ -299,6 +315,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -313,6 +330,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 400)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -320,6 +338,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -341,6 +360,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 401)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -348,6 +368,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -369,6 +390,7 @@ namespace NFMWorld.Api
                                     );
                                 }
                                 else
+
                                     if (status_ == 403)
                                     {
                                         var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -376,6 +398,7 @@ namespace NFMWorld.Api
                                             headers_,
                                             cancellationToken
                                         ).ConfigureAwait(false);
+
                                         if (objectResponse_.Object == null)
                                         {
                                             throw new ApiException(
@@ -397,6 +420,7 @@ namespace NFMWorld.Api
                                         );
                                     }
                                     else
+
                                         if (status_ == 409)
                                         {
                                             var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -404,6 +428,7 @@ namespace NFMWorld.Api
                                                 headers_,
                                                 cancellationToken
                                             ).ConfigureAwait(false);
+
                                             if (objectResponse_.Object == null)
                                             {
                                                 throw new ApiException(
@@ -425,6 +450,7 @@ namespace NFMWorld.Api
                                             );
                                         }
                                         else
+
                                             if (status_ == 413)
                                             {
                                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -432,6 +458,7 @@ namespace NFMWorld.Api
                                                     headers_,
                                                     cancellationToken
                                                 ).ConfigureAwait(false);
+
                                                 if (objectResponse_.Object == null)
                                                 {
                                                     throw new ApiException(
@@ -453,6 +480,7 @@ namespace NFMWorld.Api
                                                 );
                                             }
                                             else
+
                                                 if (status_ == 500)
                                                 {
                                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -460,6 +488,7 @@ namespace NFMWorld.Api
                                                         headers_,
                                                         cancellationToken
                                                     ).ConfigureAwait(false);
+
                                                     if (objectResponse_.Object == null)
                                                     {
                                                         throw new ApiException(
@@ -487,8 +516,10 @@ namespace NFMWorld.Api
                                                                             response_.Content,
                                                                             cancellationToken
                                                                         ).ConfigureAwait(false);
+
                                                     throw new ApiException(
-                                                        "The HTTP status code of the response was not expected (" + status_
+                                                        "The HTTP status code of the response was not expected ("
+                                                        + status_
                                                         + ").",
                                                         status_,
                                                         responseData_,
@@ -533,15 +564,18 @@ namespace NFMWorld.Api
         )
         {
             if (body == null)
+
                 throw new System.ArgumentNullException("body");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     if (authorization == null)
+
                         throw new System.ArgumentNullException("authorization");
                     request_.Headers.TryAddWithoutValidation(
                         "Authorization",
@@ -557,7 +591,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "assets/search"
                     urlBuilder_.Append("assets/search");
 
@@ -574,12 +609,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -589,6 +626,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<SearchAssetsResponse>(
@@ -596,6 +634,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -610,6 +649,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 400)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -617,6 +657,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -638,6 +679,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 401)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -645,6 +687,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -666,6 +709,7 @@ namespace NFMWorld.Api
                                     );
                                 }
                                 else
+
                                     if (status_ == 500)
                                     {
                                         var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -673,6 +717,7 @@ namespace NFMWorld.Api
                                             headers_,
                                             cancellationToken
                                         ).ConfigureAwait(false);
+
                                         if (objectResponse_.Object == null)
                                         {
                                             throw new ApiException(
@@ -699,6 +744,7 @@ namespace NFMWorld.Api
                                             response_.Content,
                                             cancellationToken
                                         ).ConfigureAwait(false);
+
                                         throw new ApiException(
                                             "The HTTP status code of the response was not expected (" + status_ + ").",
                                             status_,
@@ -744,15 +790,18 @@ namespace NFMWorld.Api
         )
         {
             if (body == null)
+
                 throw new System.ArgumentNullException("body");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     if (authorization == null)
+
                         throw new System.ArgumentNullException("authorization");
                     request_.Headers.TryAddWithoutValidation(
                         "Authorization",
@@ -768,7 +817,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "assets/set_like"
                     urlBuilder_.Append("assets/set_like");
 
@@ -785,12 +835,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -800,6 +852,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<LikeAssetResponse>(
@@ -807,6 +860,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -821,6 +875,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 400)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -828,6 +883,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -849,6 +905,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 401)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -856,6 +913,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -877,6 +935,7 @@ namespace NFMWorld.Api
                                     );
                                 }
                                 else
+
                                     if (status_ == 404)
                                     {
                                         var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -884,6 +943,7 @@ namespace NFMWorld.Api
                                             headers_,
                                             cancellationToken
                                         ).ConfigureAwait(false);
+
                                         if (objectResponse_.Object == null)
                                         {
                                             throw new ApiException(
@@ -905,6 +965,7 @@ namespace NFMWorld.Api
                                         );
                                     }
                                     else
+
                                         if (status_ == 500)
                                         {
                                             var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -912,6 +973,7 @@ namespace NFMWorld.Api
                                                 headers_,
                                                 cancellationToken
                                             ).ConfigureAwait(false);
+
                                             if (objectResponse_.Object == null)
                                             {
                                                 throw new ApiException(
@@ -939,6 +1001,7 @@ namespace NFMWorld.Api
                                                                     response_.Content,
                                                                     cancellationToken
                                                                 ).ConfigureAwait(false);
+
                                             throw new ApiException(
                                                 "The HTTP status code of the response was not expected (" + status_ + ").",
                                                 status_,
@@ -985,21 +1048,26 @@ namespace NFMWorld.Api
             )
         {
             if (asset_type == null)
+
                 throw new System.ArgumentNullException("asset_type");
 
             if (asset_author == null)
+
                 throw new System.ArgumentNullException("asset_author");
 
             if (asset_name == null)
+
                 throw new System.ArgumentNullException("asset_name");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     if (authorization == null)
+
                         throw new System.ArgumentNullException("authorization");
                     request_.Headers.TryAddWithoutValidation(
                         "Authorization",
@@ -1011,7 +1079,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "assets/{asset_type}/{asset_author}/{asset_name}.radpack"
                     urlBuilder_.Append("assets/");
                     urlBuilder_.Append(
@@ -1046,12 +1115,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -1061,10 +1132,12 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic
                                 .ICollection<int>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -1079,6 +1152,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 400)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1086,6 +1160,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -1107,6 +1182,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 401)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1114,6 +1190,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -1135,6 +1212,7 @@ namespace NFMWorld.Api
                                     );
                                 }
                                 else
+
                                     if (status_ == 403)
                                     {
                                         var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1142,6 +1220,7 @@ namespace NFMWorld.Api
                                             headers_,
                                             cancellationToken
                                         ).ConfigureAwait(false);
+
                                         if (objectResponse_.Object == null)
                                         {
                                             throw new ApiException(
@@ -1163,6 +1242,7 @@ namespace NFMWorld.Api
                                         );
                                     }
                                     else
+
                                         if (status_ == 404)
                                         {
                                             var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1170,6 +1250,7 @@ namespace NFMWorld.Api
                                                 headers_,
                                                 cancellationToken
                                             ).ConfigureAwait(false);
+
                                             if (objectResponse_.Object == null)
                                             {
                                                 throw new ApiException(
@@ -1191,6 +1272,7 @@ namespace NFMWorld.Api
                                             );
                                         }
                                         else
+
                                             if (status_ == 500)
                                             {
                                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1198,6 +1280,7 @@ namespace NFMWorld.Api
                                                     headers_,
                                                     cancellationToken
                                                 ).ConfigureAwait(false);
+
                                                 if (objectResponse_.Object == null)
                                                 {
                                                     throw new ApiException(
@@ -1225,6 +1308,7 @@ namespace NFMWorld.Api
                                                                         response_.Content,
                                                                         cancellationToken
                                                                     ).ConfigureAwait(false);
+
                                                 throw new ApiException(
                                                     "The HTTP status code of the response was not expected (" + status_ + ").",
                                                     status_,
@@ -1265,10 +1349,12 @@ namespace NFMWorld.Api
             )
         {
             if (body == null)
+
                 throw new System.ArgumentNullException("body");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
@@ -1283,7 +1369,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "auth/discord/create_account"
                     urlBuilder_.Append("auth/discord/create_account");
 
@@ -1300,12 +1387,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -1315,6 +1404,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<DiscordCreateAccountResponse>(
@@ -1322,6 +1412,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -1336,6 +1427,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 400)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1343,6 +1435,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -1364,6 +1457,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 500)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1371,6 +1465,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -1397,6 +1492,7 @@ namespace NFMWorld.Api
                                         response_.Content,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     throw new ApiException(
                                         "The HTTP status code of the response was not expected (" + status_ + ").",
                                         status_,
@@ -1436,6 +1532,7 @@ namespace NFMWorld.Api
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
@@ -1446,7 +1543,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "auth/discord/start"
                     urlBuilder_.Append("auth/discord/start");
 
@@ -1463,12 +1561,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -1478,6 +1578,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<DiscordInitResponse>(
@@ -1485,6 +1586,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -1499,6 +1601,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 500)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1506,6 +1609,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -1532,6 +1636,7 @@ namespace NFMWorld.Api
                                     response_.Content,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 throw new ApiException(
                                     "The HTTP status code of the response was not expected (" + status_ + ").",
                                     status_,
@@ -1573,10 +1678,12 @@ namespace NFMWorld.Api
             )
         {
             if (body == null)
+
                 throw new System.ArgumentNullException("body");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
@@ -1591,7 +1698,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "auth/local/create_account"
                     urlBuilder_.Append("auth/local/create_account");
 
@@ -1608,12 +1716,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -1623,6 +1733,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<CreateLocalAccountResponse>(
@@ -1630,6 +1741,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -1644,6 +1756,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 400)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1651,6 +1764,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -1672,6 +1786,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 500)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1679,6 +1794,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -1705,6 +1821,7 @@ namespace NFMWorld.Api
                                         response_.Content,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     throw new ApiException(
                                         "The HTTP status code of the response was not expected (" + status_ + ").",
                                         status_,
@@ -1746,10 +1863,12 @@ namespace NFMWorld.Api
             )
         {
             if (body == null)
+
                 throw new System.ArgumentNullException("body");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
@@ -1764,7 +1883,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "auth/local/login"
                     urlBuilder_.Append("auth/local/login");
 
@@ -1781,12 +1901,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -1796,6 +1918,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<LoginLocalAccountResponse>(
@@ -1803,6 +1926,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -1817,6 +1941,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 400)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1824,6 +1949,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -1845,6 +1971,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 500)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1852,6 +1979,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -1878,6 +2006,7 @@ namespace NFMWorld.Api
                                         response_.Content,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     throw new ApiException(
                                         "The HTTP status code of the response was not expected (" + status_ + ").",
                                         status_,
@@ -1919,10 +2048,12 @@ namespace NFMWorld.Api
         )
         {
             if (poll_id == null)
+
                 throw new System.ArgumentNullException("poll_id");
 
             var client_ = _httpClient;
             var disposeClient_ = false;
+
             try
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
@@ -1933,7 +2064,8 @@ namespace NFMWorld.Api
                     );
 
                     var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    if (!string.IsNullOrEmpty(_baseUrl))
+                        urlBuilder_.Append(_baseUrl);
                     // Operation Path: "auth/poll/{poll_id}"
                     urlBuilder_.Append("auth/poll/");
                     urlBuilder_.Append(
@@ -1953,12 +2085,14 @@ namespace NFMWorld.Api
                         cancellationToken
                     ).ConfigureAwait(false);
                     var disposeResponse_ = true;
+
                     try
                     {
                         var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic
                             .IEnumerable<string>>();
                         foreach (var item_ in response_.Headers)
                             headers_[item_.Key] = item_.Value;
+
                         if (response_.Content != null && response_.Content.Headers != null)
                         {
                             foreach (var item_ in response_.Content.Headers)
@@ -1968,6 +2102,7 @@ namespace NFMWorld.Api
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
+
                         if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<PollResponse>(
@@ -1975,6 +2110,7 @@ namespace NFMWorld.Api
                                 headers_,
                                 cancellationToken
                             ).ConfigureAwait(false);
+
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException(
@@ -1989,6 +2125,7 @@ namespace NFMWorld.Api
                             return objectResponse_.Object;
                         }
                         else
+
                             if (status_ == 404)
                             {
                                 var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -1996,6 +2133,7 @@ namespace NFMWorld.Api
                                     headers_,
                                     cancellationToken
                                 ).ConfigureAwait(false);
+
                                 if (objectResponse_.Object == null)
                                 {
                                     throw new ApiException(
@@ -2017,6 +2155,7 @@ namespace NFMWorld.Api
                                 );
                             }
                             else
+
                                 if (status_ == 500)
                                 {
                                     var objectResponse_ = await ReadObjectResponseAsync<ErrorResponse>(
@@ -2024,6 +2163,7 @@ namespace NFMWorld.Api
                                         headers_,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     if (objectResponse_.Object == null)
                                     {
                                         throw new ApiException(
@@ -2050,6 +2190,7 @@ namespace NFMWorld.Api
                                         response_.Content,
                                         cancellationToken
                                     ).ConfigureAwait(false);
+
                                     throw new ApiException(
                                         "The HTTP status code of the response was not expected (" + status_ + ").",
                                         status_,
@@ -2093,8 +2234,10 @@ namespace NFMWorld.Api
         )
         {
 #if NET5_0_OR_GREATER
+
             return content.ReadAsStringAsync(cancellationToken);
 #else
+
             return content.ReadAsStringAsync();
 #endif
         }
@@ -2106,8 +2249,10 @@ namespace NFMWorld.Api
         )
         {
 #if NET5_0_OR_GREATER
+
             return content.ReadAsStreamAsync(cancellationToken);
 #else
+
             return content.ReadAsStreamAsync();
 #endif
         }
@@ -2128,14 +2273,17 @@ namespace NFMWorld.Api
             if (ReadResponseAsString)
             {
                 var responseText = await ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+
                 try
                 {
                     var typedBody = System.Text.Json.JsonSerializer.Deserialize<T>(responseText, JsonSerializerSettings);
+
                     return new ObjectResponseResult<T>(typedBody!, responseText);
                 }
                 catch (System.Text.Json.JsonException exception)
                 {
                     var message = "Could not deserialize the response body string as " + typeof(T).FullName + ".";
+
                     throw new ApiException(message, (int)response.StatusCode, responseText, headers, exception);
                 }
             }
@@ -2151,12 +2299,14 @@ namespace NFMWorld.Api
                             JsonSerializerSettings,
                             cancellationToken
                         ).ConfigureAwait(false);
+
                         return new ObjectResponseResult<T>(typedBody!, string.Empty);
                     }
                 }
                 catch (System.Text.Json.JsonException exception)
                 {
                     var message = "Could not deserialize the response body stream as " + typeof(T).FullName + ".";
+
                     throw new ApiException(message, (int)response.StatusCode, string.Empty, headers, exception);
                 }
             }
@@ -2172,9 +2322,11 @@ namespace NFMWorld.Api
             if (value is System.Enum)
             {
                 var name = System.Enum.GetName(value.GetType(), value);
+
                 if (name != null)
                 {
                     var field_ = System.Reflection.IntrospectionExtensions.GetTypeInfo(value.GetType()).GetDeclaredField(name);
+
                     if (field_ != null)
                     {
                         var attribute = System.Reflection.CustomAttributeExtensions.GetCustomAttribute(
@@ -2182,6 +2334,7 @@ namespace NFMWorld.Api
                             typeof(System.Runtime.Serialization.EnumMemberAttribute)
                         )
                             as System.Runtime.Serialization.EnumMemberAttribute;
+
                         if (attribute != null)
                         {
                             return attribute.Value != null ? attribute.Value : name;
@@ -2191,6 +2344,7 @@ namespace NFMWorld.Api
                     var converted = System.Convert.ToString(
                         System.Convert.ChangeType(value, System.Enum.GetUnderlyingType(value.GetType()), cultureInfo)
                     );
+
                     return converted == null ? string.Empty : converted;
                 }
             }
@@ -2210,6 +2364,7 @@ namespace NFMWorld.Api
             {
                 var valueArray = (System.Array)value;
                 var valueTextArray = new string[valueArray.Length];
+
                 for (var i = 0; i < valueArray.Length; i++)
                 {
                     valueTextArray[i] = ConvertToString(valueArray.GetValue(i), cultureInfo);
@@ -2219,6 +2374,7 @@ namespace NFMWorld.Api
             }
 
             var result = System.Convert.ToString(value, cultureInfo);
+
             return result == null ? "" : result;
         }
     }
@@ -2710,7 +2866,11 @@ namespace NFMWorld.Api
             System.Exception? innerException
         )
             : base(
-                message + "\n\nStatus: " + statusCode + "\nResponse: \n" + ((response == null) ? "(null)" : response.Substring(
+                message
+                + "\n\nStatus: "
+                + statusCode
+                + "\nResponse: \n"
+                + ((response == null) ? "(null)" : response.Substring(
                     0,
                     response.Length >= 512 ? 512 : response.Length
                 )),

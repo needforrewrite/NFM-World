@@ -13,15 +13,18 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
         Position();
         Anchor(HudAnchor.TopRight);
         Status();
-        if (!Race.TimeTrial && Race.Racers.Count > 1) Opponents();
+        if (!Race.TimeTrial && Race.Racers.Count > 1)
+            Opponents();
         // phy only paints the chronometer in singleplayer, where it fills the space the
         // opponent rows use in a race.
-        if (Race.Opponents == 0 && Race.LapSplits.Count > 1) Chronometer();
+        if (Race.Opponents == 0 && Race.LapSplits.Count > 1)
+            Chronometer();
         Anchor(HudAnchor.Top);
         Arrow();
         Anchor(HudAnchor.BottomLeft);
         Radar();
-        if (Race.MusicTrack is { } track) TrackVisor(track);
+        if (Race.MusicTrack is { } track)
+            TrackVisor(track);
         Anchor(HudAnchor.BottomRight);
         Speedometer();
     }
@@ -38,6 +41,7 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
         Text("position", 41, 42, 15, white, FontFamily.Yukari);
 
         var blue = Snap(30, 70, 150);
+
         if (Race.TotalLaps > 0)
         {
             Text("lap", 19, 20, 15, white, FontFamily.Yukari);
@@ -47,7 +51,9 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
         if (!Race.TimeTrial)
             Text($"{Race.Wasted} / {Race.Opponents}", 154, 20, 13, blue, FontFamily.Yukari, false);
 
-        if (!Race.HasPosition) return;
+        if (!Race.HasPosition)
+
+            return;
         var pos = Race.Position;
         var width = TextWidth($"{pos}", 72, FontFamily.Yukari);
         Text($"{pos}", 112, 82, 72, Snap(0, 0, 0, 110), FontFamily.Yukari);
@@ -76,7 +82,8 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
     {
         RectOutline(frame, 2, x, y, 100, 10);
         var w = 100 * Math.Clamp(value, 0, 1);
-        if (w > 0) Rect(fill, x, y, w, 10);
+        if (w > 0)
+            Rect(fill, x, y, w, 10);
     }
 
     // ── Opponent rows. GadgetPainter.opponentStatus, opstaton 1 ──────
@@ -85,11 +92,18 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
     {
         const int maxRows = 11;
         var row = 0;
+
         foreach (var racer in Race.Racers)
         {
-            if (racer.Wasted) continue;
-            if (row >= maxRows) break;
+            if (racer.Wasted)
+
+                continue;
+
+            if (row >= maxRows)
+
+                break;
             var y = 58 + 30 * row;
+
             if (racer.LockSlot is > 0 and <= 10)
             {
                 Rect(Snap(0, 40, 120), 671, y, 5, 25);
@@ -110,9 +124,15 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
 
     private void Arrow()
     {
-        if (Race.Spectating) return;
-        if (Race.ArrowAngle is not { } angle) return;
-        if (!Race.ArrowAtCars && MathF.Abs(angle) <= 7 && !Race.IsPreview) return;
+        if (Race.Spectating)
+
+            return;
+        if (Race.ArrowAngle is not { } angle)
+
+            return;
+        if (!Race.ArrowAtCars && MathF.Abs(angle) <= 7 && !Race.IsPreview)
+
+            return;
 
         // xtGraphics.arrow: rotate the seven X/Z vertices, then project at y=-90. The same shape
         // as the classic skin's, so switching skins keeps the arrow and changes its palette.
@@ -123,8 +143,10 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
         var radians = angle * (MathF.PI / 180);
         var sin = MathF.Sin(radians);
         var cos = MathF.Cos(radians);
+
         // xt.rot about (400, 700), then xt.xs / xt.ys: a perspective projection about
         // (focus_point 400, cx 400, cy 225). The vertices sit at y = -90 before it.
+
         for (var i = 0; i < xs.Length; i++)
         {
             var dx = xs[i];
@@ -139,6 +161,7 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
 
         // arrowon 1 is only blue while aiming at cars; in track mode phy draws it green.
         var turn = MathF.Abs(angle);
+
         if (Race.ArrowAtCars)
         {
             G.SetColor(Snap(130, 170, 250, 180));
@@ -160,7 +183,9 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
 
     private void Radar()
     {
-        if (Race.ClientPosition is null) return;
+        if (Race.ClientPosition is null)
+
+            return;
         var side = S(172);
         var x = X(6);
         var y = Y(290);
@@ -189,6 +214,7 @@ internal sealed class Dsmod2Hud(IHudData race) : GadgetHud(race)
 
         var cumulative = 0;
         var white = Snap(250, 250, 250);
+
         for (var i = 0; i < rows; i++)
         {
             cumulative += splits[i];

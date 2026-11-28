@@ -34,11 +34,11 @@ public class AccountViewTests
     {
         AccountView.Reset();
         using var mounted = Renderer.Mount(() => AccountView.Build(
-                new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide, () => { }),
-                () => false,
-                () => "",
-                () => ""
-            )
+            new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide, () => { }),
+            () => false,
+            () => "",
+            () => ""
+        )
         );
         AccountView.Show();
         AccountView.SetStatus("Sign in to play multiplayer.", false);
@@ -58,11 +58,11 @@ public class AccountViewTests
         AccountView.Reset();
         AccountView.Show();
         using var mounted = Renderer.Mount(() => AccountView.Build(
-                new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide, () => { }),
-                () => false,
-                () => "",
-                () => ""
-            )
+            new AccountView.Actions((_, _) => { }, () => { }, () => { }, AccountView.Hide, () => { }),
+            () => false,
+            () => "",
+            () => ""
+        )
         );
         Assert.IsTrue(Descendants(mounted.Root).OfType<TextNode>().Any(t => t.Text == "USERNAME"));
         AccountView.Hide();
@@ -100,7 +100,8 @@ public class AccountViewTests
             () => presses.Add("register"),
             () => presses.Add("sign out"),
             () => presses.Add("close")
-        ));
+        )
+        );
         AccountView.Show();
         Renderer.Flush();
         var root = (View)mounted.Root;
@@ -150,8 +151,11 @@ public class AccountViewTests
     private static IEnumerable<Node> Descendants(Node root)
     {
         yield return root;
+
         foreach (var child in root.VisualChildren)
+
         foreach (var node in Descendants(child))
+
             yield return node;
     }
 }

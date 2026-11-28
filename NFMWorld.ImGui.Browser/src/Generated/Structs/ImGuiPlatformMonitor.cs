@@ -16,144 +16,171 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// (Optional) This is required when enabling multi-viewport. Represent the bounds of each connected monitordisplay and their DPI.<br/>
-	/// We use this information for multiple DPI support + clamping the position of popups and tooltips so they don't straddle multiple monitors.<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiPlatformMonitor
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 MainPos;
+    /// <summary>
+    /// (Optional) This is required when enabling multi-viewport. Represent the bounds of each connected monitordisplay and their DPI.<br/>
+    /// We use this information for multiple DPI support + clamping the position of popups and tooltips so they don't straddle multiple monitors.<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiPlatformMonitor
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 MainPos;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 MainSize;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 MainSize;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 WorkPos;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 WorkPos;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 WorkSize;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 WorkSize;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float DpiScale;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float DpiScale;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void* PlatformHandle;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiPlatformMonitor(Vector2 mainPos = default, Vector2 mainSize = default, Vector2 workPos = default, Vector2 workSize = default, float dpiScale = default, void* platformHandle = default)
-		{
-			MainPos = mainPos;
-			MainSize = mainSize;
-			WorkPos = workPos;
-			WorkSize = workSize;
-			DpiScale = dpiScale;
-			PlatformHandle = platformHandle;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void* PlatformHandle;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			fixed (ImGuiPlatformMonitor* @this = &this)
-			{
-				ImGui.DestroyNative(@this);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiPlatformMonitor(
+            Vector2 mainPos = default,
+            Vector2 mainSize = default,
+            Vector2 workPos = default,
+            Vector2 workSize = default,
+            float dpiScale = default,
+            void* platformHandle = default
+        )
+        {
+            MainPos = mainPos;
+            MainSize = mainSize;
+            WorkPos = workPos;
+            WorkSize = workSize;
+            DpiScale = dpiScale;
+            PlatformHandle = platformHandle;
+        }
 
-	}
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiPlatformMonitorPtr : IEquatable<ImGuiPlatformMonitorPtr>
-	{
-		public ImGuiPlatformMonitorPtr(ImGuiPlatformMonitor* handle) { Handle = handle; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            fixed (ImGuiPlatformMonitor* @this = &this)
+            {
+                ImGui.DestroyNative(@this);
+            }
+        }
+    }
 
-		public ImGuiPlatformMonitor* Handle;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiPlatformMonitorPtr : IEquatable<ImGuiPlatformMonitorPtr>
+    {
+        public ImGuiPlatformMonitorPtr(ImGuiPlatformMonitor* handle)
+        {
+            Handle = handle;
+        }
 
-		public bool IsNull => Handle == null;
+        public ImGuiPlatformMonitor* Handle;
 
-		public static ImGuiPlatformMonitorPtr Null => new ImGuiPlatformMonitorPtr(null);
+        public bool IsNull => Handle == null;
 
-		public ImGuiPlatformMonitor this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public static ImGuiPlatformMonitorPtr Null => new ImGuiPlatformMonitorPtr(null);
 
-		public static implicit operator ImGuiPlatformMonitorPtr(ImGuiPlatformMonitor* handle) => new ImGuiPlatformMonitorPtr(handle);
+        public ImGuiPlatformMonitor this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static implicit operator ImGuiPlatformMonitor*(ImGuiPlatformMonitorPtr handle) => handle.Handle;
+        public static implicit operator ImGuiPlatformMonitorPtr(ImGuiPlatformMonitor* handle) => new ImGuiPlatformMonitorPtr(
+            handle
+        );
 
-		public static bool operator ==(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitorPtr right) => left.Handle == right.Handle;
+        public static implicit operator ImGuiPlatformMonitor*(ImGuiPlatformMonitorPtr handle) => handle.Handle;
 
-		public static bool operator !=(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitorPtr right) => left.Handle != right.Handle;
+        public static bool operator ==(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitorPtr right) => left.Handle
+                                                                                                       == right
+            .Handle;
 
-		public static bool operator ==(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitor* right) => left.Handle == right;
+        public static bool operator !=(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitorPtr right) => left.Handle
+                                                                                                       != right
+            .Handle;
 
-		public static bool operator !=(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitor* right) => left.Handle != right;
+        public static bool operator ==(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitor* right) => left.Handle == right;
 
-		public bool Equals(ImGuiPlatformMonitorPtr other) => Handle == other.Handle;
+        public static bool operator !=(ImGuiPlatformMonitorPtr left, ImGuiPlatformMonitor* right) => left.Handle != right;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiPlatformMonitorPtr handle && Equals(handle);
+        public bool Equals(ImGuiPlatformMonitorPtr other) => Handle == other.Handle;
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiPlatformMonitorPtr handle && Equals(handle);
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiPlatformMonitorPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref Vector2 MainPos => ref Unsafe.AsRef<Vector2>(&Handle->MainPos);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref Vector2 MainSize => ref Unsafe.AsRef<Vector2>(&Handle->MainSize);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref Vector2 WorkPos => ref Unsafe.AsRef<Vector2>(&Handle->WorkPos);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref Vector2 WorkSize => ref Unsafe.AsRef<Vector2>(&Handle->WorkSize);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float DpiScale => ref Unsafe.AsRef<float>(&Handle->DpiScale);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public void* PlatformHandle { get => Handle->PlatformHandle; set => Handle->PlatformHandle = value; }
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			ImGui.DestroyNative(Handle);
-		}
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-	}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiPlatformMonitorPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref Vector2 MainPos => ref Unsafe.AsRef<Vector2>(&Handle->MainPos);
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref Vector2 MainSize => ref Unsafe.AsRef<Vector2>(&Handle->MainSize);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref Vector2 WorkPos => ref Unsafe.AsRef<Vector2>(&Handle->WorkPos);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref Vector2 WorkSize => ref Unsafe.AsRef<Vector2>(&Handle->WorkSize);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float DpiScale => ref Unsafe.AsRef<float>(&Handle->DpiScale);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public void* PlatformHandle
+        {
+            get => Handle->PlatformHandle;
+            set => Handle->PlatformHandle = value;
+        }
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            ImGui.DestroyNative(Handle);
+        }
+    }
 }

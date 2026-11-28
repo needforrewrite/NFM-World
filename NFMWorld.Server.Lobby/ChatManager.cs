@@ -21,7 +21,10 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
     public S2C_LobbyChatMessage? SendChatMessage(Guid senderId, string message, uint sessionId)
     {
         var sender = players.Get(senderId);
-        if (sender is not { IsAuthenticated: true, AccountId: > 0 }) return null;
+
+        if (sender is not { IsAuthenticated: true, AccountId: > 0 })
+
+            return null;
 
         var isSpectator = sessionId != 0 && sender.InSession?.SessionIndex != sessionId;
         var line = new S2C_LobbyChatMessage
@@ -33,6 +36,7 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
             Color = sender.Color
         };
         Broadcast(line);
+
         return line;
     }
 
@@ -42,9 +46,11 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
     public void SendToSession(uint sessionId, S2C_LobbyChatMessage message, bool openToLobby = false)
     {
         message.SessionId = sessionId;
+
         if (openToLobby)
         {
             Broadcast(message);
+
             return;
         }
 
@@ -52,7 +58,8 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
             players.All
                 .Where(p => p.Value.IsAuthenticated
                             && p.Value.AccountId > 0
-                            && p.Value.InSession?.SessionIndex == sessionId
+                            && p.Value.InSession?.SessionIndex
+                            == sessionId
                 )
                 .Select(p => p.Key)
                 .ToArray(),
@@ -89,7 +96,10 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
     public void SendNotice(Guid playerId, string message, bool fatal = false)
     {
         var player = players.Get(playerId);
-        if (player is null) return;
+
+        if (player is null)
+
+            return;
         transport.SendPacketToClient(player.ClientIndex, new S2C_ModerationNotice { Message = message, Fatal = fatal });
     }
 
@@ -97,7 +107,10 @@ public class ChatManager(IMultiplayerServerTransport transport, PlayerRegistry p
     public void SendResult(Guid playerId, bool ok, string message)
     {
         var player = players.Get(playerId);
-        if (player is null) return;
+
+        if (player is null)
+
+            return;
         transport.SendPacketToClient(player.ClientIndex, new S2C_ModerationResult { Ok = ok, Message = message });
     }
 

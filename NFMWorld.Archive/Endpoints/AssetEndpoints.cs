@@ -69,9 +69,12 @@ public static class AssetEndpoints
         var assets = app.MapGroup("/assets").RequireCors(CorsPolicies.CrossOrigin);
         var requestLimit = new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(AssetUpload.MaxRequestBytes);
 
-        assets.MapGet("/limits", async (ArchiveDbContext db, HttpContext http, CancellationToken ct) =>
+        assets.MapGet(
+            "/limits",
+            async (ArchiveDbContext db, HttpContext http, CancellationToken ct) =>
             {
                 http.Response.Headers.CacheControl = "no-store";
+
                 return Results.Ok(new { maxUploadBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(db, ct) });
             }
         );
@@ -82,17 +85,23 @@ public static class AssetEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 if (options.ReadOnly)
+
                     return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
                 if (!request.HasFormContentType)
+
                     return Results.BadRequest(new { error = "Expected a multipart upload." });
 
                 var maxBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(db, ct);
+
                 if (await AssetUpload.ReadFormWithinLimitAsync(request, maxBytes, ct) is not { } form)
+
                     return UploadTooLarge(maxBytes);
 
                 var file = form.Files["file"];
@@ -101,21 +110,28 @@ public static class AssetEndpoints
                 var typeText = form["type"].ToString();
 
                 if (file is null || name is null)
+
                     return Results.BadRequest(new { error = "Missing file or name." });
 
                 if (AssetUpload.DescriptionTooLong(description))
+
                     return Results.BadRequest(new { error = "The description is too long." });
 
                 var isPublic = true;
+
                 if (form.ContainsKey("isPublic") && !bool.TryParse(form["isPublic"], out isPublic))
+
                     return Results.BadRequest(new { error = "Invalid publication visibility." });
 
                 if (!AssetKinds.TryParseName(typeText, out var kind))
+
                     return Results.BadRequest(new { error = "Unknown asset type." });
 
                 if (file.Length > maxBytes)
+
                     return UploadTooLarge(maxBytes);
                 if (AssetUpload.CheckClaim(kind, file.FileName) is { } claimError)
+
                     return Results.BadRequest(new { error = claimError });
 
                 await using var source = file.OpenReadStream();
@@ -129,7 +145,9 @@ public static class AssetEndpoints
                     maxBytes,
                     ct
                 );
+
                 if (stored.Error is { } error)
+
                     return Results.BadRequest(new { error });
 
                 // Identical bytes are one asset. If it is already catalogued, the upload is a
@@ -137,12 +155,15 @@ public static class AssetEndpoints
                 var existing = await db.Assets
                     .Include(a => a.Owner)
                     .FirstOrDefaultAsync(a => a.ContentHash == stored.Hash, ct);
+
                 if (existing is not null)
                 {
                     if (!existing.IsListed && existing.OwnerId != user.Id)
+
                         return Results.Conflict(new { error = "These bytes are already in the Archive." });
 
                     if ((byte)existing.Type != kind)
+
                         return Results.BadRequest(
                             new
                             {
@@ -176,6 +197,7 @@ public static class AssetEndpoints
                 await db.SaveChangesAsync(ct);
 
                 asset.Owner = user;
+
                 return Results.Ok(new { status = "stored", asset = ToInfo(asset) });
             };
         assets.MapPost("/upload", upload).WithMetadata(requestLimit);
@@ -189,9 +211,11 @@ public static class AssetEndpoints
             ) =>
             {
                 byte? kind = null;
+
                 if (!string.IsNullOrWhiteSpace(type))
                 {
                     if (!AssetKinds.TryParseName(type, out var parsed))
+
                         return Results.BadRequest(new { error = "Unknown asset type." });
                     kind = parsed;
                 }
@@ -206,7 +230,8 @@ public static class AssetEndpoints
                 {
                     var escaped = Sql.LikeEscape(query.Trim());
                     var tagPattern = "%" + Sql.LikeEscape(AssetTags.SearchText(query.Trim())) + "%";
-                    q = q.Where(a => EF.Functions.Like(a.Name, "%" + escaped + "%", "\\") ||
+                    q = q.Where(a => EF.Functions.Like(a.Name, "%" + escaped + "%", "\\")
+                                     ||
                                      EF.Functions.Like(a.TagsSearch!, tagPattern, "\\"));
                 }
 
@@ -240,6 +265,7 @@ public static class AssetEndpoints
 
                 var hasMore = rows.Count > pageSize;
                 var items = rows.Take(pageSize).Select(ToInfo).ToList();
+
                 return Results.Ok(new AssetSearchPage(items, hasMore ? items[^1].Id : null));
             }
         );
@@ -254,13 +280,17 @@ public static class AssetEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 byte? kind = null;
+
                 if (!string.IsNullOrWhiteSpace(type))
                 {
                     if (!AssetKinds.TryParseName(type, out var parsed))
+
                         return Results.BadRequest(new { error = "Unknown asset type." });
                     kind = parsed;
                 }
@@ -307,7 +337,8 @@ public static class AssetEndpoints
                         a.Description,
                         AssetTags.Split(a.Tags),
                         a.CreatedAt,
-                        a.IsValidated && AssetKinds.IsDataAsset(a.Type)
+                        a.IsValidated
+                        && AssetKinds.IsDataAsset(a.Type)
                         && a.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,
                         a.IsPublic,
                         a.IsTakedown,
@@ -325,10 +356,12 @@ public static class AssetEndpoints
             async (string hash, ArchiveDbContext db, CancellationToken ct) =>
             {
                 if (!IsHash(hash))
+
                     return Results.BadRequest(new { error = "Not a content hash." });
 
                 var asset = await db.Assets.Listed().Include(a => a.Owner)
                     .FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
+
                 return asset is null ? Results.NotFound() : Results.Ok(ToInfo(asset));
             }
         );
@@ -343,34 +376,48 @@ public static class AssetEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 if (options.ReadOnly)
+
                     return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
                 var asset = await db.Assets.Include(a => a.Owner).FirstOrDefaultAsync(a => a.Id == id, ct);
+
                 if (asset is null)
+
                     return Results.NotFound();
 
                 var isOwner = asset.OwnerId == user.Id;
+
                 if (!isOwner && !user.IsModerator)
+
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 // A moderator may only take a row down or restore it; changing a name,
                 // description or visibility is the author's (or an admin's) act.
-                if (!isOwner && !user.IsAdmin
+
+                if (!isOwner
+                    && !user.IsAdmin
                     && (update.Name is not null || update.Description is not null || update.IsPublic is not null))
+
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 if (update.IsTakedown is not null && !user.IsModerator)
+
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 var changed = false;
+
                 if (update.Name is not null)
                 {
                     var name = AssetUpload.NormalizeName(update.Name);
+
                     if (name is null)
+
                         return Results.BadRequest(new { error = "A name is required and must be short." });
                     asset.Name = name;
                     changed = true;
@@ -379,7 +426,9 @@ public static class AssetEndpoints
                 if (update.Description is not null)
                 {
                     var description = AssetUpload.NormalizeDescription(update.Description);
+
                     if (AssetUpload.DescriptionTooLong(description))
+
                         return Results.BadRequest(new { error = "The description is too long." });
                     asset.Description = description;
                     changed = true;
@@ -417,51 +466,72 @@ public static class AssetEndpoints
             ) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 if (options.ReadOnly)
+
                     return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
                 var asset = await db.Assets.Include(a => a.Owner).FirstOrDefaultAsync(a => a.Id == id, ct);
+
                 if (asset is null)
+
                     return Results.NotFound();
 
                 // Replacing content is the author's act, or an admin repairing a broken upload;
                 // a moderator deletes instead of re-publishing someone else's work.
+
                 if (asset.OwnerId != user.Id && !user.IsAdmin)
+
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 if (!request.HasFormContentType)
+
                     return Results.BadRequest(new { error = "Expected a multipart upload." });
 
                 var maxBytes = await ArchiveSettings.ReadUploadLimitBytesAsync(db, ct);
+
                 if (await AssetUpload.ReadFormWithinLimitAsync(request, maxBytes, ct) is not { } form)
+
                     return UploadTooLarge(maxBytes);
 
                 var file = form.Files["file"];
+
                 if (file is null)
+
                     return Results.BadRequest(new { error = "Missing file." });
                 if (file.Length > maxBytes)
+
                     return UploadTooLarge(maxBytes);
 
                 var hasName = form.ContainsKey("name");
                 var name = hasName ? AssetUpload.NormalizeName(form["name"].ToString()) : asset.Name;
+
                 if (name is null)
+
                     return Results.BadRequest(new { error = "A name is required and must be short." });
 
                 var description = form.ContainsKey("description")
                     ? AssetUpload.NormalizeDescription(form["description"].ToString())
                     : asset.Description;
+
                 if (AssetUpload.DescriptionTooLong(description))
+
                     return Results.BadRequest(new { error = "The description is too long." });
 
                 var isPublic = asset.IsPublic;
+
                 if (form.ContainsKey("isPublic") && !bool.TryParse(form["isPublic"], out isPublic))
+
                     return Results.BadRequest(new { error = "Invalid publication visibility." });
 
                 var kind = (byte)asset.Type;
+
                 if (AssetUpload.CheckClaim(kind, file.FileName) is { } claimError)
+
                     return Results.BadRequest(new { error = claimError });
 
                 await using var source = file.OpenReadStream();
@@ -474,12 +544,15 @@ public static class AssetEndpoints
                     maxBytes,
                     ct
                 );
+
                 if (stored.Error is { } error)
+
                     return Results.BadRequest(new { error });
 
                 if (string.Equals(stored.Hash, asset.ContentHash, StringComparison.Ordinal))
                 {
                     if (asset.Name == name && asset.Description == description && asset.IsPublic == isPublic)
+
                         return Results.Ok(new { status = "unchanged", asset = ToOwnedInfo(asset) });
 
                     asset.Name = name;
@@ -487,6 +560,7 @@ public static class AssetEndpoints
                     asset.IsPublic = isPublic;
                     await db.SaveChangesAsync(ct);
                     await http.PurgeAssetsAsync([asset.ContentHash]);
+
                     return Results.Ok(new { status = "updated", asset = ToOwnedInfo(asset) });
                 }
 
@@ -496,7 +570,9 @@ public static class AssetEndpoints
                     a => a.ContentHash == stored.Hash && a.Id != asset.Id,
                     ct
                 );
+
                 if (other is not null)
+
                     return Results.BadRequest(
                         new
                         {
@@ -539,17 +615,23 @@ public static class AssetEndpoints
                 CancellationToken ct) =>
             {
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 if (options.ReadOnly)
+
                     return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
                 var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == id, ct);
+
                 if (asset is null)
+
                     return Results.NotFound();
 
                 if (asset.OwnerId != user.Id && !user.IsModerator)
+
                     return Results.StatusCode(StatusCodes.Status403Forbidden);
 
                 var path = asset.StoragePath;
@@ -573,14 +655,19 @@ public static class AssetEndpoints
             ) =>
             {
                 if (!IsHash(hash))
+
                     return Results.BadRequest();
 
                 var asset = await db.Assets.Listed().FirstOrDefaultAsync(a => a.ContentHash == hash, ct);
+
                 if (asset is null)
+
                     return Results.NotFound();
 
                 var stream = storage.OpenRead(asset.StoragePath);
+
                 if (stream is null)
+
                     return Results.NotFound();
 
                 asset.DownloadCount++;
@@ -591,6 +678,7 @@ public static class AssetEndpoints
                 // edge policy independent of what browsers are told.
                 http.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
                 http.Response.Headers["CDN-Cache-Control"] = "max-age=31536000";
+
                 return Results.File(
                     stream,
                     contentType: "application/octet-stream",
@@ -657,7 +745,8 @@ public static class AssetEndpoints
         AssetTags.Split(row.Tags),
         row.Author,
         row.CreatedAt,
-        row.IsValidated && AssetKinds.IsDataAsset(row.Type)
+        row.IsValidated
+        && AssetKinds.IsDataAsset(row.Type)
         && row.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,
         row.ReviewStatus.ToString(),
         row.AuthorVerified
@@ -673,7 +762,8 @@ public static class AssetEndpoints
         asset.Description,
         AssetTags.Split(asset.Tags),
         asset.CreatedAt,
-        asset.IsValidated && AssetKinds.IsDataAsset((byte)asset.Type)
+        asset.IsValidated
+        && AssetKinds.IsDataAsset((byte)asset.Type)
         && asset.ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus.Legacy,
         asset.IsPublic,
         asset.IsTakedown,

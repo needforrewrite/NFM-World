@@ -28,6 +28,7 @@ public sealed class FileStorage(string root)
 
         string hash;
         long size;
+
         try
         {
             await using (var file = File.Create(temp))
@@ -36,10 +37,13 @@ public sealed class FileStorage(string root)
                 var buffer = new byte[81920];
                 size = 0;
                 int read;
+
                 while ((read = await source.ReadAsync(buffer, ct)) > 0)
                 {
                     size += read;
+
                     if (size > maxBytes)
+
                         throw new InvalidDataException($"Upload exceeds {maxBytes} bytes");
                     hasher.AppendData(buffer, 0, read);
                     await file.WriteAsync(buffer.AsMemory(0, read), ct);
@@ -51,6 +55,7 @@ public sealed class FileStorage(string root)
         catch
         {
             File.Delete(temp);
+
             throw;
         }
 
@@ -59,6 +64,7 @@ public sealed class FileStorage(string root)
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
 
         // Two uploads of the same bytes race here; whoever loses the rename discards its copy.
+
         try
         {
             File.Move(temp, destination);
@@ -78,12 +84,14 @@ public sealed class FileStorage(string root)
     )
     {
         using var stream = new MemoryStream(data.ToArray(), writable: false);
+
         return await PutAsync(stream, data.Length, ct);
     }
 
     public Stream? OpenRead(string relativePath)
     {
         var full = Resolve(relativePath);
+
         return File.Exists(full) ? File.OpenRead(full) : null;
     }
 
@@ -121,8 +129,11 @@ public sealed class FileStorage(string root)
     private string Resolve(string relativePath)
     {
         var full = Path.GetFullPath(Path.Combine(_root, relativePath));
+
         if (!full.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+
             throw new InvalidOperationException($"Storage path escapes the root: {relativePath}");
+
         return full;
     }
 }

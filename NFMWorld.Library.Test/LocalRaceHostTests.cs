@@ -43,6 +43,7 @@ public class LocalRaceHostTests
         {
             Context = context;
             Players = parameters.Players;
+
             return null;
         }
     }
@@ -51,6 +52,7 @@ public class LocalRaceHostTests
     public void DeferredHostWaitsForAPreparedStageBeforeStarting()
     {
         var factory = new ClientOnlyFactory();
+
         try
         {
             using var host = LocalRaceHost.CreateDeferred(
@@ -82,6 +84,7 @@ public class LocalRaceHostTests
     public void ClientOnlyGamemode_StartsAndRestartsWithoutLoadingStageFiles()
     {
         var factory = new ClientOnlyFactory();
+
         try
         {
             Assert.IsFalse(factory.HasServerGamemode);

@@ -22,7 +22,9 @@ public sealed class TightPackGenerator : IIncrementalGenerator
                 static (ctx, cancellationToken) => Parse(ctx, cancellationToken)
             );
 
-        context.RegisterSourceOutput(results, static (production, result) =>
+        context.RegisterSourceOutput(
+            results,
+            static (production, result) =>
             {
                 foreach (Diagnostic diagnostic in result.Diagnostics)
                 {

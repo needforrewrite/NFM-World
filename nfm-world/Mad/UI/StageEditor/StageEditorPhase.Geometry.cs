@@ -18,14 +18,18 @@ public partial class StageEditorPhase
 
     private void RebuildAllWalls()
     {
-        if (ActiveTab?.Stage == null) return;
+        if (ActiveTab?.Stage == null)
+
+            return;
 
         // Get the wall mesh from GameSparker
         var wallPart = BackendGameSparker.GetStagePart("nfmm/thewall");
+
         if (wallPart.Rad == null)
         {
             SentrySdk.CaptureMessage("Wall mesh not found!");
             Logging.Error("Wall mesh not found!");
+
             return;
         }
 
@@ -35,6 +39,7 @@ public partial class StageEditorPhase
         Logging.Info($"Rebuilding walls: {ActiveTab.StageWalls.Count} wall groups");
 
         // Generate wall meshes based on StageWalls definitions
+
         foreach (var wall in ActiveTab.StageWalls)
         {
             var n = wall.Count;
@@ -53,6 +58,7 @@ public partial class StageEditorPhase
                     case WallDirection.Right:
                         position = new f64Vector3(o, World.Ground, q * 4800 + p);
                         rotation = f64Euler.Identity;
+
                         break;
                     case WallDirection.Left:
                         position = new f64Vector3(o, World.Ground, q * 4800 + p);
@@ -61,6 +67,7 @@ public partial class StageEditorPhase
                             f64AngleSingle.ZeroAngle,
                             f64AngleSingle.ZeroAngle
                         );
+
                         break;
                     case WallDirection.Top:
                         position = new f64Vector3(q * 4800 + p, World.Ground, o);
@@ -69,6 +76,7 @@ public partial class StageEditorPhase
                             f64AngleSingle.ZeroAngle,
                             f64AngleSingle.ZeroAngle
                         );
+
                         break;
                     case WallDirection.Bottom:
                         position = new f64Vector3(q * 4800 + p, World.Ground, o);
@@ -77,10 +85,12 @@ public partial class StageEditorPhase
                             f64AngleSingle.ZeroAngle,
                             f64AngleSingle.ZeroAngle
                         );
+
                         break;
                     default:
                         position = f64Vector3.Zero;
                         rotation = f64Euler.Identity;
+
                         break;
                 }
 
@@ -101,11 +111,15 @@ public partial class StageEditorPhase
 
     private void AutoGenerateStageBordersFromGeometry()
     {
-        if (ActiveTab == null) return;
+        if (ActiveTab == null)
+
+            return;
 
         // Collect all non-wall pieces (in the NFM editor, all piece types are unified in ScenePieces)
         var pieces = ActiveTab.ScenePieces.Where(p => !p.PiecePlacement.IsWall).ToList();
+
         if (pieces.Count == 0)
+
             return;
 
         // ── Compute min/max bounds expanded by each piece's MaxRadius ──
@@ -128,6 +142,7 @@ public partial class StageEditorPhase
         }
 
         if (!float.IsFinite(minX) || !float.IsFinite(maxX) || !float.IsFinite(minZ) || !float.IsFinite(maxZ))
+
             return;
 
         const int wallSpacing = 4800;
@@ -188,9 +203,11 @@ public partial class StageEditorPhase
     private static void RenderSelectionHighlights(NFMWorld.Graphics.ICommandBuffer cb, StageEditorTab tab)
     {
         if (tab.SelectedPieceIds.Count == 0)
+
             return;
 
         int neededVertices = 0;
+
         foreach (var id in tab.SelectedPieceIds)
         {
             if (tab.ScenePieces.GetValueOrDefault(id)?.Obj != null)
@@ -198,6 +215,7 @@ public partial class StageEditorPhase
         }
 
         if (neededVertices == 0)
+
             return;
 
         Debug.RenderHighlights(
@@ -216,7 +234,9 @@ public partial class StageEditorPhase
     /// </summary>
     private void RenderPlacementPreview(NFMWorld.Graphics.ICommandBuffer cb)
     {
-        if (_pendingPlacementPartIndex < 0 || _pendingPlacementPartIndex >= _availableParts.Count) return;
+        if (_pendingPlacementPartIndex < 0 || _pendingPlacementPartIndex >= _availableParts.Count)
+
+            return;
         var part = _availableParts[_pendingPlacementPartIndex];
 
         var pos = new Vector3(
@@ -237,10 +257,16 @@ public partial class StageEditorPhase
 
     private Vector3 ComputeSelectionCentroid()
     {
-        if (ActiveTab == null) return Vector3.Zero;
+        if (ActiveTab == null)
+
+            return Vector3.Zero;
         var ids = ActiveTab.SelectedPieceIds;
         var pieces = ActiveTab.ScenePieces.Where(p => ids.Contains(p.Id)).ToList();
-        if (pieces.Count == 0) return Vector3.Zero;
+
+        if (pieces.Count == 0)
+
+            return Vector3.Zero;
+
         return new Vector3(
             (float)pieces.Average(p => (double)p.Position.X),
             (float)pieces.Average(p => (double)p.Position.Y),
@@ -250,9 +276,14 @@ public partial class StageEditorPhase
 
     private void ProcessOnePreviewThumbnail(NFMWorld.Graphics.ICommandBuffer cb)
     {
-        if (_previewQueue.Count == 0) return;
+        if (_previewQueue.Count == 0)
+
+            return;
         var (name, rad) = _previewQueue.Dequeue();
-        if (_partPreviews.ContainsKey(name)) return;
+
+        if (_partPreviews.ContainsKey(name))
+
+            return;
 
         // Find bounding sphere to set up camera
         float maxR = rad.MaxRadius > 0 ? rad.MaxRadius : 300;
@@ -300,6 +331,7 @@ public partial class StageEditorPhase
     private void QueuePartPreview(string name, Rad3d rad)
     {
         if (_partPreviews.ContainsKey(name) || !_previewQueued.Add(name))
+
             return;
 
         _previewQueue.Enqueue((name, rad));
@@ -331,6 +363,7 @@ public partial class StageEditorPhase
             var nearWorld = Vector4.Transform(new Vector4(nearView.X, nearView.Y, nearView.Z, 1f), invView);
             var origin = new Vector3(nearWorld.X, nearWorld.Y, nearWorld.Z);
             var forward = Vector3.Normalize(activeCamera.LookAt - activeCamera.Position);
+
             return (origin, forward);
         }
         else
@@ -342,6 +375,7 @@ public partial class StageEditorPhase
             rayEye.W = 0.0f;
             var rayWorld4 = Vector4.Transform(rayEye, invView);
             var direction = Vector3.Normalize(new Vector3(rayWorld4.X, rayWorld4.Y, rayWorld4.Z));
+
             return (activeCamera.Position, direction);
         }
     }
@@ -357,17 +391,26 @@ public partial class StageEditorPhase
         var (rayOrigin, rayDirection) = GetPickRay(screenX, screenY);
 
         const float groundY = 250f;
-        if (Math.Abs(rayDirection.Y) < 0.0001f) return false;
+
+        if (Math.Abs(rayDirection.Y) < 0.0001f)
+
+            return false;
         float t = (groundY - rayOrigin.Y) / rayDirection.Y;
-        if (t <= 0) return false;
+
+        if (t <= 0)
+
+            return false;
 
         result = rayOrigin + rayDirection * t;
+
         return true;
     }
 
     private int PerformRayPicking(int screenX, int screenY)
     {
-        if (ActiveTab.ScenePieces.Count == 0) return -1;
+        if (ActiveTab.ScenePieces.Count == 0)
+
+            return -1;
 
         var (rayOrigin, rayDirection) = GetPickRay(screenX, screenY);
 
@@ -377,7 +420,9 @@ public partial class StageEditorPhase
 
         foreach (var piece in ActiveTab.ScenePieces)
         {
-            if (piece.Obj == null) continue;
+            if (piece.Obj == null)
+
+                continue;
 
             var mesh = piece.Obj;
 
@@ -393,12 +438,16 @@ public partial class StageEditorPhase
                 Matrix.CreateRotationY((float)yaw) * Matrix.CreateRotationX((float)pitch) * Matrix.CreateRotationZ((float)roll);
 
             // Test each polygon
+
             foreach (var poly in mesh.Rad.Polys)
             {
-                if (poly.Points.Length < 3) continue;
+                if (poly.Points.Length < 3)
+
+                    continue;
 
                 // Transform all vertices to world space
                 var worldVerts = new Vector3[poly.Points.Length];
+
                 for (int i = 0; i < poly.Points.Length; i++)
                 {
                     var localVert = new Vector3(
@@ -423,6 +472,7 @@ public partial class StageEditorPhase
                     var v2 = worldVerts[poly.Triangles[i + 2]];
 
                     // Try both winding orders
+
                     if (RayIntersectsTriangle(rayOrigin, rayDirection, v0, v1, v2, out float dist))
                     {
                         if (dist < closestDistance)
@@ -449,6 +499,7 @@ public partial class StageEditorPhase
     private int PerformWallRayPicking(int screenX, int screenY)
     {
         if (ActiveTab == null || ActiveTab.StageWalls.Count == 0)
+
             return -1;
 
         var (rayOrigin, rayDirection) = GetPickRay(screenX, screenY);
@@ -494,10 +545,13 @@ public partial class StageEditorPhase
     private void RenderSelectedWallHighlight(NFMWorld.Graphics.ICommandBuffer cb, StageEditorTab tab)
     {
         if (tab.SelectedWallId < 0)
+
             return;
 
         var wall = tab.StageWalls.GetValueOrDefault(tab.SelectedWallId);
+
         if (wall == null)
+
             return;
 
         var boxes = new List<(Vector3 Min, Vector3 Max)>();
@@ -506,6 +560,7 @@ public partial class StageEditorPhase
         int n = wall.Count;
         int o = wall.Position;
         int p = wall.Offset;
+
         for (int q = 0; q < n; q++)
         {
             var center = wall.Direction switch
@@ -525,6 +580,7 @@ public partial class StageEditorPhase
         }
 
         if (boxes.Count == 0)
+
             return;
 
         // Was a raw BasicEffect + DrawUserPrimitives with DepthStencilState.None; Debug draws the
@@ -550,14 +606,18 @@ public partial class StageEditorPhase
         // Check for degenerate triangle
         var edgeLen1 = edge1.Length();
         var edgeLen2 = edge2.Length();
+
         if (edgeLen1 < EPSILON || edgeLen2 < EPSILON)
+
             return false;
 
         var h = Vector3.Cross(rayDirection, edge2);
         var a = Vector3.Dot(edge1, h);
 
         // More lenient parallel check
+
         if (Math.Abs(a) < EPSILON)
+
             return false;
 
         var f = 1.0f / a;
@@ -565,22 +625,28 @@ public partial class StageEditorPhase
         var u = f * Vector3.Dot(s, h);
 
         // More lenient bounds checking
+
         if (u < -EPSILON || u > 1.0f + EPSILON)
+
             return false;
 
         var q = Vector3.Cross(s, edge1);
         var v = f * Vector3.Dot(rayDirection, q);
 
         // More lenient bounds checking
+
         if (v < -EPSILON || u + v > 1.0f + EPSILON)
+
             return false;
 
         var t = f * Vector3.Dot(edge2, q);
 
         // Accept slightly negative distances for near-miss cases
+
         if (t > -EPSILON)
         {
             distance = Math.Max(t, 0); // Clamp to non-negative
+
             return true;
         }
 
@@ -595,6 +661,7 @@ public partial class StageEditorPhase
         float tmax = float.MaxValue;
 
         // Check X slab
+
         if (Math.Abs(rayDirection.X) > 0.0001f)
         {
             float tx1 = (boxMin.X - rayOrigin.X) / rayDirection.X;
@@ -608,6 +675,7 @@ public partial class StageEditorPhase
         }
 
         // Check Y slab
+
         if (Math.Abs(rayDirection.Y) > 0.0001f)
         {
             float ty1 = (boxMin.Y - rayOrigin.Y) / rayDirection.Y;
@@ -621,6 +689,7 @@ public partial class StageEditorPhase
         }
 
         // Check Z slab
+
         if (Math.Abs(rayDirection.Z) > 0.0001f)
         {
             float tz1 = (boxMin.Z - rayOrigin.Z) / rayDirection.Z;
@@ -636,6 +705,7 @@ public partial class StageEditorPhase
         if (tmax >= tmin && tmax >= 0)
         {
             distance = Math.Max(tmin, 0); // Return entry point distance
+
             return true;
         }
 

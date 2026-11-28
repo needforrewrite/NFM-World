@@ -17,9 +17,11 @@ public readonly struct ShapeRoad(f64Vector3 rad, f64Vector3 trackersPosition, fi
     public Collision? ResolveCollision(in f64Vector3 position)
     {
         var localPosition = (position + (contoPosition * -1)).RotateXz(-contoXz) + (trackersPosition * -1);
+
         if (fix64.Abs(localPosition.X) > rad.X || fix64.Abs(localPosition.Y) > rad.Y || fix64.Abs(localPosition.Z) > rad.Z)
         {
             // Inside?
+
             return null;
         }
 

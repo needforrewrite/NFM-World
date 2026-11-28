@@ -87,6 +87,7 @@ public abstract partial class Component : Node, IAnimationCallback
         var list = _childSnapshot ??= [];
         list.Clear();
         list.AddRange(VisualChildren);
+
         return list;
     }
 
@@ -332,11 +333,13 @@ public abstract partial class Component : Node, IAnimationCallback
         get
         {
             if (ClipRect is { } clip)
+
                 return new RectangleF(clip.X, clip.Y, clip.Width, clip.Height);
 
             var root = RootComponent();
             var pos = root.LayoutMarginPosition;
             var size = root.LayoutMarginSize;
+
             return new RectangleF(pos.X, pos.Y, size.X, size.Y);
         }
     }
@@ -347,6 +350,7 @@ public abstract partial class Component : Node, IAnimationCallback
         var current = this;
         while (current.VisualParent is Component parent)
             current = parent;
+
         return current;
     }
 
@@ -592,8 +596,10 @@ public abstract partial class Component : Node, IAnimationCallback
     /// <summary>Whether this node clips its children to its padding box.</summary>
     [PluginVisible]
     public bool IsClipping => Styles.Overflow == Overflow.Hidden
-                              || Styles.Overflow == Overflow.Scroll && (!ClipOnlyWhenScrollable
-                                                                        || ScrollableWidth > 0 || ScrollableHeight > 0);
+                              || Styles.Overflow == Overflow.Scroll
+                              && (!ClipOnlyWhenScrollable
+                                  || ScrollableWidth > 0
+                                  || ScrollableHeight > 0);
 
     /// <summary>
     /// The effective clip rectangle (intersection of every clipping ancestor's
@@ -609,16 +615,19 @@ public abstract partial class Component : Node, IAnimationCallback
     public bool TryScroll(float deltaX, float deltaY, float factor = 1f)
     {
         if (Styles.Overflow != Overflow.Scroll)
+
             return false;
 
         var newLeft = Math.Clamp(ScrollLeft - deltaX * factor, 0f, _scrollableWidth);
         var newTop = Math.Clamp(ScrollTop - deltaY * factor, 0f, _scrollableHeight);
 
         if (newLeft == ScrollLeft && newTop == ScrollTop)
+
             return false;
 
         _scrollLeft = newLeft;
         _scrollTop = newTop;
+
         return true;
     }
 
@@ -645,6 +654,7 @@ public abstract partial class Component : Node, IAnimationCallback
         // box, summed from layout values (unaffected by scroll offsets).
         float offsetX = 0f;
         float offsetY = 0f;
+
         for (var n = (Node)this; n != null && n != ancestor; n = n.VisualParent)
         {
             if (n is Component c)
@@ -692,12 +702,16 @@ public abstract partial class Component : Node, IAnimationCallback
     {
         // Hidden children keep their last layout, which can sit far outside the box (a closed
         // dropdown popup, say) and would otherwise force a scrollbar.
+
         if (!c.IsDisplayed)
+
             return;
 
         // A popup that ignores the scroll offset is anchored to the viewport, not the content:
         // it is already inside the box, and counting it would add scrollable space.
+
         if (c.IgnoresScrollOffset)
+
             return;
 
         if (c.Styles.Display == Display.Contents)
@@ -726,6 +740,7 @@ public abstract partial class Component : Node, IAnimationCallback
         _scrollableHeight = 0f;
 
         if (Styles.Overflow != Overflow.Scroll)
+
             return;
 
         // Yoga positions children relative to the parent's border box, so
@@ -851,6 +866,7 @@ public abstract partial class Component : Node, IAnimationCallback
         if (Rescale())
         {
             OnScaleChanged();
+
             foreach (var child in GetChildSnapshot())
             {
                 if (child is Component cmp)
@@ -938,6 +954,7 @@ public abstract partial class Component : Node, IAnimationCallback
     protected virtual void RenderScrollbars(Vector2 position, Vector2 size)
     {
         if (Styles.Overflow != Overflow.Scroll)
+
             return;
 
         const float trackWidth = 6f;
@@ -1019,12 +1036,15 @@ public abstract partial class Component : Node, IAnimationCallback
     internal static int EscapeZ(Component node, Dictionary<Component, int>? cache)
     {
         if (cache is not null && cache.TryGetValue(node, out var cached))
+
             return cached;
 
         int result = 0;
+
         // A hidden node paints nothing and takes no press, so it neither presents its own
         // z-index nor hoists a descendant's. Otherwise a closed popup (display:none, z 1000)
         // ties every open one to its later sibling and the hit test picks the wrong one.
+
         if (node.IsDisplayed)
         {
             if ((node.Styles.ZIndex ?? 0) != 0)
@@ -1038,7 +1058,8 @@ public abstract partial class Component : Node, IAnimationCallback
                     if (visual is Component c)
                     {
                         int cz = EscapeZ(c, cache);
-                        if (cz > result) result = cz;
+                        if (cz > result)
+                            result = cz;
                     }
                 }
             }
@@ -1046,6 +1067,7 @@ public abstract partial class Component : Node, IAnimationCallback
 
         if (cache is not null)
             cache[node] = result;
+
         return result;
     }
 
@@ -1076,7 +1098,10 @@ public abstract partial class Component : Node, IAnimationCallback
     private void PaintStacking(RenderContext context)
     {
         var s = BeginPaint(context);
-        if (!s.Visible) return;
+
+        if (!s.Visible)
+
+            return;
 
         // Most nodes have no z-indexed child. PaintChildren reports whether one was
         // collected before a list is allocated at all, so the common case allocates
@@ -1116,6 +1141,7 @@ public abstract partial class Component : Node, IAnimationCallback
         if ((Styles.Display ?? Display.Flex) == Display.None
             || (Styles.Visibility ?? Visibility.Visible) != Visibility.Visible
             || (Styles.Opacity ?? 1f) <= 0f)
+
             return default;
 
         var ownOpacity = context.InheritedOpacity * (Styles.Opacity ?? 1f);
@@ -1129,6 +1155,7 @@ public abstract partial class Component : Node, IAnimationCallback
         var paddingSize = LayoutPaddingSize;
         RectangleF? effectiveClip = context.Clip;
         var clipping = IsClipping;
+
         if (clipping)
         {
             var ownClip = new RectangleF(paddingPos.X, paddingPos.Y, paddingSize.X, paddingSize.Y);
@@ -1149,6 +1176,7 @@ public abstract partial class Component : Node, IAnimationCallback
         }
 
         var childOrigin = LayoutBorderPosition - new Vector2(ScrollLeft, ScrollTop);
+
         return new PaintState(true, clipping, ownOpacity, paddingPos, paddingSize, childOrigin, effectiveClip);
     }
 
@@ -1166,17 +1194,21 @@ public abstract partial class Component : Node, IAnimationCallback
     {
         foreach (var visual in VisualChildren)
         {
-            if (visual is not Component c || !c.IsDisplayed) continue;
+            if (visual is not Component c || !c.IsDisplayed)
+
+                continue;
 
             // The cull test has to use the same origin the paint will: a popup anchored to the
             // viewport sits at its unscrolled position, and testing it against the scrolled
             // origin culls it as off-screen as soon as the container scrolls.
             var childOrigin = c.IgnoresScrollOffset ? s.UnscrolledChildOrigin : s.ChildOrigin;
+
             if (s.Clip is { } clip && IsOutsideClip(c, childOrigin, clip))
             {
                 // Not painted, so Root/ClipRect would go stale; an empty clip also keeps the
                 // skipped node from absorbing a press with its previous-frame bounds.
                 c.ClipRect = RectangleF.Empty;
+
                 continue;
             }
 
@@ -1200,14 +1232,19 @@ public abstract partial class Component : Node, IAnimationCallback
     private static bool IsOutsideClip(Component child, Vector2 origin, RectangleF clip)
     {
         // Flow hosts are flattened by Yoga and have no box; their children still paint.
+
         if (child.Styles.Display == Display.Contents)
+
             return false;
 
         var size = child.LayoutBorderSize;
+
         if (size.X <= 0f || size.Y <= 0f)
+
             return false;
 
         var position = origin + new Vector2(child.LayoutX, child.LayoutY);
+
         return position.X + size.X <= clip.X
                || position.X >= clip.X + clip.Width
                || position.Y + size.Y <= clip.Y
@@ -1223,7 +1260,10 @@ public abstract partial class Component : Node, IAnimationCallback
     )
     {
         var s = node.BeginPaint(new RenderContext(origin, opacity, clip));
-        if (!s.Visible) return;
+
+        if (!s.Visible)
+
+            return;
         node.PaintChildren(s, ref scs);
         node.EndPaint(s);
     }
@@ -1241,6 +1281,7 @@ public abstract partial class Component : Node, IAnimationCallback
     {
         NotifyUiScaleChanged();
         NodeInternal.CalculateLayout(availableSize.X, availableSize.Y);
+
         if (PostLayout())
         {
             // if the layout has changed by PostLayout, relayout
@@ -1311,6 +1352,7 @@ public abstract partial class Component : Node, IAnimationCallback
     public void DispatchMouseMoved(BaseMouseMoveEvent @event)
     {
         if (ClipRect is { } clip && !clip.Contains(@event.Position.X, @event.Position.Y))
+
             return;
 
         if (@event.Position.X > LayoutPaddingPosition.X
@@ -1392,10 +1434,13 @@ public abstract partial class Component : Node, IAnimationCallback
         var chain = _pressDispatchChain ??= [];
         FocusManager.HitTestChain(this, @event.Position, chain);
         var dispatch = new MouseEventDispatch();
+
         for (var i = chain.Count - 1; i >= 0; i--)
         {
             var node = chain[i];
+
             if (!IsPointWithinPadding(node, @event.Position))
+
                 continue;
             var relativeEvent = new MouseEvent(
                 Position: @event.Position,
@@ -1411,10 +1456,12 @@ public abstract partial class Component : Node, IAnimationCallback
             node.OnMousePressed(relativeEvent);
 
             if (dispatch.Stopped)
+
                 break;
         }
 
         _pressDispatchChain = chain;
+
         return dispatch.GestureConsumed;
     }
 
@@ -1428,10 +1475,13 @@ public abstract partial class Component : Node, IAnimationCallback
         var chain = _pressDispatchChain ??= [];
         FocusManager.HitTestChain(this, @event.Position, chain);
         var dispatch = new MouseEventDispatch();
+
         for (var i = chain.Count - 1; i >= 0; i--)
         {
             var node = chain[i];
+
             if (!IsPointWithinPadding(node, @event.Position))
+
                 continue;
             var relativeEvent = new MouseEvent(
                 Position: @event.Position,
@@ -1447,6 +1497,7 @@ public abstract partial class Component : Node, IAnimationCallback
             node.OnMouseReleased(relativeEvent);
 
             if (dispatch.Stopped)
+
                 break;
         }
 
@@ -1457,12 +1508,14 @@ public abstract partial class Component : Node, IAnimationCallback
     {
         var p = node.LayoutPaddingPosition;
         var s = node.LayoutPaddingSize;
+
         return pos.X > p.X && pos.Y > p.Y && pos.X < p.X + s.X && pos.Y < p.Y + s.Y;
     }
 
     public void DispatchMouseDragged(BaseMouseDragEvent @event)
     {
         if (ClipRect is { } clip && !clip.Contains(@event.DragStart.X, @event.DragStart.Y))
+
             return;
 
         if (@event.DragStart.X > LayoutPaddingPosition.X
@@ -1496,12 +1549,17 @@ public abstract partial class Component : Node, IAnimationCallback
     {
         var chain = _scrollDispatchChain ??= [];
         FocusManager.HitTestChain(this, @event.Position, chain);
+
         for (var i = chain.Count - 1; i >= 0; i--)
         {
             var node = chain[i];
-            if (!IsPointWithinPadding(node, @event.Position)) continue;
+
+            if (!IsPointWithinPadding(node, @event.Position))
+
+                continue;
 
             if (node.Styles.Overflow == Overflow.Scroll && node.TryScroll(@event.Delta.X, @event.Delta.Y))
+
                 return true;
 
             var relativeEvent = new MouseWheelEvent(
@@ -1517,7 +1575,10 @@ public abstract partial class Component : Node, IAnimationCallback
             var top = node.ScrollTop;
             node.MouseScrolled?.Invoke(relativeEvent);
             node.OnMouseScrolled(relativeEvent);
-            if (node.ScrollLeft != left || node.ScrollTop != top) return true;
+
+            if (node.ScrollLeft != left || node.ScrollTop != top)
+
+                return true;
         }
 
         return false;
@@ -1674,6 +1735,7 @@ public struct MeasurementMarginPosition : IEquatable<MeasurementMarginPosition>
     public static implicit operator MeasurementMarginPosition(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return Undefined;
@@ -1782,6 +1844,7 @@ public struct MeasurementMultiMargin : IEquatable<MeasurementMultiMargin>
     public static implicit operator MeasurementMultiMargin(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return All(MeasurementMarginPosition.Undefined);
@@ -1794,6 +1857,7 @@ public struct MeasurementMultiMargin : IEquatable<MeasurementMultiMargin>
 
         var idx = 0;
         var sides = new InlineArray4<MeasurementMarginPosition>();
+
         foreach (var elementRange in trimmed.SplitAny(',', ' '))
         {
             var element = trimmed[elementRange];
@@ -1942,6 +2006,7 @@ public struct MeasurementPadding : IEquatable<MeasurementPadding>
     public static implicit operator MeasurementPadding(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return Undefined;
@@ -2043,6 +2108,7 @@ public struct MeasurementMultiPadding : IEquatable<MeasurementMultiPadding>
     public static implicit operator MeasurementMultiPadding(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return All(MeasurementPadding.Undefined);
@@ -2050,6 +2116,7 @@ public struct MeasurementMultiPadding : IEquatable<MeasurementMultiPadding>
 
         var idx = 0;
         var sides = new InlineArray4<MeasurementPadding>();
+
         foreach (var elementRange in trimmed.SplitAny(',', ' '))
         {
             var element = trimmed[elementRange];
@@ -2179,6 +2246,7 @@ public struct MeasurementMultiBorder : IEquatable<MeasurementMultiBorder>
     public static implicit operator MeasurementMultiBorder(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return Undefined;
@@ -2186,6 +2254,7 @@ public struct MeasurementMultiBorder : IEquatable<MeasurementMultiBorder>
 
         var idx = 0;
         var sides = new InlineArray4<float>();
+
         foreach (var elementRange in trimmed.SplitAny(',', ' '))
         {
             var element = trimmed[elementRange];
@@ -2327,6 +2396,7 @@ public struct MeasurementGap : IEquatable<MeasurementGap>
     public static implicit operator MeasurementGap(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return Undefined;
@@ -2382,6 +2452,7 @@ public readonly struct Pixels(float Value) : IEquatable<Pixels>
     public static implicit operator Pixels(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return new Pixels(float.NaN);
@@ -2533,6 +2604,7 @@ public struct MeasurementFlexBasis : IEquatable<MeasurementFlexBasis>
     public static implicit operator MeasurementFlexBasis(ReadOnlySpan<char> str)
     {
         var trimmed = str.Trim();
+
         if (trimmed.Equals("undefined", StringComparison.OrdinalIgnoreCase))
         {
             return Undefined;

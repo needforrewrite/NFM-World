@@ -58,7 +58,9 @@ public readonly struct FloatEffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, float value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [value];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -70,14 +72,18 @@ public readonly struct Float2EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, Vector2 value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [value.X, value.Y];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
 
     public void SetValue(ICommandBuffer cb, ReadOnlySpan<float> value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         cb.SetUniform(slot, MemoryMarshal.AsBytes(value[..2]));
     }
 }
@@ -88,14 +94,18 @@ public readonly struct Float3EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, Vector3 value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [value.X, value.Y, value.Z];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
 
     public void SetValue(ICommandBuffer cb, ReadOnlySpan<float> value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         cb.SetUniform(slot, MemoryMarshal.AsBytes(value[..3]));
     }
 }
@@ -106,14 +116,18 @@ public readonly struct Float4EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, Vector4 value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [value.X, value.Y, value.Z, value.W];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
 
     public void SetValue(ICommandBuffer cb, ReadOnlySpan<float> value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         cb.SetUniform(slot, MemoryMarshal.AsBytes(value[..4]));
     }
 }
@@ -122,11 +136,14 @@ public readonly struct Float3x3EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, Matrix matrix)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
 
         if (MatrixParameterGuard.HasNaN(matrix))
         {
             MatrixParameterGuard.ReportSkipped(nameof(Float3x3EffectParameter), nameof(SetValue));
+
             return;
         }
 
@@ -137,11 +154,14 @@ public readonly struct Float3x3EffectParameter(int slot)
 
     public void SetValueTranspose(ICommandBuffer cb, Matrix matrix)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
 
         if (MatrixParameterGuard.HasNaN(matrix))
         {
             MatrixParameterGuard.ReportSkipped(nameof(Float3x3EffectParameter), nameof(SetValueTranspose));
+
             return;
         }
 
@@ -152,13 +172,17 @@ public readonly struct Float3x3EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, ReadOnlySpan<float> value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         cb.SetUniform(slot, MemoryMarshal.AsBytes(value[..9]));
     }
 
     public void SetValueTranspose(ICommandBuffer cb, ReadOnlySpan<float> value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         // TODO might be wrong - carried over unchanged from the pre-conversion implementation.
         Span<float> v =
         [
@@ -174,14 +198,18 @@ public readonly struct Float4x4EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, Matrix matrix)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
 
         // Guard against NaN matrices — can happen on first frame if the camera
         // hasn't been fully initialised yet (e.g. Width/Height both zero, or
         // Position == LookAt causing CreateLookAt to normalise a zero vector).
+
         if (MatrixParameterGuard.HasNaN(matrix))
         {
             MatrixParameterGuard.ReportSkipped(nameof(Float4x4EffectParameter), nameof(SetValue));
+
             return;
         }
 
@@ -197,11 +225,14 @@ public readonly struct Float4x4EffectParameter(int slot)
 
     public void SetValueTranspose(ICommandBuffer cb, Matrix matrix)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
 
         if (MatrixParameterGuard.HasNaN(matrix))
         {
             MatrixParameterGuard.ReportSkipped(nameof(Float4x4EffectParameter), nameof(SetValueTranspose));
+
             return;
         }
 
@@ -217,13 +248,17 @@ public readonly struct Float4x4EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, ReadOnlySpan<float> value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         cb.SetUniform(slot, MemoryMarshal.AsBytes(value[..16]));
     }
 
     public void SetValueTranspose(ICommandBuffer cb, ReadOnlySpan<float> value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         // TODO might be wrong - carried over unchanged from the pre-conversion implementation.
         Span<float> v =
         [
@@ -242,7 +277,9 @@ public readonly struct HalfEffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, float value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [value];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -255,7 +292,9 @@ public readonly struct Half2EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, float x, float y)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [x, y];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -270,7 +309,9 @@ public readonly struct Half3EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, float x, float y, float z)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [x, y, z];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -287,7 +328,9 @@ public readonly struct Half4EffectParameter(int slot)
 
     public void SetValue(ICommandBuffer cb, float x, float y, float z, float w)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<float> v = [x, y, z, w];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -312,7 +355,9 @@ public readonly struct BoolEffectParameter(int slot)
     // UniformType.Int mapping for non-float scalars).
     public void SetValue(ICommandBuffer cb, bool value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [value ? 1 : 0];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -322,7 +367,9 @@ public readonly struct IntEffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, int value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [value];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -332,7 +379,9 @@ public readonly struct Int2EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, int x, int y)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [x, y];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -344,7 +393,9 @@ public readonly struct Int3EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, int x, int y, int z)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [x, y, z];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -356,7 +407,9 @@ public readonly struct Int4EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, int x, int y, int z, int w)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [x, y, z, w];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -368,7 +421,9 @@ public readonly struct UintEffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, uint value)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [(int)value];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -378,7 +433,9 @@ public readonly struct Uint2EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, uint x, uint y)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [(int)x, (int)y];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -388,7 +445,9 @@ public readonly struct Uint3EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, uint x, uint y, uint z)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [(int)x, (int)y, (int)z];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -398,7 +457,9 @@ public readonly struct Uint4EffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, uint x, uint y, uint z, uint w)
     {
-        if (slot < 0) return;
+        if (slot < 0)
+
+            return;
         Span<int> v = [(int)x, (int)y, (int)z, (int)w];
         cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
     }
@@ -408,7 +469,9 @@ public readonly struct TextureEffectParameter(int slot)
 {
     public void SetValue(ICommandBuffer cb, ITexture? texture, ISampler? sampler)
     {
-        if (slot < 0 || texture is null || sampler is null) return;
+        if (slot < 0 || texture is null || sampler is null)
+
+            return;
         cb.SetShaderResource(slot, texture, sampler);
     }
 }

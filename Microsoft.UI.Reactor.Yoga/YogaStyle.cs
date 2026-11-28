@@ -74,6 +74,7 @@ internal sealed class YogaStyle
         // initializers. default(YogaValue) is (0, Undefined) — NOT the
         // (NaN, Undefined) sentinel — so leaving them zero-initialized would
         // subtly change == and Resolve() behavior. Dimensions default to Auto.
+
         for (int i = 0; i < 9; i++)
         {
             _margin[i] = YogaValue.Undefined;
@@ -105,9 +106,11 @@ internal sealed class YogaStyle
             // number. Negatives produce negative computed dimensions; ±∞
             // propagates into Arrange and crashes WinUI. NaN is the
             // intentional "undefined" sentinel and is allowed.
+
             if (!float.IsNaN(value))
             {
                 if (value <= 0 || float.IsInfinity(value))
+
                     throw new ArgumentOutOfRangeException(
                         nameof(value),
                         $"AspectRatio must be a positive finite number or NaN; got {value}."
@@ -123,12 +126,14 @@ internal sealed class YogaStyle
     public YogaValue ComputeColumnGap()
     {
         var col = _gap[(int)YogaGutter.Column];
+
         return col.IsDefined ? col : _gap[(int)YogaGutter.All];
     }
 
     public YogaValue ComputeRowGap()
     {
         var row = _gap[(int)YogaGutter.Row];
+
         return row.IsDefined ? row : _gap[(int)YogaGutter.All];
     }
 
@@ -136,40 +141,60 @@ internal sealed class YogaStyle
     private static YogaValue ComputeLeftEdge(ReadOnlySpan<YogaValue> edges, FlexLayoutDirection layoutDirection)
     {
         if (layoutDirection == FlexLayoutDirection.LTR && edges[(int)YogaEdge.Start].IsDefined)
+
             return edges[(int)YogaEdge.Start];
         if (layoutDirection == FlexLayoutDirection.RTL && edges[(int)YogaEdge.End].IsDefined)
+
             return edges[(int)YogaEdge.End];
         if (edges[(int)YogaEdge.Left].IsDefined)
+
             return edges[(int)YogaEdge.Left];
         if (edges[(int)YogaEdge.Horizontal].IsDefined)
+
             return edges[(int)YogaEdge.Horizontal];
+
         return edges[(int)YogaEdge.All];
     }
 
     private static YogaValue ComputeTopEdge(ReadOnlySpan<YogaValue> edges)
     {
-        if (edges[(int)YogaEdge.Top].IsDefined) return edges[(int)YogaEdge.Top];
-        if (edges[(int)YogaEdge.Vertical].IsDefined) return edges[(int)YogaEdge.Vertical];
+        if (edges[(int)YogaEdge.Top].IsDefined)
+
+            return edges[(int)YogaEdge.Top];
+        if (edges[(int)YogaEdge.Vertical].IsDefined)
+
+            return edges[(int)YogaEdge.Vertical];
+
         return edges[(int)YogaEdge.All];
     }
 
     private static YogaValue ComputeRightEdge(ReadOnlySpan<YogaValue> edges, FlexLayoutDirection layoutDirection)
     {
         if (layoutDirection == FlexLayoutDirection.LTR && edges[(int)YogaEdge.End].IsDefined)
+
             return edges[(int)YogaEdge.End];
         if (layoutDirection == FlexLayoutDirection.RTL && edges[(int)YogaEdge.Start].IsDefined)
+
             return edges[(int)YogaEdge.Start];
         if (edges[(int)YogaEdge.Right].IsDefined)
+
             return edges[(int)YogaEdge.Right];
         if (edges[(int)YogaEdge.Horizontal].IsDefined)
+
             return edges[(int)YogaEdge.Horizontal];
+
         return edges[(int)YogaEdge.All];
     }
 
     private static YogaValue ComputeBottomEdge(ReadOnlySpan<YogaValue> edges)
     {
-        if (edges[(int)YogaEdge.Bottom].IsDefined) return edges[(int)YogaEdge.Bottom];
-        if (edges[(int)YogaEdge.Vertical].IsDefined) return edges[(int)YogaEdge.Vertical];
+        if (edges[(int)YogaEdge.Bottom].IsDefined)
+
+            return edges[(int)YogaEdge.Bottom];
+        if (edges[(int)YogaEdge.Vertical].IsDefined)
+
+            return edges[(int)YogaEdge.Vertical];
+
         return edges[(int)YogaEdge.All];
     }
 
@@ -202,17 +227,25 @@ internal sealed class YogaStyle
     // ── Inset queries ──
 
     public bool HorizontalInsetsDefined =>
-        _position[(int)YogaEdge.Left].IsDefined ||
-        _position[(int)YogaEdge.Right].IsDefined ||
-        _position[(int)YogaEdge.All].IsDefined ||
-        _position[(int)YogaEdge.Horizontal].IsDefined ||
-        _position[(int)YogaEdge.Start].IsDefined ||
+        _position[(int)YogaEdge.Left].IsDefined
+        ||
+        _position[(int)YogaEdge.Right].IsDefined
+        ||
+        _position[(int)YogaEdge.All].IsDefined
+        ||
+        _position[(int)YogaEdge.Horizontal].IsDefined
+        ||
+        _position[(int)YogaEdge.Start].IsDefined
+        ||
         _position[(int)YogaEdge.End].IsDefined;
 
     public bool VerticalInsetsDefined =>
-        _position[(int)YogaEdge.Top].IsDefined ||
-        _position[(int)YogaEdge.Bottom].IsDefined ||
-        _position[(int)YogaEdge.All].IsDefined ||
+        _position[(int)YogaEdge.Top].IsDefined
+        ||
+        _position[(int)YogaEdge.Bottom].IsDefined
+        ||
+        _position[(int)YogaEdge.All].IsDefined
+        ||
         _position[(int)YogaEdge.Vertical].IsDefined;
 
     // ── Flex-direction-aware computed values ──
@@ -252,17 +285,22 @@ internal sealed class YogaStyle
         for (int i = 0; i < 9; i++)
         {
             if (_margin[i].IsPercent || _padding[i].IsPercent)
+
                 return true;
         }
 
-        return _dimensions[(int)YogaDimension.Width].IsPercent ||
-               _minDimensions[(int)YogaDimension.Width].IsPercent ||
+        return _dimensions[(int)YogaDimension.Width].IsPercent
+               ||
+               _minDimensions[(int)YogaDimension.Width].IsPercent
+               ||
                _maxDimensions[(int)YogaDimension.Width].IsPercent;
     }
 
     public bool ResolvesAgainstOwnerHeight() =>
-        _dimensions[(int)YogaDimension.Height].IsPercent ||
-        _minDimensions[(int)YogaDimension.Height].IsPercent ||
+        _dimensions[(int)YogaDimension.Height].IsPercent
+        ||
+        _minDimensions[(int)YogaDimension.Height].IsPercent
+        ||
         _maxDimensions[(int)YogaDimension.Height].IsPercent;
 
     // ── Computed position values ──
@@ -344,6 +382,7 @@ internal sealed class YogaStyle
     public float ComputePaddingAndBorderForDimension(FlexLayoutDirection direction, YogaDimension dimension, float widthSize)
     {
         var flexDir = dimension == YogaDimension.Width ? FlexDirection.Row : FlexDirection.Column;
+
         return ComputeFlexStartPaddingAndBorder(flexDir, direction, widthSize)
                + ComputeFlexEndPaddingAndBorder(flexDir, direction, widthSize);
     }
@@ -352,15 +391,17 @@ internal sealed class YogaStyle
         => ComputeInlineStartBorder(axis, FlexLayoutDirection.LTR) + ComputeInlineEndBorder(axis, FlexLayoutDirection.LTR);
 
     public float ComputeMarginForAxis(FlexDirection axis, float widthSize)
-        => ComputeInlineStartMargin(axis, FlexLayoutDirection.LTR, widthSize) + ComputeInlineEndMargin(
-            axis,
-            FlexLayoutDirection.LTR,
-            widthSize
-        );
+        => ComputeInlineStartMargin(axis, FlexLayoutDirection.LTR, widthSize)
+           + ComputeInlineEndMargin(
+               axis,
+               FlexLayoutDirection.LTR,
+               widthSize
+           );
 
     public float ComputeGapForAxis(FlexDirection axis, float ownerSize)
     {
         var gap = FlexDirectionHelper.IsRow(axis) ? ComputeColumnGap() : ComputeRowGap();
+
         return YogaFloat.MaxOrDefined(gap.Resolve(ownerSize), 0);
     }
 
@@ -383,25 +424,31 @@ internal sealed class YogaStyle
     public float ResolvedMinDimension(FlexLayoutDirection direction, YogaDimension axis, float referenceLength, float ownerWidth)
     {
         float value = _minDimensions[(int)axis].Resolve(referenceLength);
+
         if (BoxSizing == YogaBoxSizing.BorderBox)
+
             return value;
 
         // Match C++ FloatOptional addition: always add padding+border in content-box mode,
         // even when value is undefined — the padding+border itself forms a minimum.
         float paddingAndBorder = ComputePaddingAndBorderForDimension(direction, axis, ownerWidth);
         float pb = YogaFloat.IsDefined(paddingAndBorder) ? paddingAndBorder : 0;
+
         return value + pb;
     }
 
     public float ResolvedMaxDimension(FlexLayoutDirection direction, YogaDimension axis, float referenceLength, float ownerWidth)
     {
         float value = _maxDimensions[(int)axis].Resolve(referenceLength);
+
         if (BoxSizing == YogaBoxSizing.BorderBox)
+
             return value;
 
         // Match C++ FloatOptional addition: always add padding+border in content-box mode.
         float paddingAndBorder = ComputePaddingAndBorderForDimension(direction, axis, ownerWidth);
         float pb = YogaFloat.IsDefined(paddingAndBorder) ? paddingAndBorder : 0;
+
         return value + pb;
     }
 }

@@ -61,17 +61,20 @@ public static class TimeTrialSubmissions
     )
     {
         if (completion.Recording.Length == 0)
+
             return null;
 
         var digest = Convert.ToHexStringLower(SHA256.HashData(completion.Recording));
         // Only work that is still outstanding counts against the bound. Uploaded runs stay on
         // disk for the browser, so counting them would fill the queue for good after 20 races.
         var existing = List();
+
         if (existing.All(s => s.Digest != digest)
             && existing.Count(s => s.Status == "pending") >= MaxPending)
         {
             // Bound the queue rather than growing without limit while offline.
             Logging.Warning("[TT] Submission queue is full; the run was saved locally only.");
+
             return null;
         }
 
@@ -92,6 +95,7 @@ public static class TimeTrialSubmissions
             RecordedAt = DateTimeOffset.UtcNow
         };
         WriteSidecar(submission);
+
         return submission;
     }
 
@@ -105,12 +109,15 @@ public static class TimeTrialSubmissions
     public static void Recover()
     {
         if (!VFS.DirectoryExists(PendingDirectory))
+
             return;
 
         foreach (var file in VFS.EnumerateWriteFiles(PendingDirectory, "*" + RecordingSuffix))
         {
             var digest = Path.GetFileNameWithoutExtension(file);
+
             if (VFS.FileExists(SidecarPath(digest)))
+
                 continue;
 
             WriteSidecar(
@@ -129,9 +136,11 @@ public static class TimeTrialSubmissions
     public static IReadOnlyList<PendingSubmission> List()
     {
         if (!VFS.DirectoryExists(PendingDirectory))
+
             return [];
 
         var submissions = new List<PendingSubmission>();
+
         foreach (var file in VFS.EnumerateWriteFiles(PendingDirectory, "*" + SidecarSuffix))
         {
             try
@@ -152,23 +161,29 @@ public static class TimeTrialSubmissions
     public static PendingSubmission? FindRecording(IEnumerable<PendingSubmission> submissions, ReadOnlySpan<byte> recording)
     {
         var digest = Convert.ToHexStringLower(SHA256.HashData(recording));
+
         return submissions.FirstOrDefault(submission => submission.Digest == digest);
     }
 
     public static byte[]? ReadRecording(PendingSubmission submission)
     {
         var path = $"{PendingDirectory}/{submission.Digest}{RecordingSuffix}";
+
         if (!VFS.FileExists(path))
+
             return null;
 
         var bytes = VFS.ReadAllBytes(path);
+
         return Convert.ToHexStringLower(SHA256.HashData(bytes)) == submission.Digest ? bytes : null;
     }
 
     public static int DeleteRecording(string file)
     {
         var files = VFS.EnumerateWriteFiles("data/tts", "*.timetrial", SearchOption.AllDirectories).ToArray();
+
         if (!files.Contains(file, StringComparer.Ordinal))
+
             throw new InvalidOperationException("Only locally saved recordings can be deleted.");
 
         string digest;
@@ -176,6 +191,7 @@ public static class TimeTrialSubmissions
             digest = Convert.ToHexStringLower(SHA256.HashData(stream));
 
         var deleted = 0;
+
         foreach (var candidate in files)
         {
             string candidateDigest;
@@ -186,6 +202,7 @@ public static class TimeTrialSubmissions
         }
 
         VFS.DeleteWriteFile(SidecarPath(digest));
+
         return deleted;
     }
 

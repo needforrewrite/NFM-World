@@ -23,7 +23,9 @@ public partial struct C2S_ClientEvent : IPacketClientToServer<C2S_ClientEvent>, 
 
     public void Dispose()
     {
-        if (!_usePool) return;
+        if (!_usePool)
+
+            return;
 
         Return(Payload);
         Payload = default;

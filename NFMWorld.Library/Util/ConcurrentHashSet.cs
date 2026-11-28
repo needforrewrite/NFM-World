@@ -35,6 +35,7 @@ public readonly struct ConcurrentHashSet<T>(ConcurrentDictionary<T, byte> dictio
     public void IntersectWith(IEnumerable<T> other)
     {
         var enumerable = other as T[] ?? other.ToArray();
+
         foreach (var (k, _) in dictionary)
         {
             if (!enumerable.Contains(k))
@@ -47,6 +48,7 @@ public readonly struct ConcurrentHashSet<T>(ConcurrentDictionary<T, byte> dictio
     public bool IsProperSubsetOf(IEnumerable<T> other)
     {
         var enumerable = other as T[] ?? other.ToArray();
+
         foreach (var (k, _) in dictionary)
         {
             if (!enumerable.Contains(k))
@@ -61,6 +63,7 @@ public readonly struct ConcurrentHashSet<T>(ConcurrentDictionary<T, byte> dictio
     public bool IsProperSupersetOf(IEnumerable<T> other)
     {
         var enumerable = other as T[] ?? other.ToArray();
+
         foreach (var e in enumerable)
         {
             if (!dictionary.ContainsKey(e))
@@ -75,6 +78,7 @@ public readonly struct ConcurrentHashSet<T>(ConcurrentDictionary<T, byte> dictio
     public bool IsSubsetOf(IEnumerable<T> other)
     {
         var enumerable = other as T[] ?? other.ToArray();
+
         foreach (var (k, _) in dictionary)
         {
             if (!enumerable.Contains(k))
@@ -89,6 +93,7 @@ public readonly struct ConcurrentHashSet<T>(ConcurrentDictionary<T, byte> dictio
     public bool IsSupersetOf(IEnumerable<T> other)
     {
         var enumerable = other as T[] ?? other.ToArray();
+
         foreach (var e in enumerable)
         {
             if (!dictionary.ContainsKey(e))
@@ -116,6 +121,7 @@ public readonly struct ConcurrentHashSet<T>(ConcurrentDictionary<T, byte> dictio
     public bool SetEquals(IEnumerable<T> other)
     {
         var enumerable = other as T[] ?? other.ToArray();
+
         if (dictionary.Count != enumerable.Length)
         {
             return false;

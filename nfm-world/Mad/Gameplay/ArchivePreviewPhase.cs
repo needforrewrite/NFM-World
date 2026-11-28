@@ -64,18 +64,23 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     private async Task LoadAsync()
     {
         using var operation = LoadingWork.Begin("Loading the asset…");
+
         try
         {
             if (!ContentHashes.TryResolve(_request.Hash, out var hash))
             {
                 await FailAsync("Could not preview the asset", "That is not a content hash.");
+
                 return;
             }
 
             operation.Report("Downloading the asset…");
             var bytes = await Client.DownloadAsync(hash, RadpackLimits.MaxCompressedBytes, _cancellation.Token);
             await LoadingWork.NextFrame;
-            if (_cancellation.IsCancellationRequested) return;
+
+            if (_cancellation.IsCancellationRequested)
+
+                return;
 
             var kind = HeaderKind(bytes);
             var mode = ResolveMode(kind);
@@ -91,12 +96,18 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
                     RadpackLimits.MaxCompressedBytes,
                     RadpackLimits.MaxDecompressedBytes
                 );
+
                 if (stage is not RadpackStage track)
+
                     throw new InvalidDataException("The radpack carries no stage.");
 
                 await LoadingWork.NextFrame;
-                if (_cancellation.IsCancellationRequested) return;
+
+                if (_cancellation.IsCancellationRequested)
+
+                    return;
                 BeginStageLoad(reference, loadMusic: false, stageData: track.Stage);
+
                 return;
             }
 
@@ -108,11 +119,16 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
                 RadpackLimits.MaxCompressedBytes,
                 RadpackLimits.MaxDecompressedBytes
             );
+
             if (asset is not RadpackRad3d model)
+
                 throw new InvalidDataException("The radpack carries no model.");
 
             await LoadingWork.NextFrame;
-            if (_cancellation.IsCancellationRequested) return;
+
+            if (_cancellation.IsCancellationRequested)
+
+                return;
             BuildModel(model.Rad);
         }
         catch (OperationCanceledException) when (_cancellation.IsCancellationRequested)
@@ -148,15 +164,22 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     {
         Logging.Error($"[Preview] {title}: {message}");
         await LoadingWork.NextFrame;
-        if (_disposed || _cancellation.IsCancellationRequested) return;
+
+        if (_disposed || _cancellation.IsCancellationRequested)
+
+            return;
         GameSparker.MessageWindow.ShowMessage(title, message);
     }
 
     /// <summary>The radpack header's declared kind; the whole format starts with it.</summary>
     private static RadpackType HeaderKind(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.Length < 4 || bytes[0] != 'R' || bytes[1] != 'A' || bytes[2] != 'D'
+        if (bytes.Length < 4
+            || bytes[0] != 'R'
+            || bytes[1] != 'A'
+            || bytes[2] != 'D'
             || bytes[3] > (byte)RadpackType.Max)
+
             throw new InvalidDataException("The download is not a radpack.");
 
         return (RadpackType)bytes[3];
@@ -166,13 +189,17 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     private ArchivePreviewMode ResolveMode(RadpackType kind)
     {
         var isModel = kind is RadpackType.Car or RadpackType.TrackPiece or RadpackType.Wheel;
+
         if (isModel && _request.Mode != ArchivePreviewMode.Stage)
+
             return ArchivePreviewMode.Model;
 
         if (kind == RadpackType.Track && _request.Mode != ArchivePreviewMode.Model)
+
             return ArchivePreviewMode.Stage;
 
         if (_request.Mode == ArchivePreviewMode.Auto)
+
             throw new InvalidDataException($"A {kind} radpack has nothing to show.");
 
         throw new InvalidDataException(
@@ -212,6 +239,7 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
                 f64AngleSingle.ZeroAngle
             );
             UpdateModelCamera();
+
             return;
         }
 
@@ -224,6 +252,7 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     {
         var thickness = World.OutlineThickness;
         var pixelOutlines = World.PixelOutlines;
+
         try
         {
             World.OutlineThickness = thickness * Math.Clamp(Camera.Height / 720f, 0f, 1f);
@@ -265,7 +294,10 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     )
     {
         base.MousePressed(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
-        if (_model is null || imguiWantsMouse || button != MouseButton.Primary) return;
+
+        if (_model is null || imguiWantsMouse || button != MouseButton.Primary)
+
+            return;
 
         _orbiting = true;
         _dragX = x;
@@ -285,7 +317,10 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     )
     {
         base.MouseMoved(x, y, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
-        if (!_orbiting || _model is null) return;
+
+        if (!_orbiting || _model is null)
+
+            return;
 
         _yaw = _dragYaw + (x - _dragX) * OrbitSensitivity;
         _pitch = Math.Clamp(_dragPitch - (y - _dragY) * OrbitSensitivity, -89f, 89f);
@@ -320,7 +355,10 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     )
     {
         base.MouseScrolled(x, y, delta, imguiWantsMouse, buttons, ctrlKey, shiftKey, altKey);
-        if (_model is null || imguiWantsMouse || delta == 0) return;
+
+        if (_model is null || imguiWantsMouse || delta == 0)
+
+            return;
 
         _distance = Math.Clamp(_distance - delta * ZoomSpeed, MinDistance, MaxDistance);
         UpdateModelCamera();
@@ -329,7 +367,10 @@ public sealed class ArchivePreviewPhase : BaseStageRenderingPhase
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        if (!disposing || _disposed) return;
+
+        if (!disposing || _disposed)
+
+            return;
         _disposed = true;
 
         _cancellation.Cancel();

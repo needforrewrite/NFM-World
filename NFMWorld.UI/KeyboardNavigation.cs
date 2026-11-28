@@ -22,12 +22,14 @@ public sealed class KeyboardNavigation
     public static T Row<T>(T node) where T : Node
     {
         Settings.GetOrCreateValue(node).Row = true;
+
         return node;
     }
 
     public static T Scope<T>(T node) where T : Node
     {
         Settings.GetOrCreateValue(node).Scope = true;
+
         return node;
     }
 
@@ -44,6 +46,7 @@ public sealed class KeyboardNavigation
         options.Preferred = preferred;
         control.Focused += () => focusChanged(true);
         control.Unfocused += () => focusChanged(false);
+
         return control;
     }
 
@@ -52,6 +55,7 @@ public sealed class KeyboardNavigation
         var scope = FindScope(root);
         var controls = Controls(scope).ToArray();
         var state = Settings.GetOrCreateValue(scope);
+
         if (!ReferenceEquals(scope, _scope))
         {
             _scope = scope;
@@ -78,10 +82,13 @@ public sealed class KeyboardNavigation
         UpdateFocus(root);
         var scope = _scope!;
         var controls = Controls(scope).ToArray();
+
         if (FocusManager.FocusedNode is not Component focused || !controls.Contains(focused))
+
             return key is Key.Up or Key.Down or Key.Left or Key.Right or Key.Enter or Key.Space;
 
         if (Settings.TryGetValue(focused, out var options) && options.HandleKey?.Invoke(key) == true)
+
             return true;
 
         if (key is Key.Up or Key.Down)
@@ -93,38 +100,51 @@ public sealed class KeyboardNavigation
         }
         else if (key is Key.Left or Key.Right)
         {
-            if (focused is TextInput) return false;
+            if (focused is TextInput)
+
+                return false;
             var row = controls.Where(control => ReferenceEquals(FindRow(control, scope), FindRow(focused, scope))).ToArray();
             var index = Array.IndexOf(row, focused);
             Focus(row[(index + (key == Key.Left ? -1 : 1) + row.Length) % row.Length]);
         }
         else if (key is Key.Enter or Key.Space)
         {
-            if (focused is TextInput) return false;
+            if (focused is TextInput)
+
+                return false;
             var e = new KeyboardEvent(key, key, default);
             focused.KeyPressed?.Invoke(e);
             focused.OnKeyPressed(e);
         }
-        else return false;
+        else
+
+            return false;
 
         Settings.GetOrCreateValue(scope).LastFocused = FocusManager.FocusedNode as Component;
         Settings.GetOrCreateValue(scope).LastFocusIndex = Array.IndexOf(controls, FocusManager.FocusedNode as Component);
+
         return true;
     }
 
     private static void Focus(Component? control, bool scrollIntoView = true)
     {
-        if (control is null) return;
+        if (control is null)
+
+            return;
         control.Focus();
-        if (scrollIntoView) control.ScrollIntoView();
+        if (scrollIntoView)
+            control.ScrollIntoView();
     }
 
     private static Node FindScope(Node root)
     {
         var scope = root;
+
         foreach (var child in root.VisualChildren)
         {
-            if (child is Component { IsDisplayed: false }) continue;
+            if (child is Component { IsDisplayed: false })
+
+                continue;
             var nested = FindScope(child);
             if (!ReferenceEquals(nested, child) || Settings.TryGetValue(child, out var options) && options.Scope)
                 scope = nested;
@@ -135,10 +155,18 @@ public sealed class KeyboardNavigation
 
     private static IEnumerable<Component> Controls(Node root)
     {
-        if (root is Component { IsDisplayed: false }) yield break;
-        if (root is Component { IsFocusable: true } control) yield return control;
+        if (root is Component { IsDisplayed: false })
+
+            yield break;
+
+        if (root is Component { IsFocusable: true } control)
+
+            yield return control;
+
         foreach (var child in root.VisualChildren)
+
         foreach (var descendant in Controls(child))
+
             yield return descendant;
     }
 
@@ -147,8 +175,11 @@ public sealed class KeyboardNavigation
         for (var parent = control.VisualParent;
              parent is not null && !ReferenceEquals(parent, scope);
              parent = parent.VisualParent)
+
             if (Settings.TryGetValue(parent, out var options) && options.Row)
+
                 return parent;
+
         return control;
     }
 }

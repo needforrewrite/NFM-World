@@ -176,6 +176,7 @@ internal static class S
     {
         var frames = new TpFrame[63];
         Array.Fill(frames, TpFrame);
+
         return frames;
     }
 
@@ -183,6 +184,7 @@ internal static class S
     {
         var frames = new MpFrame[63];
         Array.Fill(frames, MpFrame);
+
         return frames;
     }
 }

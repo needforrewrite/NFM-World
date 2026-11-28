@@ -19,6 +19,7 @@ public class CheckPointHelper
     )
     {
         var useCheckpoints = currentStage.Nlaps > 0;
+
         foreach (var player in players)
         {
             player.Car?.Placement = 0;
@@ -27,18 +28,29 @@ public class CheckPointHelper
         for (int i = 0; i < players.Count; i++)
         {
             var player1 = players[i];
-            if (player1.Car is not { } car1) continue;
+
+            if (player1.Car is not { } car1)
+
+                continue;
+
             for (int j = i + 1; j < players.Count; j++)
             {
                 var player2 = players[j];
-                if (player2.Car is not { } car2) continue;
+
+                if (player2.Car is not { } car2)
+
+                    continue;
 
                 // Dead cars rank behind every live one, so their progress cannot push a live car
                 // down the order in any HUD.
+
                 if (car1.Wasted != car2.Wasted)
                 {
-                    if (car1.Wasted) car1.Placement++;
-                    else car2.Placement++;
+                    if (car1.Wasted)
+                        car1.Placement++;
+                    else
+                        car2.Placement++;
+
                     continue;
                 }
 
@@ -58,21 +70,23 @@ public class CheckPointHelper
                     if (!useCheckpoints || currentStage.Checkpoints.Count == 0)
                     {
                         car2.Placement++;
+
                         continue;
                     }
 
                     int c = car1.CurrentCheckpoint;
+
                     if (c >= currentStage.Checkpoints.Count)
                     {
                         c = 0;
                     }
 
                     if (UMath.Py(
-                            car1.Position.X / 100,
-                            currentStage.Checkpoints[c].Position.X / 100,
-                            car1.Position.Z / 100,
-                            currentStage.Checkpoints[c].Position.Z / 100
-                        )
+                        car1.Position.X / 100,
+                        currentStage.Checkpoints[c].Position.X / 100,
+                        car1.Position.Z / 100,
+                        currentStage.Checkpoints[c].Position.Z / 100
+                    )
                         > UMath.Py(
                             car2.Position.X / 100,
                             currentStage.Checkpoints[c].Position.X / 100,
@@ -99,16 +113,17 @@ public class CheckPointHelper
     )
     {
         if (car.CurrentCheckpoint >= currentStage.Checkpoints.Count)
+
             return false;
 
         var nextCheckpoint = currentStage.Checkpoints[car.CurrentCheckpoint];
         f64Vector3 carPos = car.Position;
         var mad = car.CarPhysics;
         f64Vector3 velocity = new f64Vector3(
-                                  mad.Scx[0] + mad.Scx[1] + mad.Scx[2] + mad.Scx[3],
-                                  mad.Scy[0] + mad.Scy[1] + mad.Scy[2] + mad.Scy[3],
-                                  mad.Scz[0] + mad.Scz[1] + mad.Scz[2] + mad.Scz[3]
-                              )
+            mad.Scx[0] + mad.Scx[1] + mad.Scx[2] + mad.Scx[3],
+            mad.Scy[0] + mad.Scy[1] + mad.Scy[2] + mad.Scy[3],
+            mad.Scz[0] + mad.Scz[1] + mad.Scz[2] + mad.Scz[3]
+        )
                               / 4;
         f64Vector3 zDir = new f64Vector3(0, 0, 1);
         f64Vector3 rad = new f64Vector3(
@@ -126,6 +141,7 @@ public class CheckPointHelper
             car.LastCheckpointPzy = mad.Pzy;
 
             car.CurrentCheckpoint++;
+
             if (car.CurrentCheckpoint >= currentStage.Checkpoints.Count)
             {
                 car.LastCheckpointNode = -1;
@@ -138,6 +154,7 @@ public class CheckPointHelper
             }
 
             car.TotalCheckpoint = car.CurrentCheckpoint + car.CurrentLap * currentStage.Checkpoints.Count;
+
             return true;
         }
 
@@ -152,23 +169,38 @@ public class CheckPointHelper
     [PluginVisible]
     public static bool HandleAerialFall(BackendStage currentStage, BackendCar car)
     {
-        if (!currentStage.StageLoader.Aerial) return false;
-        if (!car.CarPhysics.OnGroundPlane) return false;
-        if (currentStage.Checkpoints.Count == 0) return false;
-        if (car.CurrentCheckpoint > currentStage.Checkpoints.Count) return false;
+        if (!currentStage.StageLoader.Aerial)
+
+            return false;
+        if (!car.CarPhysics.OnGroundPlane)
+
+            return false;
+        if (currentStage.Checkpoints.Count == 0)
+
+            return false;
+        if (car.CurrentCheckpoint > currentStage.Checkpoints.Count)
+
+            return false;
 
         // No checkpoint crossed yet (CurrentCheckpoint wraps to 0 after the last one).
-        if (car.CurrentLap == 0 && car.CurrentCheckpoint == 0) return false;
+
+        if (car.CurrentLap == 0 && car.CurrentCheckpoint == 0)
+
+            return false;
 
         var lastIndex = car.CurrentCheckpoint == 0
             ? currentStage.Checkpoints.Count - 1
             : car.CurrentCheckpoint - 1;
 
         var lastCheckpoint = currentStage.Checkpoints[lastIndex];
-        if (lastCheckpoint.Position.Y >= (fix64)World.Ground - AerialGroundTolerance) return false;
+
+        if (lastCheckpoint.Position.Y >= (fix64)World.Ground - AerialGroundTolerance)
+
+            return false;
 
         if (car.CurrentCheckpoint < currentStage.Checkpoints.Count
             && currentStage.Checkpoints[car.CurrentCheckpoint].Position.Y >= (fix64)World.Ground - AerialGroundTolerance)
+
             return false;
 
         car.CarPhysics.Reseto(car.CarPhysics.Im, car);
@@ -181,6 +213,7 @@ public class CheckPointHelper
             lastCheckpoint.Position.Z
         );
         car.Rotation = car.LastCheckpointRotation;
+
         return true;
     }
 }

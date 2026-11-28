@@ -115,7 +115,8 @@ public class ClientStage : IDisposable
     )
     {
         using var loading = LoadingWork.Begin("Loading stage...");
-        var backend = await Task.Run(async () =>
+        var backend = await Task.Run(
+            async () =>
             {
                 if (stageData is null && RadpackReader.IsArchiveId(stageName))
                 {
@@ -126,12 +127,16 @@ public class ClientStage : IDisposable
                         AssetKind.Stage,
                         token
                     );
-                    if (!result.Ok) throw new InvalidDataException(result.Error);
+
+                    if (!result.Ok)
+
+                        throw new InvalidDataException(result.Error);
                 }
 
                 // A text stage resolves its pieces while it is parsed. Public ones are downloaded
                 // first, or the stage would be built around an error mesh.
                 var textPath = $"data/stages/{stageName}.txt";
+
                 if (stageData is null && VFS.FileExists(textPath))
                 {
                     foreach (var reference in StageLoader.ReferencedArchiveModels(VFS.ReadAllLines(textPath)))
@@ -150,22 +155,27 @@ public class ClientStage : IDisposable
 
                 token.ThrowIfCancellationRequested();
                 loading.Report("Preparing scene...");
+
                 return new BackendStage(stageName, stageData, throwOnError: true);
-            }, token
+            },
+            token
         );
         var renderer = await ClientStageRenderer.CreateAsync(backend, token);
         await LoadingWork.NextFrame;
+
         try
         {
             token.ThrowIfCancellationRequested();
             var stage = new ClientStage(cars, camera, lightCameras, backend, renderer);
             stage._pendingOwnership = ContentCacheMaintenance.TrackPending(stage);
             renderer.Adopt();
+
             return stage;
         }
         catch
         {
             renderer.Dispose();
+
             throw;
         }
     }
@@ -199,6 +209,7 @@ public class ClientStage : IDisposable
         _players = players;
 
         if (players is null)
+
             return;
 
         players.CollectionChanged += PlayersOnCollectionChanged;
@@ -231,6 +242,7 @@ public class ClientStage : IDisposable
         {
             var car = players[index].Car
                       ?? throw new InvalidOperationException($"Player {index} has no car.");
+
             return GetCarVisual(car);
         }
 
@@ -261,6 +273,7 @@ public class ClientStage : IDisposable
     private void DetachPlayer(ClientSidePlayer player)
     {
         player.CarChanged -= OnPlayerCarChanged;
+
         if (_playerVisuals.Remove(player, out var visual))
         {
             _scene.Objects.Remove(visual);
@@ -297,29 +310,38 @@ public class ClientStage : IDisposable
             case NotifyCollectionChangedAction.Add:
                 foreach (ClientSidePlayer player in e.NewItems!)
                     AttachPlayer(player);
+
                 break;
             case NotifyCollectionChangedAction.Remove:
                 foreach (ClientSidePlayer player in e.OldItems!)
                     DetachPlayer(player);
+
                 break;
             case NotifyCollectionChangedAction.Replace:
                 foreach (ClientSidePlayer player in e.OldItems!)
                     DetachPlayer(player);
                 foreach (ClientSidePlayer player in e.NewItems!)
                     AttachPlayer(player);
+
                 break;
             case NotifyCollectionChangedAction.Move:
+
                 // Visuals are tracked by player reference, not index.
+
                 break;
             case NotifyCollectionChangedAction.Reset:
+
                 if (_players is not { } players)
+
                     break;
                 foreach (var player in players)
                     DetachPlayer(player);
                 foreach (var player in players)
                     AttachPlayer(player);
+
                 break;
             default:
+
                 throw new ArgumentOutOfRangeException();
         }
     }
@@ -333,6 +355,7 @@ public class ClientStage : IDisposable
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
+
                 foreach (BackendCar car in e.NewItems!)
                 {
                     if (!_carVisuals.ContainsKey(car))
@@ -344,6 +367,7 @@ public class ClientStage : IDisposable
 
                 break;
             case NotifyCollectionChangedAction.Remove:
+
                 foreach (BackendCar car in e.OldItems!)
                 {
                     if (_carVisuals.Remove(car, out var visual))
@@ -355,6 +379,7 @@ public class ClientStage : IDisposable
 
                 break;
             case NotifyCollectionChangedAction.Replace:
+
                 foreach (BackendCar car in e.OldItems!)
                 {
                     if (_carVisuals.Remove(car, out var visual))
@@ -375,12 +400,15 @@ public class ClientStage : IDisposable
 
                 break;
             case NotifyCollectionChangedAction.Move:
+
                 // No need to do anything — the visuals are tracked by reference, not index, so moving items around
                 // doesn't affect them.
+
                 break;
             case NotifyCollectionChangedAction.Reset:
                 // ── Remove visuals for cars that left the collection ──
                 var removed = _carVisuals.Keys.Except(_cars).ToArray();
+
                 foreach (var key in removed)
                 {
                     if (_carVisuals.Remove(key, out var visual))
@@ -391,6 +419,7 @@ public class ClientStage : IDisposable
                 }
 
                 // ── Create visuals for cars that joined the collection ──
+
                 foreach (var car in _cars)
                 {
                     if (!_carVisuals.ContainsKey(car))
@@ -402,6 +431,7 @@ public class ClientStage : IDisposable
 
                 break;
             default:
+
                 throw new ArgumentOutOfRangeException();
         }
     }
@@ -453,6 +483,7 @@ public class ClientStage : IDisposable
     public void Dispose()
     {
         if (_disposed)
+
             return;
 
         _disposed = true;

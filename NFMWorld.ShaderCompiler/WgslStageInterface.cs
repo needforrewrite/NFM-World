@@ -46,10 +46,13 @@ internal static class WgslStageInterface
     public static string Reconcile(string vertexWgsl, string fragmentWgsl)
     {
         var missing = MissingInputs(vertexWgsl, fragmentWgsl);
+
         if (missing.Count == 0)
+
             return fragmentWgsl;
 
         var entry = FragmentEntry.Match(fragmentWgsl);
+
         if (!entry.Success)
         {
             throw new InvalidOperationException(
@@ -68,6 +71,7 @@ internal static class WgslStageInterface
         var parameters = entry.Groups[2];
         var separator = parameters.Value.Trim().Length == 0 ? "" : ", ";
         var insertAt = parameters.Index + parameters.Length;
+
         return string.Concat(fragmentWgsl.AsSpan(0, insertAt), separator, added, fragmentWgsl.AsSpan(insertAt));
     }
 
@@ -76,7 +80,9 @@ internal static class WgslStageInterface
         var missing = new List<Varying>();
 
         var returnType = VertexReturnType.Match(vertexWgsl);
+
         if (!returnType.Success)
+
             return missing;
 
         var body = Regex.Match(
@@ -84,15 +90,18 @@ internal static class WgslStageInterface
             @"\bstruct\s+" + Regex.Escape(returnType.Groups[1].Value) + @"\s*\{(.*?)\n\}",
             RegexOptions.Singleline
         );
+
         if (!body.Success)
         {
             // The entry returns a type declared elsewhere, which this parser cannot follow. The
             // mismatch then surfaces as a pipeline validation error rather than silently.
+
             return missing;
         }
 
         var consumed = new HashSet<string>();
         var fragmentEntry = FragmentEntry.Match(fragmentWgsl);
+
         if (fragmentEntry.Success)
         {
             foreach (Match location in LocationAttribute.Matches(fragmentEntry.Groups[2].Value))
@@ -102,7 +111,9 @@ internal static class WgslStageInterface
         foreach (Match member in StructMember.Matches(body.Groups[1].Value))
         {
             var location = member.Groups[1].Value;
+
             if (consumed.Contains(location))
+
                 continue;
 
             var attributes = member.Groups[2].Value.Trim();

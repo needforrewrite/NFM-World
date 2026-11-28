@@ -51,7 +51,9 @@ public static class BindingSlots
 
     private static int TakeNext(HashSet<int> taken, ref int next)
     {
-        while (!taken.Add(next)) next++;
+        while (!taken.Add(next))
+            next++;
+
         return next;
     }
 }

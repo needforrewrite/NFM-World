@@ -168,6 +168,7 @@ namespace Poly2Tri
         protected override void Add(Point2D p, int idx, bool bCalcWindingOrderAndEpsilon)
         {
             TriangulationPoint pt = null;
+
             if (p is TriangulationPoint)
             {
                 pt = p as TriangulationPoint;
@@ -187,6 +188,7 @@ namespace Poly2Tri
             }
 
             mBoundingBox.AddPoint(pt);
+
             if (bCalcWindingOrderAndEpsilon)
             {
                 if (mWindingOrder == WindingOrderType.Unknown)
@@ -211,14 +213,17 @@ namespace Poly2Tri
                 mWindingOrder = windingOrder;
             }
 
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown)
+                                     && (windingOrder != WindingOrderType.Unknown)
                                      && (WindingOrder != windingOrder);
             bool bAddedFirst = true;
             int startCount = mPoints.Count;
             iter.Reset();
+
             while (iter.MoveNext())
             {
                 TriangulationPoint pt = null;
+
                 if (iter.Current is TriangulationPoint)
                 {
                     pt = iter.Current as TriangulationPoint;
@@ -267,11 +272,14 @@ namespace Poly2Tri
             }
 
             int numPoints = points.Count;
-            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown) && (windingOrder != WindingOrderType.Unknown)
+            bool bReverseReadOrder = (WindingOrder != WindingOrderType.Unknown)
+                                     && (windingOrder != WindingOrderType.Unknown)
                                      && (WindingOrder != windingOrder);
+
             for (int i = 0; i < numPoints; ++i)
             {
                 int idx = i;
+
                 if (bReverseReadOrder)
                 {
                     idx = points.Count - i - 1;
@@ -310,6 +318,7 @@ namespace Poly2Tri
         public void CopyTo(TriangulationPoint[] array, int arrayIndex)
         {
             int numElementsToCopy = Math.Min(Count, array.Length - arrayIndex);
+
             for (int i = 0; i < numElementsToCopy; ++i)
             {
                 array[arrayIndex + i] = mPoints[i] as TriangulationPoint;
@@ -336,6 +345,7 @@ namespace Poly2Tri
         public int GetNumHoles(bool parentIsHole)
         {
             int numHoles = parentIsHole ? 0 : 1;
+
             foreach (Contour c in mHoles)
             {
                 numHoles += c.GetNumHoles(!parentIsHole);
@@ -390,6 +400,7 @@ namespace Poly2Tri
         public void InitializeHoles(ConstrainedPointSet cps)
         {
             Contour.InitializeHoles(mHoles, this, cps);
+
             foreach (Contour c in mHoles)
             {
                 c.InitializeHoles(cps);
@@ -403,12 +414,15 @@ namespace Poly2Tri
             int holeIdx = 0;
 
             // pass 1 - remove duplicates
+
             while (holeIdx < numHoles)
             {
                 int hole2Idx = holeIdx + 1;
+
                 while (hole2Idx < numHoles)
                 {
                     bool bSamePolygon = PolygonUtil.PolygonsAreSame2D(holes[holeIdx], holes[hole2Idx]);
+
                     if (bSamePolygon)
                     {
                         // remove one of them
@@ -426,10 +440,12 @@ namespace Poly2Tri
 
             // pass 2: Intersections and Containment
             holeIdx = 0;
+
             while (holeIdx < numHoles)
             {
                 bool bIncrementHoleIdx = true;
                 int hole2Idx = holeIdx + 1;
+
                 while (hole2Idx < numHoles)
                 {
                     if (PolygonUtil.PolygonContainsPolygon(
@@ -456,6 +472,7 @@ namespace Poly2Tri
                         holes.RemoveAt(holeIdx);
                         --numHoles;
                         bIncrementHoleIdx = false;
+
                         break;
                     }
                     else
@@ -466,12 +483,14 @@ namespace Poly2Tri
                             holes[hole2Idx],
                             holes[hole2Idx].Bounds
                         );
+
                         if (bIntersect)
                         {
                             // this is actually an error condition
                             // fix by merging hole1 and hole2 into hole1 (including the holes inside hole2!) and delete hole2
                             // Then, because hole1 is now changed, restart it's check.
                             PolygonOperationContext ctx = new PolygonOperationContext();
+
                             if (!ctx.Init(
                                 PolygonUtil.PolyOperation.Union | PolygonUtil.PolyOperation.Intersect,
                                 holes[holeIdx],
@@ -484,6 +503,7 @@ namespace Poly2Tri
                                     holes.RemoveAt(holeIdx);
                                     --numHoles;
                                     bIncrementHoleIdx = false;
+
                                     break;
                                 }
                                 else
@@ -493,6 +513,7 @@ namespace Poly2Tri
                             }
 
                             PolygonUtil.PolyUnionError pue = PolygonUtil.PolygonOperation(ctx);
+
                             if (pue == PolygonUtil.PolyUnionError.None)
                             {
                                 Point2DList union = ctx.Union;
@@ -506,12 +527,14 @@ namespace Poly2Tri
 
                                 // add children from both of the merged contours
                                 int numChildHoles = holes[holeIdx].GetNumHoles();
+
                                 for (int i = 0; i < numChildHoles; ++i)
                                 {
                                     c.AddHole(holes[holeIdx].GetHole(i));
                                 }
 
                                 numChildHoles = holes[hole2Idx].GetNumHoles();
+
                                 for (int i = 0; i < numChildHoles; ++i)
                                 {
                                     c.AddHole(holes[hole2Idx].GetHole(i));
@@ -554,14 +577,17 @@ namespace Poly2Tri
 
             numHoles = holes.Count;
             holeIdx = 0;
+
             while (holeIdx < numHoles)
             {
                 int numPoints = holes[holeIdx].Count;
+
                 for (int i = 0; i < numPoints; ++i)
                 {
                     int j = holes[holeIdx].NextIndex(i);
                     uint constraintCode = TriangulationConstraint.CalculateContraintCode(holes[holeIdx][i], holes[holeIdx][j]);
                     TriangulationConstraint tc = null;
+
                     if (!cps.TryGetConstraint(constraintCode, out tc))
                     {
                         tc = new TriangulationConstraint(holes[holeIdx][i], holes[holeIdx][j]);
@@ -569,6 +595,7 @@ namespace Poly2Tri
                     }
 
                     // replace the points in the holes with valid points
+
                     if (holes[holeIdx][i].VertexCode == tc.P.VertexCode)
                     {
                         holes[holeIdx][i] = tc.P;
@@ -626,6 +653,7 @@ namespace Poly2Tri
 
             // first try the simple approach:
             Point2D p = GetCentroid();
+
             if (IsPointInsideContour(p))
             {
                 return p;
@@ -633,10 +661,12 @@ namespace Poly2Tri
 
             // brute force it...
             Random random = new Random();
+
             while (true)
             {
                 p.X = (random.NextDouble() * (MaxX - MinX)) + MinX;
                 p.Y = (random.NextDouble() * (MaxY - MinY)) + MinY;
+
                 if (IsPointInsideContour(p))
                 {
                     return p;

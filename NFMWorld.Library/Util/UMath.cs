@@ -15,6 +15,7 @@ public static class UMath
     public static int Mod(int x, int m)
     {
         var r = x % m;
+
         return r < 0 ? r + m : r;
     }
 
@@ -116,6 +117,7 @@ public static class UMath
             if (Diup[i])
             {
                 Rand[i]++;
+
                 if (Rand[i] == 10)
                 {
                     Rand[i] = 0;
@@ -124,6 +126,7 @@ public static class UMath
             else
             {
                 Rand[i]--;
+
                 if (Rand[i] == -1)
                 {
                     Rand[i] = 9;
@@ -132,6 +135,7 @@ public static class UMath
         }
 
         _trn++;
+
         if (_trn == 3)
         {
             _trn = 0;
@@ -237,6 +241,7 @@ public static class UMath
     public static fix64 Sin(fix64 deg)
     {
         var sin = FixedTrigLUT.SinDeg(deg);
+
         return sin;
     }
 
@@ -244,12 +249,14 @@ public static class UMath
     public static fix64 Cos(fix64 deg)
     {
         var cos = FixedTrigLUT.CosDeg(deg);
+
         return cos;
     }
 
     public static bool EqEpsilon(fix64 a, fix64 b)
     {
         var epsilon = (fix64)0.00001F;
+
         return fix64.Abs(a - b) < epsilon;
     }
 
@@ -327,6 +334,7 @@ public static class UMath
         fix64 truncated = scaled > 0 ? fix64.Floor(scaled) : fix64.Ceiling(scaled);
 
         // Scale back
+
         return truncated * step;
     }
 }

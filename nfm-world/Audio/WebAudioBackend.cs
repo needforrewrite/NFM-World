@@ -116,7 +116,10 @@ public static partial class WebAudioBackend
     /// <summary>Copies PCM into an AudioBuffer and returns its handle, or 0 on failure.</summary>
     internal static int CreateBuffer(ReadOnlySpan<byte> pcm16, int sampleRate, int channels)
     {
-        if (pcm16.IsEmpty) return 0;
+        if (pcm16.IsEmpty)
+
+            return 0;
+
         return CreateBufferNative(pcm16.ToArray(), sampleRate, channels);
     }
 
@@ -143,15 +146,22 @@ public static partial class WebAudioBackend
     internal static async Task<DecodeResult> DecodeTrackForUploadAsync(byte[] encoded)
     {
         var buffer = await DecodeAudioNative(encoded);
-        if (buffer == 0) throw new InvalidDataException("The browser could not decode the soundtrack.");
+
+        if (buffer == 0)
+
+            throw new InvalidDataException("The browser could not decode the soundtrack.");
+
         try
         {
             var channels = DecodedChannels(buffer);
             var pcm = DecodedPcm16(buffer);
+
             if (pcm.Length == 0 || channels is < 1 or > 2)
+
                 throw new InvalidDataException("The soundtrack must have one or two audio channels.");
             var samples = SafeArrayPool<byte>.Shared.Rent(pcm.Length);
             pcm.CopyTo(samples.AsSpan(0, pcm.Length));
+
             return new DecodeResult(samples, DecodedSampleRate(buffer), (AudioChannels)channels, true);
         }
         finally
@@ -228,9 +238,12 @@ public sealed class WebAudioSoundClip : ISoundClip
 
         public void Release()
         {
-            if (--Users != 0) return;
+            if (--Users != 0)
+
+                return;
             WebAudioBackend.ReleaseBuffer(Buffer);
-            if (MonoBuffer != Buffer) WebAudioBackend.ReleaseBuffer(MonoBuffer);
+            if (MonoBuffer != Buffer)
+                WebAudioBackend.ReleaseBuffer(MonoBuffer);
         }
     }
 
@@ -282,18 +295,23 @@ public sealed class WebAudioSoundClip : ISoundClip
     public ISoundClip CreateSpatialInstance(bool followPosition = false)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+
         return new WebAudioSoundClip(this, followPosition);
     }
 
     public void SetPosition(Vector3 position)
     {
-        if (!SpatialAudio.Finite(position)) return;
+        if (!SpatialAudio.Finite(position))
+
+            return;
         _position = position;
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         Stop();
         _sample.Release();
@@ -301,7 +319,9 @@ public sealed class WebAudioSoundClip : ISoundClip
 
     private void ApplySpatial()
     {
-        if (_source == 0 || !_spatial) return;
+        if (_source == 0 || !_spatial)
+
+            return;
         var position = _loop || _followPosition ? _position : _playPosition;
         WebAudioBackend.SetSourcePosition(_source, position.X, position.Y, position.Z);
         ApplyVolume(SoundEffects.Volume);
@@ -312,6 +332,7 @@ public sealed class WebAudioSoundClip : ISoundClip
         for (var i = Active.Count - 1; i >= 0; i--)
         {
             var clip = Active[i];
+
             if (!WebAudioBackend.IsSourceActive(clip._source))
             {
                 clip._source = 0;
@@ -343,7 +364,10 @@ public sealed class WebAudioSoundClip : ISoundClip
     public void Stop()
     {
         Active.Remove(this);
-        if (_source == 0) return;
+
+        if (_source == 0)
+
+            return;
         WebAudioBackend.StopSource(_source);
         _source = 0;
     }
@@ -359,20 +383,31 @@ public sealed class WebAudioSoundClip : ISoundClip
 
     private void Start(bool loop)
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         Stop();
-        if (Buffer == 0) return;
+
+        if (Buffer == 0)
+
+            return;
         _loop = loop;
         _playPosition = _position;
-        if (_spatial && !loop && SpatialAudio.Gain(_playPosition) <= 0) return;
+
+        if (_spatial && !loop && SpatialAudio.Gain(_playPosition) <= 0)
+
+            return;
 
         var source = WebAudioBackend.StartBuffer(Buffer, _spatial ? 0 : SoundEffects.Volume, 1.0, loop);
+
         if (source != 0)
         {
             _source = source;
             ApplySpatial();
-            if (_paused) WebAudioBackend.SetSourcePaused(source, true);
-            if (!Active.Contains(this)) Active.Add(this);
+            if (_paused)
+                WebAudioBackend.SetSourcePaused(source, true);
+            if (!Active.Contains(this))
+                Active.Add(this);
         }
     }
 }
@@ -417,11 +452,13 @@ public sealed class WebAudioMusic : IRadicalMusic
     public static async Task<WebAudioMusic> LoadAsync(Stream stream, string extension, double tempomul)
     {
         if (extension.TrimStart('.').ToLowerInvariant() is not ("opus" or "ogg" or "oga"))
+
             return new WebAudioMusic(stream, extension, tempomul);
 
         using var encoded = new MemoryStream();
         stream.CopyTo(encoded);
         var buffer = await WebAudioBackend.DecodeAudioAsync(encoded.ToArray());
+
         return buffer == 0 ? new WebAudioMusic() : new WebAudioMusic(buffer, tempomul);
     }
 
@@ -433,7 +470,9 @@ public sealed class WebAudioMusic : IRadicalMusic
 
     public void Play()
     {
-        if (_disposed || _buffer == 0) return;
+        if (_disposed || _buffer == 0)
+
+            return;
 
         StopSource();
         _source = WebAudioBackend.StartBuffer(_buffer, _volume, _rate, loop: true);
@@ -442,7 +481,9 @@ public sealed class WebAudioMusic : IRadicalMusic
 
     public void SetPaused(bool paused)
     {
-        if (_disposed || _source == 0 || _paused == paused) return;
+        if (_disposed || _source == 0 || _paused == paused)
+
+            return;
 
         WebAudioBackend.SetSourcePaused(_source, paused);
         _paused = paused;
@@ -451,7 +492,8 @@ public sealed class WebAudioMusic : IRadicalMusic
     public void SetVolume(float vol)
     {
         _volume = vol;
-        if (_source != 0) WebAudioBackend.SetSourceVolume(_source, vol);
+        if (_source != 0)
+            WebAudioBackend.SetSourceVolume(_source, vol);
     }
 
     public float GetVolume() => _volume;
@@ -459,20 +501,26 @@ public sealed class WebAudioMusic : IRadicalMusic
     public void SetFreqMultiplier(double multiplier)
     {
         _rate = multiplier;
-        if (_source != 0) WebAudioBackend.SetSourceRate(_source, multiplier);
+        if (_source != 0)
+            WebAudioBackend.SetSourceRate(_source, multiplier);
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         StopSource();
-        if (_buffer != 0) WebAudioBackend.ReleaseBuffer(_buffer);
+        if (_buffer != 0)
+            WebAudioBackend.ReleaseBuffer(_buffer);
     }
 
     private void StopSource()
     {
-        if (_source == 0) return;
+        if (_source == 0)
+
+            return;
         WebAudioBackend.StopSource(_source);
         _source = 0;
     }

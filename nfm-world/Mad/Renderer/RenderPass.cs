@@ -39,7 +39,9 @@ public readonly struct RenderPass(RenderPassKind kind, int cascadeIndex, int tot
     public static RenderPass FromLighting(Lighting? lighting)
     {
         if (lighting?.IsCreateShadowMap == true)
+
             return Shadow(lighting.NumCascade, lighting.TotalCascades);
+
         return Main(lighting?.TotalCascades ?? 0);
     }
 }

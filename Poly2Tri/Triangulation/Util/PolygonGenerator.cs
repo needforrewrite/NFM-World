@@ -46,6 +46,7 @@ namespace Poly2Tri
             double radius = scale / 4;
 
             points = new PolygonPoint[vertexCount];
+
             for (int i = 0; i < vertexCount; i++)
             {
                 do
@@ -67,8 +68,11 @@ namespace Poly2Tri
                     radius = radius < scale / 10 ? scale / 10 : radius;
                 } while (radius < scale / 10 || radius > scale / 2);
 
-                point = new PolygonPoint(radius * Math.Cos((PI_2 * i) / vertexCount), radius * Math.Sin((PI_2 * i)
-                                                                                                        / vertexCount
+                point = new PolygonPoint(
+                    radius * Math.Cos((PI_2 * i) / vertexCount),
+                    radius
+                    * Math.Sin((PI_2 * i)
+                               / vertexCount
                 )
                 );
                 points[i] = point;
@@ -84,6 +88,7 @@ namespace Poly2Tri
             double radius = scale / 4;
 
             points = new PolygonPoint[vertexCount];
+
             for (int i = 0; i < vertexCount; i++)
             {
                 do
@@ -93,8 +98,11 @@ namespace Poly2Tri
                     radius = radius < scale / 10 ? scale / 10 : radius;
                 } while (radius < scale / 10 || radius > scale / 2);
 
-                point = new PolygonPoint(radius * Math.Cos((PI_2 * i) / vertexCount), radius * Math.Sin((PI_2 * i)
-                                                                                                        / vertexCount
+                point = new PolygonPoint(
+                    radius * Math.Cos((PI_2 * i) / vertexCount),
+                    radius
+                    * Math.Sin((PI_2 * i)
+                               / vertexCount
                 )
                 );
                 points[i] = point;

@@ -51,6 +51,7 @@ public abstract class Transform : ITransform
         var interpolatedRotation = Interpolation.InterpolateEuler((Euler)Rotation, (Euler)PreviousState.Rotation, alpha);
 
         var ownMatrixWorld = Matrix.CreateFromEuler(interpolatedRotation) * Matrix.CreateTranslation(interpolatedPosition);
+
         if (Parent != null)
         {
             ownMatrixWorld = ownMatrixWorld * Parent.MatrixWorld;

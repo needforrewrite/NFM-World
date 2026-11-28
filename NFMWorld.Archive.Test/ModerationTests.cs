@@ -36,6 +36,7 @@ public class ModerationTests
         Assert.AreEqual(HttpStatusCode.OK, register.StatusCode);
         var token = (await register.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString()!;
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
         return (client, token);
     }
 
@@ -43,6 +44,7 @@ public class ModerationTests
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+
         return db.Users.Single(u => u.UsernameNormalized == username).Id;
     }
 
@@ -128,6 +130,7 @@ public class ModerationTests
 
         // The artist owns one asset.
         var contentHash = new string('b', 64);
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -195,6 +198,7 @@ public class ModerationTests
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+
         return db.Assets.Single(a => a.ContentHash == hash).Id;
     }
 
@@ -202,6 +206,7 @@ public class ModerationTests
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
+
         return db.Users.Single(u => u.UsernameNormalized == username).BannedUntil;
     }
 

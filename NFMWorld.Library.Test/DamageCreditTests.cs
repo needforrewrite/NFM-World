@@ -24,13 +24,15 @@ public class DamageCreditTests
     {
         var physics = new CarPhysics(CarStats.Default, 1, false);
         physics.RecordDamageSource(0);
-        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++)
+            physics.UpdateDamageCredit();
         Assert.AreEqual(0, physics.LastDamageFrom);
 
         physics.Mtouch = true;
         physics.DamagePoints = physics.Stat.Maxmag;
         physics.RecordDamageSource(-1);
-        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks; tick++)
+            physics.UpdateDamageCredit();
         physics.Wasted = true;
         physics.RecordDamageSource(2);
         Assert.AreEqual(0, physics.LastDamageFrom, "destruction delay and later contacts must not change the killer");
@@ -44,7 +46,8 @@ public class DamageCreditTests
     {
         var physics = new CarPhysics(CarStats.Default, 1, false) { Mtouch = grounded, Skid = checked((sbyte)skid), Pxy = pitch };
         physics.RecordDamageSource(0);
-        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++)
+            physics.UpdateDamageCredit();
         Assert.AreEqual(0, physics.LastDamageFrom);
 
         physics.UpdateDamageCredit();
@@ -59,7 +62,8 @@ public class DamageCreditTests
     {
         var physics = new CarPhysics(CarStats.Default with { Maxmag = 10000 }, 1, false);
         physics.RecordDamageSource(0);
-        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditTimeoutTicks - 1; tick++)
+            physics.UpdateDamageCredit();
         physics.RecordDamageSource(2);
         physics.UpdateDamageCredit();
         Assert.AreEqual(2, physics.LastDamageFrom);
@@ -79,7 +83,8 @@ public class DamageCreditTests
     {
         var physics = new CarPhysics(CarStats.Default, 1, false) { Mtouch = true };
         physics.RecordDamageSource(0);
-        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks; tick++)
+            physics.UpdateDamageCredit();
         physics.DamagePoints += 100;
         physics.RecordDamageSource(-1);
         Assert.AreEqual(-1, physics.LastDamageFrom);
@@ -90,10 +95,12 @@ public class DamageCreditTests
     {
         var physics = new CarPhysics(CarStats.Default, 1, false) { Mtouch = true, Pxy = 90 };
         physics.RecordDamageSource(0);
-        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks * 2; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks * 2; tick++)
+            physics.UpdateDamageCredit();
         Assert.AreEqual(0, physics.LastDamageFrom);
         physics.Pxy = 0;
-        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks - 1; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks - 1; tick++)
+            physics.UpdateDamageCredit();
         physics.DamagePoints++;
         physics.UpdateDamageCredit();
         Assert.AreEqual(0, physics.LastDamageFrom);
@@ -104,7 +111,8 @@ public class DamageCreditTests
     {
         var physics = new CarPhysics(CarStats.Default, 1, false) { Mtouch = true, Skid = 1 };
         physics.RecordDamageSource(0);
-        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks * 2; tick++) physics.UpdateDamageCredit();
+        for (var tick = 0; tick < CarPhysics.DamageCreditRecoveryTicks * 2; tick++)
+            physics.UpdateDamageCredit();
         Assert.AreEqual(0, physics.LastDamageFrom);
     }
 

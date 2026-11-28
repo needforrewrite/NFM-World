@@ -161,6 +161,7 @@ public static class MainMenuView
         MenuPage CurrentPage()
         {
             var stack = PageStack.Value;
+
             return stack.Count > 0 ? stack[^1] : root;
         }
 
@@ -319,6 +320,7 @@ public static class MainMenuView
     private static View ItemButton(MenuItem item, int index)
     {
         if (!item.Enabled)
+
             return Sx.View(
                 name: () => "Main menu unavailable " + item.Label,
                 style: () => Sx.Styles(
@@ -511,14 +513,20 @@ public static class MainMenuView
             return;
         }
 
-        if (SettingsOpen.Value || _currentPage is null) return;
+        if (SettingsOpen.Value || _currentPage is null)
+
+            return;
         var items = _currentPage().Items;
+
         if (key is Key.Up or Key.Down)
         {
             for (var step = 0; step < items.Count; step++)
             {
                 SelectedIndex.Value = (SelectedIndex.Value + (key == Key.Up ? -1 : 1) + items.Count) % items.Count;
-                if (items[SelectedIndex.Value].Enabled) break;
+
+                if (items[SelectedIndex.Value].Enabled)
+
+                    break;
             }
 
             Description.Value = items[SelectedIndex.Value].Description;
@@ -534,17 +542,22 @@ public static class MainMenuView
         if (QuitOpen.Value)
         {
             QuitOpen.Value = false;
+
             return true;
         }
 
         if (SettingsOpen.Value)
         {
             SettingsOpen.Value = false;
+
             return true;
         }
 
-        if (PageStack.Value.Count == 0) return false;
+        if (PageStack.Value.Count == 0)
+
+            return false;
         PopPage();
+
         return true;
     }
 

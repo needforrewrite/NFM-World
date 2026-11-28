@@ -8,36 +8,45 @@ internal static class StageSurfaceOverlaps
 {
     public static Rad3dPoly[] Resolve(CoplanarSurfaceResolver resolver, int owner, Rad3dPoly[] polygons, Matrix world)
     {
-        if (!Matrix.Invert(world, out var inverse)) return polygons;
+        if (!Matrix.Invert(world, out var inverse))
+
+            return polygons;
         var normalMatrix = Matrix.Transpose(inverse);
         List<Rad3dPoly>? result = null;
+
         for (var i = 0; i < polygons.Length; i++)
         {
             var poly = polygons[i];
+
             if (poly.PolyType is PolyType.Glass or PolyType.Finish || poly.DecalOffset != 0 || poly.Triangles.IsDefaultOrEmpty)
             {
                 result?.Add(poly);
+
                 continue;
             }
 
             var points = new Vector3[poly.Points.Length];
-            for (var j = 0; j < points.Length; j++) points[j] = Vector3.Transform(poly.Points[j], world);
+            for (var j = 0; j < points.Length; j++)
+                points[j] = Vector3.Transform(poly.Points[j], world);
             var surface = resolver.Resolve(
                 owner,
                 points,
                 poly.Triangles.AsSpan(),
                 Vector3.TransformNormal(poly.Normal, normalMatrix)
             );
+
             if (surface is null)
             {
                 result?.Add(poly);
+
                 continue;
             }
 
             if (result is null)
             {
                 result = new List<Rad3dPoly>(polygons.Length);
-                for (var j = 0; j < i; j++) result.Add(polygons[j]);
+                for (var j = 0; j < i; j++)
+                    result.Add(polygons[j]);
             }
 
             if (surface.Triangles.Length > 0)
@@ -59,7 +68,10 @@ internal static class StageSurfaceOverlaps
                 );
             }
 
-            if (poly.LineType is not { } lineType) continue;
+            if (poly.LineType is not { } lineType)
+
+                continue;
+
             foreach (var edge in surface.Edges)
             {
                 var a = Vector3.Transform(edge.Start, inverse);

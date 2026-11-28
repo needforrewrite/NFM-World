@@ -19,6 +19,7 @@ public class FPSCounter
     {
         now = gameTime.TotalGameTime.TotalSeconds;
         elapsed = now - last;
+
         if (elapsed > msgFrequency)
         {
             msg =

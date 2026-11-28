@@ -26,7 +26,9 @@ public partial struct PlayerState
 
     public static void ApplyTo(PlayerState state, BackendCar c, int checkpointsPerLap)
     {
-        if (c.HasLeftRace) return;
+        if (c.HasLeftRace)
+
+            return;
         state.CarFrame.ApplyToCar(c);
         c.CarPhysics.ResetDamageCredit();
         c.CarPhysics.LastDamageFrom = state.DamageSource - 1;

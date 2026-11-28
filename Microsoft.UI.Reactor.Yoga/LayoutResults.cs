@@ -26,7 +26,8 @@ internal struct CachedMeasurement
 
     public bool Equals(CachedMeasurement other)
     {
-        bool isEqual = WidthSizingMode == other.WidthSizingMode &&
+        bool isEqual = WidthSizingMode == other.WidthSizingMode
+                       &&
                        HeightSizingMode == other.HeightSizingMode;
 
         if (!YogaFloat.IsUndefined(AvailableWidth) || !YogaFloat.IsUndefined(other.AvailableWidth))
@@ -143,26 +144,33 @@ internal sealed class LayoutResults
     public bool EqualTo(LayoutResults other)
     {
         if (_direction != other._direction || _hadOverflow != other._hadOverflow)
+
             return false;
 
         for (int i = 0; i < 2; i++)
         {
             if (!YogaFloat.InexactEquals(_dimensions[i], other._dimensions[i]))
+
                 return false;
         }
 
         for (int i = 0; i < 2; i++)
         {
             if (!YogaFloat.InexactEquals(_measuredDimensions[i], other._measuredDimensions[i]))
+
                 return false;
         }
 
         for (int i = 0; i < 4; i++)
         {
-            if (!YogaFloat.InexactEquals(_position[i], other._position[i]) ||
-                !YogaFloat.InexactEquals(_margin[i], other._margin[i]) ||
-                !YogaFloat.InexactEquals(_border[i], other._border[i]) ||
+            if (!YogaFloat.InexactEquals(_position[i], other._position[i])
+                ||
+                !YogaFloat.InexactEquals(_margin[i], other._margin[i])
+                ||
+                !YogaFloat.InexactEquals(_border[i], other._border[i])
+                ||
                 !YogaFloat.InexactEquals(_padding[i], other._padding[i]))
+
                 return false;
         }
 

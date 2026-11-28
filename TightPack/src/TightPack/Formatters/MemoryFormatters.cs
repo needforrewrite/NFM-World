@@ -15,6 +15,7 @@ public sealed class ReadOnlyMemoryFormatter<T> : TightPackFormatter<ReadOnlyMemo
         ReadOnlySpan<T> span = value.Span;
         writer.WriteCollectionHeader(span.Length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < span.Length; i++)
         {
             T? item = span[i];
@@ -27,17 +28,20 @@ public sealed class ReadOnlyMemoryFormatter<T> : TightPackFormatter<ReadOnlyMemo
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = default;
+
             return;
         }
 
         if (length == 0)
         {
             value = ReadOnlyMemory<T>.Empty;
+
             return;
         }
 
         var items = new T[length];
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;
@@ -59,6 +63,7 @@ public sealed class MemoryFormatter<T> : TightPackFormatter<Memory<T>>
         Span<T> span = value.Span;
         writer.WriteCollectionHeader(span.Length);
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < span.Length; i++)
         {
             T? item = span[i];
@@ -71,17 +76,20 @@ public sealed class MemoryFormatter<T> : TightPackFormatter<Memory<T>>
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = default;
+
             return;
         }
 
         if (length == 0)
         {
             value = Memory<T>.Empty;
+
             return;
         }
 
         var items = new T[length];
         var formatter = TightPackFormatterProvider.GetFormatter<T>();
+
         for (int i = 0; i < length; i++)
         {
             T? item = default;
@@ -151,12 +159,14 @@ public sealed class PooledReadOnlyMemoryByteFormatter : TightPackFormatter<ReadO
         if (!reader.TryReadCollectionHeader(out int length))
         {
             value = default;
+
             return;
         }
 
         if (length == 0)
         {
             value = ReadOnlyMemory<byte>.Empty;
+
             return;
         }
 

@@ -94,6 +94,7 @@ public static class UnmanagedEntryPoints
             T obj = default;
             obj.HasError = true;
             obj.Exception = NativeException.FromException(ex);
+
             return obj;
         }
     }
@@ -149,9 +150,11 @@ public static class UnmanagedEntryPoints
                 using var timeTrialMemory =
                     new UnmanagedMemoryManager<byte>(args->TimeTrialData, args->TimeTrialDataLength);
                 var timeTrial = SavedTimeTrial.Load(timeTrialMemory.Memory);
+
                 if (timeTrial == null)
                 {
                     SentrySdk.CaptureMessage("Failed to load time trial data", SentryLevel.Error);
+
                     throw new InvalidOperationException("Failed to load time trial data");
                 }
 
@@ -218,6 +221,7 @@ public static class UnmanagedEntryPoints
         return ExecuteSafely(() =>
             {
                 BackendGameSparker.Load();
+
                 return new LoadResult();
             }
         );

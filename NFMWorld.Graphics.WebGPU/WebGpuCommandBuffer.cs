@@ -81,6 +81,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
             _uniforms = new byte[size];
 
         if (ReferenceEquals(_pipeline, webGpu))
+
             return;
 
         _pipeline = webGpu;
@@ -103,7 +104,9 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         var pipeline = RequirePipeline();
 
         // A negative slot is a uniform the compiler dropped; the generated wrappers no-op on it.
+
         if (slot < 0)
+
             return;
 
         if (slot + value.Length > _uniforms.Length)
@@ -120,6 +123,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
             var matrix = MemoryMarshal.Read<Matrix4x4>(value);
             var transposed = Matrix4x4.Transpose(matrix);
             MemoryMarshal.Write(_uniforms.AsSpan(slot), in transposed);
+
             return;
         }
 
@@ -131,6 +135,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         foreach (var uniform in pipeline.Reflection.Uniforms)
         {
             if (uniform.Offset == offset)
+
                 return uniform.Type == Shaders.UniformType.Matrix4x4;
         }
 
@@ -182,7 +187,9 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     public void SetRenderTarget(IRenderTarget? target)
     {
         var webGpu = (WebGpuRenderTarget?)target;
+
         if (ReferenceEquals(_target, webGpu))
+
             return;
 
         // A clear belongs to the attachments it was issued against, so it has to be consumed before
@@ -215,6 +222,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     public void Clear(ClearOptions options, ColorRgba color, float depth = 1f, int stencil = 0)
     {
         if (options == ClearOptions.None)
+
             return;
 
         // WebGPU expresses a clear as the load operation of a pass, so it is remembered and folded
@@ -235,6 +243,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     public void UpdateBuffer(IBuffer buffer, ReadOnlySpan<byte> data, int offsetBytes = 0)
     {
         if (data.IsEmpty)
+
             return;
 
         // Through the staging ring rather than a queue write: this lands mid-frame and has to stay
@@ -263,6 +272,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     public void UpdateTexture(ITexture texture, int x, int y, int width, int height, ReadOnlySpan<byte> data)
     {
         if (data.IsEmpty)
+
             return;
 
         var webGpu = (WebGpuTexture)texture;
@@ -288,6 +298,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         // The copy's buffer offset is validated against the format's texel block size, not the
         // 4-byte copy unit: an Rgba32f upload at offset 4 is refused outright.
         var offset = staging.Allocate(size, webGpu.Format.TexelBlockBytes());
+
         if (pitch == rowBytes)
         {
             staging.Write(offset, data[..required]);
@@ -336,6 +347,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         EnsurePass();
 
         var variant = _variant;
+
         if (variant is null)
         {
             variant = pipeline.GetVariant(_variantKey);
@@ -345,6 +357,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
 
         // The uniform region for this draw. Every draw gets its own: a later draw that writes
         // different values must not change what an earlier one reads.
+
         if (pipeline.HasUniformBlock)
         {
             var offset = _device.Uniforms.Allocate(_uniforms.Length);
@@ -367,9 +380,11 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         // (vertexCount, instanceCount, firstVertex, firstInstance): the non-instanced form is one
         // instance starting at the caller's first vertex, and the first vertex is not the instance
         // count - passing it there draws nothing whenever a draw starts at vertex 0.
+
         if (!indexed)
         {
             _device.Api.RenderPassEncoderDraw(_pass, (uint)count, (uint)instanceCount, (uint)firstIndex, 0);
+
             return;
         }
 
@@ -395,6 +410,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     private void BindVertexStreams(WebGpuPipelineState pipeline)
     {
         var slotCount = Math.Max(1, pipeline.Desc.VertexLayouts.Count);
+
         for (var slot = 0; slot < slotCount; slot++)
         {
             var stream = _vertexStreams[slot];
@@ -424,6 +440,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     private void EnsurePass()
     {
         if (_pass is not null)
+
             return;
 
         var colorFormat = Wg.TextureFormat.Undefined;
@@ -484,6 +501,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
         };
 
         var depthAttachment = default(Wg.RenderPassDepthStencilAttachment);
+
         if (wantsDepth)
         {
             depthAttachment = new Wg.RenderPassDepthStencilAttachment
@@ -542,6 +560,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     private void FlushPendingClear()
     {
         if (_pendingClear == ClearOptions.None)
+
             return;
 
         EnsurePass();
@@ -551,6 +570,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     private void EndPass()
     {
         if (_pass is null)
+
             return;
 
         _device.Api.RenderPassEncoderEnd(_pass);
@@ -567,6 +587,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     private void ApplyViewportAndScissor()
     {
         if (_pass is null)
+
             return;
 
         var width = _target?.Color.Width ?? _swapchain.Width;
@@ -592,6 +613,7 @@ internal sealed unsafe class WebGpuCommandBuffer : ICommandBuffer
     private void ApplyScissor()
     {
         if (_pass is null)
+
             return;
 
         var width = _target?.Color.Width ?? _swapchain.Width;

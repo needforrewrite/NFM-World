@@ -126,16 +126,28 @@ public readonly partial record struct Rad3dPoly
             PolygonTriangulator.Triangulate(verts, TriangulationAlgorithm).Triangles
         );
         transaction.Finish();
+
         return arr;
     }
 
     public bool Equals(Rad3dPoly other)
     {
-        if (!Color.Equals(other.Color)) return false;
-        if (ColNum != other.ColNum) return false;
-        if (PolyType != other.PolyType) return false;
-        if (LineType != other.LineType) return false;
-        if (!DecalOffset.Equals(other.DecalOffset)) return false;
+        if (!Color.Equals(other.Color))
+
+            return false;
+        if (ColNum != other.ColNum)
+
+            return false;
+        if (PolyType != other.PolyType)
+
+            return false;
+        if (LineType != other.LineType)
+
+            return false;
+        if (!DecalOffset.Equals(other.DecalOffset))
+
+            return false;
+
         return Points.SequenceEqual(other.Points);
     }
 
@@ -156,12 +168,14 @@ public readonly partial record struct Rad3dPoly
         hashCode.Add(lineType);
         hashCode.Add(decalOffset);
         hashCode.Add(points.Length);
+
         foreach (var point in points)
         {
             hashCode.Add(point);
         }
 
         hashCode.Add(triangles.Length);
+
         foreach (var triangle in triangles)
         {
             hashCode.Add(triangle);

@@ -62,6 +62,7 @@ public class PhaseManager
     public void SetRoot(BasePhase root)
     {
         // Dispose any existing stack before reinitializing
+
         foreach (var (phase, _) in _stack)
         {
             phase.Exit();
@@ -118,12 +119,15 @@ public class PhaseManager
         // Enter the new top (which was previously on the stack but exited)
         _stack[^1].Phase.Enter();
         Logging.Info($"PhaseManager: popped {popped.GetType().Name} (depth {_stack.Count})");
+
         return popped.Phase;
     }
 
     public void PopGroup(Group group)
     {
-        if (_stack[^1].Group != group) return;
+        if (_stack[^1].Group != group)
+
+            return;
 
         do
         {
@@ -189,7 +193,8 @@ public class PhaseManager
             _stack.RemoveAt(_stack.Count - 1);
             QueueDisposal(old.Phase);
 
-            if (keepGroup) group = old.Group;
+            if (keepGroup)
+                group = old.Group;
         }
 
         _stack.Add((phase, group));
@@ -205,7 +210,9 @@ public class PhaseManager
     public int FlushDisposals()
     {
         var count = _disposalQueue.Count;
+
         if (count == 0)
+
             return 0;
 
         foreach (var phase in _disposalQueue)
@@ -215,6 +222,7 @@ public class PhaseManager
         }
 
         _disposalQueue.Clear();
+
         return count;
     }
 
@@ -228,6 +236,7 @@ public class PhaseManager
         FlushDisposals();
 
         // Pop and dispose everything
+
         while (_stack.Count > 0)
         {
             var phase = _stack[^1];
@@ -243,6 +252,7 @@ public class PhaseManager
     {
         // Guard against double-disposal: if a phase is somehow queued twice,
         // only queue it once.
+
         if (!_disposalQueue.Contains(phase))
         {
             _disposalQueue.Add(phase);
@@ -251,9 +261,11 @@ public class PhaseManager
 
     private void ExitPoppedPhase(BasePhase phase, BasePhase destination)
     {
-        if (phase is RacePhase race && Root is MainMenuPhase menu
+        if (phase is RacePhase race
+            && Root is MainMenuPhase menu
             && (destination == menu || destination is LobbyPhase)
             && menu.TryTakeLastPlayedRace(race, enteringMenu: destination == menu))
+
             return;
 
         phase.Exit();

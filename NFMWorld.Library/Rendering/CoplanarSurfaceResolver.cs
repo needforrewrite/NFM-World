@@ -48,15 +48,20 @@ public sealed class CoplanarSurfaceResolver
     public Surface? Resolve(int owner, ReadOnlySpan<Vector3> points, ReadOnlySpan<uint> indices, Vector3 normal)
     {
         var normalLengthSquared = normal.LengthSquared();
+
         if (points.Length < 3
             || indices.Length == 0
             || indices.Length % 3 != 0
             || !Finite(normal)
             || !float.IsFinite(normalLengthSquared)
             || normalLengthSquared < 1e-12f)
+
             return null;
+
         foreach (var index in indices)
+
             if (index >= points.Length)
+
                 return null;
         normal = Vector3.Normalize(normal);
         var quantizedNormal = new Vector3(
@@ -65,6 +70,7 @@ public sealed class CoplanarSurfaceResolver
             MathF.Round(normal.Z * 1000)
         );
         var axis = DominantAxis(quantizedNormal);
+
         if (Component(normal, axis) < 0)
         {
             normal = -normal;
@@ -72,13 +78,19 @@ public sealed class CoplanarSurfaceResolver
         }
 
         var distance = Vector3.Dot(normal, points[0]);
-        if (!float.IsFinite(distance)) return null;
+
+        if (!float.IsFinite(distance))
+
+            return null;
+
         foreach (var point in points)
+
             if (!Finite(point)
                 || Vector3.Abs(point).X > 1e12f
                 || Vector3.Abs(point).Y > 1e12f
                 || Vector3.Abs(point).Z > 1e12f
                 || MathF.Abs(Vector3.Dot(normal, point) - distance) > PlaneTolerance)
+
                 return null;
 
         var key = new PlaneKey(
@@ -90,40 +102,49 @@ public sealed class CoplanarSurfaceResolver
         var bounds = GetBounds(points, axis);
         FindCandidates(key, bounds);
         _orderedCandidates.Clear();
+
         foreach (var index in _candidates)
         {
             var triangle = _triangles[index];
+
             if (triangle.Owner == owner
                 || !bounds.Overlaps(triangle.Bounds)
                 || Vector3.Dot(triangle.Normal, normal) < 0.999999f
                 || MathF.Abs(Vector3.Dot(normal, triangle.A) - distance) > PlaneTolerance
                 || MathF.Abs(Vector3.Dot(normal, triangle.B) - distance) > PlaneTolerance
-                || MathF.Abs(Vector3.Dot(normal, triangle.C) - distance) > PlaneTolerance) continue;
+                || MathF.Abs(Vector3.Dot(normal, triangle.C) - distance) > PlaneTolerance)
+
+                continue;
             _orderedCandidates.Add(index);
         }
 
         _orderedCandidates.Sort();
 
         Surface? result = null;
+
         if (_orderedCandidates.Count > 0)
         {
             var outputPoints = new List<Vector3>();
             var outputIndices = new List<uint>();
             var changed = false;
+
             for (var i = 0; i < indices.Length; i += 3)
             {
                 List<List<Vector3>> fragments =
                     [[points[(int)indices[i]], points[(int)indices[i + 1]], points[(int)indices[i + 2]]]];
+
                 foreach (var candidate in _orderedCandidates)
                 {
                     var triangle = _triangles[candidate];
                     var next = new List<List<Vector3>>();
+
                     foreach (var fragment in fragments)
                     {
                         if (!GetBounds(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(fragment), axis)
-                                .Overlaps(triangle.Bounds))
+                            .Overlaps(triangle.Bounds))
                         {
                             next.Add(fragment);
+
                             continue;
                         }
 
@@ -131,13 +152,17 @@ public sealed class CoplanarSurfaceResolver
                     }
 
                     fragments = next;
-                    if (fragments.Count == 0) break;
+
+                    if (fragments.Count == 0)
+
+                        break;
                 }
 
                 foreach (var fragment in fragments)
                 {
                     var start = (uint)outputPoints.Count;
                     outputPoints.AddRange(fragment);
+
                     for (uint j = 1; j + 1 < fragment.Count; j++)
                     {
                         outputIndices.Add(start);
@@ -147,18 +172,25 @@ public sealed class CoplanarSurfaceResolver
                 }
             }
 
-            if (changed) result = new Surface(outputPoints.ToArray(), outputIndices.ToArray(), VisibleEdges(points));
+            if (changed)
+                result = new Surface(outputPoints.ToArray(), outputIndices.ToArray(), VisibleEdges(points));
         }
 
-        if (!_groups.TryGetValue(key, out var group)) _groups[key] = group = new Group();
+        if (!_groups.TryGetValue(key, out var group))
+            _groups[key] = group = new Group();
+
         for (var i = 0; i < indices.Length; i += 3)
         {
             var a = points[(int)indices[i]];
             var b = points[(int)indices[i + 1]];
             var c = points[(int)indices[i + 2]];
             var winding = Vector3.Dot(Vector3.Cross(b - a, c - a), normal);
-            if (MathF.Abs(winding) <= MinimumArea * 2) continue;
-            if (winding < 0) (b, c) = (c, b);
+
+            if (MathF.Abs(winding) <= MinimumArea * 2)
+
+                continue;
+            if (winding < 0)
+                (b, c) = (c, b);
             var triangleBounds = GetBounds([a, b, c], axis);
             var index = _triangles.Count;
             _triangles.Add(new Triangle(owner, a, b, c, normal, triangleBounds));
@@ -173,17 +205,21 @@ public sealed class CoplanarSurfaceResolver
         var intersection = polygon;
         for (var edge = 0; edge < 3 && intersection.Count >= 3; edge++)
             intersection = Clip(intersection, triangle, edge, true);
+
         if (Area(intersection, triangle.Normal) <= MinimumArea)
         {
             output.Add(polygon);
+
             return false;
         }
 
         var inside = polygon;
+
         for (var edge = 0; edge < 3 && inside.Count >= 3; edge++)
         {
             var outside = Clip(inside, triangle, edge, false);
-            if (Area(outside, triangle.Normal) > MinimumArea) output.Add(outside);
+            if (Area(outside, triangle.Normal) > MinimumArea)
+                output.Add(outside);
             inside = Clip(inside, triangle, edge, true);
         }
 
@@ -193,15 +229,20 @@ public sealed class CoplanarSurfaceResolver
     private static List<Vector3> Clip(List<Vector3> polygon, Triangle triangle, int edge, bool inside)
     {
         var result = new List<Vector3>(polygon.Count + 1);
-        if (polygon.Count == 0) return result;
+
+        if (polygon.Count == 0)
+
+            return result;
         var previous = polygon[^1];
         var previousDistance = EdgeDistance(previous, triangle, edge) * (inside ? 1 : -1);
+
         foreach (var point in polygon)
         {
             var distance = EdgeDistance(point, triangle, edge) * (inside ? 1 : -1);
             if ((distance >= 0) != (previousDistance >= 0))
                 result.Add(Vector3.Lerp(previous, point, Math.Clamp(previousDistance / (previousDistance - distance), 0, 1)));
-            if (distance >= 0) result.Add(point);
+            if (distance >= 0)
+                result.Add(point);
             previous = point;
             previousDistance = distance;
         }
@@ -212,51 +253,68 @@ public sealed class CoplanarSurfaceResolver
     private Edge[] VisibleEdges(ReadOnlySpan<Vector3> points)
     {
         var result = new List<Edge>();
+
         for (var i = 0; i < points.Length; i++)
         {
             var start = points[i];
             var end = points[(i + 1) % points.Length];
             List<(float Start, float End)> ranges = [(0, 1)];
+
             foreach (var candidate in _orderedCandidates)
             {
                 var triangle = _triangles[candidate];
                 var enter = 0f;
                 var exit = 1f;
+
                 for (var edge = 0; edge < 3 && enter < exit; edge++)
                 {
                     var d0 = EdgeDistance(start, triangle, edge);
                     var d1 = EdgeDistance(end, triangle, edge);
+
                     if (d0 < 0 && d1 < 0)
                     {
                         exit = enter;
+
                         break;
                     }
 
-                    if (d0 < 0) enter = MathF.Max(enter, d0 / (d0 - d1));
-                    else if (d1 < 0) exit = MathF.Min(exit, d0 / (d0 - d1));
+                    if (d0 < 0)
+                        enter = MathF.Max(enter, d0 / (d0 - d1));
+                    else if (d1 < 0)
+                        exit = MathF.Min(exit, d0 / (d0 - d1));
                 }
 
-                if (exit <= enter) continue;
+                if (exit <= enter)
+
+                    continue;
                 var next = new List<(float Start, float End)>();
+
                 foreach (var range in ranges)
                 {
-                    if (exit <= range.Start || enter >= range.End) next.Add(range);
+                    if (exit <= range.Start || enter >= range.End)
+                        next.Add(range);
                     else
                     {
-                        if (enter > range.Start) next.Add((range.Start, enter));
-                        if (exit < range.End) next.Add((exit, range.End));
+                        if (enter > range.Start)
+                            next.Add((range.Start, enter));
+                        if (exit < range.End)
+                            next.Add((exit, range.End));
                     }
                 }
 
                 ranges = next;
-                if (ranges.Count == 0) break;
+
+                if (ranges.Count == 0)
+
+                    break;
             }
 
             foreach (var range in ranges)
             {
                 var a = Vector3.Lerp(start, end, range.Start);
                 var b = Vector3.Lerp(start, end, range.End);
-                if (Vector3.DistanceSquared(a, b) > MinimumArea) result.Add(new Edge(a, b));
+                if (Vector3.DistanceSquared(a, b) > MinimumArea)
+                    result.Add(new Edge(a, b));
             }
         }
 
@@ -266,11 +324,16 @@ public sealed class CoplanarSurfaceResolver
     private void FindCandidates(PlaneKey key, Bounds bounds)
     {
         _candidates.Clear();
+
         for (var offset = -1; offset <= 1; offset++)
         {
-            if (!_groups.TryGetValue(key with { Distance = key.Distance + offset }, out var group)) continue;
+            if (!_groups.TryGetValue(key with { Distance = key.Distance + offset }, out var group))
+
+                continue;
             var (minX, maxX, minY, maxY) = Cells(bounds);
-            if (Large(minX, maxX, minY, maxY)) _candidates.UnionWith(group.All);
+
+            if (Large(minX, maxX, minY, maxY))
+                _candidates.UnionWith(group.All);
             else
             {
                 _candidates.UnionWith(group.Large);
@@ -286,16 +349,20 @@ public sealed class CoplanarSurfaceResolver
     {
         group.All.Add(index);
         var (minX, maxX, minY, maxY) = Cells(bounds);
+
         if (Large(minX, maxX, minY, maxY))
         {
             group.Large.Add(index);
+
             return;
         }
 
         for (var x = minX; x <= maxX; x++)
+
         for (var y = minY; y <= maxY; y++)
         {
-            if (!group.Cells.TryGetValue((x, y), out var entries)) group.Cells[(x, y)] = entries = [];
+            if (!group.Cells.TryGetValue((x, y), out var entries))
+                group.Cells[(x, y)] = entries = [];
             entries.Add(index);
         }
     }
@@ -311,6 +378,7 @@ public sealed class CoplanarSurfaceResolver
     {
         var min = new Vector2(float.PositiveInfinity);
         var max = new Vector2(float.NegativeInfinity);
+
         foreach (var point in points)
         {
             var projected = axis switch
@@ -326,10 +394,13 @@ public sealed class CoplanarSurfaceResolver
 
     private static float Area(List<Vector3> polygon, Vector3 normal)
     {
-        if (polygon.Count < 3) return 0;
+        if (polygon.Count < 3)
+
+            return 0;
         var sum = Vector3.Zero;
         for (var i = 1; i + 1 < polygon.Count; i++)
             sum += Vector3.Cross(polygon[i] - polygon[0], polygon[i + 1] - polygon[0]);
+
         return MathF.Abs(Vector3.Dot(sum, normal)) * 0.5f;
     }
 
@@ -337,6 +408,7 @@ public sealed class CoplanarSurfaceResolver
     {
         var a = edge switch { 0 => triangle.A, 1 => triangle.B, _ => triangle.C };
         var b = edge switch { 0 => triangle.B, 1 => triangle.C, _ => triangle.A };
+
         return Vector3.Dot(Vector3.Cross(b - a, point - a), triangle.Normal);
     }
 

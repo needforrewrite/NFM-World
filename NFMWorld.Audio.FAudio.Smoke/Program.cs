@@ -19,7 +19,8 @@ var failures = new List<string>();
 void Check(string what, bool ok, string detail = "")
 {
     Console.WriteLine($"  {(ok ? "ok  " : "FAIL")}  {what}{(detail.Length > 0 ? $" - {detail}" : "")}");
-    if (!ok) failures.Add(what);
+    if (!ok)
+        failures.Add(what);
 }
 
 static void ExplainFailure()
@@ -27,9 +28,11 @@ static void ExplainFailure()
     try
     {
         var create = FAudio.FAudioCreate(out var audio, 0, FAudio.FAUDIO_DEFAULT_PROCESSOR);
+
         if (create != 0)
         {
             Console.WriteLine($"  FAudioCreate returned {create} - the library loaded but refused to initialise.");
+
             return;
         }
 
@@ -61,6 +64,7 @@ if (engine is null)
     ExplainFailure();
     Console.WriteLine();
     Console.WriteLine("FAILED - no audio device available, nothing further to test.");
+
     return 1;
 }
 
@@ -73,9 +77,11 @@ const int frames = sampleRate / 2;
 const short amplitude = short.MaxValue / 4;
 
 var pcm = new byte[frames * channels * sizeof(short)];
+
 for (var frame = 0; frame < frames; frame++)
 {
     var sample = (short)(amplitude * Math.Sin(2 * Math.PI * 440 * frame / sampleRate));
+
     for (var channel = 0; channel < channels; channel++)
     {
         var at = (frame * channels + channel) * sizeof(short);
@@ -91,6 +97,7 @@ if (voice == IntPtr.Zero)
 {
     Console.WriteLine();
     Console.WriteLine("FAILED - the device exists but will not give out a source voice.");
+
     return 1;
 }
 
@@ -107,6 +114,7 @@ try
     // The pin mirrors what FaudioMusic/FaudioSoundClip do: FAudio reads this memory for as long
     // as the buffer is queued, so it must stay pinned until the voice is destroyed.
     var pin = GCHandle.Alloc(pcm, GCHandleType.Pinned);
+
     try
     {
         var buffer = new FAudio.FAudioBuffer
@@ -173,10 +181,13 @@ finally
 bool QueueFadingTone(float initialVolume, Action<long> afterDestroy)
 {
     var fadingVoice = engine.CreateSourceVoice(sampleRate, channels);
+
     if (fadingVoice == IntPtr.Zero)
+
         return false;
 
     var fadingPin = GCHandle.Alloc(pcm, GCHandleType.Pinned);
+
     try
     {
         var buffer = new FAudio.FAudioBuffer
@@ -185,19 +196,24 @@ bool QueueFadingTone(float initialVolume, Action<long> afterDestroy)
             pAudioData = fadingPin.AddrOfPinnedObject(),
             LoopCount = FAudio.FAUDIO_LOOP_INFINITE,
         };
+
         if (FAudio.FAudioSourceVoice_SubmitSourceBuffer(fadingVoice, ref buffer, IntPtr.Zero) != 0
             || FAudio.FAudioVoice_SetVolume(fadingVoice, initialVolume, 0) != 0
             || FAudio.FAudioSourceVoice_Start(fadingVoice, 0, 0) != 0)
+
             return false;
 
         var submittedAt = Stopwatch.GetTimestamp();
-        engine.FadeOutAndDestroy(fadingVoice, () =>
+        engine.FadeOutAndDestroy(
+            fadingVoice,
+            () =>
             {
                 fadingPin.Free();
                 afterDestroy(submittedAt);
             }
         );
         fadingVoice = IntPtr.Zero;
+
         return true;
     }
     finally
@@ -215,7 +231,9 @@ var fadeCallbacks = 0;
 var fadeThread = submissionThread;
 var fadeElapsed = TimeSpan.Zero;
 using var fadeCompleted = new ManualResetEventSlim();
-var fadeQueued = QueueFadingTone(0.5f, submittedAt =>
+var fadeQueued = QueueFadingTone(
+    0.5f,
+    submittedAt =>
     {
         fadeElapsed = Stopwatch.GetElapsedTime(submittedAt);
         fadeThread = Environment.CurrentManagedThreadId;
@@ -226,6 +244,7 @@ var fadeQueued = QueueFadingTone(0.5f, submittedAt =>
 Check("queue a playing voice for a fade", fadeQueued);
 var fadeFinished = fadeQueued && fadeCompleted.Wait(TimeSpan.FromSeconds(5));
 Check("fade callback completes within a generous timeout", fadeFinished);
+
 if (fadeFinished)
 {
     Check("fade callback fires once", Volatile.Read(ref fadeCallbacks) == 1);
@@ -240,7 +259,9 @@ if (fadeFinished)
 var mutedCallbacks = 0;
 var mutedThread = submissionThread;
 using var mutedCompleted = new ManualResetEventSlim();
-var mutedQueued = QueueFadingTone(0f, _ =>
+var mutedQueued = QueueFadingTone(
+    0f,
+    _ =>
     {
         mutedThread = Environment.CurrentManagedThreadId;
         Interlocked.Increment(ref mutedCallbacks);
@@ -261,11 +282,14 @@ var drainedBeforeDisposeReturned = false;
 var shutdownQueuedAll = false;
 Exception? shutdownFailure = null;
 using var shutdownCompleted = new ManualResetEventSlim();
-var shutdownQueued = QueueFadingTone(0.25f, shutdownSubmittedAt =>
+var shutdownQueued = QueueFadingTone(
+    0.25f,
+    shutdownSubmittedAt =>
     {
         try
         {
             shutdownQueuedAll = true;
+
             for (var i = 0; i < pendingCallbacks.Length; i++)
             {
                 var index = i;
@@ -309,11 +333,14 @@ Check(
 Check("the disposed engine is no longer available", FaudioEngine.Instance is null);
 
 Console.WriteLine();
+
 if (failures.Count == 0)
 {
     Console.WriteLine("PASSED - the FAudio path is live end to end.");
+
     return 0;
 }
 
 Console.WriteLine($"FAILED - {failures.Count} check(s): {string.Join("; ", failures)}");
+
 return 1;

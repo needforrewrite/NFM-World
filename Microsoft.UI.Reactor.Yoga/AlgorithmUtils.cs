@@ -47,11 +47,14 @@ internal static class AlignHelper
             ? node.Style.AlignItems
             : child.Style.AlignSelf;
 
-        if (node.Style.Display == YogaDisplay.Flex && align == FlexAlign.Baseline &&
+        if (node.Style.Display == YogaDisplay.Flex
+            && align == FlexAlign.Baseline
+            &&
             FlexDirectionHelper.IsColumn(node.Style.FlexDirection))
         {
             return FlexAlign.FlexStart;
         }
+
         return align;
     }
 
@@ -91,13 +94,19 @@ internal static class BoundAxisHelper
 {
     public static float PaddingAndBorderForAxis(YogaNode node, FlexDirection axis, FlexLayoutDirection direction, float widthSize)
         => node.Style.ComputeInlineStartPaddingAndBorder(axis, direction, widthSize)
-         + node.Style.ComputeInlineEndPaddingAndBorder(axis, direction, widthSize);
+           + node.Style.ComputeInlineEndPaddingAndBorder(axis, direction, widthSize);
 
     public static float BoundAxisWithinMinAndMax(
-        YogaNode node, FlexLayoutDirection direction, FlexDirection axis,
-        float value, float axisSize, float widthSize)
+        YogaNode node,
+        FlexLayoutDirection direction,
+        FlexDirection axis,
+        float value,
+        float axisSize,
+        float widthSize
+    )
     {
         float min, max;
+
         if (FlexDirectionHelper.IsColumn(axis))
         {
             min = node.Style.ResolvedMinDimension(direction, YogaDimension.Height, axisSize, widthSize);
@@ -110,19 +119,28 @@ internal static class BoundAxisHelper
         }
 
         if (YogaFloat.IsDefined(max) && max >= 0 && value > max)
+
             return max;
         if (YogaFloat.IsDefined(min) && min >= 0 && value < min)
+
             return min;
+
         return value;
     }
 
     public static float BoundAxis(
-        YogaNode node, FlexDirection axis, FlexLayoutDirection direction,
-        float value, float axisSize, float widthSize)
+        YogaNode node,
+        FlexDirection axis,
+        FlexLayoutDirection direction,
+        float value,
+        float axisSize,
+        float widthSize
+    )
     {
         return YogaFloat.MaxOrDefined(
             BoundAxisWithinMinAndMax(node, direction, axis, value, axisSize, widthSize),
-            PaddingAndBorderForAxis(node, axis, direction, widthSize));
+            PaddingAndBorderForAxis(node, axis, direction, widthSize)
+        );
     }
 }
 
@@ -131,20 +149,29 @@ internal static class BoundAxisHelper
 /// </summary>
 internal static class TrailingPositionHelper
 {
-    public static float GetPositionOfOppositeEdge(float position, FlexDirection axis,
-        YogaNode containingNode, YogaNode node)
+    public static float GetPositionOfOppositeEdge(
+        float position,
+        FlexDirection axis,
+        YogaNode containingNode,
+        YogaNode node
+    )
     {
         return containingNode.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis))
-             - node.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis))
-             - position;
+               - node.Layout.GetMeasuredDimension(FlexDirectionHelper.Dimension(axis))
+               - position;
     }
 
     public static void SetChildTrailingPosition(YogaNode node, YogaNode child, FlexDirection axis)
     {
         child.SetLayoutPosition(
             GetPositionOfOppositeEdge(
-                child.Layout.GetPosition(FlexDirectionHelper.FlexStartEdge(axis)), axis, node, child),
-            FlexDirectionHelper.FlexEndEdge(axis));
+                child.Layout.GetPosition(FlexDirectionHelper.FlexStartEdge(axis)),
+                axis,
+                node,
+                child
+            ),
+            FlexDirectionHelper.FlexEndEdge(axis)
+        );
     }
 
     public static bool NeedsTrailingPosition(FlexDirection axis)
@@ -162,45 +189,67 @@ internal static class BaselineHelper
         {
             float result = node.Baseline(
                 node.Layout.GetMeasuredDimension(YogaDimension.Width),
-                node.Layout.GetMeasuredDimension(YogaDimension.Height));
+                node.Layout.GetMeasuredDimension(YogaDimension.Height)
+            );
+
             if (float.IsNaN(result))
+
                 throw new InvalidOperationException("Baseline function returned NaN.");
+
             return result;
         }
 
         YogaNode? baselineChild = null;
+
         foreach (var child in node.GetLayoutChildren())
         {
-            if (child.LineIndex > 0) break;
-            if (child.Style.PositionType == FlexPositionType.Absolute) continue;
-            if (AlignHelper.ResolveChildAlignment(node, child) == FlexAlign.Baseline ||
+            if (child.LineIndex > 0)
+
+                break;
+
+            if (child.Style.PositionType == FlexPositionType.Absolute)
+
+                continue;
+
+            if (AlignHelper.ResolveChildAlignment(node, child) == FlexAlign.Baseline
+                ||
                 child.IsReferenceBaseline)
             {
                 baselineChild = child;
+
                 break;
             }
+
             baselineChild ??= child;
         }
 
         if (baselineChild == null)
+
             return node.Layout.GetMeasuredDimension(YogaDimension.Height);
 
         float baseline = CalculateBaseline(baselineChild);
+
         return baseline + baselineChild.Layout.GetPosition(YogaPhysicalEdge.Top);
     }
 
     public static bool IsBaselineLayout(YogaNode node)
     {
         if (FlexDirectionHelper.IsColumn(node.Style.FlexDirection))
+
             return false;
         if (node.Style.AlignItems == FlexAlign.Baseline)
+
             return true;
+
         foreach (var child in node.GetLayoutChildren())
         {
-            if (child.Style.PositionType != FlexPositionType.Absolute &&
+            if (child.Style.PositionType != FlexPositionType.Absolute
+                &&
                 child.Style.AlignSelf == FlexAlign.Baseline)
+
                 return true;
         }
+
         return false;
     }
 }
@@ -214,7 +263,8 @@ internal static class PixelGridHelper
     {
         double scaledValue = value * pointScaleFactor;
         double fractial = scaledValue % 1.0;
-        if (fractial < 0) fractial += 1.0;
+        if (fractial < 0)
+            fractial += 1.0;
 
         if (InexactEquals(fractial, 0))
             scaledValue -= fractial;
@@ -225,19 +275,28 @@ internal static class PixelGridHelper
         else if (forceFloor)
             scaledValue -= fractial;
         else
-            scaledValue = scaledValue - fractial +
+            scaledValue = scaledValue - fractial
+                          +
                 (!double.IsNaN(fractial) && (fractial > 0.5 || InexactEquals(fractial, 0.5)) ? 1.0 : 0.0);
 
         if (double.IsNaN(scaledValue) || double.IsNaN(pointScaleFactor))
+
             return float.NaN;
         var result = (float)(scaledValue / pointScaleFactor);
+
         // SECURITY (TASK-083): clamp +∞/-∞ to a large finite value before
         // returning. Apps with `MaxWidth = ∞` (the standard "unconstrained"
         // idiom) used to hit `Arrange` with +Infinity and crash WinUI.
         // Clamp at float.MaxValue so layout finalizes; downstream Arrange
         // can still handle huge but finite numbers.
-        if (float.IsPositiveInfinity(result)) return float.MaxValue;
-        if (float.IsNegativeInfinity(result)) return float.MinValue;
+
+        if (float.IsPositiveInfinity(result))
+
+            return float.MaxValue;
+        if (float.IsNegativeInfinity(result))
+
+            return float.MinValue;
+
         return result;
     }
 
@@ -261,10 +320,12 @@ internal static class PixelGridHelper
 
             node.SetLayoutPosition(
                 RoundValueToPixelGrid(nodeLeft, pointScaleFactor, false, textRounding),
-                YogaPhysicalEdge.Left);
+                YogaPhysicalEdge.Left
+            );
             node.SetLayoutPosition(
                 RoundValueToPixelGrid(nodeTop, pointScaleFactor, false, textRounding),
-                YogaPhysicalEdge.Top);
+                YogaPhysicalEdge.Top
+            );
 
             double scaledNodeWidth = nodeWidth * pointScaleFactor;
             bool hasFractionalWidth = !InexactEquals(Math.Round(scaledNodeWidth), scaledNodeWidth);
@@ -272,19 +333,34 @@ internal static class PixelGridHelper
             double scaledNodeHeight = nodeHeight * pointScaleFactor;
             bool hasFractionalHeight = !InexactEquals(Math.Round(scaledNodeHeight), scaledNodeHeight);
 
-            node.Layout.SetDimension(YogaDimension.Width,
-                RoundValueToPixelGrid(absoluteNodeRight, pointScaleFactor, textRounding && hasFractionalWidth, textRounding && !hasFractionalWidth)
-                - RoundValueToPixelGrid(absoluteNodeLeft, pointScaleFactor, false, textRounding));
+            node.Layout.SetDimension(
+                YogaDimension.Width,
+                RoundValueToPixelGrid(
+                    absoluteNodeRight,
+                    pointScaleFactor,
+                    textRounding && hasFractionalWidth,
+                    textRounding && !hasFractionalWidth
+                )
+                - RoundValueToPixelGrid(absoluteNodeLeft, pointScaleFactor, false, textRounding)
+            );
 
-            node.Layout.SetDimension(YogaDimension.Height,
-                RoundValueToPixelGrid(absoluteNodeBottom, pointScaleFactor, textRounding && hasFractionalHeight, textRounding && !hasFractionalHeight)
-                - RoundValueToPixelGrid(absoluteNodeTop, pointScaleFactor, false, textRounding));
+            node.Layout.SetDimension(
+                YogaDimension.Height,
+                RoundValueToPixelGrid(
+                    absoluteNodeBottom,
+                    pointScaleFactor,
+                    textRounding && hasFractionalHeight,
+                    textRounding && !hasFractionalHeight
+                )
+                - RoundValueToPixelGrid(absoluteNodeTop, pointScaleFactor, false, textRounding)
+            );
         }
 
         // #145: iterate by index via ChildCount/GetChild instead of foreach over
         // the IReadOnlyList Children (which boxes List<T>.Enumerator per node).
         // Note: this rounds ALL children (no Display.Contents flattening), matching
         // the original traversal.
+
         for (int i = 0; i < node.ChildCount; i++)
         {
             RoundLayoutResultsToPixelGrid(node.GetChild(i), absoluteNodeLeft, absoluteNodeTop);
@@ -301,16 +377,25 @@ internal static class PixelGridHelper
 internal static class CacheHelper
 {
     public static bool CanUseCachedMeasurement(
-        SizingMode widthMode, float availableWidth,
-        SizingMode heightMode, float availableHeight,
-        SizingMode lastWidthMode, float lastAvailableWidth,
-        SizingMode lastHeightMode, float lastAvailableHeight,
-        float lastComputedWidth, float lastComputedHeight,
-        float marginRow, float marginColumn,
-        YogaConfig config)
+        SizingMode widthMode,
+        float availableWidth,
+        SizingMode heightMode,
+        float availableHeight,
+        SizingMode lastWidthMode,
+        float lastAvailableWidth,
+        SizingMode lastHeightMode,
+        float lastAvailableHeight,
+        float lastComputedWidth,
+        float lastComputedHeight,
+        float marginRow,
+        float marginColumn,
+        YogaConfig config
+    )
     {
-        if ((YogaFloat.IsDefined(lastComputedHeight) && lastComputedHeight < 0) ||
+        if ((YogaFloat.IsDefined(lastComputedHeight) && lastComputedHeight < 0)
+            ||
             (YogaFloat.IsDefined(lastComputedWidth) && lastComputedWidth < 0))
+
             return false;
 
         float pointScaleFactor = config?.PointScaleFactor ?? 0;
@@ -332,15 +417,33 @@ internal static class CacheHelper
         bool hasSameWidthSpec = lastWidthMode == widthMode && YogaFloat.InexactEquals(effectiveLastWidth, effectiveWidth);
         bool hasSameHeightSpec = lastHeightMode == heightMode && YogaFloat.InexactEquals(effectiveLastHeight, effectiveHeight);
 
-        bool widthIsCompatible = hasSameWidthSpec ||
-            SizeIsExactAndMatchesOldMeasuredSize(widthMode, availableWidth - marginRow, lastComputedWidth) ||
-            OldSizeIsMaxContentAndStillFits(widthMode, availableWidth - marginRow, lastWidthMode, lastComputedWidth) ||
-            NewSizeIsStricterAndStillValid(widthMode, availableWidth - marginRow, lastWidthMode, lastAvailableWidth, lastComputedWidth);
+        bool widthIsCompatible = hasSameWidthSpec
+                                 ||
+            SizeIsExactAndMatchesOldMeasuredSize(widthMode, availableWidth - marginRow, lastComputedWidth)
+                                 ||
+            OldSizeIsMaxContentAndStillFits(widthMode, availableWidth - marginRow, lastWidthMode, lastComputedWidth)
+                                 ||
+            NewSizeIsStricterAndStillValid(
+                widthMode,
+                availableWidth - marginRow,
+                lastWidthMode,
+                lastAvailableWidth,
+                lastComputedWidth
+            );
 
-        bool heightIsCompatible = hasSameHeightSpec ||
-            SizeIsExactAndMatchesOldMeasuredSize(heightMode, availableHeight - marginColumn, lastComputedHeight) ||
-            OldSizeIsMaxContentAndStillFits(heightMode, availableHeight - marginColumn, lastHeightMode, lastComputedHeight) ||
-            NewSizeIsStricterAndStillValid(heightMode, availableHeight - marginColumn, lastHeightMode, lastAvailableHeight, lastComputedHeight);
+        bool heightIsCompatible = hasSameHeightSpec
+                                  ||
+            SizeIsExactAndMatchesOldMeasuredSize(heightMode, availableHeight - marginColumn, lastComputedHeight)
+                                  ||
+            OldSizeIsMaxContentAndStillFits(heightMode, availableHeight - marginColumn, lastHeightMode, lastComputedHeight)
+                                  ||
+            NewSizeIsStricterAndStillValid(
+                heightMode,
+                availableHeight - marginColumn,
+                lastHeightMode,
+                lastAvailableHeight,
+                lastComputedHeight
+            );
 
         return widthIsCompatible && heightIsCompatible;
     }
@@ -348,14 +451,33 @@ internal static class CacheHelper
     private static bool SizeIsExactAndMatchesOldMeasuredSize(SizingMode sizeMode, float size, float lastComputedSize)
         => sizeMode == SizingMode.StretchFit && YogaFloat.InexactEquals(size, lastComputedSize);
 
-    private static bool OldSizeIsMaxContentAndStillFits(SizingMode sizeMode, float size, SizingMode lastSizeMode, float lastComputedSize)
-        => sizeMode == SizingMode.FitContent && lastSizeMode == SizingMode.MaxContent &&
+    private static bool OldSizeIsMaxContentAndStillFits(
+        SizingMode sizeMode,
+        float size,
+        SizingMode lastSizeMode,
+        float lastComputedSize
+    )
+        => sizeMode == SizingMode.FitContent
+           && lastSizeMode == SizingMode.MaxContent
+           &&
            (size >= lastComputedSize || YogaFloat.InexactEquals(size, lastComputedSize));
 
-    private static bool NewSizeIsStricterAndStillValid(SizingMode sizeMode, float size, SizingMode lastSizeMode, float lastSize, float lastComputedSize)
-        => lastSizeMode == SizingMode.FitContent && sizeMode == SizingMode.FitContent &&
-           YogaFloat.IsDefined(lastSize) && YogaFloat.IsDefined(size) && YogaFloat.IsDefined(lastComputedSize) &&
-           lastSize > size && (lastComputedSize <= size || YogaFloat.InexactEquals(size, lastComputedSize));
+    private static bool NewSizeIsStricterAndStillValid(
+        SizingMode sizeMode,
+        float size,
+        SizingMode lastSizeMode,
+        float lastSize,
+        float lastComputedSize
+    )
+        => lastSizeMode == SizingMode.FitContent
+           && sizeMode == SizingMode.FitContent
+           &&
+           YogaFloat.IsDefined(lastSize)
+           && YogaFloat.IsDefined(size)
+           && YogaFloat.IsDefined(lastComputedSize)
+           &&
+           lastSize > size
+           && (lastComputedSize <= size || YogaFloat.InexactEquals(size, lastComputedSize));
 }
 
 /// <summary>
@@ -380,12 +502,12 @@ internal sealed class FlexLine
 
 internal static class FlexLineHelper
 {
-    [ThreadStatic]
-    private static Stack<List<YogaNode>>? s_listPool;
+    [ThreadStatic] private static Stack<List<YogaNode>>? s_listPool;
 
     internal static List<YogaNode> RentList()
     {
         s_listPool ??= new Stack<List<YogaNode>>();
+
         return s_listPool.Count > 0 ? s_listPool.Pop() : new List<YogaNode>();
     }
 
@@ -408,12 +530,12 @@ internal static class FlexLineHelper
     // reach whole UI subtrees, so clearing on return keeps the thread-static
     // pool from pinning that memory between layout passes. The only way into the
     // pool is ReturnFlexLine, so a popped line is always clean at rent time.
-    [ThreadStatic]
-    private static Stack<FlexLine>? s_flexLinePool;
+    [ThreadStatic] private static Stack<FlexLine>? s_flexLinePool;
 
     internal static FlexLine RentFlexLine()
     {
         var pool = s_flexLinePool ??= new Stack<FlexLine>();
+
         return pool.Count > 0 ? pool.Pop() : new FlexLine();
     }
 
@@ -432,10 +554,16 @@ internal static class FlexLineHelper
     /// Assumes all children have their computedFlexBasis computed.
     /// </summary>
     public static FlexLine CalculateFlexLine(
-        YogaNode node, FlexLayoutDirection ownerDirection, float ownerWidth,
-        float mainAxisOwnerSize, float availableInnerWidth, float availableInnerMainDim,
-        ref int childIndex, int lineCount,
-        List<YogaNode> layoutChildren)
+        YogaNode node,
+        FlexLayoutDirection ownerDirection,
+        float ownerWidth,
+        float mainAxisOwnerSize,
+        float availableInnerWidth,
+        float availableInnerMainDim,
+        ref int childIndex,
+        int lineCount,
+        List<YogaNode> layoutChildren
+    )
     {
         var line = RentFlexLine();
         var itemsInFlow = line.ItemsInFlow;
@@ -454,8 +582,11 @@ internal static class FlexLineHelper
         for (; childIndex < layoutChildren.Count; childIndex++)
         {
             var child = layoutChildren[childIndex];
-            if (child.Style.Display == YogaDisplay.None ||
+
+            if (child.Style.Display == YogaDisplay.None
+                ||
                 child.Style.PositionType == FlexPositionType.Absolute)
+
                 continue;
 
             firstElementInLine ??= child;
@@ -469,27 +600,40 @@ internal static class FlexLineHelper
             float childMarginMainAxis = child.Style.ComputeMarginForAxis(mainAxis, availableInnerWidth);
             float childLeadingGapMainAxis = child == firstElementInLine ? 0 : gap;
             float flexBasisWithMinAndMaxConstraints = BoundAxisHelper.BoundAxisWithinMinAndMax(
-                child, direction, mainAxis,
+                child,
+                direction,
+                mainAxis,
                 child.Layout.ComputedFlexBasis,
-                mainAxisOwnerSize, ownerWidth);
+                mainAxisOwnerSize,
+                ownerWidth
+            );
             // Unwrap NaN to 0 for constraint check
             if (YogaFloat.IsUndefined(flexBasisWithMinAndMaxConstraints))
                 flexBasisWithMinAndMaxConstraints = 0;
 
-            if (sizeConsumedIncludingMinConstraint + flexBasisWithMinAndMaxConstraints +
-                    childMarginMainAxis + childLeadingGapMainAxis > availableInnerMainDim &&
-                isNodeFlexWrap && itemsInFlow.Count > 0)
+            if (sizeConsumedIncludingMinConstraint
+                + flexBasisWithMinAndMaxConstraints
+                +
+                    childMarginMainAxis
+                + childLeadingGapMainAxis
+                > availableInnerMainDim
+                &&
+                isNodeFlexWrap
+                && itemsInFlow.Count > 0)
             {
                 break;
             }
 
-            sizeConsumedIncludingMinConstraint += flexBasisWithMinAndMaxConstraints + childMarginMainAxis + childLeadingGapMainAxis;
+            sizeConsumedIncludingMinConstraint += flexBasisWithMinAndMaxConstraints
+                + childMarginMainAxis
+                + childLeadingGapMainAxis;
             sizeConsumed += flexBasisWithMinAndMaxConstraints + childMarginMainAxis + childLeadingGapMainAxis;
 
             if (child.IsNodeFlexible())
             {
                 totalFlexGrowFactors += child.ResolveFlexGrow();
-                totalFlexShrinkScaledFactors += -child.ResolveFlexShrink() *
+                totalFlexShrinkScaledFactors += -child.ResolveFlexShrink()
+                    *
                     YogaFloat.UnwrapOrDefault(child.Layout.ComputedFlexBasis);
             }
 
@@ -509,6 +653,7 @@ internal static class FlexLineHelper
             TotalFlexGrowFactors = totalFlexGrowFactors,
             TotalFlexShrinkScaledFactors = totalFlexShrinkScaledFactors,
         };
+
         return line;
     }
 }

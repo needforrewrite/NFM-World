@@ -46,7 +46,10 @@ public static class AssetUpload
     public static async Task<IFormCollection?> ReadFormWithinLimitAsync(HttpRequest request, int maxBytes, CancellationToken ct)
     {
         var requestLimit = maxBytes + MultipartOverheadBytes;
-        if (request.ContentLength > requestLimit) return null;
+
+        if (request.ContentLength > requestLimit)
+
+            return null;
 
         if (request.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } feature)
             feature.MaxRequestBodySize = requestLimit;
@@ -69,13 +72,17 @@ public static class AssetUpload
     public static string? CheckClaim(byte kind, string? fileName)
     {
         if (!AssetKinds.IsPublishable(kind))
+
             return $"{AssetKinds.Name(kind)} cannot be published as an asset.";
 
         var extension = Path.GetExtension(fileName ?? "");
+
         if (!AllowedExtensions.Contains(extension))
+
             return "Only .radpack and .rad files are accepted.";
 
         if (!AssetKinds.IsUploadExtensionAllowed(kind, extension))
+
             return "A legacy .rad file can only be a Car, StagePiece or Wheel.";
 
         return null;
@@ -85,6 +92,7 @@ public static class AssetUpload
     public static string? NormalizeName(string? name)
     {
         var trimmed = name?.Trim();
+
         return string.IsNullOrEmpty(trimmed) || trimmed.Length > MaxNameLength ? null : trimmed;
     }
 
@@ -92,6 +100,7 @@ public static class AssetUpload
     public static string? NormalizeDescription(string? description)
     {
         var trimmed = description?.Trim();
+
         return string.IsNullOrEmpty(trimmed) ? null : trimmed;
     }
 
@@ -161,6 +170,7 @@ public static class AssetUpload
         var head = new byte[3];
         await using var stream = File.OpenRead(path);
         var read = await stream.ReadAtLeastAsync(head, head.Length, throwOnEndOfStream: false, ct);
+
         return read == head.Length && head[0] == 'R' && head[1] == 'A' && head[2] == 'D';
     }
 
@@ -180,21 +190,26 @@ public static class AssetUpload
         if (!extension.Equals(".radpack", StringComparison.OrdinalIgnoreCase))
         {
             var legacy = await validator.RunAsync("rad", [path, AssetKinds.Name(kind)], ct);
+
             return legacy.Ok ? null : legacy.Error ?? "The asset is not a readable model.";
         }
 
         // The kind is passed through so the validator knows a car is being published and can
         // check the values the game will drive it with.
         var result = await validator.RunAsync("radpack", [path, AssetKinds.Name(kind)], ct);
+
         if (!result.Ok)
+
             return result.Error ?? "The asset is not a readable radpack.";
 
         // The kind inside the file has to agree with what the uploader claimed; otherwise a car
         // could be listed as a stage and downloaded into the wrong slot.
+
         if (result.Output is { } output
             && output.TryGetProperty("kind", out var validated)
             && validated.GetString() is { } validatedKind
             && !string.Equals(validatedKind, AssetKinds.Name(kind), StringComparison.OrdinalIgnoreCase))
+
             return $"The asset is a {validatedKind}, not a {AssetKinds.Name(kind)}.";
 
         return null;

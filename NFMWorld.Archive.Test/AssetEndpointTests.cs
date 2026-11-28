@@ -31,6 +31,7 @@ public class AssetEndpointTests
         await db.SaveChangesAsync();
 
         var owner = db.Users.Single();
+
         foreach (var asset in assets)
         {
             asset.OwnerId ??= owner.Id;
@@ -127,6 +128,7 @@ public class AssetEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = factory.CreateClient();
         string stockHash;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -145,12 +147,14 @@ public class AssetEndpointTests
             uploaded.Description = StockAssetCleanup.LegacyDescription;
             db.Assets.Add(uploaded);
             await db.SaveChangesAsync();
-            Assert.AreEqual(1, await StockAssetCleanup.RunAsync(
-                db,
-                storage,
-                Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
-                CancellationToken.None
-            )
+            Assert.AreEqual(
+                1,
+                await StockAssetCleanup.RunAsync(
+                    db,
+                    storage,
+                    Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
+                    CancellationToken.None
+                )
             );
             Assert.IsFalse(storage.Exists(stored.RelativePath));
             Assert.AreEqual(1, db.Assets.Count());
@@ -183,6 +187,7 @@ public class AssetEndpointTests
         upload.Owner = owner;
         upload.StoragePath = shared.RelativePath;
         db.Assets.Add(upload);
+
         foreach (var stored in new[] { shared, replay })
         {
             var stock = NewAsset("nfm2/test", AssetType.Stage, stored.Hash);
@@ -198,12 +203,14 @@ public class AssetEndpointTests
         });
         await db.SaveChangesAsync();
 
-        Assert.AreEqual(2, await StockAssetCleanup.RunAsync(
-            db,
-            storage,
-            Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
-            CancellationToken.None
-        )
+        Assert.AreEqual(
+            2,
+            await StockAssetCleanup.RunAsync(
+                db,
+                storage,
+                Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance,
+                CancellationToken.None
+            )
         );
         Assert.IsTrue(storage.Exists(shared.RelativePath));
         Assert.IsTrue(storage.Exists(replay.RelativePath));
@@ -217,6 +224,7 @@ public class AssetEndpointTests
         using var factory = new ArchiveAppFactory();
         using var client = await SignedInClient(factory);
         int cursor;
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ArchiveDbContext>();
@@ -227,6 +235,7 @@ public class AssetEndpointTests
             db.Assets.AddRange(first, second);
             await db.SaveChangesAsync();
             var other = new User { Username = "other", UsernameNormalized = "other" };
+
             for (var i = 0; i < 101; i++)
             {
                 var asset = NewAsset($"Newer upload {i}", AssetType.Stage, i.ToString("x64"));
@@ -264,6 +273,7 @@ public class AssetEndpointTests
 
         var seen = new List<int>();
         int? cursor = null;
+
         for (var page = 0; page < 10; page++)
         {
             var url = "/assets/search?limit=2" + (cursor is null ? "" : $"&after={cursor}");
@@ -272,6 +282,7 @@ public class AssetEndpointTests
                 seen.Add(item.GetProperty("id").GetInt32());
 
             if (body.GetProperty("nextCursor").ValueKind == JsonValueKind.Null)
+
                 break;
             cursor = body.GetProperty("nextCursor").GetInt32();
         }
@@ -489,6 +500,7 @@ public class AssetEndpointTests
         var register = await client.PostAsJsonAsync("/auth/register", ArchiveAppFactory.Registration(username));
         var token = (await register.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("token").GetString();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
         return client;
     }
 
@@ -507,6 +519,7 @@ public class AssetEndpointTests
         form.Add(new StringContent(name), "name");
         form.Add(new StringContent("published from a test"), "description");
         form.Add(new StringContent(type), "type");
+
         return await client.PostAsync("/assets/upload", form);
     }
 

@@ -68,7 +68,9 @@ public static class TechniqueParser
             if (name is null)
             {
                 var header = TechniqueHeader.Match(line);
+
                 if (!header.Success)
+
                     continue;
 
                 name = header.Groups[1].Value;
@@ -80,6 +82,7 @@ public static class TechniqueParser
             // The entry-point assignments sit inside the pass, which is inside the technique, so
             // both branches below see them before the closing brace ends the block.
             var assignment = StageAssignment.Match(line);
+
             if (assignment.Success)
             {
                 if (assignment.Groups[1].Value == "VertexShader")
@@ -93,14 +96,18 @@ public static class TechniqueParser
             // brace contributes nothing and leaves the depth at zero, so the block stays open
             // until the real opening brace arrives - tracking only the depth would end it early.
             depth += line.Count(c => c == '{') - line.Count(c => c == '}');
+
             if (depth > 0 || !line.Contains('}'))
+
                 continue;
 
             if (vertexEntry is null)
+
                 throw new InvalidOperationException(
                     $"{fileName}: technique '{name}' declares no VertexShader entry point."
                 );
             if (pixelEntry is null)
+
                 throw new InvalidOperationException(
                     $"{fileName}: technique '{name}' declares no PixelShader entry point."
                 );
@@ -110,6 +117,7 @@ public static class TechniqueParser
         }
 
         if (name is not null)
+
             throw new InvalidOperationException(
                 $"{fileName}: technique '{name}' has no closing brace - the source is truncated."
             );
@@ -137,6 +145,7 @@ public static class TechniqueParser
                 if (!TechniqueHeader.IsMatch(line))
                 {
                     kept.Add(line);
+
                     continue;
                 }
 
@@ -147,6 +156,7 @@ public static class TechniqueParser
             // See Parse: the depth only starts counting once the brace that opens the block
             // appears, so a header on its own line does not end the block immediately.
             depth += line.Count(c => c == '{') - line.Count(c => c == '}');
+
             if (depth <= 0 && line.Contains('}'))
             {
                 inTechnique = false;

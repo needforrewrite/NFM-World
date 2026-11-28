@@ -19,11 +19,17 @@ public static class SkidSoundFilter
         float minimumSlipRatio
     )
     {
-        if (!float.IsFinite(velocityX) || !float.IsFinite(velocityZ) || !float.IsFinite(headingDegrees)) return false;
+        if (!float.IsFinite(velocityX) || !float.IsFinite(velocityZ) || !float.IsFinite(headingDegrees))
+
+            return false;
         var speed = MathF.Sqrt(velocityX * velocityX + velocityZ * velocityZ);
-        if (!float.IsFinite(speed) || speed < minimumLateralSpeed) return false;
+
+        if (!float.IsFinite(speed) || speed < minimumLateralSpeed)
+
+            return false;
         var (sin, cos) = MathF.SinCos(headingDegrees * MathF.PI / 180);
         var lateralSpeed = MathF.Abs(velocityX * cos + velocityZ * sin);
+
         return lateralSpeed >= minimumLateralSpeed && lateralSpeed >= speed * minimumSlipRatio;
     }
 }

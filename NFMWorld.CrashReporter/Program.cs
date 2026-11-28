@@ -253,9 +253,11 @@ namespace NFMWorld.CrashReporter
                       """;
 
                 string response = await RunOsascript(askScript);
+
                 if (!response.Trim().Contains("continue"))
                 {
                     result.Submitted = false;
+
                     return result;
                 }
 
@@ -308,7 +310,9 @@ namespace NFMWorld.CrashReporter
 
             // Determine which dialog tool is available
             string? dialogTool = await FindLinuxDialogTool();
+
             if (string.IsNullOrEmpty(dialogTool))
+
                 return result;
 
             try
@@ -340,13 +344,16 @@ namespace NFMWorld.CrashReporter
                 if (askProcess == null)
                 {
                     result.Submitted = false;
+
                     return result;
                 }
 
                 await askProcess.WaitForExitAsync();
+
                 if (askProcess.ExitCode != 0)
                 {
                     result.Submitted = false;
+
                     return result;
                 }
 
@@ -364,11 +371,13 @@ namespace NFMWorld.CrashReporter
                 );
 
                 result.Submitted = !string.IsNullOrWhiteSpace(result.Description);
+
                 return result;
             }
             catch
             {
                 result.Submitted = false;
+
                 return result;
             }
         }
@@ -393,6 +402,7 @@ namespace NFMWorld.CrashReporter
                     await zenityProcess.WaitForExitAsync();
 
                     if (!string.IsNullOrEmpty(zenityPath))
+
                         return "zenity";
                 }
             }
@@ -418,6 +428,7 @@ namespace NFMWorld.CrashReporter
                     await kdialogProcess.WaitForExitAsync();
 
                     if (!string.IsNullOrEmpty(kdialogPath))
+
                         return "kdialog";
                 }
             }
@@ -484,10 +495,12 @@ namespace NFMWorld.CrashReporter
             if (string.IsNullOrWhiteSpace(output))
             {
                 result.Submitted = false;
+
                 return;
             }
 
             var lines = output.Split('\n');
+
             foreach (var line in lines)
             {
                 var trimmedLine = line.Trim();
@@ -506,10 +519,13 @@ namespace NFMWorld.CrashReporter
         public static async Task<CrashReportResult> ShowDialog(string errorMessage, string? errorDetails = null)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+
                 return await ShowWindowsDialog(errorMessage, errorDetails);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+
                 return await ShowMacDialog(errorMessage, errorDetails);
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+
                 return await ShowLinuxDialog(errorMessage, errorDetails);
 
             return new CrashReportResult { Submitted = false };

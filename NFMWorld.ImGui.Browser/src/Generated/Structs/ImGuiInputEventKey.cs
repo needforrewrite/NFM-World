@@ -16,39 +16,36 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEventKey
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiKey Key;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEventKey
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiKey Key;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte Down;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte Down;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float AnalogValue;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEventKey(ImGuiKey key = default, bool down = default, float analogValue = default)
-		{
-			Key = key;
-			Down = down ? (byte)1 : (byte)0;
-			AnalogValue = analogValue;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float AnalogValue;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEventKey(ImGuiKey key = default, bool down = default, float analogValue = default)
+        {
+            Key = key;
+            Down = down ? (byte)1 : (byte)0;
+            AnalogValue = analogValue;
+        }
+    }
 }

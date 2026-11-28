@@ -7,10 +7,15 @@ public partial class StageEditorPhase
 {
     public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        if (!_isOpen) return;
-        if (ActiveTab == null) return;
+        if (!_isOpen)
+
+            return;
+        if (ActiveTab == null)
+
+            return;
 
         // Pending top-down export (requested from the export dialog, see _exportRequested).
+
         if (_exportRequested)
         {
             _exportRequested = false;
@@ -18,6 +23,7 @@ public partial class StageEditorPhase
         }
 
         // Clear with appropriate background color based on view mode
+
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
         {
             // Gray background for top-down view
@@ -35,6 +41,7 @@ public partial class StageEditorPhase
         // equivalent of the old RasterizerState override, since each pipeline already bakes its own.
         // When no valid rect is known, bind the full-window one - the invariant every place that
         // binds a target or viewport follows (see WorldGame.SetFullScreenScissor).
+
         if (_viewportMax.X > _viewportMin.X && _viewportMax.Y > _viewportMin.Y)
         {
             cb.SetScissorRect(
@@ -52,6 +59,7 @@ public partial class StageEditorPhase
         }
 
         // Render the 3D scene
+
         if (ActiveTab?.Scene != null && ActiveTab?.Stage != null && ActiveTab?.StageRenderer != null)
         {
             if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
@@ -105,6 +113,7 @@ public partial class StageEditorPhase
         // Render selection highlight for all selected pieces, gizmo on primary
         RenderSelectionHighlights(cb, ActiveTab);
         RenderSelectedWallHighlight(cb, ActiveTab);
+
         if (ActiveTab.ActivePieceId >= 0)
         {
             var selectedPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);

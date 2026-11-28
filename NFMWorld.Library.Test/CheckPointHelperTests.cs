@@ -31,6 +31,7 @@ public class CheckPointHelperTests
         var players = new[] { Player(0, rad, next + lap * 3), Player(1, rad, next + lap * 3) };
         var target = stage.Checkpoints[next].Position;
         var following = stage.Checkpoints[(next + 1) % 3].Position;
+
         for (var i = 0; i < players.Length; i++)
         {
             players[i].Car!.CurrentCheckpoint = (ushort)next;
@@ -156,6 +157,7 @@ public class CheckPointHelperTests
             Car = new BackendCar(rad, index, 0, 0, false) { TotalCheckpoint = totalCheckpoint }
         };
         player.Car.CarPhysics.Wasted = wasted;
+
         return player;
     }
 }

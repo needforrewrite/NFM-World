@@ -155,6 +155,7 @@ namespace Poly2Tri
         public static Point2DList.WindingOrderType CalculateWindingOrder(IList<Point2D> l)
         {
             double area = 0.0;
+
             for (int i = 0; i < l.Count; i++)
             {
                 int j = (i + 1) % l.Count;
@@ -165,6 +166,7 @@ namespace Poly2Tri
             area /= 2.0f;
 
             // the sign of the 'area' of the polygon is all we are interested in.
+
             if (area < 0.0)
             {
                 return Point2DList.WindingOrderType.CW;
@@ -175,6 +177,7 @@ namespace Poly2Tri
             }
 
             // error condition - not even verts to calculate, non-simple poly, etc.
+
             return Point2DList.WindingOrderType.Unknown;
         }
 
@@ -201,6 +204,7 @@ namespace Poly2Tri
 
             // Bounds the same to within tolerance, are there polys the same?
             Point2D vdelta = new Point2D(0.0, 0.0);
+
             for (int k = 0; k < numVerts2; ++k)
             {
                 // Look for a match in verts2 to the first vertex in verts1
@@ -215,9 +219,11 @@ namespace Poly2Tri
                     // the opposite way as well
                     int matchedVertIndex = k;
                     bool bReverseSearch = false;
+
                     while (true)
                     {
                         bool bMatchFound = true;
+
                         for (int i = 1; i < numVerts1; ++i)
                         {
                             if (!bReverseSearch)
@@ -227,6 +233,7 @@ namespace Poly2Tri
                             else
                             {
                                 --k;
+
                                 if (k < 0)
                                 {
                                     k = numVerts2 - 1;
@@ -235,11 +242,13 @@ namespace Poly2Tri
 
                             vdelta.Set(poly1[i]);
                             vdelta.Subtract(poly2[k % numVerts2]);
+
                             if (vdelta.MagnitudeSquared() >= kEpsilonSq)
                             {
                                 if (bReverseSearch)
                                 {
                                     // didn't find a match going in either direction, so the polygons are not the same
+
                                     return false;
                                 }
                                 else
@@ -248,6 +257,7 @@ namespace Poly2Tri
                                     k = matchedVertIndex;
                                     bReverseSearch = true;
                                     bMatchFound = false;
+
                                     break;
                                 }
                             }
@@ -278,10 +288,12 @@ namespace Poly2Tri
             Point2D p1 = null;
 
             bool bInside = false;
+
             for (int j = 0; j < numVerts; ++j)
             {
                 p1 = polygon[j];
                 bool bYFlag1 = (p1.Y >= p.Y) ? true : false;
+
                 if (bYFlag0 != bYFlag1)
                 {
                     if (((p1.Y - p.Y) * (p0.X - p1.X) >= (p1.X - p.X) * (p0.Y - p1.Y)) == bYFlag1)
@@ -306,11 +318,12 @@ namespace Poly2Tri
         public static bool PolygonsIntersect2D(
             IList<Point2D> poly1,
             Rect2D boundRect1,
-                                                IList<Point2D> poly2,
+            IList<Point2D> poly2,
             Rect2D boundRect2
         )
         {
             // do some quick tests first before doing any real work
+
             if (poly1 == null || poly1.Count < 3 || boundRect1 == null || poly2 == null || poly2.Count < 3 || boundRect2 == null)
             {
                 return false;
@@ -330,9 +343,11 @@ namespace Poly2Tri
 
             int numVerts1 = poly1.Count;
             int numVerts2 = poly2.Count;
+
             for (int i = 0; i < numVerts1; ++i)
             {
                 int lineEndVert1 = i + 1;
+
                 if (lineEndVert1 == numVerts1)
                 {
                     lineEndVert1 = 0;
@@ -341,12 +356,14 @@ namespace Poly2Tri
                 for (int j = 0; j < numVerts2; ++j)
                 {
                     int lineEndVert2 = j + 1;
+
                     if (lineEndVert2 == numVerts2)
                     {
                         lineEndVert2 = 0;
                     }
 
                     Point2D tmp = null;
+
                     if (TriangulationUtil.LinesIntersect2D(
                         poly1[i],
                         poly1[lineEndVert1],
@@ -368,7 +385,7 @@ namespace Poly2Tri
         public bool PolygonContainsPolygon(
             IList<Point2D> poly1,
             Rect2D boundRect1,
-                                            IList<Point2D> poly2,
+            IList<Point2D> poly2,
             Rect2D boundRect2
         )
         {
@@ -402,12 +419,13 @@ namespace Poly2Tri
         public static bool PolygonContainsPolygon(
             IList<Point2D> poly1,
             Rect2D boundRect1,
-                                                    IList<Point2D> poly2,
+            IList<Point2D> poly2,
             Rect2D boundRect2,
-                                                    bool runIntersectionTest
+            bool runIntersectionTest
         )
         {
             // quick early-out tests
+
             if (poly1 == null || poly1.Count < 3 || poly2 == null || poly2.Count < 3)
             {
                 return false;
@@ -416,10 +434,12 @@ namespace Poly2Tri
             if (runIntersectionTest)
             {
                 // make sure the polygons are not actually the same...
+
                 if (poly1.Count == poly2.Count)
                 {
                     // Check if the polys are similar to within a tolerance (Doesn't include reflections,
                     // but allows for the points to be numbered differently)
+
                     if (PolygonUtil.PolygonsAreSame2D(poly1, poly2))
                     {
                         return false;
@@ -427,6 +447,7 @@ namespace Poly2Tri
                 }
 
                 bool bIntersect = PolygonUtil.PolygonsIntersect2D(poly1, boundRect1, poly2, boundRect2);
+
                 if (bIntersect)
                 {
                     return false;
@@ -436,6 +457,7 @@ namespace Poly2Tri
             // Since we (now) know that the polygons don't intersect and they are not the same, we can just do a
             // single check to see if ANY point in poly2 is inside poly1.  If so, then all points of poly2
             // are inside poly1.  If not, then ALL points of poly2 are outside poly1.
+
             if (PolygonUtil.PointInPolygon2D(poly1, poly2[0]))
             {
                 return true;
@@ -461,15 +483,19 @@ namespace Poly2Tri
         ///////////////////////////////////////////////////////////////////////////
         public static void ClipPolygonToEdge2D(
             Point2D edgeBegin,
-                                                Point2D edgeEnd,
-                                                IList<Point2D> poly,
-                                                out List<Point2D> outPoly
+            Point2D edgeEnd,
+            IList<Point2D> poly,
+            out List<Point2D> outPoly
         )
         {
             outPoly = null;
-            if (edgeBegin == null ||
-                edgeEnd == null ||
-                poly == null ||
+
+            if (edgeBegin == null
+                ||
+                edgeEnd == null
+                ||
+                poly == null
+                ||
                 poly.Count < 3)
             {
                 return;
@@ -482,15 +508,18 @@ namespace Poly2Tri
             // dealing with x and z here. And in our case, z axis goes
             // downward while the x axis goes rightward.
             //bool bLastVertexIsToRight = TriangulationUtil.PointRelativeToLine2D(poly[lastVertex], edgeBegin, edgeEnd) >= 0;
-            bool bLastVertexIsToRight = TriangulationUtil.Orient2d(edgeBegin, edgeEnd, poly[lastVertex]) == Orientation
+            bool bLastVertexIsToRight = TriangulationUtil.Orient2d(edgeBegin, edgeEnd, poly[lastVertex])
+                                        == Orientation
                 .CW ? true : false;
             Point2D tempRay = new Point2D(0.0, 0.0);
 
             for (int curVertex = 0; curVertex < poly.Count; curVertex++)
             {
                 //bool bCurVertexIsToRight = TriangulationUtil.PointRelativeToLine2D(poly[curVertex], edgeBegin, edgeEnd) >= 0;
-                bool bCurVertexIsToRight = TriangulationUtil.Orient2d(edgeBegin, edgeEnd, poly[curVertex]) == Orientation
+                bool bCurVertexIsToRight = TriangulationUtil.Orient2d(edgeBegin, edgeEnd, poly[curVertex])
+                                           == Orientation
                     .CW ? true : false;
+
                 if (bCurVertexIsToRight)
                 {
                     if (bLastVertexIsToRight)
@@ -508,6 +537,7 @@ namespace Poly2Tri
                             edgeRayVector,
                             ref ptIntersection
                         );
+
                         if (bIntersect)
                         {
                             outPoly.Add(ptIntersection);
@@ -526,6 +556,7 @@ namespace Poly2Tri
                         edgeRayVector,
                         ref ptIntersection
                     );
+
                     if (bIntersect)
                     {
                         outPoly.Add(ptIntersection);
@@ -541,6 +572,7 @@ namespace Poly2Tri
         public static void ClipPolygonToPolygon(IList<Point2D> poly, IList<Point2D> clipPoly, out List<Point2D> outPoly)
         {
             outPoly = null;
+
             if (poly == null || poly.Count < 3 || clipPoly == null || clipPoly.Count < 3)
             {
                 return;
@@ -551,6 +583,7 @@ namespace Poly2Tri
             int lastVertex = numClipVertices - 1;
 
             // The algorithm keeps clipping the polygon against each edge of "clipPoly".
+
             for (int curVertex = 0; curVertex < numClipVertices; curVertex++)
             {
                 List<Point2D> clippedPoly = null;
@@ -577,6 +610,7 @@ namespace Poly2Tri
             ctx.Init(PolygonUtil.PolyOperation.Union, polygon1, polygon2);
             PolygonUnionInternal(ctx);
             union = ctx.Union;
+
             return ctx.mError;
         }
 
@@ -584,15 +618,18 @@ namespace Poly2Tri
         protected static void PolygonUnionInternal(PolygonOperationContext ctx)
         {
             Point2DList union = ctx.Union;
+
             if (ctx.mStartingIndex == -1)
             {
                 switch (ctx.mError)
                 {
                     case PolygonUtil.PolyUnionError.NoIntersections:
                     case PolygonUtil.PolyUnionError.InfiniteLoop:
+
                         return;
                     case PolygonUtil.PolyUnionError.Poly1InsidePoly2:
                         union.AddRange(ctx.mOriginalPolygon2);
+
                         return;
                 }
             }
@@ -615,6 +652,7 @@ namespace Poly2Tri
                 foreach (EdgeIntersectInfo intersect in ctx.mIntersections)
                 {
                     // If the current point is an intersection point
+
                     if (currentPoly[currentIndex].Equals(intersect.IntersectionPoint, currentPoly.Epsilon))
                     {
                         // Make sure we want to swap polygons here.
@@ -625,6 +663,7 @@ namespace Poly2Tri
                         int comparePointIndex = otherPoly.NextIndex(otherIndex);
                         Point2D comparePoint = otherPoly[comparePointIndex];
                         bool bPointInPolygonAngle = false;
+
                         if (currentPolyVectorAngles[comparePointIndex] == -1)
                         {
                             bPointInPolygonAngle = ctx.PointInPolygonAngle(comparePoint, currentPoly);
@@ -638,11 +677,13 @@ namespace Poly2Tri
                         if (!bPointInPolygonAngle)
                         {
                             // switch polygons
+
                             if (currentPoly == ctx.mPoly1)
                             {
                                 currentPoly = ctx.mPoly2;
                                 currentPolyVectorAngles = ctx.mPoly2VectorAngles;
                                 otherPoly = ctx.mPoly1;
+
                                 if (firstPoly2Index < 0)
                                 {
                                     firstPoly2Index = otherIndex;
@@ -659,6 +700,7 @@ namespace Poly2Tri
                             currentIndex = otherIndex;
 
                             // Stop checking intersections for this point.
+
                             break;
                         }
                     }
@@ -686,6 +728,7 @@ namespace Poly2Tri
             // If the number of vertices in the union is more than the combined vertices
             // of the input polygons, then something is wrong and the algorithm will
             // loop forever. Luckily, we check for that.
+
             if (union.Count > (ctx.mPoly1.Count + ctx.mPoly2.Count))
             {
                 ctx.mError = PolygonUtil.PolyUnionError.InfiniteLoop;
@@ -712,6 +755,7 @@ namespace Poly2Tri
             ctx.Init(PolygonUtil.PolyOperation.Intersect, polygon1, polygon2);
             PolygonIntersectInternal(ctx);
             intersectOut = ctx.Intersect;
+
             return ctx.mError;
         }
 
@@ -719,15 +763,18 @@ namespace Poly2Tri
         protected static void PolygonIntersectInternal(PolygonOperationContext ctx)
         {
             Point2DList intersectOut = ctx.Intersect;
+
             if (ctx.mStartingIndex == -1)
             {
                 switch (ctx.mError)
                 {
                     case PolygonUtil.PolyUnionError.NoIntersections:
                     case PolygonUtil.PolyUnionError.InfiniteLoop:
+
                         return;
                     case PolygonUtil.PolyUnionError.Poly1InsidePoly2:
                         intersectOut.AddRange(ctx.mOriginalPolygon2);
+
                         return;
                 }
             }
@@ -746,9 +793,11 @@ namespace Poly2Tri
             do
             {
                 // Add the current vertex to the final intersection
+
                 if (intersectOut.Contains(currentPoly[currentIndex]))
                 {
                     // This can happen when the two polygons only share a single edge, and neither is inside the other
+
                     break;
                 }
 
@@ -757,6 +806,7 @@ namespace Poly2Tri
                 foreach (EdgeIntersectInfo intersect in ctx.mIntersections)
                 {
                     // If the current point is an intersection point
+
                     if (currentPoly[currentIndex].Equals(intersect.IntersectionPoint, currentPoly.Epsilon))
                     {
                         // Make sure we want to swap polygons here.
@@ -767,6 +817,7 @@ namespace Poly2Tri
                         int comparePointIndex = otherPoly.NextIndex(otherIndex);
                         Point2D comparePoint = otherPoly[comparePointIndex];
                         bool bPointInPolygonAngle = false;
+
                         if (currentPolyVectorAngles[comparePointIndex] == -1)
                         {
                             bPointInPolygonAngle = ctx.PointInPolygonAngle(comparePoint, currentPoly);
@@ -780,11 +831,13 @@ namespace Poly2Tri
                         if (bPointInPolygonAngle)
                         {
                             // switch polygons
+
                             if (currentPoly == ctx.mPoly1)
                             {
                                 currentPoly = ctx.mPoly2;
                                 currentPolyVectorAngles = ctx.mPoly2VectorAngles;
                                 otherPoly = ctx.mPoly1;
+
                                 if (firstPoly2Index < 0)
                                 {
                                     firstPoly2Index = otherIndex;
@@ -801,6 +854,7 @@ namespace Poly2Tri
                             currentIndex = otherIndex;
 
                             // Stop checking intersections for this point.
+
                             break;
                         }
                     }
@@ -823,12 +877,16 @@ namespace Poly2Tri
                         break;
                     }
                 }
-            } while ((currentPoly[currentIndex] != startingVertex) && (intersectOut.Count <= (ctx.mPoly1.Count + ctx.mPoly2
-                .Count)));
+            } while ((currentPoly[currentIndex] != startingVertex)
+                     && (intersectOut.Count
+                         <= (ctx.mPoly1.Count
+                             + ctx.mPoly2
+                             .Count)));
 
             // If the number of vertices in the union is more than the combined vertices
             // of the input polygons, then something is wrong and the algorithm will
             // loop forever. Luckily, we check for that.
+
             if (intersectOut.Count > (ctx.mPoly1.Count + ctx.mPoly2.Count))
             {
                 ctx.mError = PolygonUtil.PolyUnionError.InfiniteLoop;
@@ -855,6 +913,7 @@ namespace Poly2Tri
             ctx.Init(PolygonUtil.PolyOperation.Subtract, polygon1, polygon2);
             PolygonSubtractInternal(ctx);
             subtract = ctx.Subtract;
+
             return ctx.mError;
         }
 
@@ -862,6 +921,7 @@ namespace Poly2Tri
         public static void PolygonSubtractInternal(PolygonOperationContext ctx)
         {
             Point2DList subtract = ctx.Subtract;
+
             if (ctx.mStartingIndex == -1)
             {
                 switch (ctx.mError)
@@ -869,6 +929,7 @@ namespace Poly2Tri
                     case PolygonUtil.PolyUnionError.NoIntersections:
                     case PolygonUtil.PolyUnionError.InfiniteLoop:
                     case PolygonUtil.PolyUnionError.Poly1InsidePoly2:
+
                         return;
                 }
             }
@@ -893,12 +954,14 @@ namespace Poly2Tri
                 foreach (EdgeIntersectInfo intersect in ctx.mIntersections)
                 {
                     // If the current point is an intersection point
+
                     if (currentPoly[currentIndex].Equals(intersect.IntersectionPoint, currentPoly.Epsilon))
                     {
                         // Make sure we want to swap polygons here.
                         int otherIndex = otherPoly.IndexOf(intersect.IntersectionPoint);
 
                         //Point2D otherVertex;
+
                         if (forward)
                         {
                             // If the next vertex, if we do swap, is inside the current polygon,
@@ -906,6 +969,7 @@ namespace Poly2Tri
                             int compareIndex = otherPoly.PreviousIndex(otherIndex);
                             Point2D compareVertex = otherPoly[compareIndex];
                             bool bPointInPolygonAngle = false;
+
                             if (currentPolyVectorAngles[compareIndex] == -1)
                             {
                                 bPointInPolygonAngle = ctx.PointInPolygonAngle(compareVertex, currentPoly);
@@ -919,6 +983,7 @@ namespace Poly2Tri
                             if (bPointInPolygonAngle)
                             {
                                 // switch polygons
+
                                 if (currentPoly == ctx.mPoly1)
                                 {
                                     currentPoly = ctx.mPoly2;
@@ -939,6 +1004,7 @@ namespace Poly2Tri
                                 forward = !forward;
 
                                 // Stop checking ctx.mIntersections for this point.
+
                                 break;
                             }
                         }
@@ -949,6 +1015,7 @@ namespace Poly2Tri
                             int compareIndex = otherPoly.NextIndex(otherIndex);
                             Point2D compareVertex = otherPoly[compareIndex];
                             bool bPointInPolygonAngle = false;
+
                             if (currentPolyVectorAngles[compareIndex] == -1)
                             {
                                 bPointInPolygonAngle = ctx.PointInPolygonAngle(compareVertex, currentPoly);
@@ -962,6 +1029,7 @@ namespace Poly2Tri
                             if (!bPointInPolygonAngle)
                             {
                                 // switch polygons
+
                                 if (currentPoly == ctx.mPoly1)
                                 {
                                     currentPoly = ctx.mPoly2;
@@ -982,6 +1050,7 @@ namespace Poly2Tri
                                 forward = !forward;
 
                                 // Stop checking intersections for this point.
+
                                 break;
                             }
                         }
@@ -1003,6 +1072,7 @@ namespace Poly2Tri
             // If the number of vertices in the union is more than the combined vertices
             // of the input polygons, then something is wrong and the algorithm will
             // loop forever. Luckily, we check for that.
+
             if (subtract.Count > (ctx.mPoly1.Count + ctx.mPoly2.Count))
             {
                 ctx.mError = PolygonUtil.PolyUnionError.InfiniteLoop;
@@ -1029,6 +1099,7 @@ namespace Poly2Tri
             PolygonOperationContext ctx = new PolygonOperationContext();
             ctx.Init(operations, polygon1, polygon2);
             results = ctx.mOutput;
+
             return PolygonUtil.PolygonOperation(ctx);
         }
 
@@ -1081,6 +1152,7 @@ namespace Poly2Tri
             List<SplitComplexPolygonNode> nodes = new List<SplitComplexPolygonNode>();
 
             //Add base nodes (raw outline)
+
             for (int i = 0; i < verts.Count; ++i)
             {
                 SplitComplexPolygonNode newNode = new SplitComplexPolygonNode(new Point2D(verts[i].X, verts[i].Y));
@@ -1100,9 +1172,11 @@ namespace Poly2Tri
             //Process intersection nodes - horribly inefficient
             bool dirty = true;
             int counter = 0;
+
             while (dirty)
             {
                 dirty = false;
+
                 for (int i = 0; !dirty && i < nNodes; ++i)
                 {
                     for (int j = 0; !dirty && j < nodes[i].NumConnected; ++j)
@@ -1126,15 +1200,16 @@ namespace Poly2Tri
                                 //if (counter > 100) printf("checking intersection: %d, %d, %d, %d\n",i,j,k,l);
                                 bool crosses = TriangulationUtil.LinesIntersect2D(
                                     nodes[i].Position,
-                                                                                    nodes[i][j].Position,
-                                                                                    nodes[k].Position,
-                                                                                    nodes[k][l].Position,
-                                                                                    true,
+                                    nodes[i][j].Position,
+                                    nodes[k].Position,
+                                    nodes[k][l].Position,
                                     true,
                                     true,
-                                                                                    ref intersectPt,
-                                                                                    epsilon
+                                    true,
+                                    ref intersectPt,
+                                    epsilon
                                 );
+
                                 if (crosses)
                                 {
                                     /*if (counter > 100) {
@@ -1150,6 +1225,7 @@ namespace Poly2Tri
                                     //Destroy and re-hook connections at crossing point
                                     SplitComplexPolygonNode intersectionNode = new SplitComplexPolygonNode(intersectPt);
                                     int idx = nodes.IndexOf(intersectionNode);
+
                                     if (idx >= 0 && idx < nodes.Count)
                                     {
                                         intersectionNode = nodes[idx];
@@ -1168,6 +1244,7 @@ namespace Poly2Tri
                                     nodei.RemoveConnection(connij);
                                     connkl.RemoveConnection(nodek);
                                     nodek.RemoveConnection(connkl);
+
                                     if (!intersectionNode.Position.Equals(nodei.Position, epsilon))
                                     {
                                         intersectionNode.AddConnection(nodei);
@@ -1220,9 +1297,11 @@ namespace Poly2Tri
             bool foundDupe = true;
             int nActive = nNodes;
             double epsilonSquared = epsilon * epsilon;
+
             while (foundDupe)
             {
                 foundDupe = false;
+
                 for (int i = 0; i < nNodes; ++i)
                 {
                     if (nodes[i].NumConnected == 0)
@@ -1238,6 +1317,7 @@ namespace Poly2Tri
                         }
 
                         Point2D diff = nodes[i].Position - nodes[j].Position;
+
                         if (diff.MagnitudeSquared() <= epsilonSquared)
                         {
                             if (nActive <= 3)
@@ -1254,10 +1334,13 @@ namespace Poly2Tri
                             SplitComplexPolygonNode jnode = nodes[j];
                             //Move all of j's connections to i, and remove j
                             int njConn = jnode.NumConnected;
+
                             for (int k = 0; k < njConn; ++k)
                             {
                                 SplitComplexPolygonNode knode = jnode[k];
+
                                 //Debug.Assert(knode != jnode);
+
                                 if (knode != inode)
                                 {
                                     inode.AddConnection(knode);
@@ -1303,6 +1386,7 @@ namespace Poly2Tri
             double minY = double.MaxValue;
             double maxX = -double.MaxValue;
             int minYIndex = -1;
+
             for (int i = 0; i < nNodes; ++i)
             {
                 if (nodes[i].Position.Y < minY && nodes[i].NumConnected > 1)
@@ -1324,13 +1408,16 @@ namespace Poly2Tri
             SplitComplexPolygonNode startNode = currentNode;
             //Debug.Assert(currentNode.nConnected > 0);
             SplitComplexPolygonNode nextNode = currentNode.GetRightestConnection(origDir);
+
             if (nextNode == null)
             {
                 // Borked, clean up our mess and return
+
                 return PolygonUtil.SplitComplexPolygonCleanup(verts);
             }
 
             resultVecs.Add(startNode.Position);
+
             while (nextNode != startNode)
             {
                 if (resultVecs.Count > (4 * nNodes))
@@ -1355,6 +1442,7 @@ namespace Poly2Tri
                     //}
                     //Debug.Assert(false);
                     //nodes should never be visited four times apiece (proof?), so we've probably hit a loop...crap
+
                     throw new Exception(
                         "nodes should never be visited four times apiece (proof?), so we've probably hit a loop...crap"
                     );
@@ -1366,6 +1454,7 @@ namespace Poly2Tri
                 //printf("Old node connections = %d; address %d\n",oldNode.nConnected, (int)oldNode);
                 //printf("Current node connections = %d; address %d\n",currentNode.nConnected, (int)currentNode);
                 nextNode = currentNode.GetRightestConnection(oldNode);
+
                 if (nextNode == null)
                 {
                     return PolygonUtil.SplitComplexPolygonCleanup(resultVecs);
@@ -1377,6 +1466,7 @@ namespace Poly2Tri
             if (resultVecs.Count < 1)
             {
                 // Borked, clean up our mess and return
+
                 return PolygonUtil.SplitComplexPolygonCleanup(verts);
             }
             else
@@ -1393,9 +1483,11 @@ namespace Poly2Tri
             l.Add(origP2DL);
             int listIdx = 0;
             int numLists = l.Count;
+
             while (listIdx < numLists)
             {
                 int numPoints = l[listIdx].Count;
+
                 for (int i = 0; i < numPoints; ++i)
                 {
                     for (int j = i + 1; j < numPoints; ++j)
@@ -1405,6 +1497,7 @@ namespace Poly2Tri
                             // found a self-intersection loop - split it off into it's own list
                             int numToRemove = j - i;
                             Point2DList newList = new Point2DList();
+
                             for (int k = i + 1; k <= j; ++k)
                             {
                                 newList.Add(l[listIdx][k]);
@@ -1482,6 +1575,7 @@ namespace Poly2Tri
         public override bool Equals(Object obj)
         {
             SplitComplexPolygonNode pn = obj as SplitComplexPolygonNode;
+
             if (pn == null)
             {
                 return base.Equals(obj);
@@ -1551,6 +1645,7 @@ namespace Poly2Tri
             StringBuilder sb = new StringBuilder(256);
             sb.Append(mPosition.ToString());
             sb.Append(" -> ");
+
             for (int i = 0; i < NumConnected; ++i)
             {
                 if (i != 0)
@@ -1595,6 +1690,7 @@ namespace Poly2Tri
         private int remainder(int x, int modulus)
         {
             int rem = x % modulus;
+
             while (rem < 0)
             {
                 rem += modulus;
@@ -1606,6 +1702,7 @@ namespace Poly2Tri
         public void AddConnection(SplitComplexPolygonNode toMe)
         {
             // Ignore duplicate additions
+
             if (!mConnected.Contains(toMe) && toMe != this)
             {
                 mConnected.Add(toMe);
@@ -1650,6 +1747,7 @@ namespace Poly2Tri
                 // Because of the possibility of collapsing nearby points,
                 // we may end up with "spider legs" dangling off of a region.
                 // The correct behavior here is to turn around.
+
                 return incoming;
             }
 
@@ -1664,6 +1762,7 @@ namespace Poly2Tri
             }
 
             SplitComplexPolygonNode result = null;
+
             for (int i = 0; i < NumConnected; ++i)
             {
                 if (mConnected[i] == incoming)
@@ -1674,6 +1773,7 @@ namespace Poly2Tri
                 Point2D testDir = mConnected[i].mPosition - mPosition;
                 double testLengthSqr = testDir.MagnitudeSquared();
                 testDir.Normalize();
+
                 /*
                 if (testLengthSqr < COLLAPSE_DIST_SQR) {
                     printf("Problem with connection %d\n",i);
@@ -1681,6 +1781,7 @@ namespace Poly2Tri
                     printf("That one has %d\n",connected[i].nConnected);
                     if (this == connected[i]) printf("This points at itself.\n");
                 }*/
+
                 if (testLengthSqr <= (MathUtil.EPSILON * MathUtil.EPSILON))
                 {
                     throw new Exception("Length too small");
@@ -1688,12 +1789,14 @@ namespace Poly2Tri
 
                 double myCos = Point2D.Dot(inDir, testDir);
                 double mySin = Point2D.Cross(inDir, testDir);
+
                 if (result != null)
                 {
                     Point2D resultDir = result.mPosition - mPosition;
                     resultDir.Normalize();
                     double resCos = Point2D.Dot(inDir, resultDir);
                     double resSin = Point2D.Cross(inDir, resultDir);
+
                     if (IsRighter(mySin, myCos, resSin, resCos))
                     {
                         result = mConnected[i];
@@ -1723,7 +1826,9 @@ namespace Poly2Tri
             Point2D diff = mPosition - incomingDir;
             SplitComplexPolygonNode temp = new SplitComplexPolygonNode(diff);
             SplitComplexPolygonNode res = GetRightestConnection(temp);
+
             //Debug.Assert(res != null);
+
             return res;
         }
     }
@@ -1748,6 +1853,7 @@ namespace Poly2Tri
             get
             {
                 Point2DList l = null;
+
                 if (!mOutput.TryGetValue((uint)PolygonUtil.PolyOperation.Union, out l))
                 {
                     l = new Point2DList();
@@ -1763,6 +1869,7 @@ namespace Poly2Tri
             get
             {
                 Point2DList l = null;
+
                 if (!mOutput.TryGetValue((uint)PolygonUtil.PolyOperation.Intersect, out l))
                 {
                     l = new Point2DList();
@@ -1778,6 +1885,7 @@ namespace Poly2Tri
             get
             {
                 Point2DList l = null;
+
                 if (!mOutput.TryGetValue((uint)PolygonUtil.PolyOperation.Subtract, out l))
                 {
                     l = new Point2DList();
@@ -1825,26 +1933,31 @@ namespace Poly2Tri
             mPoly2.WindingOrder = Point2DList.WindingOrderType.Default;
 
             // Find intersection points
+
             if (!VerticesIntersect(mPoly1, mPoly2, out mIntersections))
             {
                 // No intersections found - polygons do not overlap.
                 mError = PolygonUtil.PolyUnionError.NoIntersections;
+
                 return false;
             }
 
             // make sure edges that intersect more than once are updated to have correct start points
             int numIntersections = mIntersections.Count;
+
             for (int i = 0; i < numIntersections; ++i)
             {
                 for (int j = i + 1; j < numIntersections; ++j)
                 {
-                    if (mIntersections[i].EdgeOne.EdgeStart.Equals(mIntersections[j].EdgeOne.EdgeStart) &&
+                    if (mIntersections[i].EdgeOne.EdgeStart.Equals(mIntersections[j].EdgeOne.EdgeStart)
+                        &&
                         mIntersections[i].EdgeOne.EdgeEnd.Equals(mIntersections[j].EdgeOne.EdgeEnd))
                     {
                         mIntersections[j].EdgeOne.EdgeStart = mIntersections[i].IntersectionPoint;
                     }
 
-                    if (mIntersections[i].EdgeTwo.EdgeStart.Equals(mIntersections[j].EdgeTwo.EdgeStart) &&
+                    if (mIntersections[i].EdgeTwo.EdgeStart.Equals(mIntersections[j].EdgeTwo.EdgeStart)
+                        &&
                         mIntersections[i].EdgeTwo.EdgeEnd.Equals(mIntersections[j].EdgeTwo.EdgeEnd))
                     {
                         mIntersections[j].EdgeTwo.EdgeStart = mIntersections[i].IntersectionPoint;
@@ -1853,6 +1966,7 @@ namespace Poly2Tri
             }
 
             // Add intersection points to original polygons, ignoring existing points.
+
             foreach (EdgeIntersectInfo intersect in mIntersections)
             {
                 if (!mPoly1.Contains(intersect.IntersectionPoint))
@@ -1867,12 +1981,14 @@ namespace Poly2Tri
             }
 
             mPoly1VectorAngles = new List<int>();
+
             for (int i = 0; i < mPoly2.Count; ++i)
             {
                 mPoly1VectorAngles.Add(-1);
             }
 
             mPoly2VectorAngles = new List<int>();
+
             for (int i = 0; i < mPoly1.Count; ++i)
             {
                 mPoly2VectorAngles.Add(-1);
@@ -1881,13 +1997,16 @@ namespace Poly2Tri
             // Find starting point on the edge of polygon1 that is outside of
             // the intersected area to begin polygon trace.
             int currentIndex = 0;
+
             do
             {
                 bool bPointInPolygonAngle = PointInPolygonAngle(mPoly1[currentIndex], mPoly2);
                 mPoly2VectorAngles[currentIndex] = bPointInPolygonAngle ? 1 : 0;
+
                 if (bPointInPolygonAngle)
                 {
                     mStartingIndex = currentIndex;
+
                     break;
                 }
 
@@ -1897,9 +2016,11 @@ namespace Poly2Tri
             // If we don't find a point on polygon1 thats outside of the
             // intersect area, the polygon1 must be inside of polygon2,
             // in which case, polygon2 IS the union of the two.
+
             if (mStartingIndex == -1)
             {
                 mError = PolygonUtil.PolyUnionError.Poly1InsidePoly2;
+
                 return false;
             }
 
@@ -1920,6 +2041,7 @@ namespace Poly2Tri
             double epsilon = Math.Min(polygon1.Epsilon, polygon2.Epsilon);
 
             // Iterate through polygon1's edges
+
             for (int i = 0; i < polygon1.Count; i++)
             {
                 // Get edge vertices
@@ -1927,6 +2049,7 @@ namespace Poly2Tri
                 Point2D p2 = polygon1[polygon1.NextIndex(i)];
 
                 // Get intersections between this edge and polygon2
+
                 for (int j = 0; j < polygon2.Count; j++)
                 {
                     Point2D point = new Point2D();
@@ -1935,6 +2058,7 @@ namespace Poly2Tri
                     Point2D p4 = polygon2[polygon2.NextIndex(j)];
 
                     // Check if the edges intersect
+
                     if (TriangulationUtil.LinesIntersect2D(p1, p2, p3, p4, ref point, epsilon))
                     {
                         // Rounding is not needed since we compare using an epsilon.
@@ -1948,6 +2072,7 @@ namespace Poly2Tri
             }
 
             // true if any intersections were found.
+
             return (intersections.Count > 0);
         }
 
@@ -1962,6 +2087,7 @@ namespace Poly2Tri
             double angle = 0;
 
             // Iterate through polygon's edges
+
             for (int i = 0; i < polygon.Count; i++)
             {
                 // Get points
@@ -1990,6 +2116,7 @@ namespace Poly2Tri
             double theta1 = Math.Atan2(p1.Y, p1.X);
             double theta2 = Math.Atan2(p2.Y, p2.X);
             double dtheta = theta2 - theta1;
+
             while (dtheta > Math.PI)
             {
                 dtheta -= (2.0 * Math.PI);

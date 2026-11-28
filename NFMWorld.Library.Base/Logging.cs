@@ -17,9 +17,9 @@ public static class Logging
     public const string SentryDsn = "https://576c8b7adc0c43208ec65b059d436085@glitchtip.puppykitty.racing/2";
 
     public static string Release { get; } = AppDomain.CurrentDomain.GetAssemblies()
-                                                .FirstOrDefault(ass => ass.FullName?.StartsWith("NFMWorld,") == true)
-                                                ?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                                                ?.InformationalVersion
+        .FirstOrDefault(ass => ass.FullName?.StartsWith("NFMWorld,") == true)
+        ?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+        ?.InformationalVersion
                                             ?? "NFM-World dev";
 
     public static readonly ILoggerFactory LoggerFactory =
@@ -29,6 +29,7 @@ public static class Logging
     {
         // AddConsole's provider owns a background queue thread, so it cannot be constructed in a
         // browser at all; a page logs straight to the console instead.
+
         if (!OperatingSystem.IsBrowser())
         {
             builder
@@ -46,6 +47,7 @@ public static class Logging
 
         // The rolling file writer runs on its own thread, which a browser does not have - and a page
         // has nowhere durable to put a log a user could find anyway.
+
         if (!OperatingSystem.IsBrowser())
         {
             builder.AddZLoggerRollingFile((dt, index) => $"{dt:yyyy-MM-dd}_{index}.log", 1024 * 1024);
@@ -61,16 +63,19 @@ public static class Logging
     static LogLevel MinimumLevelFromEnvironment()
     {
         if (Enum.TryParse<LogLevel>(
-                Environment.GetEnvironmentVariable("NFMW_LOG_MIN_LEVEL"),
-                ignoreCase: true,
-                out var level
-            ))
+            Environment.GetEnvironmentVariable("NFMW_LOG_MIN_LEVEL"),
+            ignoreCase: true,
+            out var level
+        ))
         {
             return level;
         }
+
 #if DEBUG
+
         return LogLevel.Trace;
 #else
+
         return LogLevel.Information;
 #endif
     }
@@ -785,7 +790,8 @@ public class NfmwLoggerProvider : ILoggerProvider
                 ? $"[{categoryName.ToUpperInvariant()}] {message}"
                 : message;
             OutputLog.Enqueue((formattedMessage, level));
-            if (OutputLog.Count > 100) OutputLog.TryDequeue(out _); // Limit log size
+            if (OutputLog.Count > 100)
+                OutputLog.TryDequeue(out _); // Limit log size
         }
 
         public bool IsEnabled(LogLevel logLevel)
@@ -828,6 +834,7 @@ public class BrowserConsoleLoggerProvider : ILoggerProvider
         )
         {
             if (!IsEnabled(logLevel))
+
                 return;
 
             Console.WriteLine($"[{logLevel}] {categoryName}: {formatter(state, exception)}");

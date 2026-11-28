@@ -108,10 +108,13 @@ public sealed partial class Rad3d(
     private static int CalculateMaxRadius(Rad3dPoly[] polys)
     {
         var maxR = 0;
+
         foreach (var poly in polys)
+
         foreach (var point in poly.Points)
         {
             var rad = (int)float.Sqrt(point.X * point.X + point.Y * point.Y + point.Z * point.Z);
+
             if (rad > maxR)
             {
                 maxR = rad;
@@ -129,22 +132,55 @@ public sealed partial class Rad3d(
     [PluginVisible]
     public bool Equals(Rad3d? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (!Colors.SequenceEqual(other.Colors)) return false;
-        if (!Stats.Equals(other.Stats)) return false;
-        if (!Wheels.SequenceEqual(other.Wheels)) return false;
-        if (!Nullable.Equals(Rims, other.Rims)) return false;
-        if (!Boxes.SequenceEqual(other.Boxes)) return false;
-        if (!Polys.SequenceEqual(other.Polys)) return false;
-        if (CastsShadow != other.CastsShadow) return false;
-        if (!Atp.SequenceEqual(other.Atp)) return false;
-        if (CollisionMesh != null && !CollisionMesh.Equals(other.CollisionMesh)) return false;
-        if (CollisionMesh == null && other.CollisionMesh != null) return false;
-        if (CollisionHull != null && !CollisionHull.Equals(other.CollisionHull)) return false;
-        if (CollisionHull == null && other.CollisionHull != null) return false;
-        if (AtLines != null && !AtLines.SequenceEqual(other.AtLines)) return false;
-        if (AtLines == null && other.AtLines != null) return false;
+        if (other is null)
+
+            return false;
+        if (ReferenceEquals(this, other))
+
+            return true;
+        if (!Colors.SequenceEqual(other.Colors))
+
+            return false;
+        if (!Stats.Equals(other.Stats))
+
+            return false;
+        if (!Wheels.SequenceEqual(other.Wheels))
+
+            return false;
+        if (!Nullable.Equals(Rims, other.Rims))
+
+            return false;
+        if (!Boxes.SequenceEqual(other.Boxes))
+
+            return false;
+        if (!Polys.SequenceEqual(other.Polys))
+
+            return false;
+        if (CastsShadow != other.CastsShadow)
+
+            return false;
+        if (!Atp.SequenceEqual(other.Atp))
+
+            return false;
+        if (CollisionMesh != null && !CollisionMesh.Equals(other.CollisionMesh))
+
+            return false;
+        if (CollisionMesh == null && other.CollisionMesh != null)
+
+            return false;
+        if (CollisionHull != null && !CollisionHull.Equals(other.CollisionHull))
+
+            return false;
+        if (CollisionHull == null && other.CollisionHull != null)
+
+            return false;
+        if (AtLines != null && !AtLines.SequenceEqual(other.AtLines))
+
+            return false;
+        if (AtLines == null && other.AtLines != null)
+
+            return false;
+
         return true;
     }
 
@@ -164,6 +200,7 @@ public sealed partial class Rad3d(
     {
         var hashCode = new HashCode();
         hashCode.Add(colors.Length);
+
         foreach (var color in colors)
         {
             hashCode.Add(color);
@@ -171,6 +208,7 @@ public sealed partial class Rad3d(
 
         hashCode.Add(stats);
         hashCode.Add(wheels.Length);
+
         foreach (var wheel in wheels)
         {
             hashCode.Add(wheel);
@@ -178,12 +216,14 @@ public sealed partial class Rad3d(
 
         hashCode.Add(rims);
         hashCode.Add(boxes.Length);
+
         foreach (var box in boxes)
         {
             hashCode.Add(box);
         }
 
         hashCode.Add(polys.Length);
+
         foreach (var poly in polys)
         {
             hashCode.Add(poly);
@@ -191,6 +231,7 @@ public sealed partial class Rad3d(
 
         hashCode.Add(castsShadow);
         hashCode.Add(atp.Length);
+
         foreach (var at in atp)
         {
             hashCode.Add(at);
@@ -209,6 +250,7 @@ public sealed partial class Rad3d(
         if (atLines != null)
         {
             hashCode.Add(atLines.Length);
+
             foreach (var atLine in atLines)
             {
                 hashCode.Add(atLine);
@@ -228,12 +270,14 @@ public sealed partial class Rad3d(
     {
         var hashCode = new HashCode();
         hashCode.Add(colors.Length);
+
         foreach (var color in colors)
         {
             hashCode.Add(color);
         }
 
         hashCode.Add(wheels.Length);
+
         foreach (var wheel in wheels)
         {
             hashCode.Add(wheel);
@@ -241,12 +285,14 @@ public sealed partial class Rad3d(
 
         hashCode.Add(rims);
         hashCode.Add(polys.Length);
+
         foreach (var poly in polys)
         {
             hashCode.Add(poly);
         }
 
         hashCode.Add(castsShadow);
+
         return hashCode.ToHashCode();
     }
 
@@ -279,13 +325,28 @@ public sealed partial class Rad3d(
         [PluginVisible]
         public bool Equals(Rad3d? x, Rad3d? y)
         {
-            if (x is null && y is null) return true;
-            if (x is null || y is null) return false;
-            if (!x.Colors.SequenceEqual(y.Colors)) return false;
-            if (!x.Wheels.SequenceEqual(y.Wheels)) return false;
-            if (!Nullable.Equals(x.Rims, y.Rims)) return false;
-            if (!x.Polys.SequenceEqual(y.Polys)) return false;
-            if (x.CastsShadow != y.CastsShadow) return false;
+            if (x is null && y is null)
+
+                return true;
+            if (x is null || y is null)
+
+                return false;
+            if (!x.Colors.SequenceEqual(y.Colors))
+
+                return false;
+            if (!x.Wheels.SequenceEqual(y.Wheels))
+
+                return false;
+            if (!Nullable.Equals(x.Rims, y.Rims))
+
+                return false;
+            if (!x.Polys.SequenceEqual(y.Polys))
+
+                return false;
+            if (x.CastsShadow != y.CastsShadow)
+
+                return false;
+
             return true;
         }
 

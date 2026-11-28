@@ -38,6 +38,7 @@ public class AerialStageTests
     private static StageObject CreateCheckpoint(fix64 x, fix64 y, fix64 z, fix64 yaw = default)
     {
         var rotation = new f64Euler(f64AngleSingle.FromDegrees(yaw), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
+
         return StageObject.CreateDefaultObject(
             CreateRad(),
             new f64Vector3(x, y, z),

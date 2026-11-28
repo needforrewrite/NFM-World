@@ -315,10 +315,12 @@ public sealed class BigIntegerFormatter : TightPackFormatter<BigInteger>
     public override void Serialize<TBufferWriter>(ref TightPackWriter<TBufferWriter> writer, in BigInteger value)
     {
         Span<byte> scratch = stackalloc byte[64];
+
         if (value.TryWriteBytes(scratch, out int written, isUnsigned: false, isBigEndian: false))
         {
             writer.WriteCollectionHeader(written);
             writer.WriteBytes(scratch[..written]);
+
             return;
         }
 
@@ -343,6 +345,7 @@ public sealed class VersionFormatter : TightPackFormatter<Version>
         if (value is null)
         {
             writer.WriteNullObjectHeader();
+
             return;
         }
 
@@ -358,6 +361,7 @@ public sealed class VersionFormatter : TightPackFormatter<Version>
         if (!reader.TryReadObjectHeader(out _))
         {
             value = null;
+
             return;
         }
 

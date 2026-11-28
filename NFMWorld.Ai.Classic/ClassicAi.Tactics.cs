@@ -38,6 +38,7 @@ public sealed partial class ClassicAi
 
         // On a fix lane, follow its nodes and take its ramps; skipping the entry/apex is
         // how the car ends up circling the `)po`.
+
         if (_driver.Fixing != Fix.None && path.InFixBlock(_driver.PathIndex))
         {
             _driver.TargetsFix = true;
@@ -67,6 +68,7 @@ public sealed partial class ClassicAi
 
         point = TakeOrAvoidRamps(car, point);
         point = ClampToCheckpoint(car, point);
+
         return TryShortcut(car, point);
     }
 
@@ -82,11 +84,15 @@ public sealed partial class ClassicAi
     private int TryShortcut(BackendCar car, int point)
     {
         var path = Path;
+
         if (_driver.Missed || _driver.Fixing != Fix.None || path.Typ(point) > 0)
+
             return point;
 
         // Damage is the dynamic risk gate: a healthy car takes the cleaner line.
+
         if (car.CarPhysics.DamagePoints * 2 > car.CarPhysics.Stat.Maxmag)
+
             return point;
 
         var nearest = _driver.PathIndex;
@@ -97,16 +103,21 @@ public sealed partial class ClassicAi
         for (var skip = 3; skip >= 2; skip--)
         {
             // Never jump the checkpoint that still has to be cleared.
+
             if (skip >= gateLimit)
+
                 continue;
 
             var candidate = path.AdvanceNormal(nearest, skip);
+
             if (path.Typ(candidate) > 0
                 || path.Typ(candidate) == TrackPath.FixRoadStart
                 || path.InFixBlock(candidate))
+
                 continue;
 
             if (ShortcutClear(car, path, nearest, candidate, skip))
+
                 return candidate;
         }
 
@@ -116,12 +127,15 @@ public sealed partial class ClassicAi
     private static bool ShortcutClear(BackendCar car, TrackPath path, int nearest, int candidate, int skip)
     {
         var headingOff = Normalize(Heading(car) - (fix64)HeadingTo(car, path.X(candidate), path.Z(candidate)));
+
         if (FixedMath.Abs(headingOff) > (fix64)90)
+
             return false;
 
         var first = path.AdvanceNormal(nearest, 1);
         var direct = Distance10(car.Position.X, car.Position.Z, path.X(candidate), path.Z(candidate));
         var via = Distance10(car.Position.X, car.Position.Z, path.X(first), path.Z(first));
+
         for (var i = 2; i <= skip; i++)
         {
             var a = path.AdvanceNormal(nearest, i - 1);
@@ -130,6 +144,7 @@ public sealed partial class ClassicAi
         }
 
         if (via - direct < (fix64)ShortcutMinSave)
+
             return false;
 
         // Perpendicular distance of each skipped node from the new line. Scaled by 1000 so
@@ -137,24 +152,32 @@ public sealed partial class ClassicAi
         var ax = (path.X(candidate) - car.Position.X) / (fix64)1000;
         var az = (path.Z(candidate) - car.Position.Z) / (fix64)1000;
         var lengthSquared = (ax * ax) + (az * az);
+
         if (lengthSquared == fix64.Zero)
+
             return false;
 
         for (var i = 1; i < skip; i++)
         {
             var skipped = path.AdvanceNormal(nearest, i);
+
             if (path.Typ(skipped) > 0 || path.Typ(skipped) == TrackPath.FixRoadStart || path.InFixBlock(skipped))
+
                 return false;
 
             var px = (path.X(skipped) - car.Position.X) / (fix64)1000;
             var pz = (path.Z(skipped) - car.Position.Z) / (fix64)1000;
             var t = ((px * ax) + (pz * az)) / lengthSquared;
-            if (t < fix64.Zero) t = fix64.Zero;
-            if (t > fix64.One) t = fix64.One;
+            if (t < fix64.Zero)
+                t = fix64.Zero;
+            if (t > fix64.One)
+                t = fix64.One;
 
             var dx = (ax * t) - px;
             var dz = (az * t) - pz;
+
             if ((dx * dx) + (dz * dz) > ShortcutCorridor * ShortcutCorridor)
+
                 return false;
         }
 
@@ -165,6 +188,7 @@ public sealed partial class ClassicAi
     {
         var path = Path;
         var normal = _driver.Fixing == Fix.None;
+
         if (_driver.RampChoice == Ramps.Take && path.Typ(point) <= 0)
         {
             var next = normal ? path.AdvanceNormal(point, 1) : path.Advance(point, 1);
@@ -187,6 +211,7 @@ public sealed partial class ClassicAi
     private int HeadForFix(BackendCar car, int point)
     {
         if (_driver.Fixing == Fix.None)
+
             return point;
 
         var path = Path;
@@ -195,17 +220,23 @@ public sealed partial class ClassicAi
         // `)po` entry every tick makes the car orbit the entry node forever. Only a lane
         // the driver actually chose counts; the initial nearest-point search can land on a
         // lane node from the main line.
+
         if (_driver.FixLaneActive && path.InFixBlock(_driver.PathIndex))
+
             return point;
 
         // A gate comes first. Detouring to a hoop on the approach to a checkpoint is how a
         // damaged driver loses the checkpoint it was about to clear.
+
         if (_driver.Missed && !_driver.IgnoreMissed && _driver.Fixing != Fix.Jumping)
+
             return point;
         if (NearNextCheckpoint(car) && _driver.Fixing != Fix.Jumping)
+
             return point;
 
         if (path.FixApproach.Length == 0)
+
             return point;
 
         if (_driver.Fixing == Fix.Nearest)
@@ -222,22 +253,29 @@ public sealed partial class ClassicAi
             void Consider(int index, int approach, int direction, bool road, bool ramp)
             {
                 if (approach < 0 || !CurrentStage.FixHoops[index].IsFixHoopActive)
+
                     return;
 
                 // A hoop in the air with no ramp or explicit fix road cannot be reached.
+
                 if (path.FixAerial[index] && !ramp && !road)
+
                     return;
 
                 // A detached `)po` block can sit more than half the node list away while
                 // still being the route to take. Only ordinary approaches need the
                 // behind-the-car guard; explicit roads are protected by the fix cooldown
                 // once the car has left them.
+
                 if (!road && path.ForwardDistance(_driver.PathIndex, approach) > path.Count / 2)
+
                     return;
 
                 // Critically damaged, an explicit `)po` route is worth going to even if the
                 // array order puts it far ahead; otherwise keep the U-turn guard.
+
                 if (!FixAhead(path, approach, road))
+
                     return;
 
                 var d = DistanceSquared10(
@@ -248,6 +286,7 @@ public sealed partial class ClassicAi
                 );
 
                 if (nearestFix >= 0 && d >= nearest)
+
                     return;
 
                 nearest = d;
@@ -276,6 +315,7 @@ public sealed partial class ClassicAi
                 // Pin the tracker to an explicit `)po` entry. Otherwise a main-path node
                 // that happens to be closer can win the nearest search and the car orbits
                 // the entry without ever entering the fix block.
+
                 if (nearestRoad)
                 {
                     _driver.PathIndex = point;
@@ -293,28 +333,35 @@ public sealed partial class ClassicAi
         // A `)po` fix road is a branch: turn onto it while it is ahead, before the next
         // gate, so "repair on the way" actually enters the repair route. A `)pr` ramp is
         // on the line; take it while it is still ahead.
+
         if (_driver.Fixing != Fix.Nearest)
         {
             for (var i = 0; i < path.FixApproach.Length; i++)
             {
                 if (!CurrentStage.FixHoops[i].IsFixHoopActive || !path.FixRoad[i] && !path.FixRamp[i])
+
                     continue;
 
                 var approach = path.FixApproach[i];
+
                 if (!FixAhead(path, approach, false))
+
                     continue;
 
                 if (path.CheckpointCount > 0)
                 {
                     var checkpoint = path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount);
+
                     if (path.ForwardDistance(_driver.PathIndex, approach)
                         >= path.ForwardDistance(_driver.PathIndex, checkpoint))
+
                         continue;
                 }
 
                 point = approach;
                 _driver.TargetsFix = true;
                 _driver.FixDirection = 1;
+
                 if (path.FixRoad[i])
                 {
                     _driver.PathIndex = approach;
@@ -323,6 +370,7 @@ public sealed partial class ClassicAi
 
                 if (path.FixRamp[i])
                     _driver.RampChoice = Ramps.Take;
+
                 break;
             }
         }
@@ -330,14 +378,18 @@ public sealed partial class ClassicAi
         for (var i = 0; i < path.FixApproach.Length; i++)
         {
             if (!CurrentStage.FixHoops[i].IsFixHoopActive || path.FixAerial[i] && !path.FixRamp[i] && !path.FixRoad[i])
+
                 continue;
 
             var approach = path.FixApproach[i];
+
             if (!FixAhead(path, approach, false))
+
                 continue;
 
             // The original measures this in 1/100-unit squared distance (2000 means ~4470
             // units); DistanceSquared10 is in 1/10 units, so the threshold scales by 100.
+
             if (DistanceSquared10(car.Position.X, car.Position.Z, path.X(approach), path.Z(approach))
                 < (fix64)FixCloseSquared)
             {
@@ -356,17 +408,21 @@ public sealed partial class ClassicAi
     private bool FixAhead(TrackPath path, int approach, bool explicitRoad)
     {
         if (path.Count == 0 || _driver.PathIndex < 0)
+
             return false;
 
         // A critically damaged driver will go to a designed `)po` route wherever it sits in
         // the node list; a lap's array position does not describe the detour distance.
+
         if (explicitRoad && _driver.Fixing == Fix.Nearest)
+
             return true;
 
         var ahead = path.ForwardDistance(_driver.PathIndex, approach);
 
         // A ramp/hoop can legitimately sit a little further ahead than eight points; the
         // U-turn guard is the half-lap test, not a short window.
+
         return ahead <= Math.Min(16, path.Count / 2);
     }
 
@@ -379,6 +435,7 @@ public sealed partial class ClassicAi
         if (CarAt(_driver.AttackedCar) is not { } target)
         {
             _driver.AttackTicks = 0;
+
             return;
         }
 
@@ -405,6 +462,7 @@ public sealed partial class ClassicAi
     private fix64 Rank(BackendCar car)
     {
         var others = RacersWithCars();
+
         return others > 1 ? ((fix64)car.Placement * (fix64)6) / (fix64)(others - 1) : fix64.Zero;
     }
 
@@ -431,19 +489,25 @@ public sealed partial class ClassicAi
         for (var i = 0; i < Players.Count; i++)
         {
             if (Players[i].Car is not { } carA)
+
                 continue;
 
             for (var j = i + 1; j < Players.Count; j++)
             {
                 if (Players[j].Car is not { } carB)
+
                     continue;
 
                 // Dead cars rank behind every live one, so their progress cannot push a live car
                 // down the order the HUD reads.
+
                 if (carA.Wasted != carB.Wasted)
                 {
-                    if (carA.Wasted) carA.Placement++;
-                    else carB.Placement++;
+                    if (carA.Wasted)
+                        carA.Placement++;
+                    else
+                        carB.Placement++;
+
                     continue;
                 }
 
@@ -453,12 +517,14 @@ public sealed partial class ClassicAi
                         carA.Placement++;
                     else
                         carB.Placement++;
+
                     continue;
                 }
 
                 if (nsp == 0)
                 {
                     carB.Placement++;
+
                     continue;
                 }
 
@@ -493,6 +559,7 @@ public sealed partial class ClassicAi
         if (_driver.TurnStyleTicks != 0)
         {
             _driver.TurnStyleTicks--;
+
             return;
         }
 
@@ -550,7 +617,9 @@ public sealed partial class ClassicAi
         _driver.Fixing = Fix.None;
 
         // Do not immediately turn back into the lane the car just left.
+
         if (_driver.FixCooldown > 0)
+
             return;
 
         var damage = (fix64)100 * mad.DamagePoints / (fix64)mad.Stat.Maxmag;
@@ -565,13 +634,16 @@ public sealed partial class ClassicAi
     private void ChooseWhomToAttack(BackendCar car)
     {
         if (_driver.AttackTicks != 0)
+
             return;
 
         for (var i = 0; i < Players.Count; i++)
         {
             if (Players[i].Car is not { } other || ReferenceEquals(other, car))
+
                 continue;
             if (other.Wasted)
+
                 continue;
 
             ConsiderAttacking(car, other);
@@ -582,17 +654,23 @@ public sealed partial class ClassicAi
     {
         // Only the player is fair game: the original zeroes the chance for any other car,
         // and outright for anyone who is not the player, so bots never turn on each other.
+
         if (!ReferenceEquals(other, RivalCar(car)))
+
             return;
 
         // Chasing a car takes the bot off the path. Never do it on the approach to a gate:
         // that is how a driver loses a checkpoint it was about to clear.
+
         if (_driver.Missed || NearNextCheckpoint(car))
+
             return;
 
         // A damaged car races for the line, it does not pick a fight.
         var mad = car.CarPhysics;
+
         if ((fix64)100 * mad.DamagePoints / (fix64)mad.Stat.Maxmag > (fix64)50)
+
             return;
 
         var heading = Heading(car);
@@ -606,6 +684,7 @@ public sealed partial class ClassicAi
             || DistanceSquared10(car.Position.X, car.Position.Z, other.Position.X, other.Position.Z) >= attackRange
             || !_driver.Afta
             || car.CarPhysics.Power <= PowerNeededToAttack)
+
             return;
 
         var closeness = (fix64)35 - (FixedMath.Abs(other.TotalCheckpoint - car.TotalCheckpoint) * (fix64)10);
@@ -627,10 +706,13 @@ public sealed partial class ClassicAi
     private bool NearNextCheckpoint(BackendCar car)
     {
         var path = Path;
+
         if (path.CheckpointCount == 0 || _driver.PathIndex < 0)
+
             return false;
 
         var checkpoint = path.CheckpointPath(car.CurrentCheckpoint % path.CheckpointCount);
+
         return path.ForwardDistance(_driver.PathIndex, checkpoint) <= 3;
     }
 

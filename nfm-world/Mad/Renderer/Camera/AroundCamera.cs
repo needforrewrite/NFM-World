@@ -19,6 +19,7 @@ public class AroundCamera
     public void AroundConstantHeight(PerspectiveCamera camera, Transform obj, float xzspeed = 1f)
     {
         CurrentXz += xzspeed * Physics.PHYSICS_MULTIPLIER;
+
         if (CurrentXz >= 360)
         {
             CurrentXz -= 360;
@@ -36,6 +37,7 @@ public class AroundCamera
     public void Around(PerspectiveCamera camera, ITransform obj, float xzspeed = 1f, float yspeed = 2f)
     {
         CurrentXz += xzspeed * Physics.PHYSICS_MULTIPLIER;
+
         if (CurrentXz >= 360)
         {
             CurrentXz -= 360;
@@ -44,6 +46,7 @@ public class AroundCamera
         if (_rising)
         {
             Height += yspeed * Physics.PHYSICS_MULTIPLIER;
+
             if (Height >= MaxHeight)
             {
                 _rising = false;
@@ -52,6 +55,7 @@ public class AroundCamera
         else
         {
             Height -= yspeed * Physics.PHYSICS_MULTIPLIER;
+
             if (Height <= MinHeight)
             {
                 _rising = true;

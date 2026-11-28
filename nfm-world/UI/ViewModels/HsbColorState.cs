@@ -47,6 +47,7 @@ public class HsbColorState
     public void SetChannel(int channel, double value)
     {
         var normalized = (float)Math.Clamp(value, channel == 2 ? MinimumChannel / 255.0 : 0, 1);
+
         switch (channel)
         {
             case 0: Hue.Value = normalized; break;

@@ -16,85 +16,90 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// Helper: ImGuiTextIndex<br/>
-	/// Maintain a line index for a text buffer. This is a strong candidate to be moved into the public API.<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiTextIndex
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<int> LineOffsets;
+    /// <summary>
+    /// Helper: ImGuiTextIndex<br/>
+    /// Maintain a line index for a text buffer. This is a strong candidate to be moved into the public API.<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiTextIndex
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<int> LineOffsets;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public int EndOffset;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiTextIndex(ImVector<int> lineOffsets = default, int endOffset = default)
-		{
-			LineOffsets = lineOffsets;
-			EndOffset = endOffset;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public int EndOffset;
 
 
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiTextIndex(ImVector<int> lineOffsets = default, int endOffset = default)
+        {
+            LineOffsets = lineOffsets;
+            EndOffset = endOffset;
+        }
+    }
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiTextIndexPtr : IEquatable<ImGuiTextIndexPtr>
-	{
-		public ImGuiTextIndexPtr(ImGuiTextIndex* handle) { Handle = handle; }
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiTextIndexPtr : IEquatable<ImGuiTextIndexPtr>
+    {
+        public ImGuiTextIndexPtr(ImGuiTextIndex* handle)
+        {
+            Handle = handle;
+        }
 
-		public ImGuiTextIndex* Handle;
+        public ImGuiTextIndex* Handle;
 
-		public bool IsNull => Handle == null;
+        public bool IsNull => Handle == null;
 
-		public static ImGuiTextIndexPtr Null => new ImGuiTextIndexPtr(null);
+        public static ImGuiTextIndexPtr Null => new ImGuiTextIndexPtr(null);
 
-		public ImGuiTextIndex this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public ImGuiTextIndex this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static implicit operator ImGuiTextIndexPtr(ImGuiTextIndex* handle) => new ImGuiTextIndexPtr(handle);
+        public static implicit operator ImGuiTextIndexPtr(ImGuiTextIndex* handle) => new ImGuiTextIndexPtr(handle);
 
-		public static implicit operator ImGuiTextIndex*(ImGuiTextIndexPtr handle) => handle.Handle;
+        public static implicit operator ImGuiTextIndex*(ImGuiTextIndexPtr handle) => handle.Handle;
 
-		public static bool operator ==(ImGuiTextIndexPtr left, ImGuiTextIndexPtr right) => left.Handle == right.Handle;
+        public static bool operator ==(ImGuiTextIndexPtr left, ImGuiTextIndexPtr right) => left.Handle == right.Handle;
 
-		public static bool operator !=(ImGuiTextIndexPtr left, ImGuiTextIndexPtr right) => left.Handle != right.Handle;
+        public static bool operator !=(ImGuiTextIndexPtr left, ImGuiTextIndexPtr right) => left.Handle != right.Handle;
 
-		public static bool operator ==(ImGuiTextIndexPtr left, ImGuiTextIndex* right) => left.Handle == right;
+        public static bool operator ==(ImGuiTextIndexPtr left, ImGuiTextIndex* right) => left.Handle == right;
 
-		public static bool operator !=(ImGuiTextIndexPtr left, ImGuiTextIndex* right) => left.Handle != right;
+        public static bool operator !=(ImGuiTextIndexPtr left, ImGuiTextIndex* right) => left.Handle != right;
 
-		public bool Equals(ImGuiTextIndexPtr other) => Handle == other.Handle;
+        public bool Equals(ImGuiTextIndexPtr other) => Handle == other.Handle;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiTextIndexPtr handle && Equals(handle);
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiTextIndexPtr handle && Equals(handle);
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiTextIndexPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<int> LineOffsets => ref Unsafe.AsRef<ImVector<int>>(&Handle->LineOffsets);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref int EndOffset => ref Unsafe.AsRef<int>(&Handle->EndOffset);
-	}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiTextIndexPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<int> LineOffsets => ref Unsafe.AsRef<ImVector<int>>(&Handle->LineOffsets);
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref int EndOffset => ref Unsafe.AsRef<int>(&Handle->EndOffset);
+    }
 }

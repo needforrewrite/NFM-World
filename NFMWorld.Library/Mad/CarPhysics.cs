@@ -147,9 +147,14 @@ public partial class CarPhysics
 
     internal void RecordDamageSource(int sourceCar)
     {
-        if (Wasted || Cntdest > 0) return;
+        if (Wasted || Cntdest > 0)
+
+            return;
         sourceCar = _crashContact?.OtherCar ?? sourceCar;
-        if (sourceCar < 0 || sourceCar == Im) return;
+
+        if (sourceCar < 0 || sourceCar == Im)
+
+            return;
         LastDamageFrom = sourceCar;
         _hasDamageCredit = true;
         _damageCreditAge = 0;
@@ -159,21 +164,30 @@ public partial class CarPhysics
 
     internal void UpdateDamageCredit()
     {
-        if (!_hasDamageCredit || Wasted || Cntdest > 0 || DamagePoints >= Stat.Maxmag) return;
+        if (!_hasDamageCredit || Wasted || Cntdest > 0 || DamagePoints >= Stat.Maxmag)
+
+            return;
+
         if (++_damageCreditAge >= DamageCreditTimeoutTicks)
         {
             ResetDamageCredit();
+
             return;
         }
 
         var pitch = fix64.Abs(Pxy % 360);
         var roll = fix64.Abs(Pzy % 360);
-        var recovered = Mtouch && Skid == 0 && !BadLanding && CapsizedCounter == 0
-                        && (pitch < 45 || pitch > 315) && (roll < 45 || roll > 315)
+        var recovered = Mtouch
+                        && Skid == 0
+                        && !BadLanding
+                        && CapsizedCounter == 0
+                        && (pitch < 45 || pitch > 315)
+                        && (roll < 45 || roll > 315)
                         && DamagePoints == _damageAtCreditTick;
         _damageAtCreditTick = DamagePoints;
         _damageCreditRecovery = recovered ? _damageCreditRecovery + 1 : 0;
-        if (_damageCreditRecovery >= DamageCreditRecoveryTicks) ResetDamageCredit();
+        if (_damageCreditRecovery >= DamageCreditRecoveryTicks)
+            ResetDamageCredit();
     }
 
     internal void ResetDamageCredit()
@@ -342,7 +356,9 @@ public partial class CarPhysics
     [PluginVisible]
     public void TurnYaw(fix64 degrees)
     {
-        if (Car is null) return;
+        if (Car is null)
+
+            return;
         var yaw = Car.Rotation.Xz.Degrees;
         Car.Rotation = Car.Rotation with
         {
@@ -375,6 +391,7 @@ public partial class CarPhysics
         {
             // The nose is model +Z; ToWorldAxis applies the same transform the wheels use, so
             // this axis cannot disagree with the car's rendered heading.
+
             return ToWorldAxis(fix64.Zero, fix64.Zero, fix64.One);
         }
     }
@@ -419,6 +436,7 @@ public partial class CarPhysics
             var vx = (Scx[0] + Scx[1] + Scx[2] + Scx[3]) * fix64.Quarter;
             var vy = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) * fix64.Quarter;
             var vz = (Scz[0] + Scz[1] + Scz[2] + Scz[3]) * fix64.Quarter;
+
             return vx * nose.X + vy * nose.Y + vz * nose.Z;
         }
     }
@@ -435,9 +453,15 @@ public partial class CarPhysics
 
     private void RecordStageImpact(CollisionShapeRef shape, f64Vector3 impulse, f64Vector3 velocity)
     {
-        if (Car is { DamagesStageObjects: false }) return;
-        if (shape.Owner is not { DestructionId: >= 0, IsDestroyed: false } obj) return;
-        if (BackendStage.ImpactDamage(impulse) == 0) return;
+        if (Car is { DamagesStageObjects: false })
+
+            return;
+        if (shape.Owner is not { DestructionId: >= 0, IsDestroyed: false } obj)
+
+            return;
+        if (BackendStage.ImpactDamage(impulse) == 0)
+
+            return;
         if (!_stageImpacts.TryGetValue(obj.DestructionId, out var previous)
             || impulse.LengthNoOverflow() > previous.Impulse.LengthNoOverflow())
             _stageImpacts[obj.DestructionId] = new StageImpact
@@ -449,7 +473,8 @@ public partial class CarPhysics
     private void RecordStageSurfaceImpact(CollisionShapeRef shape, f64Vector3 velocity, f64Vector3 normal)
     {
         var intoSurface = f64Vector3.Dot(velocity, normal);
-        if (intoSurface < 0) RecordStageImpact(shape, normal * intoSurface, velocity);
+        if (intoSurface < 0)
+            RecordStageImpact(shape, normal * intoSurface, velocity);
     }
 
     public bool IsGroundScraping { get; private set; }
@@ -518,8 +543,11 @@ public partial class CarPhysics
     {
         static fix64 Unwrap(fix64 angle, fix64 reference)
         {
-            while (angle - reference > 180) angle -= 360;
-            while (angle - reference < -180) angle += 360;
+            while (angle - reference > 180)
+                angle -= 360;
+            while (angle - reference < -180)
+                angle += 360;
+
             return angle;
         }
 
@@ -535,6 +563,7 @@ public partial class CarPhysics
 
         var fittedPxy = Unwrap(fix64.Atan2(sinP, cosP) * fix64.RadToDeg, currentPxy);
         var fittedPzy = currentPzy;
+
         if (!gimbalLocked)
         {
             var sinZ = cosPsinZ / cosP;
@@ -620,6 +649,7 @@ public partial class CarPhysics
         UMath.Rot(otherwheelx, otherwheely, otherconto.X, otherconto.Y, otherconto.Xy, 4);
         UMath.Rot(otherwheely, otherwheelz, otherconto.Y, otherconto.Z, otherconto.Zy, 4);
         UMath.Rot(otherwheelx, otherwheelz, otherconto.X, otherconto.Z, otherconto.Xz, 4);
+
         if (UMath.Rpy(conto.X, otherconto.X, conto.Y, otherconto.Y, conto.Z, otherconto.Z)
             < (conto.MaxR * conto.MaxR + otherconto.MaxR * otherconto.MaxR) * (fix64)1.5f)
         {
@@ -627,6 +657,7 @@ public partial class CarPhysics
             {
                 var ownMoment = fix64.Abs(Power * Speed * ownStats.Moment);
                 var otherMoment = fix64.Abs(othermad.Power * othermad.Speed * otherStats.Moment);
+
                 if (fix64.Abs(ownMoment - otherMoment) > (fix64)0.001f)
                 {
                     _dominate[othermad.Im] = ownMoment > otherMoment;
@@ -646,6 +677,7 @@ public partial class CarPhysics
 
         var totalOtherDamage = 0;
         var totalOwnDamage = 0;
+
         if (_dominate[othermad.Im])
         {
             // Revlift is the same for every contact this tick; hoist it so both damage
@@ -667,13 +699,13 @@ public partial class CarPhysics
                 for (var otherwheel = 0; otherwheel < 4; otherwheel++)
                 {
                     if (UMath.Rpy(
-                            wheelx[wheel],
-                            otherwheelx[otherwheel],
-                            wheely[wheel],
-                            otherwheely[otherwheel],
-                            wheelz[wheel],
-                            otherwheelz[otherwheel]
-                        )
+                        wheelx[wheel],
+                        otherwheelx[otherwheel],
+                        wheely[wheel],
+                        otherwheely[otherwheel],
+                        wheelz[wheel],
+                        otherwheelz[otherwheel]
+                    )
                         < (impactMagnitude + impactExtraRdius) * (othermad.Stat.Comprad + Stat.Comprad))
                     {
                         // Both cars and damage axes report the same contact to the audio queue.
@@ -688,9 +720,11 @@ public partial class CarPhysics
                                 ((float)wheelz[wheel] + (float)otherwheelz[otherwheel]) * 0.5f
                             )
                         );
+
                         if (fix64.Abs(Scx[wheel] * ownStats.Moment) > fix64.Abs(othermad.Scx[otherwheel] * otherStats.Moment))
                         {
                             var f130 = othermad.Scx[otherwheel] * ownStats.Revpush * recoil;
+
                             if (f130 > maxHit)
                             {
                                 f130 = maxHit;
@@ -702,6 +736,7 @@ public partial class CarPhysics
                             }
 
                             var f131 = Scx[wheel] * ownStats.Push;
+
                             if (f131 > maxHit)
                             {
                                 f131 = maxHit;
@@ -713,6 +748,7 @@ public partial class CarPhysics
                             }
 
                             othermad.Scx[otherwheel] += f131;
+
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
@@ -725,6 +761,7 @@ public partial class CarPhysics
                                 random,
                                 Im
                             );
+
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -770,6 +807,7 @@ public partial class CarPhysics
                         if (fix64.Abs(Scz[wheel] * ownStats.Moment) > fix64.Abs(othermad.Scz[otherwheel] * otherStats.Moment))
                         {
                             var f132 = othermad.Scz[otherwheel] * ownStats.Revpush * recoil;
+
                             if (f132 > maxHit)
                             {
                                 f132 = maxHit;
@@ -781,6 +819,7 @@ public partial class CarPhysics
                             }
 
                             var f133 = Scz[wheel] * ownStats.Push;
+
                             if (f133 > maxHit)
                             {
                                 f133 = maxHit;
@@ -792,6 +831,7 @@ public partial class CarPhysics
                             }
 
                             othermad.Scz[otherwheel] += f133;
+
                             if (IsClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = true;
@@ -806,6 +846,7 @@ public partial class CarPhysics
                                 null,
                                 Im
                             );
+
                             if (othermad._collidingWithClientPlayer)
                             {
                                 othermad._collidingWithClientPlayer = false;
@@ -882,9 +923,11 @@ public partial class CarPhysics
     private int GetWheelGround(CarPhysics carPhysics, ContO conto, fix64 bottomy)
     {
         int wheelGround;
+
         if (World.IsHyperglidingEnabled && IsHyperglidingEnabled)
         {
             wheelGround = (int)((bottomy * _oneOverTickRate) * (fix64.One - _tickRate));
+
             if (!carPhysics.BadLanding)
             {
                 wheelGround = -wheelGround;
@@ -901,6 +944,7 @@ public partial class CarPhysics
     private fix64 GetBottomY(CarPhysics carPhysics, ContO conto)
     {
         fix64 bottomy;
+
         if (World.IsHyperglidingEnabled && IsHyperglidingEnabled)
         {
             if (carPhysics.BadLanding)
@@ -966,7 +1010,8 @@ public partial class CarPhysics
 
     public void Drive(Control control, BackendCar car, BackendStage stage)
     {
-        if (DepartureReason.HasValue) Wasted = true;
+        if (DepartureReason.HasValue)
+            Wasted = true;
         UpdateDamageCredit();
         // Damage and stage overrides change the collision response, so refresh them first.
         _effective = EffectiveStats.From(Stat, stage.Physics, DamagePoints);
@@ -978,6 +1023,7 @@ public partial class CarPhysics
         PreStep?.Invoke(this);
 
         // stats(): a stage with recharged stats swaps every car to its second stat set.
+
         if (stage.Physics.RechargedStats && Car?.Rad.RechargedStats is { } recharged && Stat != recharged)
         {
             Stat = recharged;
@@ -1003,25 +1049,30 @@ public partial class CarPhysics
         var revspeed = false;
         var hitVertical = false;
         BadLanding = false;
-        if (!Mtouch) Mtcount++; //DS-addons: Bad landing hotfix
+        if (!Mtouch)
+            Mtcount++; //DS-addons: Bad landing hotfix
         fix64 zyangle;
+
         for (zyangle = fix64.Abs(Pzy); zyangle > 360; zyangle -= 360)
         {
             /* empty */
         }
 
         fix64 xyangle;
+
         for (xyangle = fix64.Abs(Pxy); xyangle > 360; xyangle -= 360)
         {
             /* empty */
         }
 
         fix64 zy;
+
         for (zy = fix64.Abs(Pzy); zy > 270; zy -= 360)
         {
         }
 
         zy = fix64.Abs(zy);
+
         if (zy > 90)
         {
             zyinv = true;
@@ -1029,11 +1080,13 @@ public partial class CarPhysics
 
         var xyinv = false;
         fix64 xy;
+
         for (xy = fix64.Abs(Pxy); xy > 270; xy -= 360)
         {
         }
 
         xy = fix64.Abs(xy);
+
         if (xy > 90)
         {
             xyinv = true;
@@ -1071,6 +1124,7 @@ public partial class CarPhysics
         fix64 airx = 0;
         fix64 airz = 0;
         fix64 airy = 0;
+
         if (Mtouch)
         {
             StuntState = 0;
@@ -1086,6 +1140,7 @@ public partial class CarPhysics
             if (StuntState == 2 || StuntState == -1)
             {
                 StuntState = -1;
+
                 if (control.Left)
                 {
                     PressLeft = true;
@@ -1138,6 +1193,7 @@ public partial class CarPhysics
         if (StuntState == 1)
         {
             var f13 = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) * fix64.Quarter;
+
             for (var i14 = 0; i14 < 4; i14++)
             {
                 Scy[i14] = f13;
@@ -1155,6 +1211,7 @@ public partial class CarPhysics
                     if (UpComponent == 0)
                     {
                         UpComponent = 10 + (Scy[0] + 50) / 20;
+
                         if (UpComponent < 5)
                         {
                             UpComponent = 5;
@@ -1186,6 +1243,7 @@ public partial class CarPhysics
                     if (DownComponent == 0)
                     {
                         DownComponent = 10 + (Scy[0] + 50) / 20;
+
                         if (DownComponent < 5)
                         {
                             DownComponent = 5;
@@ -1252,6 +1310,7 @@ public partial class CarPhysics
                 }
 
                 Pzy = UMath.QuantizeTowardsZero((Pzy + (DownComponent - UpComponent) * UMath.Cos(Pxy) * _tickRate), _tickRate); //
+
                 if (zyinv)
                 {
                     conto.Xz = UMath.QuantizeTowardsZero(
@@ -1273,6 +1332,7 @@ public partial class CarPhysics
             {
                 //
                 var f15 = Power;
+
                 if (f15 < 40)
                 {
                     f15 = 40;
@@ -1287,6 +1347,7 @@ public partial class CarPhysics
                     else
                     {
                         var i16 = 0;
+
                         for (var i17 = 0; i17 < 2; i17++)
                         {
                             if (Speed <= -(Stat.Swits[i17] / 2 + f15 * Stat.Swits[i17] / 196))
@@ -1316,6 +1377,7 @@ public partial class CarPhysics
                     else
                     {
                         var i18 = 0;
+
                         for (var i19 = 0; i19 < 3; i19++)
                         {
                             if (Speed >= Stat.Swits[i19] / 2 + f15 * Stat.Swits[i19] / 196)
@@ -1453,6 +1515,7 @@ public partial class CarPhysics
                         (Pzy + ((DownComponent - UpComponent) * UMath.Cos(Pxy)) * _tickRate),
                         _tickRate
                     );
+
                     if (zyinv)
                     {
                         conto.Xz = UMath.QuantizeTowardsZero(
@@ -1474,12 +1537,14 @@ public partial class CarPhysics
         }
 
         var f20 = 20 * Speed / (154 * Stat.Simag);
+
         if (f20 > 20)
         {
             f20 = 20;
         }
 
         conto.Wzy -= (f20 * _tickRate); // maxine: remove int cast. i dont think it belongs here
+
         // commented out in phys physics
         //        if (conto.Wzy < -30)
         //        {
@@ -1489,9 +1554,11 @@ public partial class CarPhysics
         //        {
         //            conto.Wzy -= 30;
         //        }
+
         if (control.Right)
         {
             conto.WheelXz -= ((fix64)Stat.Turn * _tickRate);
+
             if (conto.WheelXz < -Stat.TurnRadius)
             {
                 conto.WheelXz = -Stat.TurnRadius;
@@ -1501,6 +1568,7 @@ public partial class CarPhysics
         if (control.Left)
         {
             conto.WheelXz += ((fix64)Stat.Turn * _tickRate);
+
             if (conto.WheelXz > Stat.TurnRadius)
             {
                 conto.WheelXz = Stat.TurnRadius;
@@ -1546,6 +1614,7 @@ public partial class CarPhysics
         } //
 
         var i21 = Speed != 0 ? (int)(3600 / (Speed * Speed)) : int.MaxValue;
+
         if (i21 < 5)
         {
             i21 = 5;
@@ -1595,6 +1664,7 @@ public partial class CarPhysics
             }
 
             //
+
             if (UMath.SafeAbs(Mxz - Cxz) < 30)
             {
                 Cxz += (Mxz - Cxz) * fix64.Quarter * _tickRate; //
@@ -1617,6 +1687,7 @@ public partial class CarPhysics
         var wheelx = new InlineArray4<fix64>();
         var wheelz = new InlineArray4<fix64>();
         var wheely = new InlineArray4<fix64>();
+
         for (var i24 = 0; i24 < 4; i24++)
         {
             wheelx[i24] = conto.Keyx[i24] + conto.X;
@@ -1631,6 +1702,7 @@ public partial class CarPhysics
         var wasMtouch = false;
         var i26 = ((Scx[0] + Scx[1] + Scx[2] + Scx[3]) * fix64.Quarter);
         var i27 = ((Scz[0] + Scz[1] + Scz[2] + Scz[3]) * fix64.Quarter);
+
         for (var wheelid = 0; wheelid < 4; wheelid++)
         {
             if (Scx[wheelid] - i26 > 200)
@@ -1667,6 +1739,7 @@ public partial class CarPhysics
 
         SurfaceType? trackSurface = null;
         var surfaceTracMul = fix64.One;
+
         foreach (var collidable in stage.RetrievePointCollidables(conto.X, conto.Z))
         {
             if (collidable.TryGetValue(out ShapeRoad boxRoad))
@@ -1681,6 +1754,7 @@ public partial class CarPhysics
                 var contoPosition = boxRoad.GameObjectPosition;
                 var position = new f64Vector3(conto.X, conto.Y, conto.Z);
                 var theBox = new CollisionBox(rad, trackersPosition, contoXz, contoPosition);
+
                 if (theBox.ResolveCollision(position) is not null)
                 {
                     trackSurface = collidable.SurfaceType;
@@ -1698,6 +1772,7 @@ public partial class CarPhysics
             // Jacher: 1/_tickrate for traction; Txz is set on previous tick so we need to scale
             var traction = _effective.Grip;
             traction -= fix64.Abs(Txz - conto.Xz) * (_oneOverTickRate) * Speed / 250;
+
             if (control.Handb)
             {
                 traction -= fix64.Abs(Txz - conto.Xz) * (_oneOverTickRate) * 4;
@@ -1737,6 +1812,7 @@ public partial class CarPhysics
             var speedx = -(Speed * UMath.Sin(conto.Xz) * UMath.Cos(Pzy));
             var speedz = (Speed * UMath.Cos(conto.Xz) * UMath.Cos(Pzy));
             var speedy = -(Speed * UMath.Sin(Pzy));
+
             if (BadLanding || Wasted || Halted)
             {
                 speedx = 0;
@@ -1771,6 +1847,7 @@ public partial class CarPhysics
             for (var j = 0; j < 4; j++)
             {
                 // maxine: traction fixes by Jacher. done slightly different but same result
+
                 if (fix64.Abs(Scx[j] - speedx) > traction * _tickRate)
                 {
                     Scx[j] += traction * (speedx - Scx[j]).Sign() * _tickRate;
@@ -1802,6 +1879,7 @@ public partial class CarPhysics
                 } //
 
                 // maxine: maybe this should be scaled to tickrate?
+
                 if (traction < _effective.Grip)
                 {
                     if (fix64.Abs(Txz - conto.Xz) > fix64.Half)
@@ -1816,6 +1894,7 @@ public partial class CarPhysics
                     if (_dcnt > 40 * traction / _effective.Grip || BadLanding)
                     {
                         fix64 f42 = 1;
+
                         if (surfaceType != SurfaceType.Road)
                         {
                             f42 = (fix64)(1.2F);
@@ -1836,6 +1915,7 @@ public partial class CarPhysics
                                 wheelGround,
                                 trackSurface
                             );
+
                             if (!BadLanding && SkidSoundFilter.HasLateralSlip((float)Scx[j], (float)Scz[j], (float)conto.Xz))
                             {
                                 SfxPlaySkid?.Invoke(this, (surfaceType, (float)fix64.Sqrt(Scx[j] * Scx[j] + Scz[j] * Scz[j])));
@@ -1890,6 +1970,7 @@ public partial class CarPhysics
                 if (surfaceType == SurfaceType.Bump || surfaceType == SurfaceType.BumpySides)
                 {
                     // ds-addons: bump all 4 wheels equally
+
                     for (var k = 0; k < 4; k++)
                     {
                         fix64 bumpLift = surfaceType == SurfaceType.Bump ? -100 : -150;
@@ -1903,7 +1984,9 @@ public partial class CarPhysics
 
             fix64 scxsum = 0;
             fix64 sczsum = 0;
+
             // 4 = nwheels
+
             for (int j = 0; j < 4; ++j)
             {
                 scxsum += Scx[j];
@@ -1946,18 +2029,22 @@ public partial class CarPhysics
         fix64 groundY = 250 + wheelGround;
         fix64 wheelYThreshold = (fix64)5f;
         fix64 f48 = 0;
+
         for (var i49 = 0; i49 < 4; i49++)
         {
             isWheelGrounded[i49] = false;
+
             if (wheely[i49] > (groundY - (fix64)5))
             {
                 OnGroundPlane = true;
                 nGroundedWheels++;
                 Wtouch = true;
                 Gtouch = true;
+
                 if (!wasMtouch && Scy[i49] != 7 * gravity * _tickRate)
                 {
                     var f50 = Scy[i49] / (fix64)(333.33F);
+
                     if (f50 > (fix64)(0.3F))
                     {
                         f50 = (fix64)(0.3F);
@@ -2025,6 +2112,7 @@ public partial class CarPhysics
         );
 
         // sparks and scrapes
+
         for (var i = 0; i < 4; i++)
         {
             for (var j = 0; j < 4; j++)
@@ -2041,11 +2129,13 @@ public partial class CarPhysics
         if (hitVertical)
         {
             fix64 i;
+
             for (i = fix64.Abs(conto.Xz + 45); i > 180; i -= 360)
             {
             }
 
             _pmlt = fix64.Abs(i) > 90 ? 1 : -1;
+
             for (i = fix64.Abs(conto.Xz - 45); i > 180; i -= 360)
             {
             }
@@ -2066,15 +2156,18 @@ public partial class CarPhysics
                        - Scx[3] * _pmlt);
 
         // maxine: angle assist to make hypergliding easier
+
         if (!control.Left && !control.Right)
         {
             var assistxz = conto.Xz;
+
             while (assistxz < 0)
             {
                 assistxz += 360;
             }
 
             assistxz %= 90;
+
             if (assistxz > (fix64)89.5f || assistxz < fix64.Half)
             {
                 conto.Xz = fix64.Round(conto.Xz / 90) * 90;
@@ -2086,10 +2179,14 @@ public partial class CarPhysics
         // Surface orientation from plane fitting.
 
         var nWheelsOnSurface = 0;
-        if (isWheelGrounded[0]) nWheelsOnSurface++;
-        if (isWheelGrounded[1]) nWheelsOnSurface++;
-        if (isWheelGrounded[2]) nWheelsOnSurface++;
-        if (isWheelGrounded[3]) nWheelsOnSurface++;
+        if (isWheelGrounded[0])
+            nWheelsOnSurface++;
+        if (isWheelGrounded[1])
+            nWheelsOnSurface++;
+        if (isWheelGrounded[2])
+            nWheelsOnSurface++;
+        if (isWheelGrounded[3])
+            nWheelsOnSurface++;
 
         // Only invoke plane fit when at least one wheel is grounded, or when bumping (Scy is uneven)
         // Commented out because this seems to be unnecessary, the plane-fit is well behaved in the air.
@@ -2100,7 +2197,9 @@ public partial class CarPhysics
         static bool Jumped(fix64 a, fix64 b)
         {
             var d = fix64.Abs(a - b);
-            while (d > 180) d = fix64.Abs(d - 360);
+            while (d > 180)
+                d = fix64.Abs(d - 360);
+
             return d > 30;
         }
 
@@ -2120,13 +2219,17 @@ public partial class CarPhysics
         {
             var wheelpos = new InlineArray4<f64Vector3>();
             var used = 0;
+
             for (var i = 0; i < 4; i++)
             {
-                if (nWheelsOnSurface >= 3 && !isWheelGrounded[i]) continue;
+                if (nWheelsOnSurface >= 3 && !isWheelGrounded[i])
+
+                    continue;
                 wheelpos[used++] = new f64Vector3(wheelx[i], wheely[i] - wheelGround, wheelz[i]);
             }
 
             f64Vector3 terrainNormal;
+
             if (used == 3)
             {
                 terrainNormal = f64Vector3.Cross(wheelpos[1] - wheelpos[0], wheelpos[2] - wheelpos[0]).Normal;
@@ -2162,6 +2265,7 @@ public partial class CarPhysics
                 terrainNormal = -terrainNormal;
 
             var (fittedPxy, fittedPzy, gimbalLocked) = FitTerrainAngles(terrainNormal, conto.Xz, Pxy, Pzy);
+
             if (nWheelsOnSurface >= 3)
             {
                 Pxy = fittedPxy;
@@ -2196,11 +2300,17 @@ public partial class CarPhysics
         static fix64 TipOver(fix64 angle)
         {
             var a = angle;
-            while (a > 180) a -= 360;
-            while (a <= -180) a += 360;
+            while (a > 180)
+                a -= 360;
+            while (a <= -180)
+                a += 360;
             var lean = fix64.Abs(a) - 90; // > 0: past vertical, towards 180
-            if (fix64.Abs(lean) >= 30) return angle;
+
+            if (fix64.Abs(lean) >= 30)
+
+                return angle;
             var away = lean > fix64.Zero ? fix64.One : -fix64.One;
+
             return angle + (a >= fix64.Zero ? away : -away) * 9 * _tickRate;
         }
 
@@ -2213,15 +2323,21 @@ public partial class CarPhysics
             fix64 rest
         )
         {
-            if (rest <= fix64.Zero) return 180;
+            if (rest <= fix64.Zero)
+
+                return 180;
             var ratio = UMath.Hypot3(x[a] - x[b], y[a] - y[b], z[a] - z[b]) / rest;
+
             return ratio >= (fix64)0.9998f ? _tickRate : UMath.dAcos(ratio);
         }
 
         static fix64 ClampTurn(fix64 delta, fix64 limit)
         {
-            while (delta > 180) delta -= 360;
-            while (delta <= -180) delta += 360;
+            while (delta > 180)
+                delta -= 360;
+            while (delta <= -180)
+                delta += 360;
+
             return fix64.Clamp(delta, -limit, limit);
         }
 
@@ -2243,6 +2359,7 @@ public partial class CarPhysics
         if (nGroundedWheels == 4)
         {
             int i_86 = 0;
+
             while (Pzy < 360)
             {
                 Pzy += 360;
@@ -2304,6 +2421,7 @@ public partial class CarPhysics
         if (!Mtouch && Wtouch)
         {
             // 10 original frames.
+
             if (_cntouch >= 10 * Physics.OriginalTicksPerNewTick)
             {
                 Mtouch = true; //DS-addons: Bad landing hotfix
@@ -2407,6 +2525,7 @@ public partial class CarPhysics
         if (Wtouch && !BadLanding)
         {
             var f87 = (Speed / (fix64)Stat.Swits[2] * 14 * (Stat.Bounce - (fix64)0.4f));
+
             if (control.Left && _tilt < f87 && _tilt >= 0)
             {
                 _tilt += (fix64)0.4f * _tickRate;
@@ -2433,6 +2552,7 @@ public partial class CarPhysics
 
             conto.Xy += _tilt * _tickRate;
             FrameTrace.AddMessage("y before tilt: " + conto.Y);
+
             if (Gtouch)
             {
                 conto.Y -= (int)((_tilt / (fix64)1.5f) * _tickRate);
@@ -2465,6 +2585,7 @@ public partial class CarPhysics
         if (DamagePoints >= Stat.Maxmag && !Wasted)
         {
             Distruct?.Invoke(this, EventArgs.Empty);
+
             if (Cntdest == 7)
             {
                 Wasted = true;
@@ -2703,9 +2824,11 @@ public partial class CarPhysics
                 }
             }
         }*/ // CHK16
+
         if (Newedcar != 0)
         {
             Newedcar--;
+
             if (Newedcar == 10)
             {
                 Newcar = false;
@@ -2723,12 +2846,14 @@ public partial class CarPhysics
             if (StuntState == 2 || StuntState == -1)
             {
                 TotalStuntXy += ((RightComponent - LeftComponent) * _tickRate);
+
                 if (fix64.Abs(TotalStuntXy) > 135)
                 {
                     RightTabletop = true;
                 }
 
                 TotalStuntZy += ((UpComponent - DownComponent) * _tickRate);
+
                 if (TotalStuntZy > 135)
                 {
                     ForwardTabletop = true;
@@ -2771,6 +2896,7 @@ public partial class CarPhysics
                     {
                         bool JustSurfer = true;
                         Powerup = 0;
+
                         if (fix64.Abs(TotalStuntXy) > 90)
                         {
                             JustSurfer = false;
@@ -2816,7 +2942,8 @@ public partial class CarPhysics
                         Power += Powerup;
 
                         // dont invoke powerup if we only did a surf...
-                        if (!JustSurfer) PowerUp?.Invoke(this, (float)Powerup);
+                        if (!JustSurfer)
+                            PowerUp?.Invoke(this, (float)Powerup);
 
                         /*if (Im == XTGraphics.Im && (int) Powerup > Record.Powered && Record.Wasted == 0 &&
                             (Powerup > 60 || CheckPoints.Stage == 1 || CheckPoints.Stage == 2))
@@ -2831,9 +2958,11 @@ public partial class CarPhysics
                                 XTGraphics.Beststunt = (int) Powerup;
                             }
                         }*/
+
                         if (Power > 98)
                         {
                             Power = 98;
+
                             if (Powerup > 150)
                             {
                                 _xtpower = (int)(200 * _oneOverTickRate);
@@ -2884,6 +3013,7 @@ public partial class CarPhysics
                 if (CapsizedCounter == 0)
                 {
                     var i95 = 0;
+
                     for (var i96 = 0; i96 < 4; i96++)
                     {
                         if (fix64.Abs(Scz[i96]) < 70 && fix64.Abs(Scx[i96]) < 70)
@@ -2900,6 +3030,7 @@ public partial class CarPhysics
                 else
                 {
                     CapsizedCounter++;
+
                     if (CapsizedCounter == 30)
                     {
                         Speed = 0;
@@ -2933,6 +3064,7 @@ public partial class CarPhysics
 
         // lava(): burn a share of max health while grounded. phy-addons applies this per
         // original-rate tick (21.4 Hz), so scale it to this submission's tick rate.
+
         if (stage.Physics.Lava > 0 && Mtouch && !Wasted && DamagePoints < Stat.Maxmag && conto.Y + conto.Grat >= -250)
         {
             DamagePoints += (int)((fix64)stage.Physics.Lava / 100 * Stat.Maxmag / (fix64)21.276596F * _tickRate);
@@ -2940,7 +3072,10 @@ public partial class CarPhysics
 
         // Converging walls: phy damages a car outside the shrinking stage rectangle by
         // maxmag/800 per original tick, scaled by the stage's track-damage multiplier.
-        if (stage.Walls.Closing && !Wasted && DamagePoints < Stat.Maxmag
+
+        if (stage.Walls.Closing
+            && !Wasted
+            && DamagePoints < Stat.Maxmag
             && !stage.Walls.IsInBounds(conto.X, conto.Z))
         {
             DamagePoints += (int)((fix64)Stat.Maxmag / 800 * _tickRate * (fix64)stage.Physics.Damage);
@@ -2948,6 +3083,7 @@ public partial class CarPhysics
 
         // Wall touch is a per-tick flag: it feeds `Surfing` above, so every car must
         // clear it or one wall hit leaves it surfing (and earning power) forever.
+
         if (control.Wall != -1)
         {
             control.Wall = -1;
@@ -2997,8 +3133,12 @@ public partial class CarPhysics
 
     private void GroundScrape(ContO conto, int wheel, fix64 x, fix64 y, fix64 z, fix64 wheelGround, SurfaceType surface)
     {
-        if (!BadLanding || surface is not (SurfaceType.Road or SurfaceType.OffTrack)) return;
-        if (Scx[wheel] * Scx[wheel] + Scz[wheel] * Scz[wheel] < 3600) return;
+        if (!BadLanding || surface is not (SurfaceType.Road or SurfaceType.OffTrack))
+
+            return;
+        if (Scx[wheel] * Scx[wheel] + Scz[wheel] * Scz[wheel] < 3600)
+
+            return;
 
         IsGroundScraping = true;
         conto.Spark(x, y, z, Scx[wheel], Scy[wheel], Scz[wheel], 1, (int)wheelGround);
@@ -3037,6 +3177,7 @@ public partial class CarPhysics
         int nWheelsRoadRamp = 0;
         int nWheelsDirtRamp = 0;
         int nWheelsOverRamp = 0;
+
         for (int k = 0; k < 4; k++)
         {
             var position = new f64Vector3(wheelx[k], wheely[k] - wheelGround, wheelz[k]);
@@ -3045,9 +3186,13 @@ public partial class CarPhysics
             if (!isWheelTouchingPiece[k])
             {
                 FrameTrace.AddMessage("start wheel");
+
                 foreach (var collidable in stage.RetrievePointCollidables(wheelx[k], wheelz[k]))
                 {
-                    if (collidable.Owner is { IsDestroyed: true }) continue;
+                    if (collidable.Owner is { IsDestroyed: true })
+
+                        continue;
+
                     if (collidable.TryGetValue(out ShapeMesh boxMesh))
                     {
                         var collisionMesh = boxMesh.CollisionMesh;
@@ -3063,14 +3208,19 @@ public partial class CarPhysics
                             var p1 = collisionMesh.Vertices[collisionMesh.Indices[i + 1]];
                             var p2 = collisionMesh.Vertices[collisionMesh.Indices[i + 2]];
 
-                            if (!TriangleMesh.PointInTriangleAABB(collisionMesh.Aabb[i / 3], localPosition)) continue;
+                            if (!TriangleMesh.PointInTriangleAABB(collisionMesh.Aabb[i / 3], localPosition))
+
+                                continue;
 
                             var edge1 = p1 - p0;
                             var edge2 = p2 - p0;
                             var normal = f64Vector3.Cross(edge1, edge2);
                             // Compute length via float to avoid fix64 overflow on large triangles
                             var floatLength = normal.LengthNoOverflow();
-                            if (floatLength < (fix64)1e-3f) continue; // degenerate triangle
+
+                            if (floatLength < (fix64)1e-3f)
+
+                                continue; // degenerate triangle
                             var normalizedNormal = new f64Vector3(
                                 normal.X / floatLength,
                                 normal.Y / floatLength,
@@ -3088,6 +3238,7 @@ public partial class CarPhysics
                                     (center.X - localPosition.X) * (center.X - localPosition.X)
                                     + (center.Z - localPosition.Z) * (center.Z - localPosition.Z)
                                 );
+
                                 if ((float)dxz < 500 && groundness > (fix64)0.3f)
                                 {
                                     var inTri = TriangleMesh.DebugPointInTriangle(edge1, edge2, toPoint);
@@ -3104,6 +3255,7 @@ public partial class CarPhysics
                             }
 
                             // Ground/ramp triangle: snap wheel Y to surface (local space, then convert back)
+
                             if (triangleData.IsGround)
                             {
                                 if (TriangleMesh.ResolveGround(p0, p1, p2, localPosition, triangleData) is { } groundHit)
@@ -3134,7 +3286,8 @@ public partial class CarPhysics
                                         var rampAngleDeg = fix64.Acos(fix64.Clamp(triangleData.Groundness, -1, 1))
                                                            * fix64.RadToDeg;
                                         var liftDivider = 1 + (50 - fix64.Abs(rampAngleDeg)) / (fix64)30;
-                                        if (liftDivider < 4) liftDivider = 4;
+                                        if (liftDivider < 4)
+                                            liftDivider = 4;
                                         FrameTrace.AddMessage(
                                             $"ramp lift: {zTmp} liftDivider: {liftDivider:F2} total: {zTmp / liftDivider:F2}"
                                         );
@@ -3143,6 +3296,7 @@ public partial class CarPhysics
 
                                     // newY is in local space; RotateXz doesn't affect Y, so just add object Y
                                     wheely[k] = groundHit.newY + boxMesh.GameObjectPosition.Y + wheelGround;
+
                                     if (!wasMtouch && Scy[k] != 7 * gravity * _tickRate)
                                     {
                                         fix64 dustMag = Scy[k] / (fix64)(333.33F);
@@ -3177,6 +3331,7 @@ public partial class CarPhysics
                             else
                             {
                                 // Wall triangle: horizontal push-back (in local space, then rotate back)
+
                                 if (TriangleMesh.ResolveWall(p0, p1, p2, localPosition, localVelocity, triangleData) is
                                     { } wallHit)
                                 {
@@ -3198,6 +3353,7 @@ public partial class CarPhysics
                                     }
 
                                     _crank[0, k]++;
+
                                     if (_crank[0, k] > 1)
                                     {
                                         conto.Spark(
@@ -3250,6 +3406,7 @@ public partial class CarPhysics
                             Gtouch = true;
 
                             wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
+
                             if (!wasMtouch && Scy[k] != 7 * gravity * _tickRate)
                             {
                                 fix64 dustMag = Scy[k] / (fix64)(333.33F);
@@ -3284,6 +3441,7 @@ public partial class CarPhysics
                                 new Vector3((float)wheelx[k], (float)wheely[k], (float)wheelz[k])
                             );
                             isWheelTouchingPiece[k] = true;
+
                             break;
                         }
                     }
@@ -3292,6 +3450,7 @@ public partial class CarPhysics
                         if (boxWall.ResolveCollision(position, velocity) is { } collision)
                         {
                             RecordStageImpact(collidable, collision.impactComponent, velocity);
+
                             for (int w = 0; w < 4; w++)
                             {
                                 wheelx[w] += collision.positionDelta.X;
@@ -3304,6 +3463,7 @@ public partial class CarPhysics
                                 _crank[0, k]++;
                             if (collidable.SurfaceType == SurfaceType.Spikes && random.NextFixed6401() > fix64.Half)
                                 _crank[0, k]++;
+
                             if (_crank[0, k] > 1)
                             {
                                 conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
@@ -3327,6 +3487,7 @@ public partial class CarPhysics
                             Skid = 2;
                             hitVertical = true;
                             isWheelTouchingPiece[k] = true;
+
                             if (!collidable.NotWall)
                             {
                                 control.Wall = 9999;
@@ -3342,6 +3503,7 @@ public partial class CarPhysics
                             var liftDivider = 1 + (50 - fix64.Abs(boxRamp.TrackersZy)) / (fix64)30;
                             if (liftDivider < 1)
                                 liftDivider = 1;
+
                             if (collision.zTmp > 0 && collision.zTmp < 200)
                             {
                                 FrameTrace.AddMessage(
@@ -3408,6 +3570,7 @@ public partial class CarPhysics
                             wheely[k] = collision.newPosition.Y + wheelGround;
                             wheelz[k] = collision.newPosition.Z;
                             isWheelTouchingPiece[k] = true;
+
                             break;
                         }
                     }
@@ -3418,6 +3581,7 @@ public partial class CarPhysics
         foreach (var (id, impact) in _stageImpacts)
         {
             if (_lastStageImpact.TryGetValue(id, out var last) && _stageCollisionTick - last < Physics.TargetTps / 5)
+
                 continue;
             _lastStageImpact[id] = _stageCollisionTick;
             stage.ReportObjectHit(Im, impact);
@@ -3427,6 +3591,7 @@ public partial class CarPhysics
         // between two ramp sections hangs over the next one for a tick, which the original's
         // coarser step mostly skipped, so grip outlasts a gap shorter than one original frame.
         var onRamp = Math.Max(nWheelsDirtRamp, nWheelsRoadRamp);
+
         if (onRamp == 4)
         {
             Mtouch = true;
@@ -3454,6 +3619,7 @@ public partial class CarPhysics
         reboundMul += Stat.Bounce - (fix64)0.2f;
         if (reboundMul < (fix64)1.1f)
             reboundMul = (fix64)1.1F;
+
         return reboundMul;
     }
 
@@ -3476,9 +3642,11 @@ public partial class CarPhysics
             abool = true;
         }*/
         f *= Stat.Dammult;
+
         if (fix64.Abs(f) > 100)
         {
             //Record.Recx(i, f, Im);
+
             if (f > 100)
             {
                 f -= 100;
@@ -3491,12 +3659,15 @@ public partial class CarPhysics
 
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             EmitCrashSound(i, (int)f, 0, conto);
+
             for (var i111 = 0; i111 < pieceRad; i111++)
             {
                 fix64 f112 = 0;
+
                 for (var i113 = 0; i113 < 4; i113++)
                 {
                     f112 = f / 20 * random.NextFixed6401();
+
                     if (abool)
                     {
                         DamagePoints += (int)fix64.Abs(f112);
@@ -3506,7 +3677,9 @@ public partial class CarPhysics
             }
         }
 
-        if (i110 > 0) RecordDamageSource(sourceCar);
+        if (i110 > 0)
+            RecordDamageSource(sourceCar);
+
         return i110;
     }
 
@@ -3536,6 +3709,7 @@ public partial class CarPhysics
             abool = true;
         }*/
         f *= Stat.Dammult;
+
         if (f > 100)
         {
             //Record.Recy(i, f, Mtouch, Im);
@@ -3544,6 +3718,7 @@ public partial class CarPhysics
             var i99 = 0;
             var i100 = conto.Zy;
             var i101 = conto.Xy;
+
             for ( /**/; i100 < 360; i100 += 360)
             {
             }
@@ -3586,14 +3761,17 @@ public partial class CarPhysics
             }
 
             EmitCrashSound(i, (int)f, i99 * i98, conto, soundSurface, soundPosition);
+
             if (i99 * i98 == 0 || Mtouch)
             {
                 for (var i102 = 0; i102 < pieceRad; i102++)
                 {
                     fix64 f103 = 0;
+
                     for (var i104 = 0; i104 < 4; i104++)
                     {
                         f103 = f / 20 * random.NextFixed6401();
+
                         if (abool)
                         {
                             DamagePoints += (int)fix64.Abs(f103);
@@ -3609,14 +3787,17 @@ public partial class CarPhysics
                 {
                     var dividend = 0;
                     var divisor = 1;
+
                     for (var i107 = 0; i107 < pieceRad; i107++)
                     {
                         fix64 f108 = 0;
+
                         for (var i109 = 0; i109 < 4; i109++)
                         {
                             f108 = f / 15 * random.NextFixed6401();
                             dividend += (int)f108;
                             divisor++;
+
                             if (abool)
                             {
                                 DamagePoints += (int)fix64.Abs(f108);
@@ -3635,7 +3816,9 @@ public partial class CarPhysics
             }
         }
 
-        if (i97 > 0) RecordDamageSource(sourceCar);
+        if (i97 > 0)
+            RecordDamageSource(sourceCar);
+
         return i97;
     }
 
@@ -3665,9 +3848,11 @@ public partial class CarPhysics
             abool = true;
         }*/
         f *= Stat.Dammult;
+
         if (fix64.Abs(f) > 100)
         {
             //Record.Recz(i, f, Im);
+
             if (f > 100)
             {
                 f -= 100;
@@ -3681,12 +3866,15 @@ public partial class CarPhysics
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
 
             EmitCrashSound(i, (int)f, 0, conto, soundSurface, soundPosition);
+
             for (var i115 = 0; i115 < pieceRad; i115++)
             {
                 fix64 f116 = 0;
+
                 for (var i117 = 0; i117 < 4; i117++)
                 {
                     f116 = f / 20 * random.NextFixed6401();
+
                     if (abool)
                     {
                         DamagePoints += (int)fix64.Abs(f116);
@@ -3696,7 +3884,9 @@ public partial class CarPhysics
             }
         }
 
-        if (i114 > 0) RecordDamageSource(sourceCar);
+        if (i114 > 0)
+            RecordDamageSource(sourceCar);
+
         return i114;
     }
 
@@ -3705,9 +3895,13 @@ public partial class CarPhysics
         _stageImpacts.Clear();
         _lastStageImpact.Clear();
         _stageCollisionTick = 0;
-        if (DepartureReason.HasValue) return;
+
+        if (DepartureReason.HasValue)
+
+            return;
         ResetDamageCredit();
         Cn = i;
+
         for (var i0 = 0; i0 < 8; i0++)
         {
             _dominate[i0] = false;
@@ -3719,6 +3913,7 @@ public partial class CarPhysics
         Pzy = 0;
         Pxy = 0;
         Speed = 0;
+
         for (var i1 = 0; i1 < 4; i1++)
         {
             Scy[i1] = 0;
@@ -3765,6 +3960,7 @@ public partial class CarPhysics
         TabletopCounter = 0;
         CapsizedCounter = 0;
         _tilt = 0;
+
         for (var i2 = 0; i2 < 4; i2++)
         {
             for (var i3 = 0; i3 < 4; i3++)
@@ -3785,6 +3981,7 @@ public partial class CarPhysics
         Cntdest = 0;
         Wasted = false;
         Newcar = false;
+
         if ( /*Im == XTGraphics.Im*/Im == 0)
         {
             // Medium.Checkpoint = -1;
@@ -3813,7 +4010,9 @@ public partial class CarPhysics
 
     public void FinishedFix()
     {
-        if (DepartureReason.HasValue) return;
+        if (DepartureReason.HasValue)
+
+            return;
         ResetDamageCredit();
         RoofDamage = 0;
         _numRoofDamage = 0;
@@ -3821,6 +4020,7 @@ public partial class CarPhysics
         Cntdest = 0;
         Wasted = false;
         Newcar = true;
+
         if (_fixes > 0)
         {
             _fixes--;
@@ -3851,13 +4051,16 @@ public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>
         {
             int index = _index + 1;
             int length = _array.Length;
+
             if (index >= length)
             {
                 _index = length;
+
                 return false;
             }
 
             _index = index;
+
             return true;
         }
 

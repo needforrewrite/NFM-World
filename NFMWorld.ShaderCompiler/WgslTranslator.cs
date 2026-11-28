@@ -55,14 +55,19 @@ internal static class WgslFrames
     public static byte[]? Read(Stream stream)
     {
         Span<byte> header = stackalloc byte[4];
+
         if (!ReadExactly(stream, header))
+
             return null;
 
         var length = BinaryPrimitives.ReadInt32LittleEndian(header);
+
         if (length < 0 || length > WgslProtocol.MaxFrameBytes)
+
             return null;
 
         var body = new byte[length];
+
         return ReadExactly(stream, body) ? body : null;
     }
 
@@ -76,7 +81,9 @@ internal static class WgslFrames
     public static string ReadString(BinaryReader reader)
     {
         var length = reader.ReadInt32();
+
         if (length < 0 || length > WgslProtocol.MaxFrameBytes)
+
             throw new InvalidDataException($"A string of {length} byte(s) is out of range.");
 
         return Encoding.UTF8.GetString(reader.ReadBytes(length));
@@ -85,10 +92,13 @@ internal static class WgslFrames
     private static bool ReadExactly(Stream stream, Span<byte> buffer)
     {
         var read = 0;
+
         while (read < buffer.Length)
         {
             var count = stream.Read(buffer[read..]);
+
             if (count <= 0)
+
                 return false;
 
             read += count;
@@ -138,6 +148,7 @@ internal static class WgslTranslatorServer
             var (status, first, second) = Handle(request);
 
             using var body = new MemoryStream();
+
             using (var writer = new BinaryWriter(body, Encoding.UTF8, leaveOpen: true))
             {
                 writer.Write(status);
@@ -149,6 +160,7 @@ internal static class WgslTranslatorServer
         }
 
         Trace("wgsl-server: stdin closed, exiting");
+
         return 0;
     }
 
@@ -161,6 +173,7 @@ internal static class WgslTranslatorServer
             Trace("probe: start");
             var reason = WgslCompiler.LocalUnavailableReason;
             Trace(reason is null ? "probe: ok" : $"probe: {reason}");
+
             return reason is { } probeFailure
                 ? (WgslProtocol.StatusUnavailable, probeFailure, "")
                 : (WgslProtocol.StatusOk, "", "");
@@ -169,7 +182,9 @@ internal static class WgslTranslatorServer
         var spirv = reader.ReadBytes(reader.ReadInt32());
         var entryPoint = WgslFrames.ReadString(reader);
         var bindingCount = reader.ReadInt32();
+
         if (bindingCount < 0 || bindingCount > 4096)
+
             return (WgslProtocol.StatusFailed, $"{bindingCount} binding(s) is out of range.", "");
 
         var bindings = new Dictionary<int, int>(bindingCount);
@@ -178,19 +193,24 @@ internal static class WgslTranslatorServer
 
         // Checked per request, not once: a probe that failed leaves WGSL off for the whole batch, and
         // reporting that as "this shader is broken" would blame every shader in the tree.
+
         if (WgslCompiler.LocalUnavailableReason is { } noTranslator)
+
             return (WgslProtocol.StatusUnavailable, noTranslator, "");
 
         Trace($"translate: {entryPoint}, {spirv.Length} B SPIR-V, {bindings.Count} binding(s)");
+
         try
         {
             var (desktop, browser) = WgslCompiler.Translate(spirv, bindings, entryPoint);
             Trace($"translate: {entryPoint} ok, {desktop.Length} + {browser.Length} chars WGSL");
+
             return (WgslProtocol.StatusOk, desktop, browser);
         }
         catch (Exception e)
         {
             Trace($"translate: {entryPoint} failed: {e.GetType().Name}");
+
             return (WgslProtocol.StatusFailed, e.ToString(), "");
         }
     }
@@ -222,6 +242,7 @@ internal sealed class WgslTranslatorHost : IDisposable
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data is not { } line)
+
                 return;
 
             lock (_stderr)
@@ -251,22 +272,28 @@ internal sealed class WgslTranslatorHost : IDisposable
         probe = null;
 
         var directory = Path.GetDirectoryName(typeof(WgslCompiler).Assembly.Location);
+
         if (string.IsNullOrEmpty(directory))
         {
             error = "the shader compiler assembly has no directory to look for the WGSL translator in";
+
             return null;
         }
 
         var failures = new List<string>();
+
         foreach (var info in StartInfos(directory))
         {
             WgslTranslatorHost host;
+
             try
             {
                 var process = Process.Start(info);
+
                 if (process is null)
                 {
                     failures.Add($"{info.FileName} did not start");
+
                     continue;
                 }
 
@@ -275,6 +302,7 @@ internal sealed class WgslTranslatorHost : IDisposable
             catch (Exception e) when (e is Win32Exception or IOException or PlatformNotSupportedException)
             {
                 failures.Add($"{info.FileName}: {e.Message}");
+
                 continue;
             }
 
@@ -282,6 +310,7 @@ internal sealed class WgslTranslatorHost : IDisposable
             {
                 probe = answered;
                 error = "";
+
                 return host;
             }
 
@@ -292,6 +321,7 @@ internal sealed class WgslTranslatorHost : IDisposable
         error = failures.Count == 0
             ? "no WGSL translator executable sits beside the shader compiler"
             : $"the WGSL translator could not be started ({string.Join("; ", failures)})";
+
         return null;
     }
 
@@ -306,6 +336,7 @@ internal sealed class WgslTranslatorHost : IDisposable
         lock (_gate)
         {
             if (_closed)
+
                 return null;
 
             try
@@ -313,6 +344,7 @@ internal sealed class WgslTranslatorHost : IDisposable
                 WgslFrames.Write(_input, body);
 
                 var pending = Task.Run(() => WgslFrames.Read(_output));
+
                 if (!pending.Wait(timeout))
                 {
                     // The read is still parked on a stream this side is about to close; its failure
@@ -320,23 +352,28 @@ internal sealed class WgslTranslatorHost : IDisposable
                     // as an unobserved task exception instead.
                     pending.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
                     Dispose();
+
                     return null;
                 }
 
                 // GetResult, not Result: a read that failed - which a dead child makes it - must
                 // arrive as its own exception for the filter above, not wrapped in AggregateException.
+
                 if (pending.GetAwaiter().GetResult() is not { } frame)
                 {
                     Dispose();
+
                     return null;
                 }
 
                 using var reader = new BinaryReader(new MemoryStream(frame));
+
                 return new Reply(reader.ReadByte(), WgslFrames.ReadString(reader), WgslFrames.ReadString(reader));
             }
             catch (Exception e) when (e is IOException or ObjectDisposedException or InvalidDataException)
             {
                 Dispose();
+
                 return null;
             }
         }
@@ -351,12 +388,14 @@ internal sealed class WgslTranslatorHost : IDisposable
     public string DescribeFailure()
     {
         lock (_stderr)
+
             return _failure ??= Capture();
     }
 
     private string Capture()
     {
         string exit;
+
         try
         {
             exit = _process.HasExited ? $"exited with code {_process.ExitCode}" : "did not answer";
@@ -367,6 +406,7 @@ internal sealed class WgslTranslatorHost : IDisposable
         }
 
         var stderr = _stderr.ToString().Trim();
+
         return string.IsNullOrEmpty(stderr) ? exit : $"{exit}: {stderr}";
     }
 
@@ -381,14 +421,17 @@ internal sealed class WgslTranslatorHost : IDisposable
         lock (_gate)
         {
             if (_closed)
+
                 return;
 
             _closed = true;
+
             try
             {
                 if (!_process.HasExited)
                 {
                     _process.StandardInput.BaseStream.Close();
+
                     if (!_process.WaitForExit(2000))
                     {
                         _process.Kill(entireProcessTree: true);
@@ -423,13 +466,17 @@ internal sealed class WgslTranslatorHost : IDisposable
             directory,
             OperatingSystem.IsWindows() ? "NFMWorld.ShaderCompiler.exe" : "NFMWorld.ShaderCompiler"
         );
+
         if (File.Exists(apphost))
+
             yield return Configure(new ProcessStartInfo(apphost), null, directory);
 
         var dll = Path.Combine(directory, "NFMWorld.ShaderCompiler.dll");
+
         if (File.Exists(dll))
         {
             var host = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+
             yield return Configure(new ProcessStartInfo(string.IsNullOrEmpty(host) ? "dotnet" : host), dll, directory);
         }
     }
@@ -445,6 +492,7 @@ internal sealed class WgslTranslatorHost : IDisposable
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
         info.WorkingDirectory = directory;
+
         return info;
     }
 

@@ -37,6 +37,7 @@ public sealed class BrotliFormatter : TightPackFormatter<byte[]>
         if (value is null)
         {
             writer.WriteNullCollectionHeader();
+
             return;
         }
 
@@ -51,16 +52,20 @@ public sealed class BrotliFormatter : TightPackFormatter<byte[]>
         // bytes, which is normally far more than remains in the buffer, so the header's own
         // "length <= remaining" guard does not apply.
         int uncompressedLength = reader.ReadInt32();
+
         if (uncompressedLength < 0)
         {
             value = null;
+
             return;
         }
 
         byte[]? compressed = reader.ReadByteArray();
+
         if (compressed is null)
         {
             value = null;
+
             return;
         }
 
@@ -74,6 +79,7 @@ public sealed class BrotliFormatter : TightPackFormatter<byte[]>
         if (uncompressedLength == 0)
         {
             value = [];
+
             return;
         }
 
@@ -85,6 +91,7 @@ public sealed class BrotliFormatter : TightPackFormatter<byte[]>
     internal static byte[] Compress(byte[] value, CompressionLevel level)
     {
         using var stream = new MemoryStream();
+
         using (var brotli = new BrotliStream(stream, level, leaveOpen: true))
         {
             brotli.Write(value);
@@ -98,9 +105,11 @@ public sealed class BrotliFormatter : TightPackFormatter<byte[]>
     {
         using var stream = new BrotliStream(new MemoryStream(compressed, writable: false), CompressionMode.Decompress);
         int read = 0;
+
         while (read < expectedLength)
         {
             int got = stream.Read(destination, read, expectedLength - read);
+
             if (got == 0)
             {
                 TightPackSerializationException.ThrowMessage(

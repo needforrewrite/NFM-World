@@ -28,11 +28,14 @@ public static class WebGlContext
     public static INativeContext Create()
     {
         var result = ContextCreate(Selector);
+
         if (result != 0)
         {
             throw new InvalidOperationException(
-                $"Could not create a WebGL2 context on {Selector} (emscripten result {result}). " +
-                "A browser that cannot give WebGL2 a context is one this build cannot run on.");
+                $"Could not create a WebGL2 context on {Selector} (emscripten result {result}). "
+                +
+                "A browser that cannot give WebGL2 a context is one this build cannot run on."
+            );
         }
 
         return GlNativeContext.Instance;

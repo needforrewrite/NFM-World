@@ -30,12 +30,16 @@ public sealed class UserModel(
     private async Task<IActionResult?> LoadAsync(int id)
     {
         if (await ResolveAccountAsync() is null)
+
             return RedirectToLogin();
         if (!IsModerator)
+
             return NotFound();
 
         Target = await Db.Users.FirstOrDefaultAsync(u => u.Id == id);
+
         if (Target is null)
+
             return NotFound();
 
         Assets = await Db.Assets.Where(a => a.OwnerId == id).OrderByDescending(a => a.Id).Take(50).ToListAsync();
@@ -45,6 +49,7 @@ public sealed class UserModel(
             .Take(50)
             .ToListAsync();
         ViewData["Title"] = "Moderate " + Target.Username;
+
         return null;
     }
 
@@ -53,6 +58,7 @@ public sealed class UserModel(
     private async Task<IActionResult> PageAfterLoad(int id)
     {
         var redirect = await LoadAsync(id);
+
         return redirect ?? (IActionResult)Page();
     }
 
@@ -64,7 +70,9 @@ public sealed class UserModel(
     )
     {
         var redirect = await LoadAsync(id);
+
         if (redirect is not null)
+
             return redirect;
 
         var outcome = await moderation.ApplyAsync(
@@ -74,13 +82,16 @@ public sealed class UserModel(
             HttpContext.RequestAborted
         );
         Status = outcome.Ok ? $"{action} applied." : outcome.Error;
+
         return Page();
     }
 
     private TimeSpan? ParseDuration()
     {
         if (string.IsNullOrWhiteSpace(Duration))
+
             return null;
+
         return ModerationDurations.TryParse(Duration.Trim(), out var value) ? value : null;
     }
 
@@ -114,12 +125,15 @@ public sealed class UserModel(
     public async Task<IActionResult> OnPostDeleteEraseAsync(int id)
     {
         var redirect = await LoadAsync(id);
+
         if (redirect is not null)
+
             return redirect;
 
         if (ConfirmName != Target!.Username)
         {
             Status = "Type the account's name to confirm erasure.";
+
             return Page();
         }
 

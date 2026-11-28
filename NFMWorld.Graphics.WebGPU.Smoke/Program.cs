@@ -63,6 +63,7 @@ internal static unsafe class Program
 
         Console.WriteLine();
         Console.WriteLine(_failures == 0 ? "SMOKE: pass" : $"SMOKE: FAILED ({_failures} failure(s))");
+
         return _failures == 0 ? 0 : 1;
     }
 
@@ -85,6 +86,7 @@ internal static unsafe class Program
     {
         const int size = 4;
         var texels = new byte[size * size * 4];
+
         for (var i = 0; i < size * size; i++)
         {
             texels[i * 4 + 0] = (byte)(i * 8);
@@ -201,6 +203,7 @@ internal static unsafe class Program
         // 4, 8, 12, ... - three quarters of which are not multiples of the 16-byte block.
         var failed = 0;
         var cursors = new List<int>();
+
         for (var probes = 0; probes <= 4; probes++)
         {
             var commandBuffer = device.AcquireCommandBuffer();
@@ -228,6 +231,7 @@ internal static unsafe class Program
     {
         var commandBuffer = device.AcquireCommandBuffer();
         var second = false;
+
         try
         {
             device.AcquireCommandBuffer();
@@ -241,6 +245,7 @@ internal static unsafe class Program
         device.Submit(commandBuffer);
 
         var reused = false;
+
         try
         {
             device.Submit(commandBuffer);
@@ -260,6 +265,7 @@ internal static unsafe class Program
 
         var recovered = true;
         string? abandonError = null;
+
         try
         {
             var afterAbandon = device.AcquireCommandBuffer();
@@ -519,8 +525,12 @@ internal static unsafe class Program
             "REBIND",
             $"a rebind mid-pass keeps both groups alive "
             + $"(left {left[0]},{left[1]},{left[2]}, right {right[0]},{right[1]},{right[2]})",
-            left[0] == 255 && left[1] == 0 && left[2] == 255
-            && right[0] == 0 && right[1] == 255 && right[2] == 255
+            left[0] == 255
+            && left[1] == 0
+            && left[2] == 255
+            && right[0] == 0
+            && right[1] == 255
+            && right[2] == 255
         );
 
         var rebindError = device.TakeError();
@@ -585,6 +595,7 @@ internal static unsafe class Program
 
         // 5000 draws at the block size the ring aligns to (64 bytes) is ~320 KiB: one ring growth,
         // and the draws recorded before it still name the old buffer.
+
         for (var i = 0; i < draws; i++)
         {
             commandBuffer.SetUniform(UniformOffset(pipeline, "Projection"), MemoryMarshal.AsBytes(Identity().AsSpan()));
@@ -727,6 +738,7 @@ internal static unsafe class Program
         foreach (var uniform in pipeline.Reflection.Uniforms)
         {
             if (uniform.Name == name)
+
                 return uniform.Offset;
         }
 
@@ -786,12 +798,15 @@ internal static unsafe class Program
         get
         {
             var imgui = ImGuiFullbright.Create();
+
             yield return new Bundle("ImGuiFullbright", imgui.Vertex, imgui.Pixel, imgui.Reflection, [ImGuiLayout]);
 
             var ground = GroundFullbright.Create();
+
             yield return new Bundle("GroundFullbright", ground.Vertex, ground.Pixel, ground.Reflection, [PositionColorLayout]);
 
             var mountains = MountainsFullbright.Create();
+
             yield return new Bundle(
                 "MountainsFullbright",
                 mountains.Vertex,
@@ -801,12 +816,15 @@ internal static unsafe class Program
             );
 
             var sky = SkyFullbright.Create();
+
             yield return new Bundle("SkyFullbright", sky.Vertex, sky.Pixel, sky.Reflection, [PositionColorLayout]);
 
             var poly = PolyBasic.Create();
+
             yield return new Bundle("PolyBasic", poly.Vertex, poly.Pixel, poly.Reflection, [PolyLayout, InstanceLayout]);
 
             var polyShadow = PolyCreateShadowMap.Create();
+
             yield return new Bundle(
                 "PolyCreateShadowMap",
                 polyShadow.Vertex,
@@ -816,9 +834,11 @@ internal static unsafe class Program
             );
 
             var nvgSimple = NvgSimple.Create();
+
             yield return new Bundle("NvgSimple", nvgSimple.Vertex, nvgSimple.Pixel, nvgSimple.Reflection, [NvgLayout]);
 
             var particle = ParticleFullbright.Create();
+
             yield return new Bundle(
                 "ParticleFullbright",
                 particle.Vertex,

@@ -13,30 +13,30 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiNavRenderCursorFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiNavRenderCursorFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Compact highlight, no paddingdistance from focused item<br/>
-		/// </summary>
-		Compact = unchecked(2),
+        /// <summary>
+        /// Compact highlight, no paddingdistance from focused item<br/>
+        /// </summary>
+        Compact = unchecked(2),
 
-		/// <summary>
-		/// Draw rectangular highlight if (g.NavId == id) even when g.NavCursorVisible == false, aka even when using the mouse.<br/>
-		/// </summary>
-		AlwaysDraw = unchecked(4),
+        /// <summary>
+        /// Draw rectangular highlight if (g.NavId == id) even when g.NavCursorVisible == false, aka even when using the mouse.<br/>
+        /// </summary>
+        AlwaysDraw = unchecked(4),
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		NoRounding = unchecked(8),
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        NoRounding = unchecked(8),
+    }
 }

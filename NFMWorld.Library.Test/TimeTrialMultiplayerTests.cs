@@ -50,12 +50,14 @@ public class TimeTrialMultiplayerTests
                     AiNodeKind.CheckPoint
                 )
             );
+
         return stage;
     }
 
     private static BaseGamemodeFactory CreateFactory(bool simulation = false)
     {
         TheVFS.VFS.MountDirectory(AppContext.BaseDirectory);
+
         return GamemodeFactory.Create("nfmm/timetrial", new Dictionary<string, object> { ["simulation"] = simulation });
     }
 
@@ -63,6 +65,7 @@ public class TimeTrialMultiplayerTests
     {
         var type = ((NativeGamemodeFactory)factory).Plugin.Assembly.GetExportedTypes().Single(t => t.Name == name);
         var instance = Activator.CreateInstance(type, args);
+
         return TightPackSerializer.SerializeUntyped(name == "RaceStateEvent" ? type : type.BaseType!, instance);
     }
 
@@ -98,6 +101,7 @@ public class TimeTrialMultiplayerTests
         {
             if (!Cars.TryGetValue(car, out var callbacks))
                 Cars[car] = callbacks = new CarCallbacks();
+
             return callbacks;
         }
 
@@ -127,12 +131,12 @@ public class TimeTrialMultiplayerTests
                 new ClientGamemodeParameters
                 {
                     Players = Enumerable.Range(0, multiplayer ? 2 : 1).Select(i => new ClientSidePlayerInfo(
-                            $"Player {i}",
-                            _carName,
-                            new Color3(255, 0, 0),
-                            isBot: false,
-                            isClientPlayer: i == localSlot
-                        )
+                        $"Player {i}",
+                        _carName,
+                        new Color3(255, 0, 0),
+                        isBot: false,
+                        isClientPlayer: i == localSlot
+                    )
                     ).ToList()
                 },
                 Context
@@ -173,6 +177,7 @@ public class TimeTrialMultiplayerTests
             context
         )!;
         server.Begin();
+
         return server;
     }
 
@@ -236,6 +241,7 @@ public class TimeTrialMultiplayerTests
         var alone = solo.Client.ClientPlayer!.Car!;
         own.Control.Up = alone.Control.Up = true;
         multiplayer.Client.Players[1].Car!.Control.Up = true;
+
         for (var i = 0; i < 20; i++)
         {
             multiplayer.Client.GameTick();
@@ -312,6 +318,7 @@ public class TimeTrialMultiplayerTests
     {
         var factory = CreateFactory();
         var server = CreateServer(factory, new ServerContext());
+
         try
         {
             StartServer(server);
@@ -341,6 +348,7 @@ public class TimeTrialMultiplayerTests
     {
         var factory = CreateFactory();
         var server = CreateServer(factory, new ServerContext());
+
         try
         {
             StartServer(server);
@@ -371,6 +379,7 @@ public class TimeTrialMultiplayerTests
     {
         var factory = CreateFactory();
         var server = CreateServer(factory, new ServerContext());
+
         try
         {
             StartServer(server);
@@ -391,6 +400,7 @@ public class TimeTrialMultiplayerTests
         using var race = new ClientRace(localSlot: -1);
         var context = new ServerContext();
         var server = CreateServer(race.Factory, context);
+
         try
         {
             Assert.IsNull(server.CaptureState());

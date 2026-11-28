@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiSortDirection : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiSortDirection : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Ascending = 0-&gt;9, A-&gt;Z etc.<br/>
-		/// </summary>
-		Ascending = unchecked(1),
+        /// <summary>
+        /// Ascending = 0-&gt;9, A-&gt;Z etc.<br/>
+        /// </summary>
+        Ascending = unchecked(1),
 
-		/// <summary>
-		/// Descending = 9-&gt;0, Z-&gt;A etc.<br/>
-		/// </summary>
-		Descending = unchecked(2),
-	}
+        /// <summary>
+        /// Descending = 9-&gt;0, Z-&gt;A etc.<br/>
+        /// </summary>
+        Descending = unchecked(2),
+    }
 }

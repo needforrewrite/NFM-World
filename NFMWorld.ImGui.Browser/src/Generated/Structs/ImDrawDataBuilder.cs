@@ -16,115 +16,126 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImDrawDataBuilder
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImVector<ImDrawListPtr>* Layers_0;
-		public unsafe ImVector<ImDrawListPtr>* Layers_1;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImDrawDataBuilder
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImVector<ImDrawListPtr> * Layers_0;
+        public unsafe ImVector<ImDrawListPtr> * Layers_1;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<ImDrawListPtr> LayerData1;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImDrawDataBuilder(ImVector<ImDrawListPtr>** layers = default, ImVector<ImDrawListPtr> layerData1 = default)
-		{
-			if (layers != default(ImVector<ImDrawListPtr>**))
-			{
-				Layers_0 = layers[0];
-				Layers_1 = layers[1];
-			}
-			LayerData1 = layerData1;
-		}
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImDrawDataBuilder(Span<Pointer<ImVector<ImDrawListPtr>>> layers = default, ImVector<ImDrawListPtr> layerData1 = default)
-		{
-			if (layers != default(Span<Pointer<ImVector<ImDrawListPtr>>>))
-			{
-				Layers_0 = layers[0];
-				Layers_1 = layers[1];
-			}
-			LayerData1 = layerData1;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<ImDrawListPtr> LayerData1;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe Span<Pointer<ImVector<ImDrawListPtr>>> Layers
-		
-		{
-			get
-			{
-				fixed (ImVector<ImDrawListPtr>** p = &this.Layers_0)
-				{
-					return new Span<Pointer<ImVector<ImDrawListPtr>>>(p, 2);
-				}
-			}
-		}
-	}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImDrawDataBuilder(ImVector<ImDrawListPtr> ** layers = default, ImVector<ImDrawListPtr> layerData1 = default)
+        {
+            if (layers != default(ImVector<ImDrawListPtr> **))
+            {
+                Layers_0 = layers[0];
+                Layers_1 = layers[1];
+            }
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImDrawDataBuilderPtr : IEquatable<ImDrawDataBuilderPtr>
-	{
-		public ImDrawDataBuilderPtr(ImDrawDataBuilder* handle) { Handle = handle; }
+            LayerData1 = layerData1;
+        }
 
-		public ImDrawDataBuilder* Handle;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImDrawDataBuilder(
+            Span<Pointer<ImVector<ImDrawListPtr>>> layers = default,
+            ImVector<ImDrawListPtr> layerData1 = default
+        )
+        {
+            if (layers != default(Span<Pointer<ImVector<ImDrawListPtr>>>))
+            {
+                Layers_0 = layers[0];
+                Layers_1 = layers[1];
+            }
 
-		public bool IsNull => Handle == null;
+            LayerData1 = layerData1;
+        }
 
-		public static ImDrawDataBuilderPtr Null => new ImDrawDataBuilderPtr(null);
 
-		public ImDrawDataBuilder this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe Span<Pointer<ImVector<ImDrawListPtr>>> Layers
 
-		public static implicit operator ImDrawDataBuilderPtr(ImDrawDataBuilder* handle) => new ImDrawDataBuilderPtr(handle);
+        {
+            get
+            {
+                fixed (ImVector<ImDrawListPtr> ** p = &this.Layers_0)
+                {
+                    return new Span<Pointer<ImVector<ImDrawListPtr>>>(p, 2);
+                }
+            }
+        }
+    }
 
-		public static implicit operator ImDrawDataBuilder*(ImDrawDataBuilderPtr handle) => handle.Handle;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImDrawDataBuilderPtr : IEquatable<ImDrawDataBuilderPtr>
+    {
+        public ImDrawDataBuilderPtr(ImDrawDataBuilder* handle)
+        {
+            Handle = handle;
+        }
 
-		public static bool operator ==(ImDrawDataBuilderPtr left, ImDrawDataBuilderPtr right) => left.Handle == right.Handle;
+        public ImDrawDataBuilder* Handle;
 
-		public static bool operator !=(ImDrawDataBuilderPtr left, ImDrawDataBuilderPtr right) => left.Handle != right.Handle;
+        public bool IsNull => Handle == null;
 
-		public static bool operator ==(ImDrawDataBuilderPtr left, ImDrawDataBuilder* right) => left.Handle == right;
+        public static ImDrawDataBuilderPtr Null => new ImDrawDataBuilderPtr(null);
 
-		public static bool operator !=(ImDrawDataBuilderPtr left, ImDrawDataBuilder* right) => left.Handle != right;
+        public ImDrawDataBuilder this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public bool Equals(ImDrawDataBuilderPtr other) => Handle == other.Handle;
+        public static implicit operator ImDrawDataBuilderPtr(ImDrawDataBuilder* handle) => new ImDrawDataBuilderPtr(handle);
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImDrawDataBuilderPtr handle && Equals(handle);
+        public static implicit operator ImDrawDataBuilder*(ImDrawDataBuilderPtr handle) => handle.Handle;
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        public static bool operator ==(ImDrawDataBuilderPtr left, ImDrawDataBuilderPtr right) => left.Handle == right.Handle;
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImDrawDataBuilderPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref ImVector<ImDrawListPtr> LayerData1 => ref Unsafe.AsRef<ImVector<ImDrawListPtr>>(&Handle->LayerData1);
-	}
+        public static bool operator !=(ImDrawDataBuilderPtr left, ImDrawDataBuilderPtr right) => left.Handle != right.Handle;
 
+        public static bool operator ==(ImDrawDataBuilderPtr left, ImDrawDataBuilder* right) => left.Handle == right;
+
+        public static bool operator !=(ImDrawDataBuilderPtr left, ImDrawDataBuilder* right) => left.Handle != right;
+
+        public bool Equals(ImDrawDataBuilderPtr other) => Handle == other.Handle;
+
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImDrawDataBuilderPtr handle && Equals(handle);
+
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImDrawDataBuilderPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref ImVector<ImDrawListPtr> LayerData1 => ref Unsafe.AsRef<ImVector<ImDrawListPtr>>(&Handle->LayerData1);
+    }
 }

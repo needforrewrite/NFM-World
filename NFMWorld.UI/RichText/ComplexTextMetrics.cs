@@ -17,6 +17,7 @@ public static class ComplexTextMetrics
         {
             // for every element, if the previous element contains the same style, combine their strings
             FlattenedRichText? previous = null;
+
             foreach (var element in flattened)
             {
                 if (previous.HasValue
@@ -77,14 +78,14 @@ public static class ComplexTextMetrics
                 foreach (var child in container.Children)
                 {
                     foreach (var flattenedChild in FlattenInner(
-                                 child,
-                                 element.Background ?? parentBackground,
-                                 element.Foreground ?? parentForeground,
-                                 element.Stroke ?? parentStroke,
-                                 element.FontFamily ?? parentFontFamily,
-                                 element.FontSize ?? parentFontSize,
-                                 element.FontStyle ?? parentFontStyle
-                             ))
+                        child,
+                        element.Background ?? parentBackground,
+                        element.Foreground ?? parentForeground,
+                        element.Stroke ?? parentStroke,
+                        element.FontFamily ?? parentFontFamily,
+                        element.FontSize ?? parentFontSize,
+                        element.FontStyle ?? parentFontStyle
+                    ))
                     {
                         yield return flattenedChild;
                     }
@@ -152,6 +153,7 @@ public static class ComplexTextMetrics
                             foreach (var ch in word)
                             {
                                 var charWidth = ftm.MeasureText([ch]).X;
+
                                 if (lineWidth + charWidth > bounds.X)
                                 {
                                     sb.Append('\n');
@@ -166,6 +168,7 @@ public static class ComplexTextMetrics
 
                             sb.Append(' ');
                             lineWidth += spaceWidth;
+
                             continue;
                         }
                     }
@@ -209,6 +212,7 @@ public static class ComplexTextMetrics
                 if (leaf.Text.Contains('\n'))
                 {
                     var isFirst = true;
+
                     foreach (var range in leaf.Text.AsSpan().Split('\n'))
                     {
                         if (isFirst)

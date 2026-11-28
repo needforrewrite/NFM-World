@@ -43,6 +43,7 @@ public class CarPhysicsCollisionTests
             Rads[name] = rad = RadParser.ParseRad(TheVFS.VFS.ReadAllText($"data/models/nfmm/cars/{name}.rad"), name);
         var car = new BackendCar(rad, im, 0, 0, isClientPlayer);
         car.CarPhysics.Stat = car.Stats = car.Stats with { OffRoadGrip = Fixed64.One };
+
         return car;
     }
 
@@ -51,6 +52,7 @@ public class CarPhysicsCollisionTests
         var stage = new BackendStage("collision-test", new StageLoader(), throwOnError: true);
         Assert.AreEqual(1f, stage.Physics.Gravity);
         Assert.AreEqual(0, stage.Pieces.Count);
+
         return stage;
     }
 
@@ -79,10 +81,12 @@ public class CarPhysicsCollisionTests
         // meet several of the light car's wheels at once (the overlap the gate used to flatten).
         lightConto.Z = -90;
         heavy.CarPhysics.Speed = 300;
-        for (var i = 0; i < 4; i++) heavy.CarPhysics.Scz[i] = 300;
+        for (var i = 0; i < 4; i++)
+            heavy.CarPhysics.Scz[i] = 300;
 
         var before = new Fixed64[4];
-        for (var i = 0; i < 4; i++) before[i] = heavy.CarPhysics.Scy[i];
+        for (var i = 0; i < 4; i++)
+            before[i] = heavy.CarPhysics.Scy[i];
 
         heavy.Collide(light, stage);
 
@@ -110,6 +114,7 @@ public class CarPhysicsCollisionTests
         var stage = CreateStage();
         var a = CreateCar("drmonster", 0, false);
         var v = CreateCar("2000tornados", 1, true);
+
         for (var t = 0; t < 90; t++)
         {
             a.Drive(stage);
@@ -118,6 +123,7 @@ public class CarPhysicsCollisionTests
 
         ((ContO)v).Z = ((ContO)a).Z - 90;
         ((ContO)v).X = ((ContO)a).X;
+
         for (var i = 0; i < 4; i++)
         {
             a.CarPhysics.Scz[i] = 300;
@@ -130,15 +136,20 @@ public class CarPhysicsCollisionTests
         var kick = string.Join(',', Enumerable.Range(0, 4).Select(w => $"{a.CarPhysics.Scy[w] - before[w]:0}"));
         var maxP = Fixed64.Zero;
         var maxR = Fixed64.Zero;
+
         for (var t = 0; t < 90; t++)
         {
             a.Drive(stage);
             var p = a.CarPhysics.Pzy;
-            while (p > 180) p -= 360;
-            while (p < -180) p += 360;
+            while (p > 180)
+                p -= 360;
+            while (p < -180)
+                p += 360;
             var r = a.CarPhysics.Pxy;
-            while (r > 180) r -= 360;
-            while (r < -180) r += 360;
+            while (r > 180)
+                r -= 360;
+            while (r < -180)
+                r += 360;
             maxP = Fixed64.Max(maxP, Fixed64.Abs(p));
             maxR = Fixed64.Max(maxR, Fixed64.Abs(r));
         }
@@ -181,6 +192,7 @@ public class CarPhysicsCollisionTests
         // silently skipped for wheels that only contact along z.
         heavy.CarPhysics.Speed = 350;
         light.CarPhysics.Speed = 100;
+
         for (var i = 0; i < 4; i++)
         {
             heavy.CarPhysics.Scx[i] = 250;
@@ -190,7 +202,8 @@ public class CarPhysicsCollisionTests
         }
 
         var before = new Fixed64[4];
-        for (var i = 0; i < 4; i++) before[i] = light.CarPhysics.Scy[i];
+        for (var i = 0; i < 4; i++)
+            before[i] = light.CarPhysics.Scy[i];
 
         heavy.Collide(light, stage);
 
@@ -204,9 +217,11 @@ public class CarPhysicsCollisionTests
         // The lift impulse is applied per contacting pair, so every contacting wheel (2 and 3)
         // must have taken its kick even though only the Z branch fired for them.
         var liftedWheels = 0;
+
         for (var i = 0; i < 4; i++)
         {
             var drop = before[i] - light.CarPhysics.Scy[i];
+
             if (drop >= lift - (Fixed64)0.001f)
             {
                 liftedWheels++;

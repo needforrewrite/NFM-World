@@ -19,12 +19,14 @@ public class PngCodecTests
         CollectionAssert.AreEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, png[..8]);
 
         var foundData = false;
+
         for (var offset = 8; offset < png.Length;)
         {
             var length = BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(offset, 4));
             var chunk = png.AsSpan(offset + 4, length + 4);
             var checksum = BinaryPrimitives.ReadUInt32BigEndian(png.AsSpan(offset + length + 8, 4));
             Assert.AreEqual(Crc32.HashToUInt32(chunk), checksum);
+
             if (Encoding.ASCII.GetString(chunk[..4]) == "IDAT")
             {
                 using var compressed = new MemoryStream(chunk[4..].ToArray());

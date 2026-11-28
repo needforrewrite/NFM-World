@@ -15,18 +15,22 @@ public static class RoleCommand
     public static bool TryParse(string[] args, out (string? Username, string? Role) parsed)
     {
         parsed = default;
+
         if (args.Length == 0)
+
             return false;
 
         if (args.Length == 1 && args[0] == "--list-roles")
         {
             parsed = (null, null);
+
             return true;
         }
 
         if (args.Length == 3 && args[0] == "--set-role")
         {
             parsed = (args[1], args[2]);
+
             return true;
         }
 
@@ -48,6 +52,7 @@ public static class RoleCommand
         await db.Database.MigrateAsync(ct);
 
         if (args.Username is null)
+
             return await ListRolesAsync(db, ct);
 
         if (!Enum.TryParse<UserRole>(args.Role, ignoreCase: true, out var role))
@@ -55,20 +60,24 @@ public static class RoleCommand
             Console.WriteLine(
                 "Unknown role. Accepted roles: " + string.Join(", ", Enum.GetNames<UserRole>()) + "."
             );
+
             return 2;
         }
 
         var normalized = UsernamePolicy.Normalize(args.Username);
         var user = await db.Users.FirstOrDefaultAsync(u => u.UsernameNormalized == normalized, ct);
+
         if (user is null)
         {
             Console.WriteLine("no such account");
+
             return 1;
         }
 
         user.Role = role;
         await db.SaveChangesAsync(ct);
         Console.WriteLine($"{user.Username} -> {role}");
+
         return 0;
     }
 
@@ -80,6 +89,7 @@ public static class RoleCommand
             .ToListAsync(ct);
         foreach (var row in rows)
             Console.WriteLine($"{row.Username} -> {row.Role}");
+
         return 0;
     }
 }

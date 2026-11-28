@@ -13,7 +13,10 @@ internal sealed class LoadingSpinner : View
     {
         var center = position + size * 0.5f;
         var radius = MathF.Min(Radius * G.Scale, MathF.Min(size.X, size.Y) * 0.25f);
-        if (radius <= 0) return;
+
+        if (radius <= 0)
+
+            return;
         var angle = (float)(Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency % 1) * 360;
 
         G.SaveState();

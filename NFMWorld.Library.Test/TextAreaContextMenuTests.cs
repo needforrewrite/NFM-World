@@ -60,6 +60,7 @@ public class TextAreaContextMenuTests
         root.AddChild(area);
         root.LayoutAndRender(new Vector2(width, height));
         area.Focus();
+
         return root;
     }
 
@@ -316,6 +317,7 @@ public class TextAreaContextMenuTests
         scroller.AddChild(popup);
         root.AddChild(scroller);
         root.LayoutAndRender(new Vector2(200, 100));
+
         return popup;
     }
 
@@ -365,6 +367,7 @@ public class TextAreaContextMenuTests
         root.LayoutAndRender(new Vector2(200, 100));
         scroller.ScrollTop = 20;
         root.LayoutAndRender(new Vector2(200, 100));
+
         return popup.LayoutBorderPosition.Y;
     }
 

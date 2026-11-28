@@ -18,6 +18,7 @@ internal sealed class HsbColorPicker : View
         _state = new HsbColorState(read());
         Styles = Sx.Styles(width: 100.Percent(), flexDirection: FlexDirection.Column, flexShrink: 0, gapRow: 2);
         string[] labels = ["Hue", "Saturation", "Brightness"];
+
         for (var i = 0; i < labels.Length; i++)
         {
             var channel = i;
@@ -34,13 +35,19 @@ internal sealed class HsbColorPicker : View
             {
                 Styles = Sx.Styles(height: 20, flexGrow: 1, minWidth: 0)
             };
-            KeyboardNavigation.Bind(slider, key =>
+            KeyboardNavigation.Bind(
+                slider,
+                key =>
                 {
-                    if (key is not (Key.Left or Key.Right or Key.Home or Key.End)) return false;
+                    if (key is not (Key.Left or Key.Right or Key.Home or Key.End))
+
+                        return false;
                     Change(key == Key.Home ? 0 : key == Key.End ? 1
                     : _state.Channel(channel) + (key == Key.Left ? -1 : 1) / 100.0);
+
                     return true;
-                }, value => focused.Value = value
+                },
+                value => focused.Value = value
             );
             AddChild(Sx.View(
                 style: () => Sx.Styles(
@@ -74,7 +81,8 @@ internal sealed class HsbColorPicker : View
     private void Sync()
     {
         var color = _read();
-        if (color != _state.Color) _state.Set(color);
+        if (color != _state.Color)
+            _state.Set(color);
     }
 
     protected override void GameTick() => Sync();

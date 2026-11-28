@@ -16,27 +16,24 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImChunkStreamImGuiTableSettings
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImVector<byte> Buf;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImChunkStreamImGuiTableSettings
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImVector<byte> Buf;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImChunkStreamImGuiTableSettings(ImVector<byte> buf = default)
-		{
-			Buf = buf;
-		}
-
-
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImChunkStreamImGuiTableSettings(ImVector<byte> buf = default)
+        {
+            Buf = buf;
+        }
+    }
 }

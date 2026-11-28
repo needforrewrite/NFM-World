@@ -13,25 +13,25 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiFocusRequestFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiFocusRequestFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Find last focused child (if any) and focus it instead.<br/>
-		/// </summary>
-		RestoreFocusedChild = unchecked(1),
+        /// <summary>
+        /// Find last focused child (if any) and focus it instead.<br/>
+        /// </summary>
+        RestoreFocusedChild = unchecked(1),
 
-		/// <summary>
-		/// Do not set focus if the window is below a modal.<br/>
-		/// </summary>
-		UnlessBelowModal = unchecked(2),
-	}
+        /// <summary>
+        /// Do not set focus if the window is below a modal.<br/>
+        /// </summary>
+        UnlessBelowModal = unchecked(2),
+    }
 }

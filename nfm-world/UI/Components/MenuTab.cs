@@ -38,6 +38,7 @@ public static class MenuTab
                     backgroundColor: active() ? new Color(22, 42, 80, 220)
                         : hovered.Value || focused.Value ? new Color(22, 42, 80, 130) : Theme.Transparent
                 );
+
                 return style is null ? defaults : defaults.Over(style());
             },
             onmouseenter: _ => hovered.Value = true,
@@ -55,6 +56,7 @@ public static class MenuTab
                             foregroundColor: active() ? new Color(205, 227, 255)
                                 : hovered.Value ? new Color(185, 211, 255) : new Color(130, 155, 195)
                         );
+
                         return textStyle is null ? defaults : defaults.Over(textStyle());
                     }
                 ),
@@ -72,13 +74,17 @@ public static class MenuTab
                 )
             ]
         );
+
         return keyboardNavigation
             ? KeyboardNavigation.Bind(
                 node,
                 key =>
                 {
-                    if (key is not (Key.Enter or Key.Space)) return false;
+                    if (key is not (Key.Enter or Key.Space))
+
+                        return false;
                     onPress();
+
                     return true;
                 },
                 value => focused.Value = value,

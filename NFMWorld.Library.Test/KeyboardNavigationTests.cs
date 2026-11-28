@@ -73,17 +73,23 @@ public class KeyboardNavigationTests
         var activations = 0;
         var confirm = Control(key =>
             {
-                if (key != Key.Enter) return false;
+                if (key != Key.Enter)
+
+                    return false;
                 activations++;
                 modal.Styles = modal.Styles with { Display = Display.None };
+
                 return true;
             }
         );
         modal.AddChild(confirm);
         var opener = Control(key =>
             {
-                if (key != Key.Enter) return false;
+                if (key != Key.Enter)
+
+                    return false;
                 modal.Styles = modal.Styles with { Display = Display.Flex };
+
                 return true;
             }
         );
@@ -113,6 +119,7 @@ public class KeyboardNavigationTests
                 if (key == Key.Down)
                 {
                     moves++;
+
                     return true;
                 }
 
@@ -176,6 +183,7 @@ public class KeyboardNavigationTests
         };
         root.AddChild(scroll);
         var controls = Enumerable.Range(0, 6).Select(_ => Control()).ToArray();
+
         foreach (var control in controls)
         {
             control.Styles = Sx.Styles(height: 50, flexShrink: 0);
@@ -185,7 +193,8 @@ public class KeyboardNavigationTests
         root.LayoutAndRender(new Vector2(300, 100));
         var navigation = new KeyboardNavigation();
         navigation.UpdateFocus(root);
-        for (var i = 0; i < 5; i++) navigation.HandleKey(root, Key.Down);
+        for (var i = 0; i < 5; i++)
+            navigation.HandleKey(root, Key.Down);
 
         Assert.AreSame(controls[^1], FocusManager.FocusedNode);
         Assert.IsTrue(scroll.ScrollTop > 0);
@@ -201,6 +210,7 @@ public class KeyboardNavigationTests
         };
         root.AddChild(scroll);
         var controls = Enumerable.Range(0, 6).Select(_ => Control()).ToArray();
+
         foreach (var control in controls)
         {
             control.Styles = Sx.Styles(height: 50, flexShrink: 0);
@@ -210,7 +220,8 @@ public class KeyboardNavigationTests
         root.LayoutAndRender(new Vector2(300, 100));
         var navigation = new KeyboardNavigation();
         navigation.UpdateFocus(root);
-        for (var i = 0; i < 4; i++) navigation.HandleKey(root, Key.Down);
+        for (var i = 0; i < 4; i++)
+            navigation.HandleKey(root, Key.Down);
         scroll.ScrollTop = 0;
         root.LayoutAndRender(new Vector2(300, 100));
 

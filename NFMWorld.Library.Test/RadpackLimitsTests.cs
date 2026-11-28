@@ -12,6 +12,7 @@ public class RadpackLimitsTests
         using var output = new MemoryStream();
         using (var deflate = new DeflateStream(output, CompressionLevel.Optimal, leaveOpen: true))
             deflate.Write(new byte[decompressedBytes]);
+
         return output.ToArray();
     }
 

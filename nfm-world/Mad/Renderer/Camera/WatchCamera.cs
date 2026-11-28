@@ -34,6 +34,7 @@ public class WatchCamera
 
         var snap = _relocate;
         var position = camera.Position;
+
         if (_relocate)
         {
             // 5000 ahead along the car's heading, 400 to the side, up to 1400 above it.
@@ -52,6 +53,7 @@ public class WatchCamera
         }
 
         var lookAt = new Vector3(carX, _lookY, carZ);
+
         if (snap)
         {
             camera.PositionWithoutInterpolation = position;

@@ -61,15 +61,18 @@ public abstract class BaseStageRenderingPhase : BasePhase
     internal void TakeStageFrom(BaseStageRenderingPhase source, bool takeMusic = true)
     {
         if (CurrentStage != null || source.CurrentStage == null || source.StageName != StageName)
+
             throw new InvalidOperationException("Stage handoff requires an empty destination and the same loaded stage.");
 
         CurrentStage = source.CurrentStage;
+
         if (takeMusic)
         {
             _stageMusic = source._stageMusic;
             source._stageMusic = null;
             _musicRequest = source._musicRequest;
-            if (_musicRequest is not null) _musicRequest.Owner = this;
+            if (_musicRequest is not null)
+                _musicRequest.Owner = this;
             source._musicRequest = null;
         }
 
@@ -173,14 +176,17 @@ public abstract class BaseStageRenderingPhase : BasePhase
     )
     {
         ClientStage? next = null;
+
         try
         {
             next = await ClientStage.CreateAsync(stageName, CarsInRace, Camera, LightCameras, token, stageData);
             await LoadingWork.NextFrame;
             token.ThrowIfCancellationRequested();
+
             if (_disposed)
             {
                 next.Dispose();
+
                 return;
             }
 
@@ -190,9 +196,11 @@ public abstract class BaseStageRenderingPhase : BasePhase
             CurrentStage.Adopt();
             next = null;
             IsStageLoading = false;
-            if (_active) CurrentStage.Renderer.Activate();
+            if (_active)
+                CurrentStage.Renderer.Activate();
             OnStageLoaded();
-            if (loadMusic) LoadStageMusic(reloadIfLoaded: reloadIfLoaded);
+            if (loadMusic)
+                LoadStageMusic(reloadIfLoaded: reloadIfLoaded);
         }
         catch (OperationCanceledException)
         {
@@ -203,7 +211,10 @@ public abstract class BaseStageRenderingPhase : BasePhase
         {
             await LoadingWork.NextFrame;
             next?.Dispose();
-            if (token.IsCancellationRequested || _disposed) return;
+
+            if (token.IsCancellationRequested || _disposed)
+
+                return;
             IsStageLoading = false;
             Logging.Error($"Could not load stage '{stageName}': {ex.Message}");
             OnStageLoadFailed(ex);
@@ -223,8 +234,11 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     protected virtual (string Path, double Tempo, double Frequency)? GetMusicTrack()
     {
-        if (CurrentStage == null || string.IsNullOrEmpty(CurrentStage.MusicPath)) return null;
+        if (CurrentStage == null || string.IsNullOrEmpty(CurrentStage.MusicPath))
+
+            return null;
         var remastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage.RemasteredMusicPath);
+
         return ($"data/music/{(remastered ? CurrentStage.RemasteredMusicPath : CurrentStage.MusicPath)}",
             remastered ? 1d : CurrentStage.MusicTempoMul,
             remastered ? 1d : CurrentStage.MusicFreqMul);
@@ -232,11 +246,15 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     protected virtual void LoadStageMusic(bool reloadIfLoaded = false)
     {
-        if (!reloadIfLoaded && (_stageMusic is not null || _musicRequest is not null)) return;
+        if (!reloadIfLoaded && (_stageMusic is not null || _musicRequest is not null))
+
+            return;
         _musicRequest = null;
+
         if (GetMusicTrack() is not { } track)
         {
             UnloadStageMusic();
+
             return;
         }
 
@@ -253,14 +271,17 @@ public abstract class BaseStageRenderingPhase : BasePhase
     )
     {
         IRadicalMusic? music = null;
+
         try
         {
             music = await MusicLoader.LoadAsync(track.Path, track.Tempo, embedded);
             await LoadingWork.NextFrame;
             var owner = request.Owner;
+
             if (owner._disposed || !ReferenceEquals(owner._musicRequest, request))
             {
                 music.Dispose();
+
                 return;
             }
 
@@ -268,7 +289,8 @@ public abstract class BaseStageRenderingPhase : BasePhase
             var previous = owner._stageMusic;
             owner._stageMusic = music;
             owner._musicRequest = null;
-            if (owner._active) GameSparker.CurrentMusic = music;
+            if (owner._active)
+                GameSparker.CurrentMusic = music;
             previous?.Dispose();
         }
         catch (Exception ex)
@@ -276,7 +298,8 @@ public abstract class BaseStageRenderingPhase : BasePhase
             await LoadingWork.NextFrame;
             music?.Dispose();
             var owner = request.Owner;
-            if (ReferenceEquals(owner._musicRequest, request)) owner._musicRequest = null;
+            if (ReferenceEquals(owner._musicRequest, request))
+                owner._musicRequest = null;
             Logging.Error($"Could not load music '{track.Path}': {ex.Message}");
         }
     }
@@ -294,7 +317,10 @@ public abstract class BaseStageRenderingPhase : BasePhase
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
-        if (imguiWantsKeyboard) return;
+
+        if (imguiWantsKeyboard)
+
+            return;
     }
 
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
@@ -329,6 +355,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
         base.Render(cb, alpha);
 
         if (CurrentStage == null)
+
             return;
 
         foreach (var lightCamera in LightCameras)

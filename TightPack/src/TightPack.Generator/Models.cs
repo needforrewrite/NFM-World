@@ -136,8 +136,11 @@ internal sealed class TypeModel
     public List<string> OnDeserialized = new();
 
     public bool HasSerializationCallbacks =>
-        OnSerializing.Count != 0 || OnSerialized.Count != 0 ||
-        OnDeserializing.Count != 0 || OnDeserialized.Count != 0;
+        OnSerializing.Count != 0
+        || OnSerialized.Count != 0
+        ||
+        OnDeserializing.Count != 0
+        || OnDeserialized.Count != 0;
 }
 
 internal sealed class UnionCaseModel

@@ -37,10 +37,12 @@ internal sealed class WorldHud(IHudData race)
             Anchored(
                 Sx.Styles(top: 16, left: 16, width: 190, flexDirection: FlexDirection.Column, gapRow: 8),
                 [
-                    Sx.Show(() => race.TotalLaps > 0, () => Panel(
-                        Sx.View(
-                            style: () => Sx.Styles(flexDirection: FlexDirection.Column),
-                            children:
+                    Sx.Show(
+                        () => race.TotalLaps > 0,
+                        () => Panel(
+                            Sx.View(
+                                style: () => Sx.Styles(flexDirection: FlexDirection.Column),
+                                children:
                             [
                                 Sx.Text(style: () => Label, text: () => $"LAP {race.Lap}/{race.TotalLaps}"),
                                 Sx.Show(
@@ -48,8 +50,9 @@ internal sealed class WorldHud(IHudData race)
                                     () => Sx.Text(style: () => Big(26), text: () => FormatTime(race.LapTimeMs))
                                 )
                             ]
+                            )
                         )
-                    )),
+                    ),
                     Panel(
                         GlassCardUi.StatBar("POWER", () => race.PowerFraction, Theme.MenuBlue, 8),
                         GlassCardUi.StatBar("DAMAGE", () => race.DamageFraction, Theme.Danger, 8)
@@ -150,6 +153,7 @@ internal sealed class WorldHud(IHudData race)
             paddingRight: 14,
             flexDirection: FlexDirection.Column
         );
+
         return extra is { } e ? style.Over(e) : style;
     }
 
@@ -160,6 +164,7 @@ internal sealed class WorldHud(IHudData race)
         var millis = ms % 1000;
 
         var prefix = minutes > 0 ? $"{minutes:00}:" : "";
+
         return $"{prefix}{seconds:00}.{millis:000}";
     }
 }

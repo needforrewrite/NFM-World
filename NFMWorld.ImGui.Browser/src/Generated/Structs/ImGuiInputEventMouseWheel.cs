@@ -16,39 +16,40 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEventMouseWheel
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float WheelX;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEventMouseWheel
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float WheelX;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float WheelY;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float WheelY;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ImGuiMouseSource MouseSource;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEventMouseWheel(float wheelX = default, float wheelY = default, ImGuiMouseSource mouseSource = default)
-		{
-			WheelX = wheelX;
-			WheelY = wheelY;
-			MouseSource = mouseSource;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ImGuiMouseSource MouseSource;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEventMouseWheel(
+            float wheelX = default,
+            float wheelY = default,
+            ImGuiMouseSource mouseSource = default
+        )
+        {
+            WheelX = wheelX;
+            WheelY = wheelY;
+            MouseSource = mouseSource;
+        }
+    }
 }

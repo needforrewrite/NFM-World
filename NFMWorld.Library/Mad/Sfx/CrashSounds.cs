@@ -32,12 +32,19 @@ public sealed class CrashSoundQueue<TSource> where TSource : class
 
     public void Enqueue(TSource source, CrashSoundEvent sound)
     {
-        if (!float.IsFinite(sound.Strength)) return;
+        if (!float.IsFinite(sound.Strength))
+
+            return;
+
         if (_pending.TryGetValue(sound.Contact, out var previous))
         {
-            if (sound.Kind == 1 && previous.Sound.Kind != 1) return;
+            if (sound.Kind == 1 && previous.Sound.Kind != 1)
+
+                return;
             if ((sound.Kind == 1) == (previous.Sound.Kind == 1)
-                && MathF.Abs(sound.Strength) <= MathF.Abs(previous.Sound.Strength)) return;
+                && MathF.Abs(sound.Strength) <= MathF.Abs(previous.Sound.Strength))
+
+                return;
         }
 
         _pending[sound.Contact] = new Pending(source, sound);
@@ -49,25 +56,30 @@ public sealed class CrashSoundQueue<TSource> where TSource : class
         foreach (var (contact, until) in _cooldowns)
             if (until <= _tick)
                 _expired.Add(contact);
-        foreach (var contact in _expired) _cooldowns.Remove(contact);
+        foreach (var contact in _expired)
+            _cooldowns.Remove(contact);
         _expired.Clear();
         foreach (var (source, cooldown) in _landingCooldowns)
             if (cooldown.Until <= _tick)
                 _expiredLandings.Add(source);
-        foreach (var source in _expiredLandings) _landingCooldowns.Remove(source);
+        foreach (var source in _expiredLandings)
+            _landingCooldowns.Remove(source);
         _expiredLandings.Clear();
         foreach (var (car, tick) in _crashAvailableAt)
             if (tick <= _tick)
                 _expiredCars.Add(car);
-        foreach (var car in _expiredCars) _crashAvailableAt.Remove(car);
+        foreach (var car in _expiredCars)
+            _crashAvailableAt.Remove(car);
         _expiredCars.Clear();
 
         for (var i = 0; i < _delayed.Count;)
         {
             var delayed = _delayed[i];
+
             if (delayed.Tick > _tick)
             {
                 i++;
+
                 continue;
             }
 
@@ -78,9 +90,12 @@ public sealed class CrashSoundQueue<TSource> where TSource : class
         foreach (var (contact, pending) in _pending)
         {
             var cooldownUntil = _tick + Math.Max(1, (int)(2 / Physics.PHYSICS_MULTIPLIER));
+
             if (_cooldowns.TryGetValue(contact, out var until))
             {
-                if (pending.Sound.Kind != 1) _cooldowns[contact] = Math.Max(until, cooldownUntil);
+                if (pending.Sound.Kind != 1)
+                    _cooldowns[contact] = Math.Max(until, cooldownUntil);
+
                 continue;
             }
 
@@ -89,16 +104,22 @@ public sealed class CrashSoundQueue<TSource> where TSource : class
                 if (!_landings.TryGetValue(pending.Source, out var previous)
                     || MathF.Abs(pending.Sound.Strength) > MathF.Abs(previous.Sound.Strength))
                     _landings[pending.Source] = pending;
+
                 continue;
             }
 
             var queuedIndex = -1;
+
             for (var i = 0; i < _delayed.Count; i++)
             {
                 var queuedContact = _delayed[i].Pending.Sound.Contact;
+
                 if (!queuedContact.Involves(contact.FirstCar)
-                    && (contact.SecondCar < 0 || !queuedContact.Involves(contact.SecondCar))) continue;
+                    && (contact.SecondCar < 0 || !queuedContact.Involves(contact.SecondCar)))
+
+                    continue;
                 queuedIndex = i;
+
                 break;
             }
 
@@ -111,6 +132,7 @@ public sealed class CrashSoundQueue<TSource> where TSource : class
                     && MathF.Abs(pending.Sound.Strength) > MathF.Abs(queued.Pending.Sound.Strength))
                     _delayed[queuedIndex] = queued with { Pending = pending };
                 _cooldowns[contact] = Math.Max(cooldownUntil, queued.Tick + 1);
+
                 continue;
             }
 
@@ -118,15 +140,20 @@ public sealed class CrashSoundQueue<TSource> where TSource : class
             if (contact.SecondCar >= 0)
                 playAt = Math.Max(playAt, _crashAvailableAt.GetValueOrDefault(contact.SecondCar));
             _crashAvailableAt[contact.FirstCar] = playAt + CrashSpacingTicks;
-            if (contact.SecondCar >= 0) _crashAvailableAt[contact.SecondCar] = playAt + CrashSpacingTicks;
-            if (playAt == _tick) play(pending.Source, pending.Sound);
-            else _delayed.Add(new Delayed(pending, playAt));
+            if (contact.SecondCar >= 0)
+                _crashAvailableAt[contact.SecondCar] = playAt + CrashSpacingTicks;
+            if (playAt == _tick)
+                play(pending.Source, pending.Sound);
+            else
+                _delayed.Add(new Delayed(pending, playAt));
             _cooldowns[contact] = playAt + Math.Max(1, (int)(2 / Physics.PHYSICS_MULTIPLIER));
         }
 
         foreach (var (source, pending) in _landings)
         {
-            if (_landingCooldowns.ContainsKey(source)) continue;
+            if (_landingCooldowns.ContainsKey(source))
+
+                continue;
             play(source, pending.Sound);
             _landingCooldowns[source] = (_tick + Math.Max(1, (int)(3 / Physics.PHYSICS_MULTIPLIER)), pending.Sound.Contact);
         }
@@ -144,7 +171,7 @@ public sealed class CrashSoundQueue<TSource> where TSource : class
         foreach (var contact in _cooldowns.Keys.Where(contact => contact.Involves(car)).ToArray())
             _cooldowns.Remove(contact);
         foreach (var source in _landingCooldowns.Where(entry => entry.Value.Contact.Involves(car)).Select(entry => entry.Key)
-                     .ToArray())
+            .ToArray())
             _landingCooldowns.Remove(source);
     }
 

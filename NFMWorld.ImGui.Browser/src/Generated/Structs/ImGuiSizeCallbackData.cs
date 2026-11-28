@@ -16,46 +16,48 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// Resizing callback data to apply custom constraint. As enabled by SetNextWindowSizeConstraints(). Callback is called during the next Begin().<br/>
-	/// NB: For basic minmax size constraint on each axis you don't need to use the callback! The SetNextWindowSizeConstraints() parameters are enough.<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiSizeCallbackData
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void* UserData;
+    /// <summary>
+    /// Resizing callback data to apply custom constraint. As enabled by SetNextWindowSizeConstraints(). Callback is called during the next Begin().<br/>
+    /// NB: For basic minmax size constraint on each axis you don't need to use the callback! The SetNextWindowSizeConstraints() parameters are enough.<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiSizeCallbackData
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void* UserData;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 Pos;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 Pos;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 CurrentSize;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 CurrentSize;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 DesiredSize;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiSizeCallbackData(void* userData = default, Vector2 pos = default, Vector2 currentSize = default, Vector2 desiredSize = default)
-		{
-			UserData = userData;
-			Pos = pos;
-			CurrentSize = currentSize;
-			DesiredSize = desiredSize;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 DesiredSize;
 
 
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiSizeCallbackData(
+            void* userData = default,
+            Vector2 pos = default,
+            Vector2 currentSize = default,
+            Vector2 desiredSize = default
+        )
+        {
+            UserData = userData;
+            Pos = pos;
+            CurrentSize = currentSize;
+            DesiredSize = desiredSize;
+        }
+    }
 }

@@ -52,7 +52,7 @@ public class Lighting
         bool isCreateShadowMap = false,
         int numCascade = -1,
         int totalCascades = 3
-    )
+        )
         : this(
             lightCameras,
             shadowMaps,
@@ -76,7 +76,9 @@ public class Lighting
         {
             foreach (var uniform in reflection.Uniforms)
             {
-                if (uniform.Name == name) return uniform.Offset;
+                if (uniform.Name == name)
+
+                    return uniform.Offset;
             }
 
             return -1;
@@ -86,7 +88,9 @@ public class Lighting
         {
             foreach (var texture in reflection.Textures)
             {
-                if (texture.Name == name) return texture.Slot;
+                if (texture.Name == name)
+
+                    return texture.Slot;
             }
 
             return -1;
@@ -95,14 +99,20 @@ public class Lighting
         void SetShadowMapTexture(string name, IRenderTarget? shadowMap)
         {
             var slot = TextureSlotOf(name);
-            if (slot < 0 || shadowMap is null) return;
+
+            if (slot < 0 || shadowMap is null)
+
+                return;
             cb.SetShaderResource(slot, shadowMap.ColorTexture, Effects.ShadowMapSampler);
         }
 
         void SetMatrix(string name, Matrix m)
         {
             var slot = SlotOf(name);
-            if (slot < 0) return;
+
+            if (slot < 0)
+
+                return;
             Span<float> v =
             [
                 m.M11, m.M12, m.M13, m.M14,
@@ -119,7 +129,10 @@ public class Lighting
         void SetFloat(string name, float value)
         {
             var slot = SlotOf(name);
-            if (slot < 0) return;
+
+            if (slot < 0)
+
+                return;
             Span<float> v = [value];
             cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
         }
@@ -127,7 +140,10 @@ public class Lighting
         void SetFloat3(string name, Vector3 value)
         {
             var slot = SlotOf(name);
-            if (slot < 0) return;
+
+            if (slot < 0)
+
+                return;
             Span<float> v = [value.X, value.Y, value.Z];
             cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
         }
@@ -152,6 +168,7 @@ public class Lighting
         Matrix ShadowSampleMatrix(Matrix lightViewProjection)
         {
             if (!flipShadowSampleV)
+
                 return lightViewProjection;
 
             // Column 1, not row 1: the shaders use row-vector math - mul(worldPos, lightViewProj) - so
@@ -161,6 +178,7 @@ public class Lighting
             lightViewProjection.M22 = -lightViewProjection.M22;
             lightViewProjection.M32 = -lightViewProjection.M32;
             lightViewProjection.M42 = -lightViewProjection.M42;
+
             return lightViewProjection;
         }
 
@@ -185,6 +203,7 @@ public class Lighting
         // halving the brightness of anything inside the light frustum (PS_ApplyShadowing) and
         // flattening the whole scene. It is declared `float` in Mad.fxh; see SetFloat.
         var usableShadowMaps = 0;
+
         for (var i = 0; i < ShadowMaps.Count && i < TotalCascades; i++)
         {
             if (ShadowMaps[i] is not null)
@@ -195,9 +214,12 @@ public class Lighting
 
         SetFloat("NumCascades", usableShadowMaps);
 
-        if (ShadowMaps.Count > 0) SetShadowMapTexture("ShadowMap0", ShadowMaps[0]);
-        if (ShadowMaps.Count > 1) SetShadowMapTexture("ShadowMap1", ShadowMaps[1]);
-        if (ShadowMaps.Count > 2) SetShadowMapTexture("ShadowMap2", ShadowMaps[2]);
+        if (ShadowMaps.Count > 0)
+            SetShadowMapTexture("ShadowMap0", ShadowMaps[0]);
+        if (ShadowMaps.Count > 1)
+            SetShadowMapTexture("ShadowMap1", ShadowMaps[1]);
+        if (ShadowMaps.Count > 2)
+            SetShadowMapTexture("ShadowMap2", ShadowMaps[2]);
 
         SetFloat3("LightDirection", World.LightDirection);
     }

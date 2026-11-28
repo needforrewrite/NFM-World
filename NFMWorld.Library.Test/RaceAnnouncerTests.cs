@@ -144,7 +144,8 @@ public class RaceAnnouncerTests
 
         // The checkpoint flash is half a second, not the status line's default.
         var ticks = (int)MathF.Ceiling(0.5f * Physics.TargetTps);
-        for (var i = 0; i < ticks - 1; i++) announcer.Tick(car, gamemode);
+        for (var i = 0; i < ticks - 1; i++)
+            announcer.Tick(car, gamemode);
         Assert.IsNotNull(announcer.Status);
         announcer.Tick(car, gamemode);
         Assert.IsNull(announcer.Status);
@@ -233,10 +234,12 @@ public class RaceAnnouncerTests
 
         // Pointed straight away from the checkpoint.
         car.CarPhysics.Cxz = 180;
-        for (var i = 0; i < 10; i++) announcer.Tick(car, gamemode);
+        for (var i = 0; i < 10; i++)
+            announcer.Tick(car, gamemode);
         Assert.AreNotEqual("Wrong Way!", announcer.Status?.Text, "one tick of a bad heading is not a wrong way");
 
-        for (var i = 0; i < (int)(2 * Physics.TargetTps); i++) announcer.Tick(car, gamemode);
+        for (var i = 0; i < (int)(2 * Physics.TargetTps); i++)
+            announcer.Tick(car, gamemode);
         Assert.AreEqual("Wrong Way!", announcer.Status?.Text);
     }
 
@@ -247,7 +250,8 @@ public class RaceAnnouncerTests
         car.Control.Arrace = true;
         car.CarPhysics.Cxz = 180;
 
-        for (var i = 0; i < (int)(2 * Physics.TargetTps); i++) announcer.Tick(car, gamemode);
+        for (var i = 0; i < (int)(2 * Physics.TargetTps); i++)
+            announcer.Tick(car, gamemode);
         Assert.AreNotEqual("Wrong Way!", announcer.Status?.Text);
     }
 
@@ -317,7 +321,8 @@ public class RaceAnnouncerTests
         Assert.AreEqual("Checkpoint Missed!", announcer.Status?.Text);
 
         // Nothing new to say until the next checkpoint is crossed.
-        for (var i = 0; i < (int)(4 * Physics.TargetTps); i++) announcer.Tick(car, gamemode);
+        for (var i = 0; i < (int)(4 * Physics.TargetTps); i++)
+            announcer.Tick(car, gamemode);
         Assert.IsNull(announcer.Status);
     }
 
@@ -330,7 +335,8 @@ public class RaceAnnouncerTests
         // The grid is thousands of units from the first checkpoint; that is a start, not a miss.
         car.CarPhysics.Mtouch = true;
         car.Position = new f64Vector3(checkpoint.Position.X + 12_000, checkpoint.Position.Y, checkpoint.Position.Z);
-        for (var i = 0; i < (int)Physics.TargetTps; i++) announcer.Tick(car, gamemode);
+        for (var i = 0; i < (int)Physics.TargetTps; i++)
+            announcer.Tick(car, gamemode);
         Assert.IsNull(announcer.Status);
     }
 
@@ -371,7 +377,8 @@ public class RaceAnnouncerTests
         var (_, gamemode, own) = Create(opponents: 2, spectator: joinedAsSpectator);
         var viewed = gamemode.Players[1].Car!;
         var victim = gamemode.Players[2].Car!;
-        if (!joinedAsSpectator) own.CarPhysics.Wasted = true;
+        if (!joinedAsSpectator)
+            own.CarPhysics.Wasted = true;
         var feedback = new SpectatorRaceFeedback();
         feedback.Tick(viewed, gamemode);
         victim.CarPhysics.LastDamageFrom = own.CarPhysics.Im;
@@ -426,7 +433,8 @@ public class RaceAnnouncerTests
         Assert.IsTrue(feedback.PlayPowerUp);
         feedback.Tick(viewed, gamemode);
         Assert.IsFalse(feedback.PlayPowerUp);
-        for (var tick = 0; tick < 500; tick++) feedback.Tick(viewed, gamemode);
+        for (var tick = 0; tick < 500; tick++)
+            feedback.Tick(viewed, gamemode);
         Assert.IsNull(feedback.Stunt, "an unchanged owner snapshot must not keep replaying the stunt");
         Assert.IsNull(feedback.Status);
         physics.TotalStuntZy = 360;
@@ -517,7 +525,8 @@ public class RaceAnnouncerTests
         announcer.Tick(car, gamemode);
         Assert.AreEqual("Bot1 has left the game (timed out)", announcer.Status?.Text);
         opponent.MarkDeparted(PlayerDepartureReason.Disconnected);
-        for (var i = 0; i < (int)(Physics.TargetTps * 4); i++) announcer.Tick(car, gamemode);
+        for (var i = 0; i < (int)(Physics.TargetTps * 4); i++)
+            announcer.Tick(car, gamemode);
         Assert.IsNull(announcer.Status);
         Assert.AreEqual(PlayerDepartureReason.TimedOut, opponent.DepartureReason);
     }
@@ -591,6 +600,7 @@ public class RaceAnnouncerTests
         {
             new() { PlayerName = "Human", CarName = CarName, Color = default, IsBot = false, IsClientPlayer = !spectator }
         };
+
         for (var i = 0; i < opponents; i++)
         {
             players.Add(
@@ -603,6 +613,7 @@ public class RaceAnnouncerTests
 
         var gamemode = new TestGamemode(players.ToArray(), laps, checkpoints);
         gamemode.Begin();
+
         return (new RaceAnnouncer(), gamemode, gamemode.Players[0].Car!);
     }
 
@@ -639,6 +650,7 @@ public class RaceAnnouncerTests
         private static BackendStage BuildStage(int laps, bool checkpoints)
         {
             var stage = new AnnouncerStage { Nlaps = (ushort)laps };
+
             if (checkpoints)
             {
                 var rad = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], CarName);

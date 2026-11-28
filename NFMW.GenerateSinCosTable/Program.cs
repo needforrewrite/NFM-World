@@ -3,6 +3,7 @@
 using FixedMathSharp;
 
 var table = new List<long>();
+
 for (int angle = 0; angle < 36000; angle++)
 {
     var actualAngle = angle / 100d;
@@ -13,6 +14,7 @@ for (int angle = 0; angle < 36000; angle++)
 
 using var s = new StreamWriter(File.OpenWrite("SinTable.txt"));
 s.WriteLine("private static readonly ReadOnlySpan<long> SinTable => [");
+
 foreach (var value in table)
 {
     s.WriteLine($"    {value}L,");

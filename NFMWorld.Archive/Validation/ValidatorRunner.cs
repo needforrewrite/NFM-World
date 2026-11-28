@@ -25,6 +25,7 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
     )
     {
         if (!await _gate.WaitAsync(TimeSpan.FromSeconds(30), ct))
+
             return new ValidatorResult(false, null, "The validator is busy; try again shortly.");
 
         try
@@ -44,7 +45,9 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
     )
     {
         var executable = options.ValidatorPath;
+
         if (string.IsNullOrEmpty(executable) || !File.Exists(executable))
+
             return new ValidatorResult(false, null, "Validator is not configured on this server.");
 
         var startInfo = new ProcessStartInfo(executable)
@@ -73,6 +76,7 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
         try
         {
             if (!process.Start())
+
                 return new ValidatorResult(false, null, "Validator could not be started.");
 
             // Reading both pipes concurrently: a validator that writes more than a pipe buffer
@@ -99,9 +103,11 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
             var stderr = await stderrTask;
 
             if (process.ExitCode == 0)
+
                 return new ValidatorResult(true, Parse(stdout), null);
 
             logger.LogInformation("Validator refused {Command} (exit {Code}): {Output}", command, process.ExitCode, stdout);
+
             return new ValidatorResult(
                 false,
                 Parse(stdout),
@@ -115,11 +121,13 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             logger.LogWarning("Validator timed out on {Command}", command);
+
             return new ValidatorResult(false, null, "Validation timed out.");
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Validator failed to run {Command}", command);
+
             return new ValidatorResult(false, null, "Validation could not be completed.");
         }
     }
@@ -128,8 +136,11 @@ public sealed class ValidatorRunner(ArchiveOptions options, ILogger<ValidatorRun
     {
         // The validator prints exactly one JSON object; anything else means it crashed early.
         var line = stdout.Trim().Split('\n').LastOrDefault()?.Trim();
+
         if (string.IsNullOrEmpty(line))
+
             return null;
+
         try
         {
             return JsonDocument.Parse(line).RootElement.Clone();

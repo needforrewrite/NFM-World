@@ -91,12 +91,14 @@ namespace Monogame.ImGuiNetSamples
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(
-                Keys.Escape
-            ))
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
+                || Keyboard.GetState().IsKeyDown(
+                    Keys.Escape
+                ))
                 Exit();
 
             //update logic
+
             if (WasResized)
             {
                 string new_resolution = resolution[select_res];
@@ -155,6 +157,7 @@ namespace Monogame.ImGuiNetSamples
             GraphicsDevice.BlendState = BlendState.Opaque;
 
             //Draw 3D model
+
             if (render_model == 1)
             {
                 DrawModel(suzanne, world, view, projection);
@@ -168,12 +171,14 @@ namespace Monogame.ImGuiNetSamples
             #region ImGui
 
             //Native Demos
+
             if (show_native_examples)
             {
                 DrawImGuiNativeDemos();
             }
 
             //Style Editor
+
             if (show_app_style_editor)
             {
                 ImGui.Begin("Dear ImGui Style Editor");
@@ -182,48 +187,56 @@ namespace Monogame.ImGuiNetSamples
             }
 
             //Metrics window
+
             if (show_app_metrics)
             {
                 ImGui.ShowMetricsWindow();
             }
 
             //About window
+
             if (show_app_about)
             {
                 ImGui.ShowAboutWindow();
             }
 
             //Overlay
+
             if (show_app_simple_overlay)
             {
                 DrawImGuiOverlay(frameRate);
             }
 
             //Menu bar
+
             if (show_app_main_menu_bar)
             {
                 DrawImGuiMenuBar();
             }
 
             //Console
+
             if (show_app_console)
             {
                 DrawImGuiExampleAppConsole();
             }
 
             //Log
+
             if (show_app_log)
             {
                 DrawImGuiDebugLog();
             }
 
             //MonoGame
+
             if (show_monogame_settings)
             {
                 DrawMonoGameWindow();
             }
 
             //Main Demo window
+
             if (show_main_window)
             {
                 DrawDemoWindow();
@@ -254,12 +267,17 @@ namespace Monogame.ImGuiNetSamples
         private void DrawImGuiOverlay(float frameRate)
         {
             ImGuiIOPtr io = ImGui.GetIO();
-            ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags
-                .NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoMove;
+            ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoDecoration
+                                           | ImGuiWindowFlags.AlwaysAutoResize
+                                           | ImGuiWindowFlags
+                .NoSavedSettings
+                                           | ImGuiWindowFlags.NoFocusOnAppearing
+                                           | ImGuiWindowFlags.NoMove;
 
             if (corner >= 0 && corner < 4)
             {
                 //offset X
+
                 if (corner == 1 || corner == 3)
                 {
                     distanceX = (float)graphics.PreferredBackBufferWidth - 250.0f;
@@ -270,6 +288,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 //offset Y
+
                 if (corner == 2 || corner == 3)
                 {
                     distanceY = (float)graphics.PreferredBackBufferHeight - 100.0f;
@@ -280,6 +299,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 //offset menubar
+
                 if ((corner == 0 || corner == 1) && show_app_main_menu_bar)
                 {
                     distanceY += 20.0f;
@@ -290,10 +310,12 @@ namespace Monogame.ImGuiNetSamples
             }
 
             ImGui.SetNextWindowBgAlpha(0.35f);
+
             if (ImGui.Begin("Example: Simple overlay", windowFlags))
             {
                 ImGui.Text("Simple overlay\nin the corner of the screen\n(right-click to change position)");
                 ImGui.Separator();
+
                 if (ImGui.IsMousePosValid())
                 {
                     ImGui.Text(string.Format("Mouse Position: ({0},{1})", io.MousePos.X, io.MousePos.Y));
@@ -308,6 +330,7 @@ namespace Monogame.ImGuiNetSamples
                 if (ImGui.BeginPopupContextWindow())
                 {
                     //if (ImGui.MenuItem("Custom", null, corner == -1)) { corner = -1; }
+
                     if (ImGui.MenuItem("Top-left", null, corner == 0))
                     {
                         corner = 0;
@@ -360,6 +383,7 @@ namespace Monogame.ImGuiNetSamples
                     }
 
                     ImGui.Separator();
+
                     if (ImGui.MenuItem("Cut", "CTRL+X"))
                     {
                     }
@@ -382,6 +406,7 @@ namespace Monogame.ImGuiNetSamples
         private void ShowExampleMenuFile()
         {
             ImGui.MenuItem("(demo menu)", null, false, false);
+
             if (ImGui.MenuItem("New"))
             {
             }
@@ -395,10 +420,12 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.MenuItem("fish_hat.c");
                 ImGui.MenuItem("fish_hat.inl");
                 ImGui.MenuItem("fish_hat.h");
+
                 if (ImGui.MenuItem("More.."))
                 {
                     ImGui.MenuItem("Hello");
                     ImGui.MenuItem("Sailor");
+
                     if (ImGui.BeginMenu("Recurse.."))
                     {
                         ShowExampleMenuFile();
@@ -420,11 +447,13 @@ namespace Monogame.ImGuiNetSamples
             }
 
             ImGui.Separator();
+
             if (ImGui.BeginMenu("Options"))
             {
                 bool enabled = true;
                 ImGui.MenuItem("Enabled", "", enabled);
                 ImGui.BeginChild("child", new Vec2(0, 60), ImGuiChildFlags.Border);
+
                 for (int i = 0; i < 10; i++)
                 {
                     ImGui.Text(string.Format("Scrolling Text {0}", i));
@@ -442,7 +471,9 @@ namespace Monogame.ImGuiNetSamples
             if (ImGui.BeginMenu("Colors"))
             {
                 float sz = ImGui.GetTextLineHeight();
+
                 //ImGui.Text(((int)ImGuiCol.COUNT).ToString()); //Test
+
                 for (int i = 0; i < (int)ImGuiCol.COUNT; i++)
                 {
                     string name = ImGui.GetStyleColorName((ImGuiCol)i);
@@ -466,6 +497,7 @@ namespace Monogame.ImGuiNetSamples
             if (ImGui.BeginMenu("Disabled", false))
             {
             } //Disabled
+
             if (ImGui.MenuItem("Checked", null, true))
             {
             }
@@ -520,10 +552,12 @@ namespace Monogame.ImGuiNetSamples
                 if (!ImGui.Begin(title))
                 {
                     ImGui.End();
+
                     return;
                 }
 
                 //Options menu
+
                 if (ImGui.BeginPopup("Options"))
                 {
                     ImGui.Checkbox("Auto-scroll", ref AutoScroll);
@@ -531,6 +565,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 //Main window
+
                 if (ImGui.Button("Options"))
                 {
                     ImGui.OpenPopup("Options");
@@ -557,6 +592,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vec2(0, 0));
+
                 if (Filter.IsActive())
                 {
                     foreach (string str in debug_log)
@@ -594,14 +630,20 @@ namespace Monogame.ImGuiNetSamples
 
             ImGui.SetNextWindowSize(new Vec2(500, 400), ImGuiCond.FirstUseEver);
             ImGui.Begin("Example: Log");
+
             if (ImGui.SmallButton("[Debug] Add 5 entries"))
             {
                 string[] words = { "Bumfuzzled", "Cattywampus", "Snickersnee", "Abibliophobia", "Absquatulate" };
+
                 foreach (string str in words)
                 {
                     log.AddLog(
-                        "Frame " + ImGui.GetFrameCount() + " [info] Hello, current time is " + ImGui.GetTime()
-                        + " here's a word: " + str
+                        "Frame "
+                        + ImGui.GetFrameCount()
+                        + " [info] Hello, current time is "
+                        + ImGui.GetTime()
+                        + " here's a word: "
+                        + str
                     );
                 }
             }
@@ -649,9 +691,11 @@ namespace Monogame.ImGuiNetSamples
             public void Draw(string title)
             {
                 ImGui.SetNextWindowSize(new Vec2(520, 600), ImGuiCond.FirstUseEver);
+
                 if (!ImGui.Begin(title))
                 {
                     ImGui.End();
+
                     return;
                 }
 
@@ -666,8 +710,10 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 ImGui.TextWrapped(
-                "This example implements a console with basic coloring" + //, completion "+//(TAB key) and history (Up/Down keys)
-                ". A more elaborate " +
+                    "This example implements a console with basic coloring"
+                    + //, completion "+//(TAB key) and history (Up/Down keys)
+                ". A more elaborate "
+                    +
                 "implementation may want to store entries along with extra data such as timestamp, emitter, etc."
                 );
                 ImGui.TextWrapped("Enter 'HELP' for help.");
@@ -680,12 +726,14 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 ImGui.SameLine();
+
                 if (ImGui.SmallButton("Add Debug Error"))
                 {
                     AddLog("[error] something went wrong");
                 }
 
                 ImGui.SameLine();
+
                 if (ImGui.SmallButton("Clear"))
                 {
                     ClearLog();
@@ -696,6 +744,7 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Separator();
 
                 //Options menu
+
                 if (ImGui.BeginPopup("Options"))
                 {
                     ImGui.Checkbox("Auto-scroll", ref AutoScroll_Console);
@@ -703,6 +752,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 //Filter
+
                 if (ImGui.Button("Options"))
                 {
                     ImGui.OpenPopup("Options");
@@ -719,6 +769,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGuiChildFlags.None,
                     ImGuiWindowFlags.HorizontalScrollbar
                 );
+
                 if (ImGui.BeginPopupContextWindow())
                 {
                     if (ImGui.Selectable("Clear"))
@@ -735,6 +786,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vec2(4, 1));
+
                 if (Filter.IsActive())
                 {
                     foreach (string str in console_log)
@@ -743,6 +795,7 @@ namespace Monogame.ImGuiNetSamples
                         {
                             Vec4 color;
                             bool has_color = false;
+
                             if (str.IndexOf("[error]") != -1)
                             {
                                 color = new Vec4(1.0f, 0.4f, 0.4f, 1.0f);
@@ -758,6 +811,7 @@ namespace Monogame.ImGuiNetSamples
                             }
 
                             ImGui.TextUnformatted(str);
+
                             if (has_color)
                             {
                                 ImGui.PopStyleColor();
@@ -771,6 +825,7 @@ namespace Monogame.ImGuiNetSamples
                     {
                         Vec4 color;
                         bool has_color = false;
+
                         if (str.IndexOf("[error]") != -1)
                         {
                             color = new Vec4(1.0f, 0.4f, 0.4f, 1.0f);
@@ -786,6 +841,7 @@ namespace Monogame.ImGuiNetSamples
                         }
 
                         ImGui.TextUnformatted(str);
+
                         if (has_color)
                         {
                             ImGui.PopStyleColor();
@@ -807,6 +863,7 @@ namespace Monogame.ImGuiNetSamples
                 bool reclaim_focus = false;
                 ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags
                     .EnterReturnsTrue; //| ImGuiInputTextFlags.CallbackCompletion | ImGuiInputTextFlags.CallbackHistory;
+
                 if (ImGui.InputText("Input", ref input_buf, 250, input_text_flags))
                 {
                     ExecCommand(input_buf);
@@ -814,6 +871,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 ImGui.SetItemDefaultFocus();
+
                 if (reclaim_focus)
                 {
                     ImGui.SetKeyboardFocusHere(-1);
@@ -825,6 +883,7 @@ namespace Monogame.ImGuiNetSamples
             void ExecCommand(string command)
             {
                 //History
+
                 if (console_history.Count == 10)
                 {
                     console_history.RemoveAt(0);
@@ -836,6 +895,7 @@ namespace Monogame.ImGuiNetSamples
                 AddLog("# " + command);
 
                 //Commands
+
                 if (command == "CLEAR")
                 {
                     ClearLog();
@@ -850,6 +910,7 @@ namespace Monogame.ImGuiNetSamples
                 else if (command == "HISTORY")
                 {
                     int history_pos = 0;
+
                     foreach (string item in console_history)
                     {
                         AddLog("  " + history_pos.ToString() + ": " + item);
@@ -920,6 +981,7 @@ namespace Monogame.ImGuiNetSamples
         private void DrawDemoWindow()
         {
             ImGuiWindowFlags windowFlags = 0;
+
             if (no_titlebar)
             {
                 windowFlags |= ImGuiWindowFlags.NoTitleBar;
@@ -972,18 +1034,21 @@ namespace Monogame.ImGuiNetSamples
             ImGui.SetNextWindowSize(new Vec2(550, 680), ImGuiCond.FirstUseEver);
 
             //Main body
+
             if (!ImGui.Begin(
                 "Dear ImGui Demo / Monogame & ImGui.Net",
                 windowFlags
             )) //ref p_open, windowFlags)) Close button is not changing bool!?
             {
                 ImGui.End();
+
                 return;
             }
 
             ImGui.PushItemWidth(ImGui.GetFontSize() * -12);
 
             //Menu bar
+
             if (ImGui.BeginMenuBar())
             {
                 if (ImGui.BeginMenu("Menu"))
@@ -1070,6 +1135,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.LogButtons();
 
                     HelpMarker("You can also call ImGui.LogText() to output directly to the log without a visual output.");
+
                     if (ImGui.Button("Copy \"Hello, world!\" to clipboard"))
                     {
                         ImGui.LogToClipboard();
@@ -1109,6 +1175,7 @@ namespace Monogame.ImGuiNetSamples
         private void HelpMarker(string desc)
         {
             ImGui.TextDisabled("(?)");
+
             if (ImGui.IsItemHovered())
             {
                 ImGui.BeginTooltip();
@@ -1254,6 +1321,7 @@ namespace Monogame.ImGuiNetSamples
                 if (ImGui.Button("Button"))
                 {
                     clicked++;
+
                     if (clicked == 2)
                     {
                         clicked = 0;
@@ -1298,12 +1366,14 @@ namespace Monogame.ImGuiNetSamples
 
                 float spacing = ImGui.GetStyle().ItemInnerSpacing.X;
                 ImGui.PushButtonRepeat(true);
+
                 if (ImGui.ArrowButton("##left", ImGuiDir.Left))
                 {
                     counter--;
                 }
 
                 ImGui.SameLine(0.0f, spacing);
+
                 if (ImGui.ArrowButton("##right", ImGuiDir.Right))
                 {
                     counter++;
@@ -1314,6 +1384,7 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Text(counter.ToString());
 
                 ImGui.Text("Hover over me");
+
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.SetTooltip("I am a tooltip");
@@ -1321,6 +1392,7 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.SameLine();
                 ImGui.Text("- or me");
+
                 if (ImGui.IsItemHovered())
                 {
                     ImGui.BeginTooltip();
@@ -1340,24 +1412,36 @@ namespace Monogame.ImGuiNetSamples
                 //input
                 ImGui.InputText("input text", ref str0, 128);
                 ImGui.SameLine();
-                HelpMarker("USER:\n" +
-                "Hold SHIFT or use mouse to select text.\n" +
-                "CTRL+Left/Right to word jump.\n" +
-                "CTRL+A or double-click to select all.\n" +
-                "CTRL+X,CTRL+C,CTRL+V clipboard.\n" +
-                "CTRL+Z,CTRL+Y undo/redo.\n" +
-                "ESCAPE to revert.\n\n" +
-                "PROGRAMMER:\n" +
-                "You can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputText() " +
-                "to a dynamic string type. See misc/cpp/imgui_stdlib.h for an example (this is not demonstrated " +
+                HelpMarker("USER:\n"
+                           +
+                "Hold SHIFT or use mouse to select text.\n"
+                           +
+                "CTRL+Left/Right to word jump.\n"
+                           +
+                "CTRL+A or double-click to select all.\n"
+                           +
+                "CTRL+X,CTRL+C,CTRL+V clipboard.\n"
+                           +
+                "CTRL+Z,CTRL+Y undo/redo.\n"
+                           +
+                "ESCAPE to revert.\n\n"
+                           +
+                "PROGRAMMER:\n"
+                           +
+                "You can use the ImGuiInputTextFlags_CallbackResize facility if you need to wire InputText() "
+                           +
+                "to a dynamic string type. See misc/cpp/imgui_stdlib.h for an example (this is not demonstrated "
+                           +
                 "in imgui_demo.cpp).");
 
                 ImGui.InputTextWithHint("input text (w/ hint", "enter text here", ref str1, 10);
 
                 ImGui.InputInt("input int", ref i0);
                 ImGui.SameLine();
-                HelpMarker("You can apply arithmetic operators +,*,/ on numerical values.\n" +
-                            "  e.g. [ 100 ], input \'*2\', result becomes [ 200 ]\n" +
+                HelpMarker("You can apply arithmetic operators +,*,/ on numerical values.\n"
+                           +
+                            "  e.g. [ 100 ], input \'*2\', result becomes [ 200 ]\n"
+                           +
                             "Use +- to subtract.");
 
                 ImGui.InputFloat("input float", ref f0, 0.01f, 1.0f, "%.3f");
@@ -1366,7 +1450,8 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.InputFloat("input scientific", ref f1, 0.0f, 0.0f, "%e");
                 ImGui.SameLine();
-                HelpMarker("You can input value using the scientific notation,\n" +
+                HelpMarker("You can input value using the scientific notation,\n"
+                           +
                             "  e.g. \"1e+8\" becomes \"100000000\".");
 
                 ImGui.InputFloat3("input float 3", ref vec3);
@@ -1374,8 +1459,10 @@ namespace Monogame.ImGuiNetSamples
                 //drag               
                 ImGui.DragInt("drag int", ref i1, 1);
                 ImGui.SameLine();
-                HelpMarker("Click and drag to edit value.\n" +
-                "Hold SHIFT/ALT for faster/slower edit.\n" +
+                HelpMarker("Click and drag to edit value.\n"
+                           +
+                "Hold SHIFT/ALT for faster/slower edit.\n"
+                           +
                 "Double-click or CTRL+click to input value.");
 
                 ImGui.DragInt("drag int 0..100", ref i2, 1, 0, 100, "%d%%");
@@ -1394,9 +1481,12 @@ namespace Monogame.ImGuiNetSamples
                 //color
                 ImGui.ColorEdit3("color 1", ref col1);
                 ImGui.SameLine();
-                HelpMarker("Click on the color square to open a color picker.\n" +
-                "Click and hold to use drag and drop.\n" +
-                "Right-click on the color square to show options.\n" +
+                HelpMarker("Click on the color square to open a color picker.\n"
+                           +
+                "Click and hold to use drag and drop.\n"
+                           +
+                "Right-click on the color square to show options.\n"
+                           +
                 "CTRL+click on individual component to input value.\n");
 
                 ImGui.ColorEdit4("color 2", ref col2);
@@ -1435,6 +1525,7 @@ namespace Monogame.ImGuiNetSamples
                         {
                             ImGui.Text("blah blah");
                             ImGui.SameLine();
+
                             if (ImGui.SmallButton("button"))
                             {
                             }
@@ -1449,7 +1540,8 @@ namespace Monogame.ImGuiNetSamples
                 if (ImGui.TreeNode("Advanced, with Selectable nodes"))
                 {
                     HelpMarker(
-                    "This is a more typical looking tree with selectable nodes.\n" +
+                        "This is a more typical looking tree with selectable nodes.\n"
+                        +
                     "Click to select, CTRL+Click to toggle, click on arrows or double-click to open."
                     );
 
@@ -1469,6 +1561,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.Checkbox("Align label with current X position", ref align_label_with_current_x_position);
                     //ImGui.Checkbox("Test tree node as drag source", ref test_drag_and_drop);
                     ImGui.Text("Hello!");
+
                     if (align_label_with_current_x_position)
                     {
                         ImGui.Unindent(ImGui.GetTreeNodeToLabelSpacing());
@@ -1477,6 +1570,7 @@ namespace Monogame.ImGuiNetSamples
                     for (int i = 0; i < 6; i++)
                     {
                         ImGuiTreeNodeFlags node_flags = (ImGuiTreeNodeFlags)base_flags;
+
                         if (i == index_selected)
                         {
                             node_flags |= ImGuiTreeNodeFlags.Selected;
@@ -1518,9 +1612,11 @@ namespace Monogame.ImGuiNetSamples
             if (ImGui.TreeNode("Collapsing Headers"))
             {
                 ImGui.Checkbox("Show 2nd header", ref closable_group);
+
                 if (ImGui.CollapsingHeader("Header", ImGuiTreeNodeFlags.None))
                 {
                     ImGui.Text("IsItemHovered: " + ImGui.IsItemHovered());
+
                     for (int i = 0; i < 5; i++)
                     {
                         ImGui.Text("Some content " + i);
@@ -1530,6 +1626,7 @@ namespace Monogame.ImGuiNetSamples
                 if (ImGui.CollapsingHeader("Header with a close button", ref closable_group))
                 {
                     ImGui.Text("IsItemHovered: " + ImGui.IsItemHovered());
+
                     for (int i = 0; i < 5; i++)
                     {
                         ImGui.Text("More content " + i);
@@ -1540,10 +1637,12 @@ namespace Monogame.ImGuiNetSamples
             }
 
             //Bullets
+
             if (ImGui.TreeNode("Bullets"))
             {
                 ImGui.BulletText("Bullet point 1");
                 ImGui.BulletText("Bullet point 2\nOn multiple lines");
+
                 if (ImGui.TreeNode("Tree node"))
                 {
                     ImGui.BulletText("Another bullet point");
@@ -1579,7 +1678,8 @@ namespace Monogame.ImGuiNetSamples
                 if (ImGui.TreeNode("Word Wrapping"))
                 {
                     ImGui.TextWrapped(
-                        "This text should automatically wrap on the edge of the window. The current implementation " +
+                        "This text should automatically wrap on the edge of the window. The current implementation "
+                        +
                     "for text wrapping follows simple rules suitable for English and possibly other languages."
                     );
                     ImGui.Spacing();
@@ -1587,6 +1687,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.SliderFloat("Wrap width", ref wrap_width, -20, 600, "%.0f");
 
                     ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
+
                     for (int n = 0; n < 2; n++)
                     {
                         ImGui.Text("Test paragraph " + n);
@@ -1594,6 +1695,7 @@ namespace Monogame.ImGuiNetSamples
                         Vec2 marker_min = new Vec2(pos.X + wrap_width, pos.Y);
                         Vec2 marker_max = new Vec2(pos.X + wrap_width + 10, pos.Y + ImGui.GetTextLineHeight());
                         ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + wrap_width);
+
                         if (n == 0)
                         {
                             ImGui.Text(
@@ -1639,8 +1741,10 @@ namespace Monogame.ImGuiNetSamples
                 ImGuiIOPtr io = ImGui.GetIO();
                 ImGui
                     .TextWrapped(
-                        "Below we are displaying the font texture (which is the only texture we have access to in this demo). " +
-                "Use the 'ImTextureID' type as storage to pass pointers or identifier to your own texture data. " +
+                        "Below we are displaying the font texture (which is the only texture we have access to in this demo). "
+                        +
+                "Use the 'ImTextureID' type as storage to pass pointers or identifier to your own texture data. "
+                        +
                 "Hover the texture for a zoomed view!"
                     );
 
@@ -1664,6 +1768,7 @@ namespace Monogame.ImGuiNetSamples
                     float region_x = io.MousePos.X - pos.X - region_sz * 0.5f;
                     float region_y = io.MousePos.Y - pos.Y - region_sz * 0.5f;
                     float zoom = 4.0f;
+
                     if (region_x < 0.0f)
                     {
                         region_x = 0.0f;
@@ -1691,6 +1796,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 ImGui.TextWrapped("And now some textured buttons..");
+
                 for (int i = 0; i < 8; i++)
                 {
                     ImGui.PushID(i);
@@ -1700,6 +1806,7 @@ namespace Monogame.ImGuiNetSamples
                     Vec2 uv1 = new Vec2(32.0f / my_tex_w, 32.0f / my_tex_h);
                     Vec4 bg_col = new Vec4(0.0f, 0.0f, 0.0f, 1.0f); // black background
                     Vec4 tint_col2 = new Vec4(1.0f, 1.0f, 1.0f, 1.0f); // no tint
+
                     if (ImGui.ImageButton($"textured_button_id_{i}", my_tex_id, size, uv0, uv1, bg_col, tint_col2))
                     {
                         pressed_count += 1;
@@ -1725,6 +1832,7 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.CheckboxFlags("ImGuiComboFlags_PopupAlignLeft", ref flags, (uint)ImGuiComboFlags.PopupAlignLeft);
                 ImGui.SameLine();
                 HelpMarker("Only makes a difference if the popup is larger than the combo");
+
                 if (ImGui.CheckboxFlags("ImGuiComboFlags_NoArrowButton", ref flags, (uint)ImGuiComboFlags.NoArrowButton))
                 {
                     flags &= ~(uint)ImGuiComboFlags.NoPreview; // clear the other flag
@@ -1742,11 +1850,13 @@ namespace Monogame.ImGuiNetSamples
                 };
                 string combo_label = items[item_current_idx];
                 ImGuiComboFlags flags_cf = (ImGuiComboFlags)flags;
+
                 if (ImGui.BeginCombo("combo 1", combo_label, flags_cf))
                 {
                     for (int n = 0; n < items.Length; n++)
                     {
                         bool is_selected = (item_current_idx == n);
+
                         if (ImGui.Selectable(items[n], is_selected))
                         {
                             item_current_idx = n;
@@ -1769,6 +1879,7 @@ namespace Monogame.ImGuiNetSamples
             }
 
             //List boxes
+
             if (ImGui.TreeNode("List boxes"))
             {
                 string[] items =
@@ -1776,6 +1887,7 @@ namespace Monogame.ImGuiNetSamples
                     "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM",
                     "OOOOOOO"
                 };
+
                 if (ImGui.ListBox("listbox 1", ref item_current_idx_lb, items, items.Length))
                 {
                 }
@@ -1797,6 +1909,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.Selectable("2. I am selectable", ref selection[1]);
                     ImGui.Text("3. I am not selectable");
                     ImGui.Selectable("4. I am selectable", ref selection[3]);
+
                     if (ImGui.Selectable("5. I am double clickable", ref selection[4], ImGuiSelectableFlags.AllowDoubleClick))
                     {
                         if (ImGui.IsMouseDoubleClicked(0))
@@ -1813,6 +1926,7 @@ namespace Monogame.ImGuiNetSamples
                     for (int n = 0; n < 5; n++)
                     {
                         string buf = string.Format("Object {0}", n);
+
                         if (ImGui.Selectable(buf, selected == n))
                         {
                             selected = n;
@@ -1829,6 +1943,7 @@ namespace Monogame.ImGuiNetSamples
                     for (int n = 0; n < 5; n++)
                     {
                         string buf = string.Format("Object {0}", n);
+
                         if (ImGui.Selectable(buf, selection_ms[n]))
                         {
                             if (!ImGui.GetIO().KeyCtrl)
@@ -1862,8 +1977,10 @@ namespace Monogame.ImGuiNetSamples
 
                 if (ImGui.TreeNode("Alignment"))
                 {
-                    HelpMarker("By default, Selectables uses style.SelectableTextAlign but it can be overridden on a per-item " +
-                        "basis using PushStyleVar(). You'll probably want to always keep your default situation to " +
+                    HelpMarker("By default, Selectables uses style.SelectableTextAlign but it can be overridden on a per-item "
+                               +
+                        "basis using PushStyleVar(). You'll probably want to always keep your default situation to "
+                               +
                         "left-align otherwise it becomes difficult to layout multiple items on a same line");
 
                     for (int y = 0; y < 3; y++)
@@ -1872,6 +1989,7 @@ namespace Monogame.ImGuiNetSamples
                         {
                             Vec2 alignment = new Vec2((float)x / 2.0f, (float)y / 2.0f);
                             string name = string.Format("({0},{1})", alignment.X, alignment.Y);
+
                             if (x > 0)
                             {
                                 ImGui.SameLine();
@@ -1899,15 +2017,24 @@ namespace Monogame.ImGuiNetSamples
             {
                 if (ImGui.TreeNode("Multi-line Text Input"))
                 {
-                    string text = "/*\n" +
-                    " The Pentium F00F bug, shorthand for F0 0F C7 C8,\n" +
-                    " the hexadecimal encoding of one offending instruction,\n" +
-                    " more formally, the invalid operand with locked CMPXCHG8B\n" +
-                    " instruction bug, is a design flaw in the majority of\n" +
-                    " Intel Pentium, Pentium MMX, and Pentium OverDrive\n" +
-                    " processors (all in the P5 microarchitecture).\n" +
-                    "*/\n\n" +
-                    "label:\n" +
+                    string text = "/*\n"
+                                  +
+                    " The Pentium F00F bug, shorthand for F0 0F C7 C8,\n"
+                                  +
+                    " the hexadecimal encoding of one offending instruction,\n"
+                                  +
+                    " more formally, the invalid operand with locked CMPXCHG8B\n"
+                                  +
+                    " instruction bug, is a design flaw in the majority of\n"
+                                  +
+                    " Intel Pentium, Pentium MMX, and Pentium OverDrive\n"
+                                  +
+                    " processors (all in the P5 microarchitecture).\n"
+                                  +
+                    "*/\n\n"
+                                  +
+                    "label:\n"
+                                  +
                     "\tlock cmpxchg8b eax\n";
 
                     if (flags_ti_first_run)
@@ -1983,6 +2110,7 @@ namespace Monogame.ImGuiNetSamples
                 if (ImGui.TreeNode("Basic"))
                 {
                     ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags.None;
+
                     if (ImGui.BeginTabBar("MyTabBar", tab_bar_flags))
                     {
                         if (ImGui.BeginTabItem("Avocado"))
@@ -2035,6 +2163,7 @@ namespace Monogame.ImGuiNetSamples
                         ref tab_bar_flags,
                         (uint)ImGuiTabBarFlags.NoCloseWithMiddleMouseButton
                     );
+
                     if ((tab_bar_flags & (uint)ImGuiTabBarFlags.FittingPolicyMask) == 0)
                     {
                         tab_bar_flags |= (uint)ImGuiTabBarFlags.FittingPolicyDefault;
@@ -2046,7 +2175,8 @@ namespace Monogame.ImGuiNetSamples
                         (uint)ImGuiTabBarFlags.FittingPolicyResizeDown
                     ))
                     {
-                        tab_bar_flags &= ~((uint)ImGuiTabBarFlags.FittingPolicyMask ^ (uint)ImGuiTabBarFlags
+                        tab_bar_flags &= ~((uint)ImGuiTabBarFlags.FittingPolicyMask
+                                           ^ (uint)ImGuiTabBarFlags
                             .FittingPolicyResizeDown);
                     }
 
@@ -2060,6 +2190,7 @@ namespace Monogame.ImGuiNetSamples
                     }
 
                     string[] names = { "Artichoke", "Beetroot", "Celery", "Daikon" };
+
                     for (int n = 0; n < opened.Length; n++)
                     {
                         if (n > 0)
@@ -2071,6 +2202,7 @@ namespace Monogame.ImGuiNetSamples
                     }
 
                     ImGuiTabBarFlags tab_bar_flags_tb = (ImGuiTabBarFlags)tab_bar_flags;
+
                     if (ImGui.BeginTabBar("MyTabBar", tab_bar_flags_tb))
                     {
                         for (int n = 0; n < opened.Length; n++)
@@ -2078,6 +2210,7 @@ namespace Monogame.ImGuiNetSamples
                             if (opened[n] && ImGui.BeginTabItem(names[n], ref opened[n], ImGuiTabItemFlags.None))
                             {
                                 ImGui.Text(string.Format("This is the {0} tab!", names[n]));
+
                                 if (n == 1 || n == 3)
                                 {
                                     ImGui.Text("I am an odd tab.");
@@ -2124,6 +2257,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 float average = 0.0f;
+
                 for (int n = 0; n < values.Length; n++)
                 {
                     average += values[n];
@@ -2138,6 +2272,7 @@ namespace Monogame.ImGuiNetSamples
                 if (animate)
                 {
                     progress += progress_dir * 0.4f * ImGui.GetIO().DeltaTime;
+
                     if (progress >= +1.1f)
                     {
                         progress = +1.1f;
@@ -2178,15 +2313,18 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Checkbox("With HDR", ref hdr);
                 ImGui.SameLine();
                 HelpMarker("Currently all this does is to lift the 0..1 limits on dragging widgets.");
-                ImGuiColorEditFlags misc_flags = (hdr ? ImGuiColorEditFlags.HDR : 0) | (drag_and_drop ? 0 : ImGuiColorEditFlags
-                    .NoDragDrop) | (alpha_half_preview ? ImGuiColorEditFlags
-                        .AlphaPreviewHalf : (alpha_preview ? ImGuiColorEditFlags.AlphaPreview : 0))
+                ImGuiColorEditFlags misc_flags = (hdr ? ImGuiColorEditFlags.HDR : 0)
+                                                 | (drag_and_drop ? 0 : ImGuiColorEditFlags
+                                                     .NoDragDrop)
+                                                 | (alpha_half_preview ? ImGuiColorEditFlags
+                                                     .AlphaPreviewHalf : (alpha_preview ? ImGuiColorEditFlags.AlphaPreview : 0))
                                                  | (options_menu ? 0 : ImGuiColorEditFlags.NoOptions);
 
                 ImGui.Text("Color widget:");
                 ImGui.SameLine();
                 HelpMarker(
-                    "Click on the color square to open a color picker.\n" +
+                    "Click on the color square to open a color picker.\n"
+                    +
                     "CTRL+click on individual component to input value.\n"
                 );
                 ImGui.ColorEdit3("MyColor##1", ref color_vec3, misc_flags);
@@ -2199,8 +2337,10 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.Text("Color button with Picker:");
                 ImGui.SameLine();
-                HelpMarker("With the ImGuiColorEditFlags_NoInputs flag you can hide all the slider/text inputs.\n" +
-                    "With the ImGuiColorEditFlags_NoLabel flag you can pass a non-empty label which will only " +
+                HelpMarker("With the ImGuiColorEditFlags_NoInputs flag you can hide all the slider/text inputs.\n"
+                           +
+                    "With the ImGuiColorEditFlags_NoLabel flag you can pass a non-empty label which will only "
+                           +
                     "be used for the tooltip and picker popup.");
                 ImGui.ColorEdit4(
                     "MyColor##3",
@@ -2216,10 +2356,12 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Checkbox("With Alpha", ref alpha);
                 ImGui.Checkbox("With Alpha Bar", ref alpha_bar);
                 ImGui.Checkbox("With Side Preview", ref side_preview);
+
                 if (side_preview)
                 {
                     ImGui.SameLine();
                     ImGui.Checkbox("With Ref Color", ref ref_color);
+
                     if (ref_color)
                     {
                         ImGui.SameLine();
@@ -2230,14 +2372,17 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Combo("Display Mode", ref display_mode, "Auto/Current\0None\0RGB Only\0HSV Only\0Hex Only\0");
                 ImGui.SameLine();
                 HelpMarker(
-                    "ColorEdit defaults to displaying RGB inputs if you don't specify a display mode, " +
-                    "but the user can change it with a right-click.\n\nColorPicker defaults to displaying RGB+HSV+Hex " +
+                    "ColorEdit defaults to displaying RGB inputs if you don't specify a display mode, "
+                    +
+                    "but the user can change it with a right-click.\n\nColorPicker defaults to displaying RGB+HSV+Hex "
+                    +
                     "if you don't specify a display mode.\n\nYou can change the defaults using SetColorEditOptions()."
                 );
                 ImGui.Combo("Picker Mode", ref picker_mode, "Auto/Current\0Hue bar + SV rect\0Hue wheel + SV triangle\0");
                 ImGui.SameLine();
                 HelpMarker("User can right-click the picker to change mode.");
                 ImGuiColorEditFlags flags = misc_flags;
+
                 if (!alpha)
                 {
                     flags |= ImGuiColorEditFlags.NoAlpha;
@@ -2287,10 +2432,14 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.Text("Set defaults in code:");
                 ImGui.SameLine();
-                HelpMarker("SetColorEditOptions() is designed to allow you to set boot-time default.\n" +
-                    "We don't have Push/Pop functions because you can force options on a per-widget basis if needed," +
-                    "and the user can change non-forced ones with the options menu.\nWe don't have a getter to avoid" +
+                HelpMarker("SetColorEditOptions() is designed to allow you to set boot-time default.\n"
+                           +
+                    "We don't have Push/Pop functions because you can force options on a per-widget basis if needed,"
+                           +
+                    "and the user can change non-forced ones with the options menu.\nWe don't have a getter to avoid"
+                           +
                     "encouraging you to persistently save values that aren't forward-compatible.");
+
                 if (ImGui.Button("Default: Uint8 + HSV + Hue Bar"))
                 {
                     ImGui.SetColorEditOptions(
@@ -2309,8 +2458,10 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Spacing();
                 ImGui.Text("HSV encoded colors");
                 ImGui.SameLine();
-                HelpMarker("By default, colors are given to ColorEdit and ColorPicker in RGB, but ImGuiColorEditFlags_InputHSV" +
-                    "allows you to store colors as HSV and pass them to ColorEdit and ColorPicker as HSV. This comes with the" +
+                HelpMarker("By default, colors are given to ColorEdit and ColorPicker in RGB, but ImGuiColorEditFlags_InputHSV"
+                           +
+                    "allows you to store colors as HSV and pass them to ColorEdit and ColorPicker as HSV. This comes with the"
+                           +
                     "added benefit that you can manipulate hue values with the picker even when saturation or value are zero.");
                 ImGui.Text("Color widget with InputHSV:");
                 ImGui.ColorEdit4(
@@ -2332,6 +2483,7 @@ namespace Monogame.ImGuiNetSamples
 
             //Range & Multi Widgets
 # region Range & Multi Widgets
+
             if (ImGui.TreeNode("Range Widgets"))
             {
                 ImGui.DragFloatRange2("range float", ref begin, ref end, 0.25f, 0.0f, 100.0f, "Min: %.1f %%", "Max: %.1f %%");
@@ -2382,6 +2534,7 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.SameLine();
 
                 ImGui.PushID("set1");
+
                 for (int i = 0; i < 7; i++)
                 {
                     if (i > 0)
@@ -2405,6 +2558,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.PushStyleColor(ImGuiCol.FrameBgActive, col_slider_act);
                     ImGui.PushStyleColor(ImGuiCol.SliderGrab, col_slider_grab);
                     ImGui.VSliderFloat("##v", new Vec2(18, 160), ref values_vert[i], 0.0f, 1.0f, "");
+
                     if (ImGui.IsAnyItemActive() || ImGui.IsItemHovered())
                     {
                         ImGui.SetTooltip(values_vert[i].ToString());
@@ -2421,6 +2575,7 @@ namespace Monogame.ImGuiNetSamples
 
                 int rows = 3;
                 Vec2 small_slider_size = new Vec2(18, 50); //(float)(int)((160.0f - (rows - 1) * spacing / rows)));
+
                 for (int nx = 0; nx < 4; nx++)
                 {
                     if (nx > 0)
@@ -2429,10 +2584,12 @@ namespace Monogame.ImGuiNetSamples
                     }
 
                     ImGui.BeginGroup();
+
                     for (int ny = 0; ny < rows; ny++)
                     {
                         ImGui.PushID(nx * rows + ny);
                         ImGui.VSliderFloat("##v", small_slider_size, ref values2[nx], 0.0f, 1.0f, "");
+
                         if (ImGui.IsItemActive() || ImGui.IsItemHovered())
                         {
                             ImGui.SetTooltip(values2[nx].ToString());
@@ -2448,6 +2605,7 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.SameLine();
                 ImGui.PushID("set3");
+
                 for (int i = 0; i < 4; i++)
                 {
                     if (i > 0)
@@ -2524,6 +2682,7 @@ namespace Monogame.ImGuiNetSamples
 
                 //child 1
                 ImGuiWindowFlags window_flags = ImGuiWindowFlags.HorizontalScrollbar;
+
                 if (disable_mouse_wheel)
                 {
                     window_flags |= ImGuiWindowFlags.NoScrollWithMouse;
@@ -2536,6 +2695,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGuiChildFlags.Border,
                     window_flags
                 );
+
                 for (int i = 0; i < 100; i++)
                 {
                     ImGui.Text(string.Format("{0}: scrollable region", i.ToString("D4")));
@@ -2546,6 +2706,7 @@ namespace Monogame.ImGuiNetSamples
 
                 //child 2
                 ImGuiWindowFlags window_flags_child2 = ImGuiWindowFlags.None;
+
                 if (disable_mouse_wheel)
                 {
                     window_flags_child2 |= ImGuiWindowFlags.NoScrollWithMouse;
@@ -2558,6 +2719,7 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 5.0f);
                 ImGui.BeginChild("ChildR", new Vec2(0, 260), ImGuiChildFlags.Border, window_flags_child2);
+
                 if (!disable_menu && ImGui.BeginMenuBar())
                 {
                     if (ImGui.BeginMenu("Menu"))
@@ -2572,6 +2734,7 @@ namespace Monogame.ImGuiNetSamples
                 for (int i = 0; i < 100; i++)
                 {
                     ImGui.Button(i.ToString("D3"));
+
                     if ((i % 2) == 0)
                     {
                         ImGui.SameLine();
@@ -2590,6 +2753,7 @@ namespace Monogame.ImGuiNetSamples
                 Vec4 colv4 = new Vec4(255.0f, 0.0f, 0.0f, 100.0f);
                 ImGui.PushStyleColor(ImGuiCol.ChildBg, ImGui.ColorConvertFloat4ToU32(colv4));
                 ImGui.BeginChild("Red", new Vec2(200, 100), ImGuiChildFlags.Border, ImGuiWindowFlags.None);
+
                 for (int n = 0; n < 50; n++)
                 {
                     ImGui.Text("Some test " + n.ToString());
@@ -2629,6 +2793,7 @@ namespace Monogame.ImGuiNetSamples
                 HelpMarker("Fixed width.");
                 ImGui.PushItemWidth(100);
                 ImGui.DragFloat("float##1b", ref f);
+
                 if (show_indented_items)
                 {
                     ImGui.Indent();
@@ -2643,6 +2808,7 @@ namespace Monogame.ImGuiNetSamples
                 HelpMarker("Align to right edge minus 100");
                 ImGui.PushItemWidth(-100);
                 ImGui.DragFloat("float##2a", ref f);
+
                 if (show_indented_items)
                 {
                     ImGui.Indent();
@@ -2657,6 +2823,7 @@ namespace Monogame.ImGuiNetSamples
                 HelpMarker("Half of available width.\n(~ right-cursor_pos)\n(works within a column set)");
                 ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X * 0.5f);
                 ImGui.DragFloat("float##3a", ref f);
+
                 if (show_indented_items)
                 {
                     ImGui.Indent();
@@ -2671,6 +2838,7 @@ namespace Monogame.ImGuiNetSamples
                 HelpMarker("Align to right edge minus half");
                 ImGui.PushItemWidth(-ImGui.GetContentRegionAvail().X * 0.5f);
                 ImGui.DragFloat("float##4a", ref f);
+
                 if (show_indented_items)
                 {
                     ImGui.Indent();
@@ -2754,9 +2922,11 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.PushItemWidth(80);
                 ImGui.Text("Lists:");
+
                 for (int i = 0; i < 4; i++)
                 {
-                    if (i > 0) ImGui.SameLine();
+                    if (i > 0)
+                        ImGui.SameLine();
                     ImGui.PushID(i);
                     ImGui.ListBox("", ref bselection[i], items, items.Length);
                     ImGui.PopID();
@@ -2777,13 +2947,17 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Text("Manually wrapping:");
                 int buttons_count = 20;
                 float window_visible_x2 = ImGui.GetWindowPos().X + ImGui.GetWindowContentRegionMax().X;
+
                 for (int n = 0; n < buttons_count; n++)
                 {
                     ImGui.PushID(n);
                     ImGui.Button("Box", button_sz);
                     float last_button_x2 = ImGui.GetItemRectMax().X;
-                    float next_button_x2 = last_button_x2 + 1.0f + button_sz
+                    float next_button_x2 = last_button_x2
+                                           + 1.0f
+                                           + button_sz
                         .X; // Expected position if next button was on same line
+
                     if (n + 1 < buttons_count && next_button_x2 < window_visible_x2)
                     {
                         ImGui.SameLine();
@@ -2803,8 +2977,10 @@ namespace Monogame.ImGuiNetSamples
 
             if (ImGui.TreeNode("Groups"))
             {
-                HelpMarker("BeginGroup() basically locks the horizontal position for new line. " +
-                "EndGroup() bundles the whole group so that you can use \"item\" functions such as " +
+                HelpMarker("BeginGroup() basically locks the horizontal position for new line. "
+                           +
+                "EndGroup() bundles the whole group so that you can use \"item\" functions such as "
+                           +
                 "IsItemHovered()/IsItemActive() or SameLine() etc. on the whole group.");
                 ImGui.BeginGroup();
                 {
@@ -2820,6 +2996,7 @@ namespace Monogame.ImGuiNetSamples
                     ImGui.SameLine();
                     ImGui.Button("EEE");
                     ImGui.EndGroup();
+
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.SetTooltip("First group hovered");
@@ -2853,7 +3030,8 @@ namespace Monogame.ImGuiNetSamples
             {
                 ImGui.BulletText("Text baseline:");
                 ImGui.SameLine();
-                HelpMarker("This is testing the vertical alignment that gets applied on text to keep it aligned with widgets. " +
+                HelpMarker("This is testing the vertical alignment that gets applied on text to keep it aligned with widgets. "
+                           +
                     "Lines only composed of text or \"small\" widgets use less vertical space than lines with framed widgets.");
                 ImGui.Indent();
 
@@ -2940,6 +3118,7 @@ namespace Monogame.ImGuiNetSamples
                 float spacing = ImGui.GetStyle().ItemInnerSpacing.X;
                 ImGui.Button("Button##1");
                 ImGui.SameLine(0.0f, spacing);
+
                 if (ImGui.TreeNode("Node##1"))
                 {
                     // Placeholder tree data
@@ -2957,6 +3136,7 @@ namespace Monogame.ImGuiNetSamples
                 bool node_open = ImGui.TreeNode("Node##2");
                 ImGui.SameLine(0.0f, spacing);
                 ImGui.Button("Button##2");
+
                 if (node_open)
                 {
                     // Placeholder tree data
@@ -3013,12 +3193,14 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 float child_w = (ImGui.GetContentRegionAvail().X - 4 * 1.0f) / 5;
+
                 if (child_w < 1.0f)
                 {
                     child_w = 1.0f;
                 }
 
                 ImGui.PushID("##VerticalScrolling");
+
                 for (int i = 0; i < 5; i++)
                 {
                     if (i > 0)
@@ -3038,6 +3220,7 @@ namespace Monogame.ImGuiNetSamples
                         ImGuiChildFlags.Border,
                         child_flags
                     );
+
                     if (ImGui.BeginMenuBar())
                     {
                         ImGui.TextUnformatted("abc");
@@ -3081,11 +3264,15 @@ namespace Monogame.ImGuiNetSamples
 
                 //horizontal
                 ImGui.Spacing();
-                HelpMarker("Use SetScrollHereX() or SetScrollFromPosX() to scroll to a given horizontal position.\n\n" +
-                    "Because the clipping rectangle of most window hides half worth of WindowPadding on the " +
-                    "left/right, using SetScrollFromPosX(+1) will usually result in clipped text whereas the " +
+                HelpMarker("Use SetScrollHereX() or SetScrollFromPosX() to scroll to a given horizontal position.\n\n"
+                           +
+                    "Because the clipping rectangle of most window hides half worth of WindowPadding on the "
+                           +
+                    "left/right, using SetScrollFromPosX(+1) will usually result in clipped text whereas the "
+                           +
                     "equivalent SetScrollFromPosY(+1) wouldn't.");
                 ImGui.PushID("##HorizontalScrolling");
+
                 for (int i = 0; i < 5; i++)
                 {
                     float child_height = ImGui.GetTextLineHeight() + 30.0f;
@@ -3099,6 +3286,7 @@ namespace Monogame.ImGuiNetSamples
                         ImGuiChildFlags.Border,
                         child_flags
                     );
+
                     if (scroll_to_off)
                     {
                         ImGui.SetScrollX(scroll_to_off_px);
@@ -3173,7 +3361,8 @@ namespace Monogame.ImGuiNetSamples
 
             if (ImGui.TreeNode("Popups"))
             {
-                ImGui.TextWrapped("When a popup is active, it inhibits interacting with windows that are behind the popup. " +
+                ImGui.TextWrapped("When a popup is active, it inhibits interacting with windows that are behind the popup. "
+                                  +
                 "Clicking outside the popup closes it.");
 
                 string[] names = { "Bream", "Haddock", "Mackerel", "Pollock", "Tilefish" };
@@ -3185,10 +3374,12 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.SameLine();
                 ImGui.TextUnformatted(selected_fish == -1 ? "<None>" : names[selected_fish]);
+
                 if (ImGui.BeginPopup("my_select_popup"))
                 {
                     ImGui.Text("Aquarium");
                     ImGui.Separator();
+
                     for (int i = 0; i < names.Length; i++)
                     {
                         if (ImGui.Selectable(names[i]))
@@ -3201,6 +3392,7 @@ namespace Monogame.ImGuiNetSamples
                 }
 
                 //menu with toggles
+
                 if (ImGui.Button("Toggle.."))
                 {
                     ImGui.OpenPopup("my_toggle_popup");
@@ -3221,6 +3413,7 @@ namespace Monogame.ImGuiNetSamples
 
                     ImGui.Separator();
                     ImGui.Text("Tooltip here");
+
                     if (ImGui.IsItemHovered())
                     {
                         ImGui.SetTooltip("I am a tooltip over a popup");
@@ -3241,6 +3434,7 @@ namespace Monogame.ImGuiNetSamples
                         if (ImGui.BeginMenu("Sub-menu"))
                         {
                             ImGui.MenuItem("Click me");
+
                             if (ImGui.Button("Stacked Popup"))
                             {
                                 ImGui.OpenPopup("another popup");
@@ -3284,6 +3478,7 @@ namespace Monogame.ImGuiNetSamples
             if (ImGui.TreeNode("Context menus"))
             {
                 ImGui.Text(string.Format("Value = {0} (<-- right-click here)", value));
+
                 if (ImGui.BeginPopupContextItem("item context menu"))
                 {
                     if (ImGui.Selectable("Set to zero"))
@@ -3305,10 +3500,12 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.OpenPopupOnItemClick("item context menu", ImGuiPopupFlags.MouseButtonRight);
 
                 ImGui.Button(string.Format("Button: {0}###Button", name));
+
                 if (ImGui.BeginPopupContextItem())
                 {
                     ImGui.Text("Edit name:");
                     ImGui.InputText("##edit", ref name, 100);
+
                     if (ImGui.Button("Close"))
                     {
                         ImGui.CloseCurrentPopup();
@@ -3358,6 +3555,7 @@ namespace Monogame.ImGuiNetSamples
 
                     ImGui.SetItemDefaultFocus();
                     ImGui.SameLine();
+
                     if (ImGui.Button("Cancel", new Vec2(120, 0)))
                     {
                         ImGui.CloseCurrentPopup();
@@ -3399,9 +3597,11 @@ namespace Monogame.ImGuiNetSamples
                     }
 
                     bool unused_open = true;
+
                     if (ImGui.BeginPopupModal("Stacked 2", ref unused_open))
                     {
                         ImGui.Text("Hello from Stacked The Second!");
+
                         if (ImGui.Button("Close"))
                         {
                             ImGui.CloseCurrentPopup();
@@ -3443,6 +3643,7 @@ namespace Monogame.ImGuiNetSamples
                 ImGui.Text(string.Format("NavActive: {0}, NavVisible: {1}", io.NavActive, io.NavVisible));
 
                 //keyboard mouse state
+
                 if (ImGui.TreeNode("Keyboard, Mouse & Navigation State"))
                 {
                     if (ImGui.IsMousePosValid())
@@ -3456,32 +3657,44 @@ namespace Monogame.ImGuiNetSamples
 
                     ImGui.Text(string.Format("Mouse delta: ({0}, {1})", io.MouseDelta.X, io.MouseDelta.Y));
                     ImGui.Text("Mouse down:");
-                    for (int i = 0; i < io.MouseDown.Count; i++) if (io.MouseDownDuration[i] >= 0.0f)
-                    {
-                        ImGui.SameLine();
-                        ImGui.Text(string.Format("{0} ({1} secs)", i, io.MouseDownDuration[i]));
-                    }
+
+                    for (int i = 0; i < io.MouseDown.Count; i++)
+
+                        if (io.MouseDownDuration[i] >= 0.0f)
+                        {
+                            ImGui.SameLine();
+                            ImGui.Text(string.Format("{0} ({1} secs)", i, io.MouseDownDuration[i]));
+                        }
 
                     ImGui.Text("Mouse clicked:");
-                    for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseClicked((ImGuiNET.ImGuiMouseButton)i))
-                    {
-                        ImGui.SameLine();
-                        ImGui.Text(i.ToString());
-                    }
+
+                    for (int i = 0; i < io.MouseDown.Count; i++)
+
+                        if (ImGui.IsMouseClicked((ImGuiNET.ImGuiMouseButton)i))
+                        {
+                            ImGui.SameLine();
+                            ImGui.Text(i.ToString());
+                        }
 
                     ImGui.Text("Mouse dblclick:");
-                    for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseDoubleClicked((ImGuiNET.ImGuiMouseButton)i))
-                    {
-                        ImGui.SameLine();
-                        ImGui.Text(i.ToString());
-                    }
+
+                    for (int i = 0; i < io.MouseDown.Count; i++)
+
+                        if (ImGui.IsMouseDoubleClicked((ImGuiNET.ImGuiMouseButton)i))
+                        {
+                            ImGui.SameLine();
+                            ImGui.Text(i.ToString());
+                        }
 
                     ImGui.Text("Mouse released:");
-                    for (int i = 0; i < io.MouseDown.Count; i++) if (ImGui.IsMouseReleased((ImGuiNET.ImGuiMouseButton)i))
-                    {
-                        ImGui.SameLine();
-                        ImGui.Text(i.ToString());
-                    }
+
+                    for (int i = 0; i < io.MouseDown.Count; i++)
+
+                        if (ImGui.IsMouseReleased((ImGuiNET.ImGuiMouseButton)i))
+                        {
+                            ImGui.SameLine();
+                            ImGui.Text(i.ToString());
+                        }
 
                     ImGui.Text(string.Format("Mouse wheel: {0}", io.MouseWheel));
 
@@ -3500,6 +3713,7 @@ namespace Monogame.ImGuiNetSamples
 
 
                     ImGui.Button("Hovering me sets the\nkeyboard capture flag");
+
                     if (ImGui.IsItemHovered())
                     {
 // TODO: Not Supported
@@ -3507,6 +3721,7 @@ namespace Monogame.ImGuiNetSamples
 
                     ImGui.SameLine();
                     ImGui.Button("Holding me clears the\nthe keyboard capture flag");
+
                     if (ImGui.IsItemActive())
                     {
                     }
@@ -3516,6 +3731,7 @@ namespace Monogame.ImGuiNetSamples
 
                 ImGui.SameLine();
                 ImGui.Button("Holding me clears the\nthe keyboard capture flag");
+
                 if (ImGui.IsItemActive())
                 {
                     //                      ImGui.CaptureKeyboardFromApp(false);
@@ -3576,6 +3792,7 @@ namespace Monogame.ImGuiNetSamples
             if (!ImGui.Begin("MonoGame Settings", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.MenuBar))
             {
                 ImGui.End();
+
                 return;
             }
 
@@ -3634,12 +3851,14 @@ namespace Monogame.ImGuiNetSamples
             ImGui.PushButtonRepeat(true);
 
             ImGui.Indent();
+
             if (ImGui.ArrowButton("up", ImGuiDir.Up)) //ImGui.Button("Up"))
             {
                 world = world * Matrix.CreateRotationX(0.1f);
             }
 
             ImGui.Unindent();
+
             if (ImGui.ArrowButton("left", ImGuiDir.Left)) //ImGui.Button("Left"))
             {
                 world = world * Matrix.CreateRotationY(-0.1f);
@@ -3648,12 +3867,14 @@ namespace Monogame.ImGuiNetSamples
             ImGui.SameLine();
             ImGui.Text(" ");
             ImGui.SameLine();
+
             if (ImGui.ArrowButton("right", ImGuiDir.Right)) //ImGui.Button("Right"))
             {
                 world = world * Matrix.CreateRotationY(0.1f);
             }
 
             ImGui.Indent();
+
             if (ImGui.ArrowButton("down", ImGuiDir.Down)) //ImGui.Button("Down"))
             {
                 world = world * Matrix.CreateRotationX(-0.1f);

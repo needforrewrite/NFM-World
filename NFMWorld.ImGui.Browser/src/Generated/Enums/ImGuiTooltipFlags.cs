@@ -13,20 +13,20 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[Flags]
-	public enum ImGuiTooltipFlags : int
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		None = unchecked(0),
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [Flags]
+    public enum ImGuiTooltipFlags : int
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        None = unchecked(0),
 
-		/// <summary>
-		/// Clearignore previously submitted tooltip (defaults to append)<br/>
-		/// </summary>
-		OverridePrevious = unchecked(2),
-	}
+        /// <summary>
+        /// Clearignore previously submitted tooltip (defaults to append)<br/>
+        /// </summary>
+        OverridePrevious = unchecked(2),
+    }
 }

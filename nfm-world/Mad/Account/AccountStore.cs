@@ -25,9 +25,11 @@ public static class AccountStore
         try
         {
             if (!TheVFS.VFS.FileExists(Path))
+
                 return null;
 
             var stored = JsonSerializer.Deserialize(TheVFS.VFS.ReadAllText(Path), AccountJsonContext.Default.StoredAccount);
+
             return stored is { Token.Length: > 0 }
                 ? (stored.Token, stored.Username, stored.Role, stored.DeletionPendingUntil)
                 : null;
@@ -35,6 +37,7 @@ public static class AccountStore
         catch (Exception ex)
         {
             Logging.Warning($"Could not load the saved account: {ex.Message}");
+
             return null;
         }
     }

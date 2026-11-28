@@ -15,27 +15,36 @@ public partial class LobbyPhase
     private readonly Signal<LobbyStagePreview?> _stagePreview = new(null);
 
     private Node BuildStagePreview()
-        => Sx.Show(() => _stagePreview.Value is not null, () =>
+        => Sx.Show(
+            () => _stagePreview.Value is not null,
+            () =>
             {
                 var preview = _stagePreview.Value!;
+
                 return LobbyView.StagePreviewWindow(
-                () => Lobby.Sessions.Value.FirstOrDefault(session => session.Id == preview.SessionId)?.StageName
-                      ?? "Stage preview",
-                preview.State,
-                () => preview.Image,
-                CloseStagePreview
-            );
+                    () => Lobby.Sessions.Value.FirstOrDefault(session => session.Id == preview.SessionId)?.StageName
+                          ?? "Stage preview",
+                    preview.State,
+                    () => preview.Image,
+                    CloseStagePreview
+                );
             }
         );
 
     private void OpenStagePreview(uint sessionId)
     {
-        if (!_carsActive || _stagePreview.Value is not null || Lobby.Page.Value != UiState.LobbyPage.Match
+        if (!_carsActive
+            || _stagePreview.Value is not null
+            || Lobby.Page.Value != UiState.LobbyPage.Match
             || Lobby.ViewedSessionId.Value != sessionId)
+
             return;
 
         var stageId = _activeSessions.FirstOrDefault(session => session.Id == sessionId).StageName;
-        if (!MultiplayerContentPolicy.IsAcceptedStage(stageId)) return;
+
+        if (!MultiplayerContentPolicy.IsAcceptedStage(stageId))
+
+            return;
 
         FocusManager.ClearFocus();
         var preview = new LobbyStagePreview(sessionId);
@@ -73,6 +82,7 @@ public partial class LobbyPhase
             State.Status.Value = "Loading stage...";
             var token = _cancellation.Token;
             ClientStage? stage = null;
+
             try
             {
                 stage = await ClientStage.CreateAsync(stageId, [], _camera, [], token);
@@ -96,6 +106,7 @@ public partial class LobbyPhase
             catch (Exception error)
             {
                 await LoadingWork.NextFrame;
+
                 if (!_disposed)
                 {
                     Image = null;
@@ -109,13 +120,16 @@ public partial class LobbyPhase
             finally
             {
                 stage?.Dispose();
-                if (!_disposed) State.Busy.Value = false;
+                if (!_disposed)
+                    State.Busy.Value = false;
             }
         }
 
         public void Tick()
         {
-            if (_stage is not { } stage) return;
+            if (_stage is not { } stage)
+
+                return;
             stage.OnBeforeGameTick();
             stage.GameTick();
             _flyover.AroundStage(_camera, stage.Backend);
@@ -125,8 +139,11 @@ public partial class LobbyPhase
 
         public void Render(ICommandBuffer cb, float alpha)
         {
-            if (_stage is not { } stage || _target is not { } target) return;
+            if (_stage is not { } stage || _target is not { } target)
+
+                return;
             var swapchain = GameSparker.GraphicsDevice.Swapchain;
+
             try
             {
                 cb.SetRenderTarget(target);

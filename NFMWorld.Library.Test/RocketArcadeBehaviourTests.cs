@@ -114,6 +114,7 @@ public class RocketArcadeBehaviourTests
     public void Jump_LiftsTheCar_WithoutEnteringTheVanillaStuntState()
     {
         var (harness, car, stage) = CreateSandboxed();
+
         try
         {
             var restingY = car.Position.Y;
@@ -153,6 +154,7 @@ public class RocketArcadeBehaviourTests
             car.Drive(stage);
 
             var lowest = (float)car.Position.Y;
+
             for (var i = 0; i < 12; i++)
             {
                 harness.Tick();
@@ -161,16 +163,19 @@ public class RocketArcadeBehaviourTests
             }
 
             // Y is positive downward, so the peak height is the smallest Y.
+
             return restingY - lowest;
         }
 
         var (weak, weakCar, weakStage) = CreateSandboxed();
+
         try
         {
             weak.SetTuning("JumpImpulse", 60);
             var weakRise = JumpHeight(weak, weakCar, weakStage);
 
             var (strong, strongCar, strongStage) = CreateSandboxed();
+
             try
             {
                 strong.SetTuning("JumpImpulse", 400);
@@ -196,6 +201,7 @@ public class RocketArcadeBehaviourTests
     public void GroundedJump_UnderThrottle_IsNotDirectional()
     {
         var (harness, car, stage) = CreateSandboxed();
+
         try
         {
             // Throttle held (the natural state while driving) must not tilt or steer the jump.
@@ -220,6 +226,7 @@ public class RocketArcadeBehaviourTests
     public void AerialJump_HoldingAnAerialKey_IsDirectional()
     {
         var (harness, car, stage) = CreateSandboxed();
+
         try
         {
             // First jump is the ground jump (straight up); the second, in the air, steers.
@@ -257,24 +264,28 @@ public class RocketArcadeBehaviourTests
     public void Airborne_LeftAndRight_TurnTheHeading()
     {
         var (harness, car, stage) = CreateSandboxed();
+
         try
         {
             // Get airborne first; the ground jump is always straight up.
             car.Control.SetGamemodeAction(0, true);
             harness.Tick();
             car.Control.SetGamemodeAction(0, false);
-            for (var i = 0; i < 4; i++) harness.Tick();
+            for (var i = 0; i < 4; i++)
+                harness.Tick();
             Assert.IsFalse(car.CarPhysics.Grounded, "the fixture must be airborne");
 
             var startNose = car.CarPhysics.NoseDirection;
 
             car.Control.Right = true;
-            for (var i = 0; i < 4; i++) harness.Tick();
+            for (var i = 0; i < 4; i++)
+                harness.Tick();
             var rightNose = car.CarPhysics.NoseDirection;
             car.Control.Right = false;
 
             car.Control.Left = true;
-            for (var i = 0; i < 8; i++) harness.Tick();
+            for (var i = 0; i < 8; i++)
+                harness.Tick();
             var leftNose = car.CarPhysics.NoseDirection;
             car.Control.Left = false;
 
@@ -302,6 +313,7 @@ public class RocketArcadeBehaviourTests
     public void EmptyTank_HeldBoost_DoesNotFlickerTheBoostState()
     {
         var (harness, car, stage) = CreateSandboxed();
+
         try
         {
             harness.SetBoost(0);
@@ -309,9 +321,11 @@ public class RocketArcadeBehaviourTests
 
             var transitions = 0;
             var wasBoosting = harness.IsBoosting;
+
             for (var i = 0; i < 40; i++)
             {
                 harness.Tick();
+
                 if (harness.IsBoosting != wasBoosting)
                 {
                     transitions++;
@@ -346,6 +360,7 @@ public class RocketArcadeBehaviourTests
                 var cars = gamemode.GetType()
                     .GetField("_cars", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
                     .GetValue(gamemode)!;
+
                 return cars.GetType().GetProperty("Item")!.GetValue(cars, [0])!;
             }
         }

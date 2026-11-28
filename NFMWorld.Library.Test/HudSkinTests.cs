@@ -135,8 +135,8 @@ public class HudSkinTests
     {
         Assert.ThrowsExactly<JsonException>(() => HudSkinDefinition.Parse(Manifest("custom", """{"fontSze":12}""")));
         Assert.ThrowsExactly<FormatException>(() => HudSkinDefinition.Parse(
-                Manifest("custom", """{"text":"hello"}""").Replace("\"version\":1", "\"version\":2")
-            )
+            Manifest("custom", """{"text":"hello"}""").Replace("\"version\":1", "\"version\":2")
+        )
         );
     }
 
@@ -183,7 +183,9 @@ public class HudSkinTests
     private static VirtualFS Files(Dictionary<string, string> files)
     {
         using var stream = new MemoryStream();
+
         using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+
             foreach (var (path, text) in files)
             {
                 using var writer = new StreamWriter(archive.CreateEntry(path).Open());
@@ -192,6 +194,7 @@ public class HudSkinTests
 
         var fs = new VirtualFS();
         fs.MountZip(stream.ToArray());
+
         return fs;
     }
 

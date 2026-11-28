@@ -45,15 +45,19 @@ public partial record struct Color3(
             {
                 case 0:
                     R = value;
+
                     break;
                 case 1:
                     G = value;
+
                     break;
                 case 2:
                     B = value;
+
                     break;
                 default:
                     ThrowIndexOutOfRangeException(index);
+
                     break;
             }
         }
@@ -118,6 +122,7 @@ public partial record struct Color3(
     public static Color3 FromHSB(float hue, float saturation, float brightness)
     {
         var (r, g, b) = Colors.HSBtoRGB(hue, saturation, brightness);
+
         return new Color3(r, g, b);
     }
 
@@ -144,6 +149,7 @@ public partial record struct Color3(
          * 3. non pure color (non zero rgb) will eventually return white
          */
         const int i = (int)(1.0 / (1.0 - Factor));
+
         if (r == 0 && g == 0 && b == 0)
         {
             return new Color3(i, i, i);

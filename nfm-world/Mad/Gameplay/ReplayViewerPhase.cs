@@ -42,9 +42,11 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
         StageName = replay.StageName;
 
         var rad = replay.CarData ?? BackendGameSparker.GetCar(replay.CarName).Rad;
+
         if (rad is null)
         {
             SetMissing("This recording needs a car that is not installed.");
+
             return;
         }
 
@@ -65,6 +67,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
             else
             {
                 SetMissing($"This recording needs the stage '{replay.StageName}', which is not installed.");
+
                 return;
             }
         }
@@ -73,19 +76,23 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
             CurrentStage?.Dispose();
             CurrentStage = null!;
             SetMissing($"This recording's stage could not be loaded: {ex.Message}");
+
             return;
         }
 
         if (_totalFrames == 0)
         {
             SetMissing("This recording has no frames.");
+
             return;
         }
     }
 
     protected override void OnStageLoaded()
     {
-        if (_state.MissingContent.Value) return;
+        if (_state.MissingContent.Value)
+
+            return;
         CurrentStage!.SetCars(CarsInRace);
         ApplyFrame(0);
         _playing = true;
@@ -117,6 +124,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
     private void TogglePlay()
     {
         if (_state.MissingContent.Value)
+
             return;
 
         if (!_playing && _frame >= _totalFrames - 1)
@@ -132,6 +140,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
     private void Restart()
     {
         if (_state.MissingContent.Value)
+
             return;
 
         _frame = 0;
@@ -144,6 +153,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
     private void Step(int delta)
     {
         if (_state.MissingContent.Value)
+
             return;
 
         _playing = false;
@@ -154,6 +164,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
     private void Seek(double frame)
     {
         if (_state.MissingContent.Value)
+
             return;
 
         _frame = (int)Math.Clamp(frame, 0, _totalFrames - 1);
@@ -180,6 +191,7 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
     private void ApplyFrame(int index)
     {
         if (_car is null || index < 0 || index >= _totalFrames)
+
             return;
 
         _replay.DemoData.GetEntry(index).ApplyToCar(_car);
@@ -192,26 +204,33 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
     {
         var minutes = (int)(seconds / 60);
         var rest = seconds - minutes * 60;
+
         return $"{minutes}:{rest:00.000}";
     }
 
     public override void GameTick()
     {
-        if (CurrentStage is null) return;
+        if (CurrentStage is null)
+
+            return;
         if (_state.MissingContent.Value)
+
             return;
 
         if (_playing && _totalFrames > 0)
         {
             _accumulator += _speed;
+
             while (_accumulator >= 1)
             {
                 _accumulator -= 1;
+
                 if (_frame >= _totalFrames - 1)
                 {
                     _playing = false;
                     _accumulator = 0;
                     _state.Playing.Value = false;
+
                     break;
                 }
 
@@ -228,49 +247,64 @@ public sealed class ReplayViewerPhase : BaseStageRenderingPhase
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
+
         if (imguiWantsKeyboard || _state.MissingContent.Value)
+
             return;
 
         switch (key)
         {
             case Key.Space:
                 TogglePlay();
+
                 break;
             case Key.Home:
                 Seek(0);
+
                 break;
             case Key.End:
                 Seek(_totalFrames - 1);
+
                 break;
             case Key.Left:
                 Seek(_frame - 10);
+
                 break;
             case Key.Right:
                 Seek(_frame + 10);
+
                 break;
             case Key.Oemcomma:
                 Step(-1);
+
                 break;
             case Key.OemPeriod:
                 Step(1);
+
                 break;
             case Key.C:
                 _cameraDirector.CycleViewMode();
+
                 break;
             case Key.D1:
                 SetSpeed(1);
+
                 break;
             case Key.D2:
                 SetSpeed(2);
+
                 break;
             case Key.D3:
                 SetSpeed(4);
+
                 break;
             case Key.D4:
                 SetSpeed(0.5);
+
                 break;
             case Key.Escape:
                 GameSparker.PopPhase();
+
                 break;
         }
     }

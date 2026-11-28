@@ -191,6 +191,7 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
         catch
         {
             D3D11Interop.Release(ref factory2);
+
             throw;
         }
         finally
@@ -210,18 +211,22 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
     private static bool QueryTearingSupport(IDXGIFactory2* factory)
     {
         IDXGIFactory5* factory5 = null;
+
         try
         {
             var iid = D3D11Interop.Iid<IDXGIFactory5>();
+
             if (factory->QueryInterface(&iid, (void**)&factory5) < 0 || factory5 is null)
+
                 return false;
 
             BOOL supported = false;
+
             if (factory5->CheckFeatureSupport(
-                    DXGI_FEATURE.DXGI_FEATURE_PRESENT_ALLOW_TEARING,
-                    &supported,
-                    (uint)sizeof(BOOL)
-                )
+                DXGI_FEATURE.DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+                &supported,
+                (uint)sizeof(BOOL)
+            )
                 < 0)
             {
                 return false;
@@ -460,6 +465,7 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
     public void Resize(int width, int height, int multiSampleCount = 0)
     {
         if (width <= 0 || height <= 0)
+
             return;
 
         // The abstraction's convention, shared with the GL backends: 0 means "leave the count alone"
@@ -479,6 +485,7 @@ internal sealed unsafe class D3D11Swapchain : ISwapchain
             // has to be recorded so the caller's comparison against it converges. See
             // _requestedMultiSampleCount.
             _requestedMultiSampleCount = requested;
+
             return;
         }
 

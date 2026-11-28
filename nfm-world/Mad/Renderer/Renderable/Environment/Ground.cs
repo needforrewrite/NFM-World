@@ -47,7 +47,9 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
 
     public void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
-        if (pass.IsShadow) return;
+        if (pass.IsShadow)
+
+            return;
 
         queue.AddImmediate(SortKey.Create(RenderBucket.Ground), this);
     }
@@ -82,6 +84,7 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
     private void Dispose(bool disposing)
     {
         ReleaseUnmanagedResources();
+
         if (disposing)
         {
             _vertexBuffer.Dispose();

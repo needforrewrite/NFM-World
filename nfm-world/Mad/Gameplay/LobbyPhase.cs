@@ -86,6 +86,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         catch (Exception)
         {
             // A stage tree that failed to load must not take the lobby down with it.
+
             return [];
         }
     }
@@ -144,6 +145,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         // Returning from a race re-enters this phase, and the server only resends lobby state
         // on the next change; the transcript this client already received stays put.
         Lobby.Chat.Value = _chatMessages.ToArray();
+
         if (!_subscribed)
         {
             GameSparker.AccountManager.ActiveAccountChanged += OnAccountChanged;
@@ -162,7 +164,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
     private void ApplyPendingReconnect()
     {
-        if (Interlocked.Exchange(ref _reconnectPending, 0) == 0) return;
+        if (Interlocked.Exchange(ref _reconnectPending, 0) == 0)
+
+            return;
 
         // A reconnected transport is a brand-new connection: the lobby knows nothing about
         // this player until it authenticates and identifies itself again.
@@ -217,18 +221,23 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             _sentAuthentication = false;
             _authenticationAttempts = 0;
             _authenticationFailed = false;
+
             return;
         }
 
         // Nothing is sent before the lobby confirms it reads this build's packets: an older
         // server would parse an account packet as fields that mean something else.
+
         if (!transport.HandshakeAccepted)
+
             return;
 
         if (_authenticated)
+
             return;
 
         if (_sentAuthentication && Elapsed(_authenticationSentAt) < AuthenticationTimeoutMs)
+
             return;
 
         if (_authenticationAttempts >= MaxAuthenticationAttempts)
@@ -259,7 +268,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void OnAccountChanged(NFMWorld.Accounts.Account? account)
     {
         // Empty token = signing out, which the lobby models as a guest.
+
         if (transport.State != ClientState.Connected || !transport.HandshakeAccepted)
+
             return;
         // A different account is a fresh handshake, so it gets its own retry budget.
         _authenticationAttempts = 0;
@@ -290,6 +301,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
         // A refused version is final for this connection: the server will keep refusing it, so
         // say why and leave rather than sitting on a handshake that can never finish.
+
         if (!_reportedVersionRefusal && transport.HandshakeError is { Length: > 0 } versionRefusal)
         {
             _reportedVersionRefusal = true;
@@ -302,6 +314,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             };
             GameSparker.PopPhase();
             GameSparker.MessageWindow.ShowMessage("Update required", message);
+
             return;
         }
 
@@ -313,6 +326,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
         // Phases are pushed on the game tick, so a spectator's completed downloads are consumed
         // here rather than from the download's continuation.
+
         if (_pendingSpectate is { Work.IsCompleted: true } pending)
         {
             _pendingSpectate = null;
@@ -324,14 +338,19 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
         foreach (var packet in ReadLobbyPackets())
         {
-            if (HandleLobbyNotification(packet)) continue;
+            if (HandleLobbyNotification(packet))
+
+                continue;
+
             switch (packet)
             {
                 case S2C_LobbyChatMessage chatMessage:
                     AddChatLine(ChatLine(chatMessage));
+
                     break;
 
                 case S2C_Authenticated authenticated:
+
                     if (!authenticated.Accepted || authenticated.AccountId <= 0)
                     {
                         _authenticated = false;
@@ -346,6 +365,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                                 ? authenticated.Error
                                 : "Sign in to join multiplayer."
                         );
+
                         return;
                     }
                     else
@@ -364,6 +384,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     _players = lobbyState.Players.ToList();
                     _activeSessions = lobbyState.ActiveSessions.ToList();
                     Publish();
+
                     break;
 
                 case S2C_SessionLiveState live:
@@ -371,17 +392,21 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     if (Lobby.Page.Value == UiState.LobbyPage.Match
                         && Lobby.ViewedSessionId.Value == live.SessionId)
                         ApplyLiveState(live.SessionId);
+
                     break;
 
                 case S2C_RaceStarted raceStarted:
                     StartRace(raceStarted);
+
                     break;
 
                 case S2C_PrepareContent prepareContent:
                     PrepareContent(prepareContent);
+
                     break;
 
                 case S2C_ModerationNotice notice:
+
                     if (notice.Fatal)
                     {
                         transport.StopReconnecting();
@@ -389,20 +414,24 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     }
 
                     GameSparker.MessageWindow.ShowMessage("Moderation", notice.Message);
+
                     break;
 
                 case S2C_ModerationResult result:
                     SetStatus(result.Message);
+
                     break;
 
                 case S2C_ChatPurge purge:
                     _chatMessages.RemoveAll(l => l.SenderId == purge.SenderId);
                     Lobby.Chat.Value = _chatMessages.ToArray();
+
                     break;
             }
         }
 
         // A create that never reaches the server gets no state broadcast to expire it.
+
         if (_awaitingCreatedSession && System.Environment.TickCount64 > _createdSessionDeadline)
         {
             _awaitingCreatedSession = false;
@@ -411,9 +440,11 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
         // A finished game's close countdown is client-side: the lobby only broadcasts state
         // when something changes, so a wall clock has to drive the visible timer.
+
         if (Lobby.Sessions.Value.Any(session => session.State == SessionState.Finished))
         {
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
             if (now - _lastClockUpdate >= 250)
             {
                 _lastClockUpdate = now;
@@ -482,9 +513,11 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             );
 
             if (cancellation.IsCancellationRequested)
+
                 return;
 
             if (result.Ok)
+
                 continue;
 
             transport.SendPacketToServer(
@@ -497,6 +530,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 }
             );
             SetStatus($"Could not prepare the race: {result.Error}");
+
             return;
         }
 
@@ -523,6 +557,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         {
             _pendingSpectate = (raceStarted, PrepareSpectateContentAsync(missing));
             SetStatus("Preparing race content...");
+
             return;
         }
 
@@ -533,6 +568,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     {
         // Never faults: the tick reads Result once the task completes, and an exception there
         // would escape the game loop.
+
         try
         {
             foreach (var item in required)
@@ -547,6 +583,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 if (!result.Ok)
                 {
                     SetStatus($"Could not prepare the race: {result.Error}");
+
                     return false;
                 }
             }
@@ -556,6 +593,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         catch (Exception ex)
         {
             SetStatus($"Could not prepare the race: {ex.Message}");
+
             return false;
         }
     }
@@ -618,14 +656,14 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     {
         Lobby.Players.Value = _players
             .Select(p => new UiState.LobbyPlayer(
-                    p.Id,
-                    p.PlayerName,
-                    CarLabel(p.CarName),
-                    ToColor(p.Color),
-                    p.Id == _player.Id,
-                    PlayerColors(p),
-                    p.Role
-                )
+                p.Id,
+                p.PlayerName,
+                CarLabel(p.CarName),
+                ToColor(p.Color),
+                p.Id == _player.Id,
+                PlayerColors(p),
+                p.Role
+            )
             )
             .ToArray();
 
@@ -635,11 +673,11 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         var humans = _players.ToDictionary(p => p.Id);
         var sessions = _activeSessions
             .Select(s => ToUiSession(
-                    s,
-                    humans,
-                    IsMember(s),
-                    s.CreatorId == _player.Id
-                )
+                s,
+                humans,
+                IsMember(s),
+                s.CreatorId == _player.Id
+            )
             )
             .ToArray();
         Lobby.Sessions.Value = sessions;
@@ -647,11 +685,14 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         // GameSession is a struct, so FirstOrDefault yields a default that looks like a real
         // session; the predicate has to be the only source of truth.
         UiState.LobbySession? current = null;
+
         foreach (var s in _activeSessions)
         {
             if (!IsMember(s))
+
                 continue;
             current = sessions.First(session => session.Id == s.Id);
+
             break;
         }
 
@@ -659,9 +700,11 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
         // The host's new game is opened as soon as the server lists it, so CREATE lands in the
         // waiting room rather than dropping back to the room list.
+
         if (_awaitingCreatedSession)
         {
             var created = sessions.FirstOrDefault(s => s.IsCreator && s.State == SessionState.NotStarted);
+
             if (created is not null)
             {
                 _awaitingCreatedSession = false;
@@ -743,6 +786,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private IReadOnlyList<UiState.LobbyStanding> LiveStandingsFor(S2C_LobbyState.GameSession session)
     {
         if (session.State != SessionState.Started || !_liveStates.TryGetValue(session.Id, out var live))
+
             return [];
 
         return MapLiveStandings(live);
@@ -759,7 +803,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             standing.TotalLaps,
             standing.PowerPercent,
             standing.DamagePercent
-        ))];
+        )
+        )];
 
     private static IReadOnlyList<UiState.LobbyStanding> FinalStandingsFor(S2C_LobbyState.GameSession session)
         => [.. session.FinalStandings
@@ -774,7 +819,8 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                 standing.TotalLaps,
                 standing.PowerPercent,
                 standing.DamagePercent
-            ))];
+            )
+            )];
 
     /// <summary>
     /// The host's gamemode options, labelled through the schema the create dialog also uses.
@@ -799,10 +845,12 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         }
 
         var settings = new List<UiState.LobbySessionSetting>();
+
         foreach (var field in fields)
         {
             if (!field.IsVisible(key => session.GamemodeParameters.TryGetValue(key, out var setting) ? setting : null)
                 || !session.GamemodeParameters.TryGetValue(field.Name, out var value))
+
                 continue;
 
             var label = field.Choices.FirstOrDefault(choice => choice.Value == value)?.Label ?? value;
@@ -810,6 +858,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         }
 
         // A value the installed plugin no longer declares is still worth showing, not hiding.
+
         foreach (var (name, value) in session.GamemodeParameters)
         {
             if (fields.All(field => field.Name != name))
@@ -837,10 +886,12 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                     IsEmpty: false,
                     IsSelf: standing.PlayerId == _player.Id,
                     PlayerId: standing.PlayerId
-                ))];
+                )
+            )];
         }
 
         var slots = new List<UiState.LobbySessionSlot>(session.MaxPlayers);
+
         for (byte slot = 0; slot < session.MaxPlayers; slot++)
         {
             if (session.Players.TryGetValue(slot, out var playerId)
@@ -859,6 +910,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                         PlayerId: playerId
                     )
                 );
+
                 continue;
             }
 
@@ -877,6 +929,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
                         PlayerId: bot.Id
                     )
                 );
+
                 continue;
             }
 
@@ -907,7 +960,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         // Only written when the connection text itself changes: a notice the player just saw
         // (a rejected action, say) must not be wiped by the next frame.
         var status = ConnectionStatus();
+
         if (status == _lastStatus)
+
             return;
         _lastStatus = status;
         Lobby.Status.Value = status;
@@ -936,12 +991,14 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private static Color ToColor(Color3 color)
     {
         static byte Channel(short value) => (byte)Math.Clamp((int)value, 0, 255);
+
         return new Color(Channel(color.R), Channel(color.G), Channel(color.B));
     }
 
     private UiState.LobbyChatLine ChatLine(S2C_LobbyChatMessage message)
     {
         var isSystem = message.SenderId == Guid.Empty;
+
         return new UiState.LobbyChatLine(
             ++_nextChatLineId,
             message.SessionId,
@@ -976,6 +1033,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void OnOpenSession(uint id)
     {
         if (!Lobby.Sessions.Value.Any(session => session.Id == id))
+
             return;
 
         OpenSession(id);
@@ -998,6 +1056,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void ApplyLiveState(uint sessionId)
     {
         if (!_liveStates.TryGetValue(sessionId, out var live))
+
             return;
 
         var rows = MapLiveStandings(live);
@@ -1022,7 +1081,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     {
         // Never the session we are already in: joining is what changes membership, so reading
         // CurrentSession here would make JOIN a no-op.
+
         if (!_carsActive || !CanAct || Lobby.CurrentSession.Value?.Id == id)
+
             return;
 
         OpenSession(id);
@@ -1036,6 +1097,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void OnSpectate(uint id)
     {
         if (!CanAct)
+
             return;
 
         OpenSession(id);
@@ -1045,6 +1107,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void OnLeave()
     {
         if (!CanAct || Lobby.CurrentSession.Value is not { } session)
+
             return;
 
         transport.SendPacketToServer(new C2S_LeaveSession { SessionId = session.Id });
@@ -1077,10 +1140,13 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private bool RequireRaceableCar()
     {
         var car = MenuHistory.LastPlayed.Car;
+
         if (MultiplayerContentPolicy.IsAcceptedCar(car))
+
             return true;
 
         SetStatus($"'{car}' is local-only and cannot be raced online. Pick a stock car or publish it.");
+
         return false;
     }
 
@@ -1089,23 +1155,28 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         if (!CanAct)
         {
             SetStatus("Not connected to the lobby.");
+
             return;
         }
 
         var stage = Lobby.SelectedStage.Value;
+
         if (string.IsNullOrEmpty(stage))
         {
             SetStatus("Choose a stage first.");
+
             return;
         }
 
         if (!MultiplayerContentPolicy.IsAcceptedStage(stage))
         {
             SetStatus(LobbyStageSelection.LocalStageRestriction);
+
             return;
         }
 
         if (!RequireRaceableCar())
+
             return;
 
         transport.SendPacketToServer(
@@ -1128,13 +1199,18 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void OnSendChat(string message)
     {
         if (!CanAct || string.IsNullOrWhiteSpace(message))
+
             return;
 
         uint sessionId = 0;
+
         if (Lobby.Page.Value == UiState.LobbyPage.Match)
         {
             var match = Lobby.Sessions.Value.FirstOrDefault(session => session.Id == Lobby.ViewedSessionId.Value);
-            if (match is null) return;
+
+            if (match is null)
+
+                return;
             sessionId = match.Id;
         }
 
@@ -1176,7 +1252,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void OnStageSourceSelected(bool online)
     {
         var state = Lobby.CreateStages;
+
         if (state.OnlineSource.Value == online)
+
             return;
 
         CancelStageSearch();
@@ -1184,6 +1262,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         if (!online)
         {
             LobbyStageSelection.ShowLocal(state, LocalStages, Lobby.SelectedStage.Value);
+
             return;
         }
 
@@ -1198,10 +1277,12 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private void OnStageSearchChanged(string query)
     {
         var state = Lobby.CreateStages;
+
         if (state.OnlineSource.Value)
         {
             // Archive search is a request, not a filter: Enter starts it.
             state.Search.Value = query;
+
             return;
         }
 
@@ -1212,7 +1293,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     {
         var state = Lobby.CreateStages;
         var option = state.Stages.Value.FirstOrDefault(stage => stage.Id == stageId);
+
         if (option is null)
+
             return;
 
         // The session's stage is only replaced by one the lobby will accept, so a refused pick
@@ -1224,10 +1307,14 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
     private async Task SearchStagesOnlineAsync(string query)
     {
         var state = Lobby.CreateStages;
-        if (!state.OnlineSource.Value) return;
+
+        if (!state.OnlineSource.Value)
+
+            return;
 
         // A typed archive id is not a search term: it names one stage exactly.
         var typed = RadpackReader.Identity(query.Trim());
+
         if (MultiplayerContentPolicy.IsCanonicalArchiveId(typed))
         {
             CancelStageSearch();
@@ -1236,6 +1323,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
             // The empty result list still shows the chosen row, so the pick is visible.
             LobbyStageSelection.ShowRemote(state, []);
             state.Status.Value = "Using the typed archive id.";
+
             return;
         }
 
@@ -1251,7 +1339,9 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         try
         {
             var page = await GarageController.ContentClient.SearchAsync(query, "Stage", 40, null, cancellation.Token);
+
             if (generation != _stageSearchGeneration)
+
                 return;
 
             var stages = LobbyStageSelection.RemoteStages(page.Items);
@@ -1263,6 +1353,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         catch (Exception ex)
         {
             if (generation != _stageSearchGeneration)
+
                 return;
 
             // The chosen stage keeps its row, so a failed search does not look like a lost pick.
@@ -1278,11 +1369,14 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
     private void OnSetGamemode(string id)
     {
-        if (!GamemodeCatalog.Ids.Contains(id)) return;
+        if (!GamemodeCatalog.Ids.Contains(id))
+
+            return;
         Lobby.SelectedGamemode.Value = id;
 
         // Read the plugin's schema once, here, and publish a copy: the view must never load it.
         IReadOnlyList<GamemodeConfigField> fields;
+
         try
         {
             fields = GamemodeCatalog.ConfigFields(id);
@@ -1296,6 +1390,7 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
         Lobby.GamemodeFields.Value = fields;
 
         var defaults = new Dictionary<string, string>();
+
         foreach (var field in fields)
         {
             if (!defaults.ContainsKey(field.Name))
@@ -1309,12 +1404,15 @@ public partial class LobbyPhase(IMultiplayerClientTransport transport) : BasePha
 
     private void OnSetGameRule(uint sessionId, string name, string value)
     {
-        if (!CanAct || Lobby.ViewedSessionId.Value != sessionId
+        if (!CanAct
+            || Lobby.ViewedSessionId.Value != sessionId
             || Lobby.Sessions.Value.FirstOrDefault(session => session.Id == sessionId)
                 is not { IsCreator: true, IsMember: true, State: SessionState.NotStarted } match
-            || !match.Settings.Any(setting => setting.Field is { } field && field.Name == name
+            || !match.Settings.Any(setting => setting.Field is { } field
+                                              && field.Name == name
                                               && field.Choices.Any(choice => choice.Value == value)
             ))
+
             return;
 
         transport.SendPacketToServer(new C2S_SetGameRule { SessionId = sessionId, Name = name, Value = value });

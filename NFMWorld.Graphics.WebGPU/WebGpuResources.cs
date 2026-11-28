@@ -66,6 +66,7 @@ internal sealed unsafe class WebGpuBuffer : IBuffer
     public void Dispose()
     {
         if (Handle is null)
+
             return;
 
         // Deferred: a buffer can be replaced while the frame being recorded still references it
@@ -155,6 +156,7 @@ internal sealed unsafe class WebGpuTexture : ITexture
 
         var view = device.Api.TextureCreateView(texture, in descriptor);
         device.CheckCreated(view is not null, "texture view");
+
         return view;
     }
 
@@ -170,6 +172,7 @@ internal sealed unsafe class WebGpuTexture : ITexture
         }
 
         if (Handle is null)
+
             return;
 
         // Deferred for the same reason as a buffer's: the whole-frame command buffer still holds a
@@ -222,6 +225,7 @@ internal sealed unsafe class WebGpuSampler : ISampler
     public void Dispose()
     {
         if (Handle is null)
+
             return;
 
         _device.Api.SamplerRelease(Handle);
@@ -337,6 +341,7 @@ internal sealed unsafe class WebGpuShaderModule : IShaderModule
 
         var module = device.Api.DeviceCreateShaderModule(device.Device, in descriptor);
         device.CheckCreated(module is not null, $"{stage} shader module");
+
         return module;
     }
 

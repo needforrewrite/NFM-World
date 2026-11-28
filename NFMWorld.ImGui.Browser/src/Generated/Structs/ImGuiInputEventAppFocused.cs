@@ -16,27 +16,24 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiInputEventAppFocused
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte Focused;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiInputEventAppFocused
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte Focused;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiInputEventAppFocused(bool focused = default)
-		{
-			Focused = focused ? (byte)1 : (byte)0;
-		}
-
-
-	}
-
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiInputEventAppFocused(bool focused = default)
+        {
+            Focused = focused ? (byte)1 : (byte)0;
+        }
+    }
 }

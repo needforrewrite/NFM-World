@@ -9,6 +9,7 @@ internal static class RaceMeterColors
     {
         var amount = (int)(98 * damage);
         var green = highlighted ? 170 : amount > 33 ? (int)(244 - 233f * (amount - 33) / 65) : 244;
+
         return new Color(244, green, 11);
     }
 }

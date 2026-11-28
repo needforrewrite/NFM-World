@@ -164,6 +164,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         if (!ReferenceEquals(_pipeline, d3dPipeline))
         {
             var size = d3dPipeline.UniformBlockSize;
+
             if (_uniforms.Length != size)
             {
                 if (!_uniformBlocks.TryGetValue(size, out var block))
@@ -182,6 +183,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         }
 
         if (ReferenceEquals(_pipeline, d3dPipeline) && !_pipelineStateLostToClear)
+
             return;
 
         _pipeline = d3dPipeline;
@@ -213,7 +215,9 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
 
         // A negative slot resolves to a uniform the HLSL compiler dropped. The generated wrappers
         // already no-op on it, so this is only reachable from a caller that skipped the reflection.
+
         if (slot < 0)
+
             return;
 
         if (slot + value.Length > _uniforms.Length)
@@ -228,6 +232,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         if (IsMatrix4x4At(pipeline, slot))
         {
             Transpose4x4Into(value, _uniforms.AsSpan(slot));
+
             return;
         }
 
@@ -243,10 +248,13 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     private static bool IsMatrix4x4At(D3D11PipelineState pipeline, int offset)
     {
         var uniforms = pipeline.Reflection.Uniforms;
+
         for (var index = 0; index < uniforms.Count; index++)
         {
             var uniform = uniforms[index];
+
             if (uniform.Offset == offset)
+
                 return uniform.Type == Shaders.UniformType.Matrix4x4;
         }
 
@@ -314,6 +322,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         }
 
         var view = ((D3D11Texture)texture).View;
+
         if (_resources[slot] != view)
         {
             if (view is not null)
@@ -323,6 +332,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         }
 
         var samplerHandle = ((D3D11Sampler)sampler).Handle;
+
         if (_samplers[slot] != samplerHandle)
         {
             if (samplerHandle is not null)
@@ -355,6 +365,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         {
             // The swapchain's constructor guarantees a back buffer view, so this is a belt-and-braces
             // check that turns a would-be null dereference into a sentence.
+
             throw new InvalidOperationException(
                 "No render target is bound and the swapchain has no back buffer view to fall back to."
             );
@@ -480,6 +491,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         if (options.HasFlag(ClearOptions.Color))
         {
             var view = _target is null ? _swapchain.ColorView : _target.ColorView;
+
             if (view is not null)
             {
                 var rgba = stackalloc float[4] { color.R, color.G, color.B, color.A };
@@ -489,15 +501,19 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
 
         var wantsDepth = options.HasFlag(ClearOptions.Depth);
         var wantsStencil = options.HasFlag(ClearOptions.Stencil);
+
         if (!wantsDepth && !wantsStencil)
+
             return;
 
         var depthView = _target is null ? _swapchain.DepthView : _target.DepthView;
+
         if (depthView is null)
         {
             // Not an error: a caller may ask for a depth clear against a target built without a
             // depth-stencil attachment, and there is nothing to clear. It is what GL gives for free,
             // since an FBO with no depth attachment accepts the bits and discards them.
+
             return;
         }
 
@@ -512,6 +528,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
             // Nothing to work around: the depth-write mask is irrelevant to a clear that leaves depth
             // alone, so the bound state is already correct.
             context->ClearDepthStencilView(depthView, flags, depth, (byte)stencil);
+
             return;
         }
 
@@ -524,6 +541,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         if (_pipeline is not null)
         {
             _pipeline.Apply(_device);
+
             return;
         }
 
@@ -559,6 +577,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
             _device.Device->CreateDepthStencilState(&desc, &state),
             "CreateDepthStencilState (depth clear)"
         );
+
         return state;
     }
 
@@ -593,6 +612,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
 
         // The pipeline's own depth-stencil object is the only thing that can undo a Clear's depth
         // write. Draw is the last point at which that can be put right.
+
         if (_pipelineStateLostToClear)
         {
             _pipelineStateLostToClear = false;
@@ -617,6 +637,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
                 context->Draw(count, (uint)firstIndex);
             else
                 context->DrawInstanced(count, (uint)instanceCount, (uint)firstIndex, 0);
+
             return;
         }
 
@@ -710,10 +731,12 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     private void UploadUniforms()
     {
         if (_uniforms.Length == 0)
+
             return;
 
         var block = _uniformBlock!;
         ref var buffer = ref block.Buffer;
+
         if (buffer is null)
         {
             var desc = new D3D11_BUFFER_DESC
@@ -826,6 +849,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
         // The bound views are released here and the new frame rebinds and re-applies everything, so a
         // caller that drops its texture at the end of a frame is not held alive through this command
         // buffer. The frame is over and every draw that referenced them has been executed.
+
         for (var slot = 0; slot < ResourceSlots; slot++)
         {
             D3D11Interop.Release(ref _resources[slot]);
@@ -837,6 +861,7 @@ internal sealed unsafe class D3D11CommandBuffer : ICommandBuffer
     {
         Reset();
         D3D11Interop.Release(ref _depthClearState);
+
         foreach (var block in _uniformBlocks.Values)
         {
             D3D11Interop.Release(ref block.Buffer);

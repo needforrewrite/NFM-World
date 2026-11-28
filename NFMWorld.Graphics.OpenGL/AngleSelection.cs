@@ -216,10 +216,14 @@ public readonly record struct AngleSelection(AnglePlatformType Platform, AngleDe
     {
         foreach (var arg in args)
         {
-            if (!arg.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!arg.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+
+                continue;
 
             var value = arg[prefix.Length..];
+
             if (Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed))
+
                 return parsed;
 
             throw new ArgumentException(

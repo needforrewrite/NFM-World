@@ -213,7 +213,9 @@ public sealed class Asset
     public AssetReviewStatus ReviewStatus { get; set; } = AssetReviewStatus.Pending;
 
     [NotMapped]
-    public bool IsListed => IsPublic && !IsTakedown && ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus
+    public bool IsListed => IsPublic
+                            && !IsTakedown
+                            && ReviewStatus is AssetReviewStatus.Verified or AssetReviewStatus
         .Legacy;
 
     /// <summary>Set by moderation; a taken-down asset is never served.</summary>
@@ -234,7 +236,9 @@ public enum AssetReviewStatus
 public static class AssetCatalog
 {
     public static IQueryable<Asset> Listed(this IQueryable<Asset> assets) => assets.Where(asset =>
-        asset.IsPublic && !asset.IsTakedown &&
+        asset.IsPublic
+        && !asset.IsTakedown
+        &&
         (asset.ReviewStatus == AssetReviewStatus.Verified || asset.ReviewStatus == AssetReviewStatus.Legacy));
 
     public static string ReviewLabel(this AssetReviewStatus status) => status switch

@@ -121,6 +121,7 @@ public class LobbySessionTimeoutTests
 
         var sessions = new SessionManager(new StubTransport(), players);
         var session = sessions.CreateSession(1, "nfmm/road", maxPlayers: 4, DefaultGamemodes.PvP)!;
+
         return (sessions, players, session.Id);
     }
 

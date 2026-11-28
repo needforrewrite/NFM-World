@@ -207,6 +207,7 @@ internal sealed class GlTexture : ITexture
         // The remaining levels are allocated empty so the texture is mip-complete: a sampler set to
         // a mipmapping min filter reads an incomplete texture as transparent black, which is the
         // silent-wrong-pixels failure mode this avoids.
+
         if (desc.MipMapped)
         {
             for (var level = 1; level < levels; level++)
@@ -238,6 +239,7 @@ internal sealed class GlTexture : ITexture
     private static int MipLevels(int width, int height)
     {
         var levels = 1;
+
         while (width > 1 || height > 1)
         {
             width = Math.Max(1, width >> 1);
@@ -378,6 +380,7 @@ internal sealed class GlRenderTarget : IRenderTarget
         // against it with GL_INVALID_FRAMEBUFFER_OPERATION, which is a state error far from its
         // cause. Naming the attachment formats at creation is what makes the real problem legible.
         var status = _gl.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+
         if (status != GLEnum.FramebufferComplete)
         {
             throw new InvalidOperationException(

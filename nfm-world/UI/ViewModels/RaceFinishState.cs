@@ -20,6 +20,7 @@ public sealed class RaceFinishState
         if (!finished)
         {
             Reset();
+
             return;
         }
 
@@ -34,8 +35,11 @@ public sealed class RaceFinishState
 
     public bool TryShowSummary()
     {
-        if (!Active.Value || !CanContinue.Value) return false;
+        if (!Active.Value || !CanContinue.Value)
+
+            return false;
         ShowSummary.Value = true;
+
         return true;
     }
 

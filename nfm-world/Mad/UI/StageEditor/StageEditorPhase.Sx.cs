@@ -41,6 +41,7 @@ public partial class StageEditorPhase
         get
         {
             _ = _uiRevision.Value;
+
             return _openEditorMenu.Value is not null || _contextMenuOpen;
         }
     }
@@ -74,9 +75,13 @@ public partial class StageEditorPhase
 
     private void Touch() => _uiRevision.Value = _uiRevision.Value + 1;
 
-    private bool EditorDialogOpen() => _showNewStageDialog || _showLoadStageDialog || _showExportDialog
-                                       || _publish.IsOpen || _showExitWarningDialog
-                                       || _showCloseTabWarningDialog || _showRenameGroupDialog
+    private bool EditorDialogOpen() => _showNewStageDialog
+                                       || _showLoadStageDialog
+                                       || _showExportDialog
+                                       || _publish.IsOpen
+                                       || _showExitWarningDialog
+                                       || _showCloseTabWarningDialog
+                                       || _showRenameGroupDialog
                                        || _showTestDriveSaveDialog;
 
     private bool EditorModalOpen() => EditorDialogOpen() || _contextMenuOpen || _openEditorMenu.Value is not null;
@@ -84,6 +89,7 @@ public partial class StageEditorPhase
     private int SelectionStamp()
     {
         var tab = ActiveTab;
+
         return HashCode.Combine(tab?.ActivePieceId ?? -1, tab?.SelectedWallId ?? -1, tab?.SelectedPieceIds.Count ?? 0);
     }
 
@@ -97,6 +103,7 @@ public partial class StageEditorPhase
                 style: () =>
                 {
                     _ = _uiRevision.Value;
+
                     return Sx.Styles(
                         position: Position.Absolute,
                         left: 0,
@@ -123,6 +130,7 @@ public partial class StageEditorPhase
     private Func<T> Observe<T>(Func<T> read) => () =>
     {
         _ = _uiRevision.Value;
+
         return read();
     };
 
@@ -157,16 +165,20 @@ public partial class StageEditorPhase
     private string ShortName(string name, string? radName = null)
     {
         if (_onlinePartNames.TryGetValue(name, out var onlineName))
+
             return onlineName;
 
         if (!string.IsNullOrWhiteSpace(radName)
             && !string.Equals(radName, RadParser.DefaultName, StringComparison.OrdinalIgnoreCase))
+
             return radName;
 
         if (RadpackReader.IsArchiveId(name))
+
             return "part " + name[RadpackReader.ArchivePrefix.Length..][..8];
 
         var slash = name.LastIndexOf('/');
+
         return slash < 0 ? name : name[(slash + 1)..];
     }
 
@@ -260,6 +272,7 @@ public partial class StageEditorPhase
         );
         trigger.Name = "Editor menu " + label;
         _editorMenuTriggers[label] = trigger;
+
         return trigger;
     }
 
@@ -308,8 +321,8 @@ public partial class StageEditorPhase
                     children: Sx.For(
                         each: () => new[] { _openEditorMenu.Value! },
                         row: (menu, _) => Sx.View(
-                        style: () => Sx.Styles(flexDirection: FlexDirection.Column),
-                        children: menu switch
+                            style: () => Sx.Styles(flexDirection: FlexDirection.Column),
+                            children: menu switch
                     {
                         "File" => new object[]
                         {
@@ -320,7 +333,10 @@ public partial class StageEditorPhase
                                 () => { RefreshAvailableStages(); _selectedStageIndex = -1; _showLoadStageDialog = true; }
                             ),
                             MenuAction("Save", "Ctrl+S", () => { if (ActiveTab?.Stage != null) SaveStage(); }),
-                            MenuAction("Publish / export pack…", "", () =>
+                            MenuAction(
+                                "Publish / export pack…",
+                                "",
+                                () =>
                                 {
                                     OpenStagePublishing();
                                 }
@@ -344,10 +360,14 @@ public partial class StageEditorPhase
                         {
                             MenuAction("3D scene", "", () => SetViewMode(StageEditorTab.ViewModeEnum.Scene)),
                             MenuAction("Top down", "", () => SetViewMode(StageEditorTab.ViewModeEnum.TopDown)),
-                            MenuAction(_autoGeneratePolys ? "Disable ground polys" : "Enable ground polys", "", () =>
+                            MenuAction(
+                                _autoGeneratePolys ? "Disable ground polys" : "Enable ground polys",
+                                "",
+                                () =>
                                 {
                                     _autoGeneratePolys = !_autoGeneratePolys;
-                                    if (ActiveTab != null) RecreateEnvironment();
+                                    if (ActiveTab != null)
+                                        RecreateEnvironment();
                                 }
                             )
                         }
@@ -361,6 +381,7 @@ public partial class StageEditorPhase
     private Node MenuAction(string label, string shortcut, Action action)
     {
         var hovered = new Signal<bool>(false);
+
         return KeyboardNavigation.Bind(
             Sx.View(
                 name: () => "Editor menu item " + label,
@@ -377,7 +398,9 @@ public partial class StageEditorPhase
                 onmouseleave: _ => hovered.Value = false,
                 onmousedown: e =>
                 {
-                    if (e.Button != MouseButton.Primary) return;
+                    if (e.Button != MouseButton.Primary)
+
+                        return;
                     _dismissedEditorOverlay = true;
                     _openEditorMenu.Value = null;
                     action();
@@ -398,10 +421,13 @@ public partial class StageEditorPhase
             ),
             key =>
             {
-                if (key is not (Key.Enter or Key.Space)) return false;
+                if (key is not (Key.Enter or Key.Space))
+
+                    return false;
                 _openEditorMenu.Value = null;
                 action();
                 Touch();
+
                 return true;
             },
             focused => hovered.Value = focused
@@ -440,7 +466,8 @@ public partial class StageEditorPhase
                 ),
                 ActionButton("+", OpenNewStage)
             ]
-        ));
+        )
+        );
 
     private Node TabChip(StageEditorTab tab) => DocumentTab(
         Observe(() => tab.TabName + (tab.HasUnsavedChanges ? " •" : "")),
@@ -452,6 +479,7 @@ public partial class StageEditorPhase
     private void SelectTab(int index)
     {
         if (index == _activeTabIndex || index < 0 || index >= _tabs.Count)
+
             return;
 
         _activeTabIndex = index;
@@ -498,12 +526,14 @@ public partial class StageEditorPhase
                     style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 6, flexShrink: 0),
                     children:
                     [
-                        EditorText(style: () => Sx.TextStyles(
-                            fontSize: 11,
-                            fontStyle: FontStyle.Bold,
-                            fontFamily: FontFamily.Adventure,
-                            foregroundColor: Blue
-                        ), text: () => "Hierarchy"
+                        EditorText(
+                            style: () => Sx.TextStyles(
+                                fontSize: 11,
+                                fontStyle: FontStyle.Bold,
+                                fontFamily: FontFamily.Adventure,
+                                foregroundColor: Blue
+                            ),
+                            text: () => "Hierarchy"
                         ),
                         EditorField(
                             () => _hierarchySearch,
@@ -539,6 +569,7 @@ public partial class StageEditorPhase
                     when: () =>
                     {
                         _ = _uiRevision.Value;
+
                         return ActiveTab is { } tab && tab.SelectedPieceIds.Count > 0;
                     },
                     then: () => ActionButton("+ GROUP FROM SELECTION", CreateGroupFromSelection)
@@ -567,7 +598,9 @@ public partial class StageEditorPhase
     private IReadOnlyList<HierarchyRowVm> HierarchyRows()
     {
         _ = _uiRevision.Value;
+
         if (ActiveTab is not { } tab)
+
             return [];
 
         var query = _hierarchySearch.Trim();
@@ -598,6 +631,7 @@ public partial class StageEditorPhase
             }
 
             if (index == tab.HierarchyGroups.Count)
+
                 break;
 
             var group = tab.HierarchyGroups.ByIndex(index);
@@ -622,6 +656,7 @@ public partial class StageEditorPhase
             PiecePlacementType.FixHoop => " [Fix]",
             _ => " [Set]"
         };
+
         return new HierarchyRowVm(
             HierarchyRowKind.Piece,
             $"{ShortName(piece.Name, piece.Rad.Stats.Name)}{tag} (ID: {piece.Id})",
@@ -641,12 +676,14 @@ public partial class StageEditorPhase
     private bool ActiveTabHasPieces()
     {
         _ = _uiRevision.Value;
+
         return ActiveTab is { } tab && (tab.ScenePieces.Count > 0 || tab.StageWalls.Count > 0);
     }
 
     private Node HierarchyRow(HierarchyRowVm row)
     {
         if (row.Kind == HierarchyRowKind.Borders)
+
             return BordersHeader();
 
         var heading = row.Kind is HierarchyRowKind.Group or HierarchyRowKind.Ungrouped;
@@ -657,6 +694,7 @@ public partial class StageEditorPhase
                 _ = _uiRevision.Value;
                 var selected = IsRowSelected(row);
                 var dropTarget = _hierDropRow == row;
+
                 return Sx.Styles(
                     position: Position.Relative,
                     flexShrink: 0,
@@ -679,6 +717,7 @@ public partial class StageEditorPhase
                     style: () =>
                     {
                         _ = _uiRevision.Value;
+
                         return Sx.TextStyles(
                             fontSize: 10,
                             fontStyle: heading ? FontStyle.Bold : FontStyle.Plain,
@@ -698,6 +737,7 @@ public partial class StageEditorPhase
         view.MousePressed = e => OnHierarchyRowPressed(row, e);
         view.MouseEntered = e => OnHierarchyRowHovered(row, e, view);
         view.MouseMoved = e => OnHierarchyRowHovered(row, e, view);
+
         return view;
     }
 
@@ -733,11 +773,25 @@ public partial class StageEditorPhase
 
     private Node BordersHeader()
         => Sx.View(
-            style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 3, paddingTop: 2, paddingBottom: 4, flexShrink: 0),
+            style: () => Sx.Styles(
+                flexDirection: FlexDirection.Column,
+                gapRow: 3,
+                paddingTop: 2,
+                paddingBottom: 4,
+                flexShrink: 0
+            ),
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 10, fontStyle: FontStyle.Bold, foregroundColor: new Color(128, 170, 255)),
+                    style: () => Sx.TextStyles(
+                        fontSize: 10,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: new Color(
+                            128,
+                            170,
+                            255
+                        )
+                    ),
                     text: () => "STAGE BORDERS"
                 ),
                 PropertyCheckbox(
@@ -747,9 +801,10 @@ public partial class StageEditorPhase
                 ),
                 ActionButton(
                     "AUTO-GENERATE BORDERS",
-                () =>
+                    () =>
                     {
                         if (!HasPlaceableStageGeometry())
+
                             return;
                         PushUndoSnapshot();
                         AutoGenerateStageBordersFromGeometry();
@@ -762,6 +817,7 @@ public partial class StageEditorPhase
     private bool IsRowSelected(HierarchyRowVm row)
     {
         if (ActiveTab is not { } tab)
+
             return false;
 
         return row.Kind switch
@@ -775,16 +831,19 @@ public partial class StageEditorPhase
     private void OnHierarchyRowPressed(HierarchyRowVm row, MouseEvent e)
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         if (e.Button == MouseButton.Secondary)
         {
             OpenHierarchyContextMenu(row);
             e.StopPropagation();
+
             return;
         }
 
         if (e.Button != MouseButton.Primary)
+
             return;
 
         switch (row.Kind)
@@ -798,6 +857,7 @@ public partial class StageEditorPhase
                     tab.ActivePieceId = row.PieceId;
 
                 _hierDragPieceIds.Clear();
+
                 if (tab.SelectedPieceIds.Contains(row.PieceId))
                 {
                     _hierDragPieceIds.AddRange(tab.SelectedPieceIds.OrderBy(id => tab.ScenePieces.FindIndex(p => p.Id == id)));
@@ -805,17 +865,20 @@ public partial class StageEditorPhase
 
                 _hierDragStartX = e.Position.X;
                 _hierDragStartY = e.Position.Y;
+
                 break;
             case HierarchyRowKind.Group:
                 SelectGroup(tab, row.GroupId);
                 _hierDragGroupId = row.GroupId;
                 _hierDragStartX = e.Position.X;
                 _hierDragStartY = e.Position.Y;
+
                 break;
             case HierarchyRowKind.Wall:
                 tab.SelectedWallId = row.WallId;
                 tab.ActivePieceId = -1;
                 tab.SelectedPieceIds.Clear();
+
                 break;
         }
 
@@ -845,6 +908,7 @@ public partial class StageEditorPhase
     private static void SelectGroup(StageEditorTab tab, int groupId)
     {
         if (tab.HierarchyGroups.GetValueOrDefault(groupId) is not { } group)
+
             return;
 
         tab.SelectedPieceIds.Clear();
@@ -859,11 +923,13 @@ public partial class StageEditorPhase
     private void OnHierarchyRowHovered(HierarchyRowVm row, MouseMoveEvent e, Component rowView)
     {
         if (_hierDragPieceIds.Count == 0 && _hierDragGroupId < 0)
+
             return;
 
         if (!_hierDragging)
         {
             if (Math.Abs(e.Position.X - _hierDragStartX) < 4 && Math.Abs(e.Position.Y - _hierDragStartY) < 4)
+
                 return;
             _hierDragging = true;
         }
@@ -871,16 +937,20 @@ public partial class StageEditorPhase
         if (!IsValidHierarchyDrop(row))
         {
             if (_hierDropRow is null)
+
                 return;
 
             _hierDropRow = null;
             Touch();
+
             return;
         }
 
         // Top or bottom half decides insert-before vs insert-after.
         var above = e.Position.Y < rowView.LayoutBorderPosition.Y + (rowView.LayoutBorderSize.Y / 2f);
+
         if (_hierDropRow == row && _hierDropAbove == above)
+
             return;
 
         _hierDropRow = row;
@@ -891,6 +961,7 @@ public partial class StageEditorPhase
     private bool IsValidHierarchyDrop(HierarchyRowVm row)
     {
         if (_hierDragGroupId >= 0)
+
             return row.Kind == HierarchyRowKind.Group;
 
         return row.Kind is HierarchyRowKind.Piece or HierarchyRowKind.Group or HierarchyRowKind.Ungrouped;
@@ -914,6 +985,7 @@ public partial class StageEditorPhase
         {
             if (dragging)
                 Touch();
+
             return;
         }
 
@@ -924,6 +996,7 @@ public partial class StageEditorPhase
                 if (pieceIds.Contains(destination.PieceId))
                 {
                     Touch();
+
                     return;
                 }
 
@@ -951,18 +1024,23 @@ public partial class StageEditorPhase
     private void ReorderGroup(int groupId, int targetIndex)
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         var from = -1;
+
         for (var i = 0; i < tab.HierarchyGroups.Count; i++)
         {
             if (tab.HierarchyGroups.ByIndex(i).Id != groupId)
+
                 continue;
             from = i;
+
             break;
         }
 
         if (from < 0 || from == targetIndex)
+
             return;
 
         PushUndoSnapshot();
@@ -979,10 +1057,12 @@ public partial class StageEditorPhase
     private void CreateGroupFromSelection()
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         PushUndoSnapshot();
         var group = new HierarchyGroup { Id = tab.GetNextGroupId(), Name = "Group" };
+
         foreach (var id in tab.SelectedPieceIds)
         {
             foreach (var existing in tab.HierarchyGroups)
@@ -1004,10 +1084,13 @@ public partial class StageEditorPhase
     private IReadOnlyList<MenuRowVm> ContextMenuRows()
     {
         _ = _uiRevision.Value;
+
         if (_contextRow is not { } row || ActiveTab is not { } tab)
+
             return [];
 
         var rows = new List<MenuRowVm>();
+
         switch (row.Kind)
         {
             case HierarchyRowKind.Piece:
@@ -1016,11 +1099,13 @@ public partial class StageEditorPhase
                 foreach (var group in tab.HierarchyGroups)
                     if (group.Id != row.GroupId)
                         rows.Add(new MenuRowVm($"MOVE TO {group.Name}", "move", row.PieceId, group.Id));
+
                 break;
             case HierarchyRowKind.Group:
                 rows.Add(new MenuRowVm("RENAME…", "rename", -1, row.GroupId));
                 rows.Add(new MenuRowVm("SELECT ALL IN GROUP", "selectall", -1, row.GroupId));
                 rows.Add(new MenuRowVm("DELETE GROUP (KEEP PIECES)", "delete", -1, row.GroupId));
+
                 break;
         }
 
@@ -1030,6 +1115,7 @@ public partial class StageEditorPhase
     private Node ContextMenuItem(MenuRowVm row)
     {
         var hovered = new Signal<bool>(false);
+
         return Sx.View(
             name: () => $"Hierarchy menu item {row.Label}",
             style: () => Sx.Styles(
@@ -1044,6 +1130,7 @@ public partial class StageEditorPhase
             onmousedown: e =>
             {
                 if (e.Button != MouseButton.Primary)
+
                     return;
                 _dismissedEditorOverlay = true;
                 RunMenuCommand(row);
@@ -1059,7 +1146,9 @@ public partial class StageEditorPhase
     private void RunMenuCommand(MenuRowVm row)
     {
         CloseHierarchyContextMenu();
+
         if (ActiveTab is not { } tab)
+
             return;
 
         switch (row.Command)
@@ -1073,14 +1162,17 @@ public partial class StageEditorPhase
                         : [row.PieceId],
                     row.Command == "ungroup" ? -1 : row.GroupId
                 );
+
                 break;
             case "selectall":
                 SelectGroup(tab, row.GroupId);
+
                 break;
             case "rename":
                 _groupContextMenuGroupId = row.GroupId;
                 _renameGroupBuffer = tab.HierarchyGroups.GetValueOrDefault(row.GroupId)?.Name ?? "";
                 _showRenameGroupDialog = true;
+
                 break;
             case "delete":
                 PushUndoSnapshot();
@@ -1088,6 +1180,7 @@ public partial class StageEditorPhase
                 if (tab.UngroupedOrderIndex >= 0)
                     tab.UngroupedOrderIndex = Math.Clamp(tab.UngroupedOrderIndex, 0, tab.HierarchyGroups.Count);
                 tab.HasUnsavedChanges = true;
+
                 break;
         }
 
@@ -1098,7 +1191,9 @@ public partial class StageEditorPhase
     {
         DismissPropertyDropdowns();
         _openEditorMenu.Value = null;
+
         if (row.Kind is not (HierarchyRowKind.Piece or HierarchyRowKind.Group))
+
             return;
 
         _contextRow = row;
@@ -1120,6 +1215,7 @@ public partial class StageEditorPhase
             style: () =>
             {
                 _ = _uiRevision.Value;
+
                 return Sx.Styles(
                     position: Position.Absolute,
                     left: 0,
@@ -1133,6 +1229,7 @@ public partial class StageEditorPhase
             onmousedown: e =>
             {
                 if (!_contextMenuOpen)
+
                     return;
                 _dismissedEditorOverlay = true;
                 CloseHierarchyContextMenu();
@@ -1146,6 +1243,7 @@ public partial class StageEditorPhase
                     var scale = Math.Max(TheGraphics.G.Scale, 0.01f);
                     var maxLeft = GameSparker.Game.Window.Width / scale - 218;
                     var maxTop = GameSparker.Game.Window.Height / scale - 40;
+
                     return Sx.Styles(
                         position: Position.Absolute,
                         left: Math.Clamp(_contextMenuX / scale, 0, Math.Max(0, maxLeft)),
@@ -1205,6 +1303,7 @@ public partial class StageEditorPhase
     private void SetViewMode(StageEditorTab.ViewModeEnum mode)
     {
         if (ActiveTab is not { } tab || tab.ViewMode == mode)
+
             return;
         tab.ViewMode = mode;
         UpdateCameraPosition();
@@ -1214,7 +1313,9 @@ public partial class StageEditorPhase
     private string StatusText()
     {
         _ = _uiRevision.Value;
+
         if (ActiveTab is not { } tab)
+
             return "";
 
         var snap = _snapEnabled ? "Snap: ON" : "Snap: OFF";
@@ -1223,6 +1324,7 @@ public partial class StageEditorPhase
             ? $"  ·  Placing {ShortName(_availableParts[_pendingPlacementPartIndex].FileName, _availableParts[_pendingPlacementPartIndex].Stats.Name)}  [Q/E] rotate  [LMB] place  [Esc] cancel"
             : "";
         var cursor = _cursorPosition.Value;
+
         return $"Cursor {cursor.X},{cursor.Y}  ·  {ActiveTab.ViewMode}  ·  {snap}  ·  {grid}{placement}";
     }
 
@@ -1247,12 +1349,14 @@ public partial class StageEditorPhase
             ),
             children:
             [
-                EditorText(style: () => Sx.TextStyles(
-                    fontSize: 11,
-                    fontStyle: FontStyle.Bold,
-                    fontFamily: FontFamily.Adventure,
-                    foregroundColor: Blue
-                ), text: () => "Inspector"
+                EditorText(
+                    style: () => Sx.TextStyles(
+                        fontSize: 11,
+                        fontStyle: FontStyle.Bold,
+                        fontFamily: FontFamily.Adventure,
+                        foregroundColor: Blue
+                    ),
+                    text: () => "Inspector"
                 ),
                 Sx.View(
                     style: () => Sx.Styles(
@@ -1275,24 +1379,35 @@ public partial class StageEditorPhase
     private StagePieceInstance? SelectedPiece()
     {
         _ = _uiRevision.Value;
+
         return ActiveTab is { } tab && tab.ActivePieceId >= 0 ? tab.ScenePieces.GetValueOrDefault(tab.ActivePieceId) : null;
     }
 
     private EditorStageWall? SelectedWall()
     {
         _ = _uiRevision.Value;
+
         return ActiveTab is { } tab && tab.SelectedWallId >= 0 ? tab.StageWalls.GetValueOrDefault(tab.SelectedWallId) : null;
     }
 
     private Node PieceInspector()
     {
         var piece = SelectedPiece()!;
+
         return Sx.View(
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4, flexShrink: 0),
             children:
             [
                 EditorText(
-                    style: () => Sx.TextStyles(fontSize: 12, fontStyle: FontStyle.Bold, foregroundColor: new Color(170, 255, 170)),
+                    style: () => Sx.TextStyles(
+                        fontSize: 12,
+                        fontStyle: FontStyle.Bold,
+                        foregroundColor: new Color(
+                            170,
+                            255,
+                            170
+                        )
+                    ),
                     text: () => ShortName(piece.Name, piece.Rad.Stats.Name)
                 ),
                 NumberField("X", () => (float)piece.Position.X, value => SetPieceX(piece, value)),
@@ -1319,7 +1434,9 @@ public partial class StageEditorPhase
                     () => ActiveTab?.SelectedPieceIds.Count > 1 ? "DELETE ALL SELECTED" : "DELETE PIECE",
                     DeleteSelection
                 ),
-                RevisionButton(() => _isSwapMode ? "CANCEL SWAP" : "SWAP PIECE…", () =>
+                RevisionButton(
+                    () => _isSwapMode ? "CANCEL SWAP" : "SWAP PIECE…",
+                    () =>
                     {
                         _isSwapMode = !_isSwapMode;
                         _pendingPlacementPartIndex = -1;
@@ -1333,12 +1450,16 @@ public partial class StageEditorPhase
     private Node WallInspector()
     {
         var wall = SelectedWall()!;
+
         return Sx.View(
             style: () => Sx.Styles(flexDirection: FlexDirection.Column, gapRow: 4, flexShrink: 0),
             children:
             [
                 EditorText(style: () => Sx.TextStyles(fontSize: 12, fontStyle: FontStyle.Bold), text: () => wall.GetDisplayName()),
-                NumberField("Count", () => wall.Count, value =>
+                NumberField(
+                    "Count",
+                    () => wall.Count,
+                    value =>
                     {
                         BeginInspectorEdit();
                         wall.Count = Math.Clamp((int)value, 1, 100);
@@ -1347,7 +1468,10 @@ public partial class StageEditorPhase
                         Touch();
                     }
                 ),
-                NumberField("Position", () => wall.Position, value =>
+                NumberField(
+                    "Position",
+                    () => wall.Position,
+                    value =>
                     {
                         BeginInspectorEdit();
                         wall.Position = (int)value;
@@ -1356,7 +1480,10 @@ public partial class StageEditorPhase
                         Touch();
                     }
                 ),
-                NumberField("Offset", () => wall.Offset, value =>
+                NumberField(
+                    "Offset",
+                    () => wall.Offset,
+                    value =>
                     {
                         BeginInspectorEdit();
                         wall.Offset = (int)value;
@@ -1365,7 +1492,9 @@ public partial class StageEditorPhase
                         Touch();
                     }
                 ),
-                ActionButton("DELETE BORDER", () =>
+                ActionButton(
+                    "DELETE BORDER",
+                    () =>
                     {
                         PushUndoSnapshot();
                         ActiveTab!.StageWalls.Remove(wall);
@@ -1393,8 +1522,11 @@ public partial class StageEditorPhase
             onChange: text =>
             {
                 draft.Value = text;
-                if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || !float
+
+                if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+                    || !float
                     .IsFinite(parsed))
+
                     return;
                 set(parsed);
                 Touch();
@@ -1402,6 +1534,7 @@ public partial class StageEditorPhase
             minWidth: 0,
             style: () => Sx.Styles(flexGrow: 1, width: 0)
         );
+
         return FieldRow(
             () => label,
             coordinate ? 22 : 60,
@@ -1457,15 +1590,20 @@ public partial class StageEditorPhase
     private void DeleteSelection()
     {
         if (ActiveTab is not { } tab || tab.Stage is null)
+
             return;
 
         PushUndoSnapshot();
+
         if (tab.SelectedPieceIds.Count > 1)
         {
             foreach (var id in tab.SelectedPieceIds.ToArray())
             {
                 var piece = tab.ScenePieces.GetValueOrDefault(id);
-                if (piece is null) continue;
+
+                if (piece is null)
+
+                    continue;
                 tab.Stage.Pieces.Remove(piece.Obj);
                 tab.ScenePieces.Remove(piece);
                 foreach (var group in tab.HierarchyGroups)
@@ -1577,13 +1715,17 @@ public partial class StageEditorPhase
                                         style: () => Sx.TextStyles(fontSize: 11, foregroundColor: new Color(26, 230, 255)),
                                         text: () => $"Yaw {_pendingPlacementYaw:0}°"
                                     ),
-                                    ActionButton("-45", () =>
+                                    ActionButton(
+                                        "-45",
+                                        () =>
                                         {
                                             _pendingPlacementYaw = ((_pendingPlacementYaw - 45f) % 360f + 360f) % 360f;
                                             Touch();
                                         }
                                     ),
-                                    ActionButton("+45", () =>
+                                    ActionButton(
+                                        "+45",
+                                        () =>
                                         {
                                             _pendingPlacementYaw = (_pendingPlacementYaw + 45f) % 360f;
                                             Touch();
@@ -1620,21 +1762,26 @@ public partial class StageEditorPhase
         _ = _uiRevision.Value;
         var query = _partsSearch.Trim();
         var result = new List<(int, Rad3d)>();
+
         for (var i = 0; i < _availableParts.Count; i++)
         {
             var part = _availableParts[i];
             var name = part.FileName;
             var displayName = ShortName(name, part.Stats.Name);
+
             if (query.Length > 0
                 && !name.Contains(query, StringComparison.OrdinalIgnoreCase)
                 && !displayName.Contains(query, StringComparison.OrdinalIgnoreCase))
+
                 continue;
 
             var category = RadpackReader.IsArchiveId(name) ? OnlinePartsCategory
                 : name.StartsWith("nfmm/", StringComparison.OrdinalIgnoreCase) ? 1
                 : name.StartsWith("nfmw/", StringComparison.OrdinalIgnoreCase)
                   || name.StartsWith("vendor/", StringComparison.OrdinalIgnoreCase) ? 2 : 3;
+
             if (_partsCategory != 0 && category != _partsCategory)
+
                 continue;
 
             result.Add((i, part));
@@ -1651,12 +1798,16 @@ public partial class StageEditorPhase
         var swapTarget = () =>
         {
             _ = _uiRevision.Value;
-            return _isSwapMode && ActiveTab is { ActivePieceId: >= 0 } tab
-                   && tab.ScenePieces.GetValueOrDefault(tab.ActivePieceId)?.Name == part.Part.FileName;
+
+            return _isSwapMode
+                   && ActiveTab is { ActivePieceId: >= 0 } tab
+                   && tab.ScenePieces.GetValueOrDefault(tab.ActivePieceId)?.Name
+                   == part.Part.FileName;
         };
         var preview = () =>
         {
             _ = _previewRevision.Value;
+
             return _partPreviews.TryGetValue(part.Part.FileName, out var stored) ? stored.Image : null;
         };
 
@@ -1666,6 +1817,7 @@ public partial class StageEditorPhase
                 // DrawVariableBorderRect strokes whenever a colour is set, so the swap
                 // outline has to be absent rather than zero-width.
                 var swapping = swapTarget();
+
                 return Sx.Styles(
                     width: PartTileSize,
                     height: PartTileSize,
@@ -1689,6 +1841,7 @@ public partial class StageEditorPhase
                 if (_isSwapMode)
                 {
                     SwapSelection(part.Part);
+
                     return;
                 }
 
@@ -1732,7 +1885,9 @@ public partial class StageEditorPhase
     private void BeginPlacement(Rad3d part)
     {
         var index = _availableParts.IndexOf(part);
+
         if (index < 0)
+
             return;
 
         _pendingPlacementPartIndex = index;
@@ -1774,6 +1929,7 @@ public partial class StageEditorPhase
                         each: () =>
                         {
                             _ = _uiRevision.Value;
+
                             return _onlinePartResults;
                         },
                         row: (asset, _) => OnlinePartTile(asset)
@@ -1785,11 +1941,13 @@ public partial class StageEditorPhase
     private Node OnlinePartTile(RemoteAsset asset)
     {
         var reference = OnlinePartReference(asset);
+
         return EditorShow(
             when: () => _availableParts.Contains(reference),
             then: () =>
             {
                 var part = _availableParts.GetValueOrDefault(reference)!;
+
                 return PartButton((_availableParts.IndexOf(part), part));
             },
             otherwise: () => RemotePartTile(asset, reference)
@@ -1802,6 +1960,7 @@ public partial class StageEditorPhase
         var downloading = () =>
         {
             _ = _uiRevision.Value;
+
             return _onlinePartDownloads.Contains(reference);
         };
         var tile = new VisibleOnlinePartTileView(() => DownloadOnlinePart(asset, placeWhenReady: false))
@@ -1845,6 +2004,7 @@ public partial class StageEditorPhase
                 text: () => Clip(asset.Name, 16)
             )
         );
+
         return tile;
     }
 
@@ -1855,6 +2015,7 @@ public partial class StageEditorPhase
         protected override void RenderContent(System.Numerics.Vector2 position, System.Numerics.Vector2 size)
         {
             if (_requested)
+
                 return;
 
             _requested = true;
@@ -1868,24 +2029,32 @@ public partial class StageEditorPhase
     private static Color PartTileColor(string name)
     {
         if (name.Contains("checkpoint") || name.Contains("chk"))
+
             return new Color(46, 140, 46, 220);
         if (name.Contains("fix") || name.Contains("hoop"))
+
             return new Color(166, 51, 51, 220);
         if (name.Contains("road") || name.Contains("ramp") || name.Contains("roll"))
+
             return new Color(97, 77, 51, 220);
         if (name.Contains("wall") || name.Contains("border"))
+
             return new Color(64, 64, 115, 220);
         if (name.Contains("turn") || name.Contains("twist") || name.Contains("bend"))
+
             return new Color(115, 77, 26, 220);
+
         return new Color(64, 77, 97, 220);
     }
 
     private void SwapSelection(Rad3d replacement)
     {
         if (ActiveTab is not { } tab || tab.ActivePieceId < 0)
+
             return;
 
         PushUndoSnapshot();
+
         foreach (var piece in tab.ScenePieces.Where(p => tab.SelectedPieceIds.Contains(p.Id)).ToArray())
         {
             // StageObject.Rad is immutable and the renderer caches by object, so the piece's
@@ -1957,7 +2126,9 @@ public partial class StageEditorPhase
                     "CREATE",
                     () =>
                     {
-                        if (string.IsNullOrWhiteSpace(_newStageName)) return;
+                        if (string.IsNullOrWhiteSpace(_newStageName))
+
+                            return;
                         var start = _newStageStartPartIndex > 0 ? _newStageStartPartOptions[_newStageStartPartIndex] : null;
                         CreateEmptyStage(_newStageName, start);
                         _showNewStageDialog = false;
@@ -2036,11 +2207,13 @@ public partial class StageEditorPhase
     private void OpenStagePublishing()
     {
         if (ActiveTab is not { } tab)
+
             return;
 
         if (SnapshotActiveStage(tab.TabName) is not { } stage)
         {
             GameSparker.MessageWindow.ShowMessage("Publish unavailable", "The stage could not be prepared.");
+
             return;
         }
 
@@ -2059,18 +2232,22 @@ public partial class StageEditorPhase
     private NFMWorldLibrary.StageLoader? SnapshotActiveStage(string name)
     {
         if (BuildStageText() is not { } text)
+
             return null;
 
         var id = "user/" + ConvertStageNameToFilename(name);
+
         try
         {
             var stage = NFMWorldLibrary.StageLoader.FromLines(id, text.Split('\n'));
             stage.EmbeddedMusic = ActiveTab?.Stage?.StageLoader.EmbeddedMusic;
+
             return stage;
         }
         catch (Exception ex)
         {
             Logging.Warning($"Could not snapshot the stage: {ex.Message}");
+
             return null;
         }
     }
@@ -2182,6 +2359,7 @@ public partial class StageEditorPhase
 
                 // Mouse coordinates are window pixels; style lengths are multiplied by G.Scale.
                 var scale = Math.Max(TheGraphics.G.Scale, 0.01f);
+
                 return Sx.Styles(
                     position: Position.Absolute,
                     left: minX / scale,

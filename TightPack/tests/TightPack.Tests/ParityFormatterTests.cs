@@ -223,10 +223,12 @@ public sealed class ParityFormatterTests
     [TestMethod]
     public void BitPack_EmptyAndNullRoundTrip()
     {
-        Assert.AreEqual(0, TightPackSerializer.Deserialize(
-            TightPackSerializer.Serialize(Array.Empty<bool>(), BitPackFormatter.Default),
-            BitPackFormatter.Default
-        )!.Length
+        Assert.AreEqual(
+            0,
+            TightPackSerializer.Deserialize(
+                TightPackSerializer.Serialize(Array.Empty<bool>(), BitPackFormatter.Default),
+                BitPackFormatter.Default
+            )!.Length
         );
 
         Assert.IsNull(TightPackSerializer.Deserialize(
@@ -286,10 +288,12 @@ public sealed class ParityFormatterTests
     {
         var formatter = BrotliFormatter.Default;
 
-        Assert.AreEqual(0, TightPackSerializer.Deserialize(
-            TightPackSerializer.Serialize(Array.Empty<byte>(), formatter),
-            formatter
-        )!.Length
+        Assert.AreEqual(
+            0,
+            TightPackSerializer.Deserialize(
+                TightPackSerializer.Serialize(Array.Empty<byte>(), formatter),
+                formatter
+            )!.Length
         );
 
         Assert.IsNull(TightPackSerializer.Deserialize(
@@ -346,16 +350,20 @@ public sealed class ParityFormatterTests
         DynShape circle = new DynCircle { Radius = 3 };
         DynShape square = new DynSquare { Side = 4 };
 
-        Assert.AreEqual(3, ((DynCircle)TightPackSerializer.Deserialize(
-            TightPackSerializer.Serialize(circle, formatter),
-            formatter
-        )!).Radius
+        Assert.AreEqual(
+            3,
+            ((DynCircle)TightPackSerializer.Deserialize(
+                TightPackSerializer.Serialize(circle, formatter),
+                formatter
+            )!).Radius
         );
 
-        Assert.AreEqual(4, ((DynSquare)TightPackSerializer.Deserialize(
-            TightPackSerializer.Serialize(square, formatter),
-            formatter
-        )!).Side
+        Assert.AreEqual(
+            4,
+            ((DynSquare)TightPackSerializer.Deserialize(
+                TightPackSerializer.Serialize(square, formatter),
+                formatter
+            )!).Side
         );
     }
 

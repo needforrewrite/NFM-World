@@ -41,6 +41,7 @@ public static class DiscordEndpoints
             ) =>
             {
                 if (string.IsNullOrEmpty(options.DiscordClientId) || string.IsNullOrEmpty(options.DiscordRedirectUri))
+
                     return Results.NotFound();
 
                 try
@@ -53,7 +54,9 @@ public static class DiscordEndpoints
                 }
 
                 var ipKey = "ip:" + (http.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
                 if (throttle.IsBlocked(ipKey, out _))
+
                     return Results.StatusCode(StatusCodes.Status429TooManyRequests);
                 var form = await http.Request.ReadFormAsync(ct);
                 var verification = await turnstile.VerifyAsync(
@@ -62,7 +65,9 @@ public static class DiscordEndpoints
                     ct,
                     http.Connection.RemoteIpAddress?.ToString()
                 );
+
                 if (!verification.Accepted)
+
                     return Results.BadRequest(new { error = verification.Message });
                 throttle.RecordFailure(ipKey);
 
@@ -116,10 +121,13 @@ public static class DiscordEndpoints
             ) =>
             {
                 if (string.IsNullOrEmpty(options.DiscordClientId) || string.IsNullOrEmpty(options.DiscordRedirectUri))
+
                     return Results.NotFound();
 
                 var user = await http.GetUserAsync(db, ct);
+
                 if (user is null)
+
                     return Results.Unauthorized();
 
                 try
@@ -175,25 +183,31 @@ public static class DiscordEndpoints
             ) =>
             {
                 var isLink = state.StartsWith("link.", StringComparison.Ordinal);
+
                 if (string.IsNullOrEmpty(code)
                     || string.IsNullOrEmpty(state)
                     || (!state.StartsWith("turnstile.", StringComparison.Ordinal) && !isLink))
+
                     return Results.BadRequest(new { error = "Missing code or state." });
 
                 // The state must be the one this browser started with, not merely a live one: a
                 // state handed to a victim would otherwise sign them into the attacker's account.
+
                 if (http.Request.Cookies["nfmw_oauth_state"] is not { Length: > 0 } browserState
                     || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
                         System.Text.Encoding.UTF8.GetBytes(browserState),
                         System.Text.Encoding.UTF8.GetBytes(state)
                     ))
+
                     return Results.BadRequest(new { error = "This login attempt was started in a different browser." });
 
                 http.Response.Cookies.Delete("nfmw_oauth_state");
 
                 var stateHash = Tokens.Hash(state);
                 var pending = await db.OauthPending.FirstOrDefaultAsync(p => p.StateHash == stateHash, ct);
+
                 if (pending is null)
+
                     return Results.BadRequest(new { error = "Unknown or already-used login attempt." });
 
                 // Consume it whether or not the exchange succeeds: a state is valid for exactly one attempt.
@@ -201,6 +215,7 @@ public static class DiscordEndpoints
                 await db.SaveChangesAsync(ct);
 
                 if (pending.ExpiresAt <= DateTimeOffset.UtcNow)
+
                     return Results.BadRequest(new { error = "Login attempt expired." });
 
                 var client = clients.CreateClient("discord");
@@ -221,20 +236,27 @@ public static class DiscordEndpoints
                 );
 
                 if (!tokenResponse.IsSuccessStatusCode)
+
                     return Results.BadRequest(new { error = "Discord rejected the authorization code." });
 
                 var token = await tokenResponse.Content.ReadFromJsonAsync<DiscordTokenResponse>(ct);
+
                 if (string.IsNullOrEmpty(token?.AccessToken))
+
                     return Results.BadRequest(new { error = "Discord returned no access token." });
 
                 using var userRequest = new HttpRequestMessage(HttpMethod.Get, UserUrl);
                 userRequest.Headers.Authorization = new("Bearer", token.AccessToken);
                 using var userResponse = await client.SendAsync(userRequest, ct);
+
                 if (!userResponse.IsSuccessStatusCode)
+
                     return Results.BadRequest(new { error = "Could not read the Discord profile." });
 
                 var discordUser = await userResponse.Content.ReadFromJsonAsync<DiscordUser>(ct);
+
                 if (string.IsNullOrEmpty(discordUser?.Id))
+
                     return Results.BadRequest(new { error = "Discord returned no user id." });
 
                 if (isLink)
@@ -243,12 +265,16 @@ public static class DiscordEndpoints
                     // signed in: the state cookie proves this browser started the flow, not that
                     // the account is the same one that is signed in now.
                     var linkUser = await http.GetUserAsync(db, ct);
+
                     if (linkUser is null)
+
                         return Results.BadRequest(new { error = "Sign in before linking Discord." });
 
                     var existing = await db.ExternalLogins
                         .AnyAsync(l => l.Provider == "discord" && l.ProviderUserId == discordUser.Id, ct);
+
                     if (existing)
+
                         return Results.BadRequest(new { error = "That Discord account is already linked." });
 
                     db.ExternalLogins.Add(
@@ -261,6 +287,7 @@ public static class DiscordEndpoints
                     );
                     await db.SaveChangesAsync(ct);
                     AuthEndpoints.Audit(db, linkUser.Id, "link_discord", null, http);
+
                     return Results.Redirect("/account/security");
                 }
 
@@ -269,6 +296,7 @@ public static class DiscordEndpoints
                     .FirstOrDefaultAsync(l => l.Provider == "discord" && l.ProviderUserId == discordUser.Id, ct);
 
                 User user;
+
                 if (login is not null)
                 {
                     user = login.User;
@@ -276,6 +304,7 @@ public static class DiscordEndpoints
                 else
                 {
                     if (options.ReadOnly)
+
                         return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 
                     var baseName = SanitizeUsername(discordUser.Username) ?? $"discord{discordUser.Id}";
@@ -329,6 +358,7 @@ public static class DiscordEndpoints
     private static string? SanitizeUsername(string? discordUsername)
     {
         if (string.IsNullOrWhiteSpace(discordUsername))
+
             return null;
 
         var cleaned = new string(
@@ -338,6 +368,7 @@ public static class DiscordEndpoints
         );
         if (cleaned.Length > UsernamePolicy.MaxLength)
             cleaned = cleaned[..UsernamePolicy.MaxLength];
+
         return UsernamePolicy.TryValidate(cleaned, out _) ? cleaned : null;
     }
 }

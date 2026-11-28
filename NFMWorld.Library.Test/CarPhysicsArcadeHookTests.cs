@@ -39,6 +39,7 @@ public class CarPhysicsArcadeHookTests
     private static BackendCar CreateCar()
     {
         var rad = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], CarName);
+
         return new BackendCar(rad, 0, 0, 0, isClientPlayer: true);
     }
 
@@ -50,6 +51,7 @@ public class CarPhysicsArcadeHookTests
         for (var i = 0; i < 8; i++)
             car.Drive(stage);
         Assert.IsTrue(car.CarPhysics.Grounded, "the fixture car must be resting on the ground");
+
         return car;
     }
 
@@ -159,6 +161,7 @@ public class CarPhysicsArcadeHookTests
             var rad = new Rad3d([], CarStats.Default, new Rad3dWheelDef[4], null, [], [], false, [], CarName);
             var car = new BackendCar(rad, 0, 0, 0, isClientPlayer: true);
             car.Position = new Vector3d(0, World.Ground - car.GroundAt - 20_000, 0);
+
             return car;
         }
 

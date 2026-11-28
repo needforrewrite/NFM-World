@@ -945,6 +945,7 @@ namespace NFMWorld.FNA3D
 
             int bufferSize = Utf8Size(str);
             byte* buffer = (byte*)Marshal.AllocHGlobal(bufferSize);
+
             fixed (char* strPtr = str)
             {
                 Encoding.UTF8.GetBytes(strPtr, str.Length + 1, buffer, bufferSize);
@@ -1029,6 +1030,7 @@ namespace NFMWorld.FNA3D
         )
         {
             Stream stream;
+
             lock (readStreams)
             {
                 stream = readStreams[context];
@@ -1037,6 +1039,7 @@ namespace NFMWorld.FNA3D
             byte[] buf = new byte[size]; // FIXME: Preallocate!
             int result = stream.Read(buf, 0, size);
             Marshal.Copy(buf, 0, data, result);
+
             return result;
         }
 
@@ -1044,6 +1047,7 @@ namespace NFMWorld.FNA3D
         private static void INTERNAL_Skip(IntPtr context, int n)
         {
             Stream stream;
+
             lock (readStreams)
             {
                 stream = readStreams[context];
@@ -1056,6 +1060,7 @@ namespace NFMWorld.FNA3D
         private static int INTERNAL_EOF(IntPtr context)
         {
             Stream stream;
+
             lock (readStreams)
             {
                 stream = readStreams[context];
@@ -1084,6 +1089,7 @@ namespace NFMWorld.FNA3D
         )
         {
             IntPtr context;
+
             lock (readStreams)
             {
                 context = (IntPtr)readGlobal++;
@@ -1102,6 +1108,7 @@ namespace NFMWorld.FNA3D
                 forceH,
                 (byte)(zoom ? 1 : 0)
             );
+
             lock (readStreams)
             {
                 readStreams.Remove(context);
@@ -1154,6 +1161,7 @@ namespace NFMWorld.FNA3D
         )
         {
             Stream stream;
+
             lock (writeStreams)
             {
                 stream = writeStreams[context];
@@ -1179,6 +1187,7 @@ namespace NFMWorld.FNA3D
         )
         {
             IntPtr context;
+
             lock (writeStreams)
             {
                 context = (IntPtr)writeGlobal++;
@@ -1194,6 +1203,7 @@ namespace NFMWorld.FNA3D
                 dstH,
                 data
             );
+
             lock (writeStreams)
             {
                 writeStreams.Remove(context);
@@ -1211,6 +1221,7 @@ namespace NFMWorld.FNA3D
         )
         {
             IntPtr context;
+
             lock (writeStreams)
             {
                 context = (IntPtr)writeGlobal++;
@@ -1227,6 +1238,7 @@ namespace NFMWorld.FNA3D
                 data,
                 quality
             );
+
             lock (writeStreams)
             {
                 writeStreams.Remove(context);

@@ -38,7 +38,9 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
     private static string? FindValidator()
     {
         var fromEnvironment = Environment.GetEnvironmentVariable("NFMW_VALIDATOR_PATH");
+
         if (!string.IsNullOrWhiteSpace(fromEnvironment) && File.Exists(fromEnvironment))
+
             return fromEnvironment;
 
         var executable = OperatingSystem.IsWindows()
@@ -55,7 +57,9 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
                 "net11.0",
                 executable
             );
+
             if (File.Exists(candidate))
+
                 return candidate;
         }
 
@@ -85,6 +89,7 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
         builder.UseSetting("Archive:Database", $"Data Source={Path.Combine(_root, "test.db")}");
         builder.UseSetting("Archive:StorageRoot", Path.Combine(_root, "storage"));
         builder.UseSetting("Archive:GamePreviewUrl", GamePreviewUrl);
+
         if (ValidatorPath is { } validator)
         {
             builder.UseSetting("Archive:ValidatorPath", validator);
@@ -114,6 +119,7 @@ public class ArchiveAppFactory : WebApplicationFactory<Program>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
+
         if (disposing && Directory.Exists(_root))
         {
             try

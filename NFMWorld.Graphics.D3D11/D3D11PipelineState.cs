@@ -74,6 +74,7 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
 
         var end = 0;
         var uniforms = Reflection.Uniforms;
+
         for (var index = 0; index < uniforms.Count; index++)
         {
             var uniform = uniforms[index];
@@ -160,6 +161,7 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
     )
     {
         var signature = D3D11Reflector.ReadInputSignature(vertexBytecode);
+
         if (signature.Count == 0)
         {
             throw new InvalidOperationException(
@@ -233,6 +235,7 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
                 );
 
             layoutObjectReturn = layoutObject;
+
             return resolved;
         }
         finally
@@ -240,6 +243,7 @@ internal sealed unsafe class D3D11PipelineState : IPipelineState
             // CreateInputLayout copies each semantic name into its own storage, so the pins are only
             // needed for the duration of the call. Letting them leak would be a permanent non-moving
             // GC handle per input element per pipeline.
+
             for (var i = 0; i < pins.Length; i++)
             {
                 if (pins[i].IsAllocated)
@@ -450,6 +454,7 @@ internal static unsafe class D3D11Reflector
         var iid = D3D11Interop.Iid<ID3D11ShaderReflection>();
 
         ID3D11ShaderReflection* reflection = null;
+
         fixed (byte* bytecode = vertexBytecode)
         {
             D3D11Interop.Check(
@@ -464,6 +469,7 @@ internal static unsafe class D3D11Reflector
             D3D11Interop.Check(reflection->GetDesc(&shaderDesc), "ID3D11ShaderReflection::GetDesc");
 
             var entries = new List<SignatureEntry>((int)shaderDesc.InputParameters);
+
             for (var i = 0u; i < shaderDesc.InputParameters; i++)
             {
                 D3D11_SIGNATURE_PARAMETER_DESC parameter;
@@ -511,6 +517,7 @@ internal static unsafe class D3D11Reflector
         var iid = D3D11Interop.Iid<ID3D11ShaderReflection>();
 
         ID3D11ShaderReflection* reflection = null;
+
         fixed (byte* bytecode = vertexBytecode)
         {
             D3D11Interop.Check(
@@ -520,16 +527,20 @@ internal static unsafe class D3D11Reflector
         }
 
         var name = D3D11Interop.PinAscii("_Global");
+
         try
         {
             var buffer = reflection->GetConstantBufferByName(D3D11Interop.AddressOf(name));
+
             if (buffer == null)
+
                 return null;
 
             D3D11_SHADER_BUFFER_DESC bufferDesc;
             D3D11Interop.Check(buffer->GetDesc(&bufferDesc), "ID3D11ShaderReflectionConstantBuffer::GetDesc");
 
             var members = new Dictionary<string, int>((int)bufferDesc.Variables);
+
             for (var i = 0u; i < bufferDesc.Variables; i++)
             {
                 var variable = buffer->GetVariableByIndex(i);
@@ -579,6 +590,7 @@ internal static unsafe class D3D11Reflector
     internal static string MemberName(string reported)
     {
         if (string.IsNullOrEmpty(reported) || reported[0] != '_')
+
             return reported;
 
         var i = 0;
@@ -591,6 +603,7 @@ internal static unsafe class D3D11Reflector
 
         // A trailing underscore only counts when there is something after it and at least one digit
         // before it: "_1" is a member's own name, and so is "__Restore".
+
         return i > digitsStart && i + 1 < reported.Length && reported[i] == '_'
             ? reported[(i + 1)..]
             : reported;
@@ -603,6 +616,7 @@ internal static unsafe class D3D11Reflector
     private static unsafe string Ascii(sbyte* text)
     {
         if (text == null)
+
             return "";
 
         var length = 0;

@@ -44,6 +44,7 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
         Children = [_collisionDebug];
 
         var modelName = obj.FileName.AsSpan(obj.FileName.LastIndexOf('/') + 1);
+
         if (obj.Kind == AiNodeKind.CheckPoint && !modelName.Contains("checkpoint", StringComparison.OrdinalIgnoreCase))
         {
             _checkpointBoundsLease = StageMeshCache.Acquire(CheckpointBoundsModel);
@@ -78,18 +79,25 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
         base.GameTick(stage);
         Position = _obj.Position;
         Rotation = _obj.Rotation;
-        if (_visibleDamage == _obj.Damage) return;
+
+        if (_visibleDamage == _obj.Damage)
+
+            return;
         _visibleDamage = _obj.Damage;
+
         if (_obj.Damage == 0)
         {
-            if (ReferenceEquals(Mesh, _damageMesh)) Mesh = _undamagedMesh!;
+            if (ReferenceEquals(Mesh, _damageMesh))
+                Mesh = _undamagedMesh!;
             _damageMesh?.Dispose();
             _damageMesh = null;
             _undamagedMesh = null;
+
             return;
         }
 
         var polys = StageObjectDamage.Deform(_obj);
+
         if (_damageMesh is null)
         {
             _undamagedMesh = Mesh;
@@ -107,7 +115,9 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         DisposeOwnedResources();
         GC.SuppressFinalize(this);

@@ -16,133 +16,154 @@ using System.Numerics;
 
 namespace Hexa.NET.ImGui
 {
-	/// <summary>
-	/// (Optional) Support for IME (Input Method Editor) via the platform_io.Platform_SetImeDataFn() function. Handler is called during EndFrame().<br/>
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential)]
-	public partial struct ImGuiPlatformImeData
-	{
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte WantVisible;
+    /// <summary>
+    /// (Optional) Support for IME (Input Method Editor) via the platform_io.Platform_SetImeDataFn() function. Handler is called during EndFrame().<br/>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ImGuiPlatformImeData
+    {
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte WantVisible;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public byte WantTextInput;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public byte WantTextInput;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public Vector2 InputPos;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public Vector2 InputPos;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public float InputLineHeight;
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public float InputLineHeight;
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public uint ViewportId;
-
-
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe ImGuiPlatformImeData(bool wantVisible = default, bool wantTextInput = default, Vector2 inputPos = default, float inputLineHeight = default, uint viewportId = default)
-		{
-			WantVisible = wantVisible ? (byte)1 : (byte)0;
-			WantTextInput = wantTextInput ? (byte)1 : (byte)0;
-			InputPos = inputPos;
-			InputLineHeight = inputLineHeight;
-			ViewportId = viewportId;
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public uint ViewportId;
 
 
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			fixed (ImGuiPlatformImeData* @this = &this)
-			{
-				ImGui.DestroyNative(@this);
-			}
-		}
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe ImGuiPlatformImeData(
+            bool wantVisible = default,
+            bool wantTextInput = default,
+            Vector2 inputPos = default,
+            float inputLineHeight = default,
+            uint viewportId = default
+        )
+        {
+            WantVisible = wantVisible ? (byte)1 : (byte)0;
+            WantTextInput = wantTextInput ? (byte)1 : (byte)0;
+            InputPos = inputPos;
+            InputLineHeight = inputLineHeight;
+            ViewportId = viewportId;
+        }
 
-	}
 
-	/// <summary>
-	/// To be documented.
-	/// </summary>
-	#if NET5_0_OR_GREATER
-	[DebuggerDisplay("{DebuggerDisplay,nq}")]
-	#endif
-	public unsafe struct ImGuiPlatformImeDataPtr : IEquatable<ImGuiPlatformImeDataPtr>
-	{
-		public ImGuiPlatformImeDataPtr(ImGuiPlatformImeData* handle) { Handle = handle; }
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            fixed (ImGuiPlatformImeData* @this = &this)
+            {
+                ImGui.DestroyNative(@this);
+            }
+        }
+    }
 
-		public ImGuiPlatformImeData* Handle;
+    /// <summary>
+    /// To be documented.
+    /// </summary>
+#if NET5_0_OR_GREATER
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+#endif
+    public unsafe struct ImGuiPlatformImeDataPtr : IEquatable<ImGuiPlatformImeDataPtr>
+    {
+        public ImGuiPlatformImeDataPtr(ImGuiPlatformImeData* handle)
+        {
+            Handle = handle;
+        }
 
-		public bool IsNull => Handle == null;
+        public ImGuiPlatformImeData* Handle;
 
-		public static ImGuiPlatformImeDataPtr Null => new ImGuiPlatformImeDataPtr(null);
+        public bool IsNull => Handle == null;
 
-		public ImGuiPlatformImeData this[int index] { get => Handle[index]; set => Handle[index] = value; }
+        public static ImGuiPlatformImeDataPtr Null => new ImGuiPlatformImeDataPtr(null);
 
-		public static implicit operator ImGuiPlatformImeDataPtr(ImGuiPlatformImeData* handle) => new ImGuiPlatformImeDataPtr(handle);
+        public ImGuiPlatformImeData this[int index]
+        {
+            get => Handle[index];
+            set => Handle[index] = value;
+        }
 
-		public static implicit operator ImGuiPlatformImeData*(ImGuiPlatformImeDataPtr handle) => handle.Handle;
+        public static implicit operator ImGuiPlatformImeDataPtr(ImGuiPlatformImeData* handle) => new ImGuiPlatformImeDataPtr(
+            handle
+        );
 
-		public static bool operator ==(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeDataPtr right) => left.Handle == right.Handle;
+        public static implicit operator ImGuiPlatformImeData*(ImGuiPlatformImeDataPtr handle) => handle.Handle;
 
-		public static bool operator !=(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeDataPtr right) => left.Handle != right.Handle;
+        public static bool operator ==(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeDataPtr right) => left.Handle
+                                                                                                       == right
+            .Handle;
 
-		public static bool operator ==(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeData* right) => left.Handle == right;
+        public static bool operator !=(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeDataPtr right) => left.Handle
+                                                                                                       != right
+            .Handle;
 
-		public static bool operator !=(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeData* right) => left.Handle != right;
+        public static bool operator ==(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeData* right) => left.Handle == right;
 
-		public bool Equals(ImGuiPlatformImeDataPtr other) => Handle == other.Handle;
+        public static bool operator !=(ImGuiPlatformImeDataPtr left, ImGuiPlatformImeData* right) => left.Handle != right;
 
-		/// <inheritdoc/>
-		public override bool Equals(object obj) => obj is ImGuiPlatformImeDataPtr handle && Equals(handle);
+        public bool Equals(ImGuiPlatformImeDataPtr other) => Handle == other.Handle;
 
-		/// <inheritdoc/>
-		public override int GetHashCode() => ((nuint)Handle).GetHashCode();
+        /// <inheritdoc/>
+        public override bool Equals(object obj) => obj is ImGuiPlatformImeDataPtr handle && Equals(handle);
 
-		#if NET5_0_OR_GREATER
-		private string DebuggerDisplay => string.Format("ImGuiPlatformImeDataPtr [0x{0}]", ((nuint)Handle).ToString("X"));
-		#endif
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref bool WantVisible => ref Unsafe.AsRef<bool>(&Handle->WantVisible);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref bool WantTextInput => ref Unsafe.AsRef<bool>(&Handle->WantTextInput);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref Vector2 InputPos => ref Unsafe.AsRef<Vector2>(&Handle->InputPos);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref float InputLineHeight => ref Unsafe.AsRef<float>(&Handle->InputLineHeight);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public ref uint ViewportId => ref Unsafe.AsRef<uint>(&Handle->ViewportId);
-		/// <summary>
-		/// To be documented.
-		/// </summary>
-		public unsafe void Destroy()
-		{
-			ImGui.DestroyNative(Handle);
-		}
+        /// <inheritdoc/>
+        public override int GetHashCode() => ((nuint)Handle).GetHashCode();
 
-	}
+#if NET5_0_OR_GREATER
+        private string DebuggerDisplay => string.Format("ImGuiPlatformImeDataPtr [0x{0}]", ((nuint)Handle).ToString("X"));
+#endif
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref bool WantVisible => ref Unsafe.AsRef<bool>(&Handle->WantVisible);
 
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref bool WantTextInput => ref Unsafe.AsRef<bool>(&Handle->WantTextInput);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref Vector2 InputPos => ref Unsafe.AsRef<Vector2>(&Handle->InputPos);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref float InputLineHeight => ref Unsafe.AsRef<float>(&Handle->InputLineHeight);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public ref uint ViewportId => ref Unsafe.AsRef<uint>(&Handle->ViewportId);
+
+        /// <summary>
+        /// To be documented.
+        /// </summary>
+        public unsafe void Destroy()
+        {
+            ImGui.DestroyNative(Handle);
+        }
+    }
 }

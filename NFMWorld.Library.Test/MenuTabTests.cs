@@ -66,7 +66,8 @@ public class MenuTabTests
             () => { },
             highlighted: () => highlighted.Value,
             keyboardNavigation: false
-        ));
+        )
+        );
         var text = tab!.Children.OfType<Text>().Single();
         var underline = tab.Children.OfType<View>().Single();
         var selectedColor = underline.Styles.BackgroundColor;

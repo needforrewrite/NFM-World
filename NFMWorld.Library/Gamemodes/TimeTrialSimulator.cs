@@ -37,6 +37,7 @@ public static class TimeTrialSimulator
         // install cannot shadow the archived bytes by carrying the same name.
         var playerCarName = carName;
         var registeredCar = false;
+
         if (carData is not null)
         {
             playerCarName = "__archived_car__";
@@ -105,10 +106,13 @@ public static class TimeTrialSimulator
         host.Start();
 
         var tick = 0;
+
         while (tick <= tickLimit && !finished)
         {
             host.Update();
+
             if (finished)
+
                 break;
 
             if (players is [.., { Car: { } car }])

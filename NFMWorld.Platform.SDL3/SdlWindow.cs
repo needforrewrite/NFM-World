@@ -50,10 +50,13 @@ public sealed class SdlWindow : IDisposable
         get => _borderlessDesktop;
         set
         {
-            if (_borderlessDesktop == value) return;
+            if (_borderlessDesktop == value)
+
+                return;
             _borderlessDesktop = value;
             _borderlessPending = value;
-            if (value) _windowedSizePending = false;
+            if (value)
+                _windowedSizePending = false;
         }
     }
 
@@ -73,7 +76,9 @@ public sealed class SdlWindow : IDisposable
 
     public void SetFullscreenResolution(int width, int height)
     {
-        if (_fullscreenWidth == width && _fullscreenHeight == height) return;
+        if (_fullscreenWidth == width && _fullscreenHeight == height)
+
+            return;
         _fullscreenWidth = width;
         _fullscreenHeight = height;
         _fullscreenPending = true;
@@ -122,9 +127,11 @@ public sealed class SdlWindow : IDisposable
     )
     {
         if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
         var flags = extraFlags;
+
         return CreateCore(title, width, height, resizable, highPixelDensity, flags);
     }
 
@@ -145,6 +152,7 @@ public sealed class SdlWindow : IDisposable
     )
     {
         if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
         return CreateCore(title, width, height, resizable, highPixelDensity, (SDL.SDL_WindowFlags)extraFlagsRaw);
@@ -159,11 +167,15 @@ public sealed class SdlWindow : IDisposable
         SDL.SDL_WindowFlags flags
     )
     {
-        if (resizable) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
-        if (highPixelDensity) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        if (resizable)
+            flags |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
+        if (highPixelDensity)
+            flags |= SDL.SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
         var window = SDL.SDL_CreateWindow(title, width, height, flags);
+
         if (window == IntPtr.Zero)
+
             throw new InvalidOperationException($"SDL_CreateWindow failed: {SDL.SDL_GetError()}");
 
         SDL.SDL_StartTextInput(window);
@@ -176,7 +188,9 @@ public sealed class SdlWindow : IDisposable
 
     public void RequestAttention()
     {
-        if (_disposed || OperatingSystem.IsBrowser() || HasFocus) return;
+        if (_disposed || OperatingSystem.IsBrowser() || HasFocus)
+
+            return;
 
         _ = SDL.SDL_FlashWindow(_window, OperatingSystem.IsWindows()
             ? SDL.SDL_FlashOperation.SDL_FLASH_UNTIL_FOCUSED
@@ -188,9 +202,13 @@ public sealed class SdlWindow : IDisposable
         get;
         set
         {
-            if (field == value) return;
-            if (value) SDL.SDL_ShowCursor();
-            else SDL.SDL_HideCursor();
+            if (field == value)
+
+                return;
+            if (value)
+                SDL.SDL_ShowCursor();
+            else
+                SDL.SDL_HideCursor();
             field = value;
         }
     } = true;
@@ -200,9 +218,12 @@ public sealed class SdlWindow : IDisposable
 
     public void SetRelativeMouseMode(bool enabled)
     {
-        if (_relativeMouseModeRequested == enabled) return;
+        if (_relativeMouseModeRequested == enabled)
+
+            return;
         _relativeMouseModeRequested = enabled;
-        if (enabled) SDL.SDL_SetHint(SDL.SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1");
+        if (enabled)
+            SDL.SDL_SetHint(SDL.SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1");
         if (!SDL.SDL_SetWindowRelativeMouseMode(_window, enabled))
             NFMWorldLibrary.Logging.Warning($"Could not {(enabled ? "capture" : "release")} mouse: {SDL.SDL_GetError()}");
     }
@@ -213,11 +234,15 @@ public sealed class SdlWindow : IDisposable
         set
         {
             RequestedFullscreen = value;
-            if (value) _windowedSizePending = false;
+            if (value)
+                _windowedSizePending = false;
+
             if (OperatingSystem.IsBrowser())
             {
                 if (!SDL.SDL_SetWindowFullscreen(_window, value))
+
                     throw new InvalidOperationException($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+
                 return;
             }
 
@@ -229,31 +254,38 @@ public sealed class SdlWindow : IDisposable
 
     private void ApplyPendingFullscreen()
     {
-        if (OperatingSystem.IsBrowser() || !_fullscreenPending || (RequestedFullscreen && !HasFocus)) return;
+        if (OperatingSystem.IsBrowser() || !_fullscreenPending || (RequestedFullscreen && !HasFocus))
+
+            return;
 
         _fullscreenPending = false;
+
         if (RequestedFullscreen && _fullscreenWidth > 0 && _fullscreenHeight > 0)
         {
             var display = SDL.SDL_GetDisplayForWindow(_window);
-            if (display == 0) display = SDL.SDL_GetPrimaryDisplay();
+            if (display == 0)
+                display = SDL.SDL_GetPrimaryDisplay();
+
             if (!SDL.SDL_GetClosestFullscreenDisplayMode(
-                    display,
-                    _fullscreenWidth,
-                    _fullscreenHeight,
-                    0,
-                    true,
-                    out var mode
-                ))
+                display,
+                _fullscreenWidth,
+                _fullscreenHeight,
+                0,
+                true,
+                out var mode
+            ))
             {
                 RejectFullscreenChange(
                     $"Cannot select fullscreen resolution {_fullscreenWidth} x {_fullscreenHeight}: {SDL.SDL_GetError()}"
                 );
+
                 return;
             }
 
             if (!SDL.SDL_SetWindowFullscreenMode(_window, ref mode))
             {
                 RejectFullscreenChange($"SDL_SetWindowFullscreenMode failed: {SDL.SDL_GetError()}");
+
                 return;
             }
         }
@@ -261,6 +293,7 @@ public sealed class SdlWindow : IDisposable
         if (!SDL.SDL_SetWindowFullscreen(_window, RequestedFullscreen))
         {
             RejectFullscreenChange($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+
             return;
         }
 
@@ -281,18 +314,25 @@ public sealed class SdlWindow : IDisposable
         if (!SDL.SDL_GetWindowSize(_window, out var logicalWidth, out var logicalHeight)
             || logicalWidth <= 0
             || logicalHeight <= 0)
+
             return;
         var width = logicalWidth;
         var height = logicalHeight;
+
         // SDL's emscripten backend scales the canvas by the device pixel ratio, so the drawable is
         // larger than the CSS size there too; reporting the CSS size leaves the viewport short.
+
         if (!SDL.SDL_GetWindowSizeInPixels(_window, out width, out height) || width <= 0 || height <= 0)
+
             return;
         _logicalWidth = logicalWidth;
         _logicalHeight = logicalHeight;
         _mouseScaleX = width / (float)logicalWidth;
         _mouseScaleY = height / (float)logicalHeight;
-        if (Width == width && Height == height) return;
+
+        if (Width == width && Height == height)
+
+            return;
         Width = width;
         Height = height;
         Resized?.Invoke(Width, Height);
@@ -301,28 +341,39 @@ public sealed class SdlWindow : IDisposable
     private void ApplyPendingBorderless()
     {
         if (OperatingSystem.IsBrowser() || !_borderlessDesktop || !_borderlessPending || Fullscreen)
+
             return;
         var flags = SDL.SDL_GetWindowFlags(_window);
-        if ((flags & SDL.SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0) return;
+
+        if ((flags & SDL.SDL_WindowFlags.SDL_WINDOW_MINIMIZED) != 0)
+
+            return;
         _borderlessPending = false;
 
         if (!SDL.SDL_GetDisplayBounds(SDL.SDL_GetPrimaryDisplay(), out var bounds))
+
             throw new InvalidOperationException($"SDL_GetDisplayBounds failed: {SDL.SDL_GetError()}");
 
         if ((flags & SDL.SDL_WindowFlags.SDL_WINDOW_MAXIMIZED) != 0)
         {
             if (!SDL.SDL_RestoreWindow(_window))
+
                 throw new InvalidOperationException($"SDL_RestoreWindow failed: {SDL.SDL_GetError()}");
             SDL.SDL_SyncWindow(_window);
         }
 
         if (!SDL.SDL_GetWindowPosition(_window, out var x, out var y)
             || !SDL.SDL_GetWindowSize(_window, out var width, out var height))
+
             throw new InvalidOperationException($"Cannot query window bounds: {SDL.SDL_GetError()}");
 
-        if (x == bounds.x && y == bounds.y && width == bounds.w && height == bounds.h) return;
+        if (x == bounds.x && y == bounds.y && width == bounds.w && height == bounds.h)
+
+            return;
+
         if (!SDL.SDL_SetWindowPosition(_window, bounds.x, bounds.y)
             || !SDL.SDL_SetWindowSize(_window, bounds.w, bounds.h))
+
             throw new InvalidOperationException($"Cannot fit borderless window to primary display: {SDL.SDL_GetError()}");
         SDL.SDL_SyncWindow(_window);
         RefreshSize();
@@ -333,6 +384,7 @@ public sealed class SdlWindow : IDisposable
     {
         get => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) != 0;
         set { if (!SDL.SDL_SetWindowBordered(_window, !value))
+
             throw new InvalidOperationException($"SDL_SetWindowBordered failed: {SDL.SDL_GetError()}"); }
     }
 
@@ -341,7 +393,9 @@ public sealed class SdlWindow : IDisposable
         if (OperatingSystem.IsBrowser())
         {
             if (!SDL.SDL_SetWindowSize(_window, width, height))
+
                 throw new InvalidOperationException($"SDL_SetWindowSize failed: {SDL.SDL_GetError()}");
+
             return;
         }
 
@@ -352,11 +406,15 @@ public sealed class SdlWindow : IDisposable
 
     private void ApplyPendingWindowedSize()
     {
-        if (!_windowedSizePending || RequestedFullscreen || Fullscreen || _borderlessDesktop) return;
+        if (!_windowedSizePending || RequestedFullscreen || Fullscreen || _borderlessDesktop)
+
+            return;
         _windowedSizePending = false;
+
         if ((SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_MAXIMIZED) != 0)
         {
             if (!SDL.SDL_RestoreWindow(_window))
+
                 throw new InvalidOperationException($"SDL_RestoreWindow failed: {SDL.SDL_GetError()}");
             SDL.SDL_SyncWindow(_window);
         }
@@ -364,7 +422,9 @@ public sealed class SdlWindow : IDisposable
         RefreshSize();
         var width = Math.Max(1, (int)Math.Round(_windowedWidth * (_logicalWidth / (double)Width)));
         var height = Math.Max(1, (int)Math.Round(_windowedHeight * (_logicalHeight / (double)Height)));
+
         if (!SDL.SDL_SetWindowSize(_window, width, height))
+
             throw new InvalidOperationException($"SDL_SetWindowSize failed: {SDL.SDL_GetError()}");
         SDL.SDL_SyncWindow(_window);
         RefreshSize();
@@ -382,6 +442,7 @@ public sealed class SdlWindow : IDisposable
                 case (uint)SDL.SDL_EventType.SDL_EVENT_QUIT:
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                     ShouldQuit = true;
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
@@ -389,31 +450,38 @@ public sealed class SdlWindow : IDisposable
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
                     RefreshSize();
                     RefreshBorderlessDesktop();
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOVED:
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
                     RefreshBorderlessDesktop();
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
                     if (!OperatingSystem.IsBrowser() && (_fullscreenRetryOnFocus || RequestedFullscreen != Fullscreen))
                         _fullscreenPending = true;
                     RefreshBorderlessDesktop();
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_KEY_DOWN:
                     KeyChanged?.Invoke(SdlKeyMap.FromScancode(e.key.scancode), true, e.key.repeat);
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_KEY_UP:
                     KeyChanged?.Invoke(SdlKeyMap.FromScancode(e.key.scancode), false, false);
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_TEXT_INPUT:
+
                     if (TextInput is not null && e.text.text is not null)
                     {
                         var text = Marshal.PtrToStringUTF8((IntPtr)e.text.text);
+
                         if (text is not null)
                         {
                             foreach (var c in text)
@@ -425,6 +493,7 @@ public sealed class SdlWindow : IDisposable
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                     MouseMoved?.Invoke((int)MathF.Round(e.motion.x * _mouseScaleX), (int)MathF.Round(e.motion.y * _mouseScaleY));
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -433,6 +502,7 @@ public sealed class SdlWindow : IDisposable
                         (int)MathF.Round(e.button.x * _mouseScaleX),
                         (int)MathF.Round(e.button.y * _mouseScaleY)
                     );
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
@@ -441,10 +511,12 @@ public sealed class SdlWindow : IDisposable
                         (int)MathF.Round(e.button.x * _mouseScaleX),
                         (int)MathF.Round(e.button.y * _mouseScaleY)
                     );
+
                     break;
 
                 case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
                     MouseWheel?.Invoke(e.wheel.x, e.wheel.y);
+
                     break;
             }
         }
@@ -460,6 +532,7 @@ public sealed class SdlWindow : IDisposable
     {
         var state = SDL.SDL_GetKeyboardState();
         var keys = default(Keys);
+
         for (var i = 0; i < state.Length; i++)
         {
             if (state[i])
@@ -477,6 +550,7 @@ public sealed class SdlWindow : IDisposable
     public static (MouseButtons Buttons, int X, int Y) GetMouseState()
     {
         var flags = SDL.SDL_GetMouseState(out var x, out var y);
+
         return (SdlKeyMap.FromButtonFlags(flags),
             (int)MathF.Round(x * _mouseScaleX), (int)MathF.Round(y * _mouseScaleY));
     }
@@ -488,8 +562,11 @@ public sealed class SdlWindow : IDisposable
     public static unsafe (int Width, int Height) GetPrimaryDesktopResolution()
     {
         var mode = SDL.SDL_GetDesktopDisplayMode(SDL.SDL_GetPrimaryDisplay());
+
         if (mode == null)
+
             throw new InvalidOperationException($"SDL_GetDesktopDisplayMode failed: {SDL.SDL_GetError()}");
+
         return (mode->w, mode->h);
     }
 
@@ -503,26 +580,35 @@ public sealed class SdlWindow : IDisposable
         // ctor, which initializes SDL video; do the same here since the settings menu builds its
         // resolution list from a static field initializer that can run before Create(). SDL_Init
         // is idempotent, and Create() re-initializes anyway.
+
         if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
         var display = window == IntPtr.Zero ? SDL.SDL_GetPrimaryDisplay() : SDL.SDL_GetDisplayForWindow(window);
-        if (display == 0) display = SDL.SDL_GetPrimaryDisplay();
+        if (display == 0)
+            display = SDL.SDL_GetPrimaryDisplay();
         var modes = (SDL.SDL_DisplayMode**)SDL.SDL_GetFullscreenDisplayModes(display, out var count);
+
         try
         {
             if (modes == null || count <= 0)
             {
                 NFMWorldLibrary.Logging.Warning($"Cannot enumerate fullscreen display modes: {SDL.SDL_GetError()}");
+
                 return [];
             }
 
             var seen = new HashSet<(int Width, int Height)>();
             var result = new List<(int Width, int Height)>(count);
+
             for (var i = 0; i < count; i++)
             {
                 var mode = modes[i];
-                if (mode == null || mode->w <= 0 || mode->h <= 0) continue;
+
+                if (mode == null || mode->w <= 0 || mode->h <= 0)
+
+                    continue;
                 if (seen.Add((mode->w, mode->h)))
                     result.Add((mode->w, mode->h));
             }
@@ -600,13 +686,17 @@ public sealed class SdlWindow : IDisposable
             var properties = SDL.SDL_GetWindowProperties(_window);
 
             var hwnd = NativeWindowHandle;
-            if (hwnd != IntPtr.Zero) return new NativeWindowHandles(NativeWindowSystem.Win32, hwnd);
+
+            if (hwnd != IntPtr.Zero)
+
+                return new NativeWindowHandles(NativeWindowSystem.Win32, hwnd);
 
             var x11Display = SDL.SDL_GetPointerProperty(
                 properties,
                 SDL.SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
                 IntPtr.Zero
             );
+
             if (x11Display != IntPtr.Zero)
             {
                 return new NativeWindowHandles(
@@ -621,6 +711,7 @@ public sealed class SdlWindow : IDisposable
                 SDL.SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
                 IntPtr.Zero
             );
+
             if (waylandDisplay != IntPtr.Zero)
             {
                 return new NativeWindowHandles(
@@ -639,6 +730,7 @@ public sealed class SdlWindow : IDisposable
                 SDL.SDL_PROP_WINDOW_COCOA_WINDOW_POINTER,
                 IntPtr.Zero
             );
+
             if (cocoaWindow != IntPtr.Zero)
             {
                 return new NativeWindowHandles(NativeWindowSystem.Cocoa, cocoaWindow, default, MetalLayer);
@@ -668,7 +760,10 @@ public sealed class SdlWindow : IDisposable
             if (_metalView == IntPtr.Zero)
             {
                 _metalView = SDL.SDL_Metal_CreateView(_window);
-                if (_metalView == IntPtr.Zero) return IntPtr.Zero;
+
+                if (_metalView == IntPtr.Zero)
+
+                    return IntPtr.Zero;
             }
 
             return SDL.SDL_Metal_GetLayer(_metalView);
@@ -677,10 +772,13 @@ public sealed class SdlWindow : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+
+            return;
         _disposed = true;
         SetRelativeMouseMode(false);
         CursorVisible = true;
+
         if (_metalView != IntPtr.Zero)
         {
             SDL.SDL_Metal_DestroyView(_metalView);
